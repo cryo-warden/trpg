@@ -35,7 +35,7 @@ describe("trpg-lib", () => {
         Counter: { value: 0 },
       });
 
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 100; i++) {
         world.createEntity({
           Counter: { value: Math.floor(Math.random() * 100 - 50) },
         });

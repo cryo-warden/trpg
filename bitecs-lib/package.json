@@ -1,0 +1,35 @@
+{
+  "name": "bitecs-lib",
+  "version": "0.0.0",
+  "description": "Library implementing helpers for bitecs",
+  "author": "Cory Watson <cryo.warden@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cryo-warden/trpg.git"
+  },
+  "main": "dist/index.js",
+  "devDependencies": {
+    "bun-plugin-dts": "^0.2.1",
+    "@types/bun": "^1.0.0",
+    "typescript": "^5.2.2"
+  },
+  "bugs": "https://github.com/cryo-warden/trpg/issues",
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://github.com/cryo-warden/trpg#readme",
+  "keywords": [
+    "bitecs",
+    "ecs",
+    "game",
+    "engine"
+  ],
+  "scripts": {
+    "build": "bun run build.mjs",
+    "prepublishOnly": "bun run build"
+  },
+  "types": "dist/index.d.ts",
+  "dependencies": {
+    "bitecs": "^0.3.40"
+  }
+}
