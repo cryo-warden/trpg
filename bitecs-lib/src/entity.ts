@@ -1,10 +1,11 @@
-import { IWorld, getEntityComponents } from "bitecs";
+import { IWorld, addComponent, getEntityComponents } from "bitecs";
 import {
-  AsTsSchema,
+  Component,
   ComponentRegistry,
-  SchemaRecord,
-  addComponent,
+  readComponent,
+  writeComponent,
 } from "./component";
+import { AsTsSchema, SchemaRecord } from "./schema";
 
 type EntityIdMark = {};
 
@@ -16,11 +17,46 @@ export type Entity<TSchemaRecord extends SchemaRecord> = Partial<{
   >;
 }>;
 
+export const readEntity = <TSchemaRecord extends SchemaRecord>(
+  world: IWorld,
+  componentRegistry: ComponentRegistry<TSchemaRecord>
+) => {
+  type TComponentRecord = typeof componentRegistry.components;
+
+  const componentNameMap = new Map<
+    TComponentRecord[keyof TComponentRecord],
+    keyof TComponentRecord
+  >(
+    Object.entries(componentRegistry.components).map(
+      ([key, value]) => [value, key] as const
+    )
+  );
+
+  const readWorldComponent = readComponent(componentRegistry);
+
+  return (entityId: EntityId): Entity<TSchemaRecord> => {
+    const entityData: Entity<TSchemaRecord> = {};
+    const components = getEntityComponents(world, entityId) as Component<
+      TSchemaRecord[keyof TSchemaRecord]
+    >[];
+
+    for (const component of components) {
+      const name = componentNameMap.get(component);
+
+      if (name != null) {
+        entityData[name] = readWorldComponent(entityId, name);
+      }
+    }
+
+    return entityData;
+  };
+};
+
 export const writeEntity = <TSchemaRecord extends SchemaRecord>(
   world: IWorld,
   componentRegistry: ComponentRegistry<TSchemaRecord>
 ) => {
-  const finalAddComponent = addComponent(world, componentRegistry);
+  const writeWorldComponent = writeComponent(componentRegistry);
   return (entityId: EntityId, entity: Entity<TSchemaRecord>): void => {
     for (const key of Object.keys(entity)) {
       if (!(key in componentRegistry.components)) {
@@ -30,51 +66,10 @@ export const writeEntity = <TSchemaRecord extends SchemaRecord>(
       const componentName = key as keyof TSchemaRecord;
       const componentData = entity[componentName];
       if (componentData != null) {
-        finalAddComponent(componentName, entityId, componentData);
+        const component = componentRegistry.components[componentName];
+        addComponent(world, component, entityId);
+        writeWorldComponent(entityId, componentName, componentData);
       }
     }
-  };
-};
-
-export const readEntity = <TSchemaRecord extends SchemaRecord>(
-  world: IWorld,
-  componentRegistry: ComponentRegistry<TSchemaRecord>
-) => {
-  type TComponentRecord = typeof componentRegistry.components;
-  type TComponentName = keyof TComponentRecord;
-  type TComponent = TComponentRecord[TComponentName];
-  type TEntity = Entity<TSchemaRecord>;
-  type TComponentData = NonNullable<TEntity[keyof TEntity]>;
-
-  const componentNameMap = new Map(
-    Object.entries(componentRegistry).map(
-      ([key, value]) => [value as TComponent, key as TComponentName] as const
-    )
-  );
-
-  return (entityId: EntityId): Entity<TSchemaRecord> => {
-    const entityData: TEntity = {};
-    const components = getEntityComponents(world, entityId);
-
-    for (const untypedComponent of components) {
-      const component = untypedComponent as TComponent;
-      const name = componentNameMap.get(component);
-
-      if (name == null) {
-        continue;
-      }
-
-      const componentData: Partial<TComponentData> = {};
-      if (name != null) {
-        for (const field of Object.keys(
-          component
-        ) as (keyof TComponentData)[]) {
-          componentData[field] = (component as any)[field][entityId];
-        }
-        entityData[name] = componentData as TComponentData;
-      }
-    }
-
-    return entityData;
   };
 };

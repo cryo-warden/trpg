@@ -1,7 +1,6 @@
 import { describe, it, expect } from "bun:test";
-import { Types, createComponentRegistry } from "../src/component";
 import { System, defineQuery } from "bitecs";
-import { EntityId, createWorld } from "../src";
+import { Types, EntityId, createComponentRegistry, createWorld } from "../src";
 
 const componentRegistry = createComponentRegistry({
   Player: {},
@@ -79,19 +78,19 @@ describe("bitecs-lib", () => {
         randomWalkSystem,
         playerObservationSystem,
       ]);
-      world.createEntity({
+      world.addEntity({
         Player: {},
         Position: { x: 0, y: 0, z: 0 },
       });
-      world.createEntity({
+      world.addEntity({
         Position: { x: 0, y: 0, z: 0 },
         RandomFlier: { topSpeed: 0 },
       });
-      world.createEntity({
+      world.addEntity({
         Position: { x: 0, y: 0, z: 0 },
         RandomFlier: { topSpeed: 10 },
       });
-      world.createEntity({
+      world.addEntity({
         Position: { x: 0, y: 0, z: 0 },
         RandomFlier: { topSpeed: 20 },
       });
@@ -103,7 +102,7 @@ describe("bitecs-lib", () => {
         randomWalkSystem,
         playerObservationSystem,
       ]);
-      world.createEntity({
+      world.addEntity({
         Player: {},
         Position: { x: 0, y: 0, z: 0 },
       });
@@ -111,14 +110,14 @@ describe("bitecs-lib", () => {
       for (let i = 0; i < 100; i++) {
         console.log(`Entities Queue is ${entitiesQueue.join(", ")}.`);
         entitiesQueue.push(
-          world.createEntity({
+          world.addEntity({
             Position: { x: 0, y: 0, z: 0 },
             RandomFlier:
               i % 3 === 0 ? undefined : { topSpeed: 10 + Math.random() * 100 },
           })
         );
         if (i % 2 === 0) {
-          world.destroyEntity(entitiesQueue.shift()!);
+          world.removeEntity(entitiesQueue.shift()!);
         }
 
         world.step();

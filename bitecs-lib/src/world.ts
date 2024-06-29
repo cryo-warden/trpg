@@ -1,18 +1,40 @@
-import { System, createWorld, pipe, removeEntity, addEntity } from "bitecs";
+import {
+  System,
+  createWorld,
+  pipe,
+  removeEntity,
+  addEntity,
+  addComponent,
+  removeComponent,
+} from "bitecs";
 import { Entity, EntityId, readEntity, writeEntity } from "./entity";
-import { ComponentRegistry, SchemaRecord } from "./component";
+import { ComponentRegistry, readComponent, writeComponent } from "./component";
+import { AsTsSchema, SchemaRecord } from "./schema";
 
 export type TrpgWorld<TSchemaRecord extends SchemaRecord> = {
   step: () => void;
-  createEntity: (entity: Entity<TSchemaRecord>) => EntityId;
-  destroyEntity: (entityId: EntityId) => void;
+  addEntity: (entity: Entity<TSchemaRecord>) => EntityId;
+  removeEntity: (entityId: EntityId) => void;
   readEntity: (entityId: EntityId) => Entity<TSchemaRecord>;
   writeEntity: (entityId: EntityId, entity: Entity<TSchemaRecord>) => void;
-  // WIP
-  // addComponent: ...;
-  // removeComponent: ...;
-  // readComponent: <TComponentName extends keyof TSchemaRecord>(entityId: EntityId, componentName: TComponentName) => AsTsSchema<TSchemaRecord[TComponentName]>
-  // writeComponent: <TComponentName extends keyof TSchemaRecord>(entityId: EntityId, componentName: TComponentName, data: AsTsSchema<TSchemaRecord[TComponentName]>) => void
+  addComponent: <TComponentName extends keyof TSchemaRecord>(
+    entityId: EntityId,
+    componentName: TComponentName,
+    data: AsTsSchema<TSchemaRecord[TComponentName]>
+  ) => void;
+  removeComponent: <TComponentName extends keyof TSchemaRecord>(
+    entityId: EntityId,
+    componentName: TComponentName
+  ) => void;
+  readComponent: <TComponentName extends keyof TSchemaRecord>(
+    entityId: EntityId,
+    componentName: TComponentName
+  ) => AsTsSchema<TSchemaRecord[TComponentName]>;
+  writeComponent: <TComponentName extends keyof TSchemaRecord>(
+    entityId: EntityId,
+    componentName: TComponentName,
+    data: AsTsSchema<TSchemaRecord[TComponentName]>
+  ) => void;
 };
 
 const create = <TSchemaRecord extends SchemaRecord>(
@@ -21,7 +43,10 @@ const create = <TSchemaRecord extends SchemaRecord>(
 ): TrpgWorld<TSchemaRecord> => {
   const world = createWorld();
   const step: System = pipe(...systems);
+  const readWorldEntity = readEntity(world, componentRegistry);
   const writeWorldEntity = writeEntity(world, componentRegistry);
+  const readWorldComponent = readComponent(componentRegistry);
+  const writeWorldComponent = writeComponent(componentRegistry);
 
   let updateQueue: (() => void)[] = [];
 
@@ -34,20 +59,35 @@ const create = <TSchemaRecord extends SchemaRecord>(
 
       step(world);
     },
-    createEntity: (entity: Entity<TSchemaRecord>) => {
+    addEntity: (entity) => {
       const entityId = addEntity(world) as EntityId;
       updateQueue.push(() => {
         writeWorldEntity(entityId, entity);
       });
       return entityId;
     },
-    destroyEntity: (entityId: EntityId) => {
+    removeEntity: (entityId) => {
       updateQueue.push(() => {
         removeEntity(world, entityId);
       });
     },
-    readEntity: readEntity(world, componentRegistry),
+    readEntity: readWorldEntity,
     writeEntity: writeWorldEntity,
+    addComponent: (entityId, componentName, data) => {
+      updateQueue.push(() => {
+        const component = componentRegistry.components[componentName];
+        addComponent(world, component, entityId);
+        writeWorldComponent(entityId, componentName, data);
+      });
+    },
+    removeComponent: (entityId, componentName) => {
+      updateQueue.push(() => {
+        const component = componentRegistry.components[componentName];
+        removeComponent(world, component, entityId);
+      });
+    },
+    readComponent: readWorldComponent,
+    writeComponent: writeWorldComponent,
   };
 };
 
