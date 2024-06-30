@@ -1,7 +1,7 @@
 import { IWorld, addComponent, getEntityComponents } from "bitecs";
 import {
   Component,
-  ComponentRegistry,
+  ComponentRecord,
   readComponent,
   writeComponent,
 } from "./component";
@@ -11,28 +11,22 @@ type EntityIdMark = {};
 
 export type EntityId = number & [EntityIdMark];
 
-export type Entity<TSchemaRecord extends SchemaRecord> = Partial<{
-  [key in keyof ComponentRegistry<TSchemaRecord>["schemas"]]: AsTsSchema<
-    ComponentRegistry<TSchemaRecord>["schemas"][key]
-  >;
-}>;
+export type Entity<TSchemaRecord extends SchemaRecord> = {
+  [key in keyof TSchemaRecord]?: AsTsSchema<TSchemaRecord[key]>;
+};
 
 export const readEntity = <TSchemaRecord extends SchemaRecord>(
   world: IWorld,
-  componentRegistry: ComponentRegistry<TSchemaRecord>
+  componentRecord: ComponentRecord<TSchemaRecord>
 ) => {
-  type TComponentRecord = typeof componentRegistry.components;
+  type TComponentRecord = typeof componentRecord;
 
   const componentNameMap = new Map<
     TComponentRecord[keyof TComponentRecord],
     keyof TComponentRecord
-  >(
-    Object.entries(componentRegistry.components).map(
-      ([key, value]) => [value, key] as const
-    )
-  );
+  >(Object.entries(componentRecord).map(([key, value]) => [value, key]));
 
-  const readWorldComponent = readComponent(componentRegistry);
+  const readWorldComponent = readComponent(componentRecord);
 
   return (entityId: EntityId): Entity<TSchemaRecord> => {
     const entityData: Entity<TSchemaRecord> = {};
@@ -54,19 +48,19 @@ export const readEntity = <TSchemaRecord extends SchemaRecord>(
 
 export const writeEntity = <TSchemaRecord extends SchemaRecord>(
   world: IWorld,
-  componentRegistry: ComponentRegistry<TSchemaRecord>
+  componentRecord: ComponentRecord<TSchemaRecord>
 ) => {
-  const writeWorldComponent = writeComponent(componentRegistry);
+  const writeWorldComponent = writeComponent(componentRecord);
   return (entityId: EntityId, entity: Entity<TSchemaRecord>): void => {
     for (const key of Object.keys(entity)) {
-      if (!(key in componentRegistry.components)) {
+      if (!(key in componentRecord)) {
         throw new Error(`Entity data has unknown component name: ${key}`);
       }
 
       const componentName = key as keyof TSchemaRecord;
       const componentData = entity[componentName];
       if (componentData != null) {
-        const component = componentRegistry.components[componentName];
+        const component = componentRecord[componentName];
         addComponent(world, component, entityId);
         writeWorldComponent(entityId, componentName, componentData);
       }

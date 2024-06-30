@@ -1,8 +1,8 @@
 import { describe, it, expect } from "bun:test";
 import { System, defineQuery } from "bitecs";
-import { Types, EntityId, createComponentRegistry, createWorld } from "../src";
+import { Types, EntityId, asComponentRecord, createWorld } from "../src";
 
-const componentRegistry = createComponentRegistry({
+const componentRecord = asComponentRecord({
   Player: {},
   Position: {
     x: Types.f64,
@@ -14,7 +14,7 @@ const componentRegistry = createComponentRegistry({
   },
 } as const);
 
-const { Player, Position, RandomFlier } = componentRegistry.components;
+const { Player, Position, RandomFlier } = componentRecord;
 
 const playerQuery = defineQuery([Player]);
 const positionQuery = defineQuery([Position]);
@@ -59,22 +59,22 @@ const playerObservationSystem: System = (world) => {
 describe("bitecs-lib", () => {
   describe("create", () => {
     it("should create a world", () => {
-      const world = createWorld(componentRegistry, []);
+      const world = createWorld(componentRecord, []);
       expect(world).toBeDefined();
     });
     it("should create a world with a system", () => {
-      const world = createWorld(componentRegistry, [randomWalkSystem]);
+      const world = createWorld(componentRecord, [randomWalkSystem]);
       expect(world).toBeDefined();
     });
     it("should create a world with multiple systems", () => {
-      const world = createWorld(componentRegistry, [
+      const world = createWorld(componentRecord, [
         randomWalkSystem,
         playerObservationSystem,
       ]);
       expect(world).toBeDefined();
     });
     it("should update a world on step", () => {
-      const world = createWorld(componentRegistry, [
+      const world = createWorld(componentRecord, [
         randomWalkSystem,
         playerObservationSystem,
       ]);
@@ -98,7 +98,7 @@ describe("bitecs-lib", () => {
       expect(world).toBeDefined();
     });
     it("should update a world many times on many steps", () => {
-      const world = createWorld(componentRegistry, [
+      const world = createWorld(componentRecord, [
         randomWalkSystem,
         playerObservationSystem,
       ]);

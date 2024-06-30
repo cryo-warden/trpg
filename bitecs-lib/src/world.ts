@@ -8,7 +8,7 @@ import {
   removeComponent,
 } from "bitecs";
 import { Entity, EntityId, readEntity, writeEntity } from "./entity";
-import { ComponentRegistry, readComponent, writeComponent } from "./component";
+import { ComponentRecord, readComponent, writeComponent } from "./component";
 import { AsTsSchema, SchemaRecord } from "./schema";
 
 export type TrpgWorld<TSchemaRecord extends SchemaRecord> = {
@@ -38,15 +38,15 @@ export type TrpgWorld<TSchemaRecord extends SchemaRecord> = {
 };
 
 const create = <TSchemaRecord extends SchemaRecord>(
-  componentRegistry: ComponentRegistry<TSchemaRecord>,
+  componentRecord: ComponentRecord<TSchemaRecord>,
   systems: System[]
 ): TrpgWorld<TSchemaRecord> => {
   const world = createWorld();
   const step: System = pipe(...systems);
-  const readWorldEntity = readEntity(world, componentRegistry);
-  const writeWorldEntity = writeEntity(world, componentRegistry);
-  const readWorldComponent = readComponent(componentRegistry);
-  const writeWorldComponent = writeComponent(componentRegistry);
+  const readWorldEntity = readEntity(world, componentRecord);
+  const writeWorldEntity = writeEntity(world, componentRecord);
+  const readWorldComponent = readComponent(componentRecord);
+  const writeWorldComponent = writeComponent(componentRecord);
 
   let updateQueue: (() => void)[] = [];
 
@@ -75,15 +75,13 @@ const create = <TSchemaRecord extends SchemaRecord>(
     writeEntity: writeWorldEntity,
     addComponent: (entityId, componentName, data) => {
       updateQueue.push(() => {
-        const component = componentRegistry.components[componentName];
-        addComponent(world, component, entityId);
+        addComponent(world, componentRecord[componentName], entityId);
         writeWorldComponent(entityId, componentName, data);
       });
     },
     removeComponent: (entityId, componentName) => {
       updateQueue.push(() => {
-        const component = componentRegistry.components[componentName];
-        removeComponent(world, component, entityId);
+        removeComponent(world, componentRecord[componentName], entityId);
       });
     },
     readComponent: readWorldComponent,
