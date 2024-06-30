@@ -1,71 +1,22 @@
 import { describe, it, expect } from "bun:test";
-import { System, defineQuery } from "bitecs";
-import { Types, EntityId, asComponentRecord, createWorld } from "../src";
-
-const componentRecord = asComponentRecord({
-  Player: {},
-  Position: {
-    x: Types.f64,
-    y: Types.f64,
-    z: Types.f64,
-  },
-  RandomFlier: {
-    topSpeed: Types.f64,
-  },
-} as const);
-
-const { Player, Position, RandomFlier } = componentRecord;
-
-const playerQuery = defineQuery([Player]);
-const positionQuery = defineQuery([Position]);
-const randomFlierPositionQuery = defineQuery([Position, RandomFlier]);
-
-const randomWalkSystem: System = (world) => {
-  const entities = randomFlierPositionQuery(world);
-  for (let i = 0; i < entities.length; i++) {
-    const entity = entities[i];
-    Position.x[entity] +=
-      2 * (Math.random() - 0.5) * RandomFlier.topSpeed[entity];
-    Position.y[entity] +=
-      2 * (Math.random() - 0.5) * RandomFlier.topSpeed[entity];
-    Position.z[entity] +=
-      2 * (Math.random() - 0.5) * RandomFlier.topSpeed[entity];
-  }
-  return world;
-};
-
-const playerObservationSystem: System = (world) => {
-  const players = playerQuery(world);
-  const entities = positionQuery(world);
-  for (let i = 0; i < players.length; i++) {
-    const playerId = players[i];
-    for (let j = 0; j < entities.length; j++) {
-      const entityId = entities[j];
-      if (playerId === entityId) {
-        continue;
-      }
-
-      const distance = Math.hypot(
-        Position.x[playerId] - Position.x[entityId],
-        Position.y[playerId] - Position.y[entityId],
-        Position.z[playerId] - Position.z[entityId]
-      );
-      console.log(`Something ${entityId} is ${distance} away.`);
-    }
-  }
-  return world;
-};
+import { EntityId, createWorld } from "../src";
+import { componentRecord } from "./componentRecord";
+import { playerObservationSystem, randomWalkSystem } from "./system";
+import { hasComponent } from "bitecs";
+import { Position } from "./schema";
 
 describe("bitecs-lib", () => {
-  describe("create", () => {
+  describe("createWorld", () => {
     it("should create a world", () => {
       const world = createWorld(componentRecord, []);
       expect(world).toBeDefined();
     });
+
     it("should create a world with a system", () => {
       const world = createWorld(componentRecord, [randomWalkSystem]);
       expect(world).toBeDefined();
     });
+
     it("should create a world with multiple systems", () => {
       const world = createWorld(componentRecord, [
         randomWalkSystem,
@@ -73,56 +24,98 @@ describe("bitecs-lib", () => {
       ]);
       expect(world).toBeDefined();
     });
-    it("should update a world on step", () => {
-      const world = createWorld(componentRecord, [
-        randomWalkSystem,
-        playerObservationSystem,
-      ]);
-      world.addEntity({
-        Player: {},
-        Position: { x: 0, y: 0, z: 0 },
-      });
-      world.addEntity({
-        Position: { x: 0, y: 0, z: 0 },
-        RandomFlier: { topSpeed: 0 },
-      });
-      world.addEntity({
-        Position: { x: 0, y: 0, z: 0 },
-        RandomFlier: { topSpeed: 10 },
-      });
-      world.addEntity({
-        Position: { x: 0, y: 0, z: 0 },
-        RandomFlier: { topSpeed: 20 },
-      });
-      world.step();
-      expect(world).toBeDefined();
-    });
-    it("should update a world many times on many steps", () => {
-      const world = createWorld(componentRecord, [
-        randomWalkSystem,
-        playerObservationSystem,
-      ]);
-      world.addEntity({
-        Player: {},
-        Position: { x: 0, y: 0, z: 0 },
-      });
-      let entitiesQueue: EntityId[] = [];
-      for (let i = 0; i < 100; i++) {
-        console.log(`Entities Queue is ${entitiesQueue.join(", ")}.`);
-        entitiesQueue.push(
-          world.addEntity({
-            Position: { x: 0, y: 0, z: 0 },
-            RandomFlier:
-              i % 3 === 0 ? undefined : { topSpeed: 10 + Math.random() * 100 },
-          })
-        );
-        if (i % 2 === 0) {
-          world.removeEntity(entitiesQueue.shift()!);
-        }
 
+    describe("world.step", () => {
+      it("should update a world at least once", () => {
+        const world = createWorld(componentRecord, [
+          randomWalkSystem,
+          playerObservationSystem,
+        ]);
+        world.addEntity({
+          Player: {},
+          Position: { x: 0, y: 0, z: 0 },
+        });
+        world.addEntity({
+          Position: { x: 0, y: 0, z: 0 },
+          RandomFlier: { topSpeed: 0 },
+        });
+        world.addEntity({
+          Position: { x: 0, y: 0, z: 0 },
+          RandomFlier: { topSpeed: 10 },
+        });
+        world.addEntity({
+          Position: { x: 0, y: 0, z: 0 },
+          RandomFlier: { topSpeed: 20 },
+        });
         world.step();
-      }
-      expect(world).toBeDefined();
+        expect(world).toBeDefined();
+      });
+
+      it("should update a world repeatedly", () => {
+        const world = createWorld(componentRecord, [
+          randomWalkSystem,
+          playerObservationSystem,
+        ]);
+        world.addEntity({
+          Player: {},
+          Position: { x: 0, y: 0, z: 0 },
+        });
+        let entitiesQueue: EntityId[] = [];
+        for (let i = 0; i < 100; i++) {
+          console.log(`Entities Queue is ${entitiesQueue.join(", ")}.`);
+          entitiesQueue.push(
+            world.addEntity({
+              Position: { x: 0, y: 0, z: 0 },
+              RandomFlier:
+                i % 3 === 0
+                  ? undefined
+                  : { topSpeed: 10 + Math.random() * 100 },
+            })
+          );
+          if (i % 2 === 0) {
+            world.removeEntity(entitiesQueue.shift()!);
+          }
+
+          world.step();
+        }
+        expect(world).toBeDefined();
+      });
+    });
+
+    describe("world.flushUpdates", () => {
+      it("it performs updates which are waiting in the queue", () => {
+        const world = createWorld(componentRecord, []);
+        const id = world.addEntity({ Position: { x: 0, y: 0, z: 0 } });
+        expect(world.hasComponent(id, "Position")).toBe(false);
+
+        world.flushUpdates();
+
+        expect(world.hasComponent(id, "Position")).toBe(true);
+      });
+    });
+
+    describe("world.readComponent", () => {
+      it("produces the expected object format", () => {
+        const world = createWorld(componentRecord, []);
+        const id = world.addEntity({});
+        world.addComponent(id, "Position", { x: 4, y: 9, z: 19 });
+
+        world.flushUpdates();
+
+        expect(world.readComponent(id, "Position")).toMatchObject({
+          x: 4,
+          y: 9,
+          z: 19,
+        });
+
+        componentRecord.Position.x[id] = 22.5;
+
+        expect(world.readComponent(id, "Position")).toMatchObject({
+          x: 22.5,
+          y: 9,
+          z: 19,
+        });
+      });
     });
   });
 });

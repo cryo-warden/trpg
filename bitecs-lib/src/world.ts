@@ -6,12 +6,18 @@ import {
   addEntity,
   addComponent,
   removeComponent,
+  hasComponent,
 } from "bitecs";
 import { Entity, EntityId, readEntity, writeEntity } from "./entity";
 import { ComponentRecord, readComponent, writeComponent } from "./component";
 import { AsTsSchema, SchemaRecord } from "./schema";
 
 export type TrpgWorld<TSchemaRecord extends SchemaRecord> = {
+  hasComponent: (
+    entityId: EntityId,
+    componentName: keyof TSchemaRecord
+  ) => boolean;
+  flushUpdates: () => void;
   step: () => void;
   addEntity: (entity: Entity<TSchemaRecord>) => EntityId;
   removeEntity: (entityId: EntityId) => void;
@@ -42,21 +48,27 @@ const create = <TSchemaRecord extends SchemaRecord>(
   systems: System[]
 ): TrpgWorld<TSchemaRecord> => {
   const world = createWorld();
+
+  let updateQueue: (() => void)[] = [];
+  const flushUpdates = () => {
+    for (let i = 0; i < updateQueue.length; ++i) {
+      updateQueue[i]();
+    }
+    updateQueue = [];
+  };
+
   const step: System = pipe(...systems);
   const readWorldEntity = readEntity(world, componentRecord);
   const writeWorldEntity = writeEntity(world, componentRecord);
   const readWorldComponent = readComponent(componentRecord);
   const writeWorldComponent = writeComponent(componentRecord);
 
-  let updateQueue: (() => void)[] = [];
-
   return {
+    hasComponent: (entityId, componentName) =>
+      hasComponent(world, componentRecord[componentName], entityId),
+    flushUpdates,
     step: () => {
-      for (let i = 0; i < updateQueue.length; ++i) {
-        updateQueue[i]();
-      }
-      updateQueue = [];
-
+      flushUpdates();
       step(world);
     },
     addEntity: (entity) => {
