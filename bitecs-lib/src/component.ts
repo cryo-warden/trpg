@@ -1,10 +1,11 @@
 import { ComponentType, defineComponent } from "bitecs";
 import { EntityId } from "./entity";
 import { AsTsSchema, Schema, SchemaRecord } from "./schema";
+import { AsTsType } from "./types";
 
 export type Component<TSchema extends Schema> = ComponentType<TSchema> & {
-  [field in keyof TSchema]: number[];
-};
+  [key in keyof TSchema]: AsTsType<TSchema[key]>[];
+} & ["COMPONENT_MARK"];
 
 export type ComponentRecord<TSchemaRecord extends SchemaRecord> = {
   [name in keyof TSchemaRecord]: Component<TSchemaRecord[name]>;
@@ -40,13 +41,10 @@ export const readComponent =
     componentName: TComponentName
   ): AsTsSchema<TSchemaRecord[TComponentName]> => {
     const component = componentRecord[componentName];
+    const componentData: any = {};
 
-    const componentData: Partial<AsTsSchema<TSchemaRecord[TComponentName]>> =
-      {};
-
-    for (const field of Object.keys(component) as (keyof typeof component)[]) {
-      componentData[field as keyof typeof componentData] =
-        component[field][entityId];
+    for (const key of Object.keys(component) as (keyof typeof component)[]) {
+      componentData[key] = component[key][entityId];
     }
 
     return componentData as AsTsSchema<TSchemaRecord[TComponentName]>;

@@ -1,9 +1,17 @@
-import { defineQuery, type System } from "bitecs";
+import { type System, defineQuery } from "bitecs";
 import { Types } from "./types";
-import type { EntityId } from "./entity";
 import { asComponent, asComponentRecord } from "./component";
-import { create as createWorld } from "./world";
+import { type EntityId } from "./entity";
+import { createEngine } from "./engine";
+import { createEphemeralDictionary } from "./dictionary";
 
-export { Types, EntityId, asComponent, asComponentRecord, createWorld };
-
-export { System, defineQuery };
+export {
+  System,
+  EntityId,
+  Types,
+  createEngine,
+  defineQuery,
+  asComponent,
+  asComponentRecord,
+  createEphemeralDictionary,
+};

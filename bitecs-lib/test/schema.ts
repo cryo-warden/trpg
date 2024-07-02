@@ -11,3 +11,7 @@ export const Position = {
 export const RandomFlier = {
   topSpeed: Types.f64,
 } as const;
+
+export const ActivityQueue = {
+  activities: [Types.ui8, 4],
+} as const;

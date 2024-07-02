@@ -1,62 +1,66 @@
 import { describe, it, expect } from "bun:test";
-import { EntityId, createWorld } from "../src";
+import { EntityId, createEngine } from "../src";
 import { componentRecord } from "./componentRecord";
 import { playerObservationSystem, randomWalkSystem } from "./system";
-import { hasComponent } from "bitecs";
-import { Position } from "./schema";
+import { createWorld, hasComponent } from "bitecs";
 
 describe("bitecs-lib", () => {
-  describe("createWorld", () => {
-    it("should create a world", () => {
-      const world = createWorld(componentRecord, []);
-      expect(world).toBeDefined();
+  describe("createEngine", () => {
+    it("should create an engine", () => {
+      const engine = createEngine(componentRecord, []);
+      expect(engine).toBeDefined();
     });
 
-    it("should create a world with a system", () => {
-      const world = createWorld(componentRecord, [randomWalkSystem]);
-      expect(world).toBeDefined();
+    it("should create an engine with a system", () => {
+      const engine = createEngine(componentRecord, [randomWalkSystem]);
+      expect(engine).toBeDefined();
     });
 
-    it("should create a world with multiple systems", () => {
-      const world = createWorld(componentRecord, [
+    it("should create an engine with multiple systems", () => {
+      const world = createEngine(componentRecord, [
         randomWalkSystem,
         playerObservationSystem,
       ]);
       expect(world).toBeDefined();
     });
 
-    describe("world.step", () => {
+    describe(".step", () => {
       it("should update a world at least once", () => {
-        const world = createWorld(componentRecord, [
+        const world = createWorld();
+        const engine = createEngine(componentRecord, [
           randomWalkSystem,
           playerObservationSystem,
         ]);
-        world.addEntity({
+        engine.addEntity(world, {
           Player: {},
           Position: { x: 0, y: 0, z: 0 },
+          ActivityQueue: {
+            activities: [1, 2, 3, 4],
+          },
         });
-        world.addEntity({
+        engine.addEntity(world, {
           Position: { x: 0, y: 0, z: 0 },
           RandomFlier: { topSpeed: 0 },
         });
-        world.addEntity({
+        engine.addEntity(world, {
           Position: { x: 0, y: 0, z: 0 },
           RandomFlier: { topSpeed: 10 },
         });
-        world.addEntity({
+        engine.addEntity(world, {
           Position: { x: 0, y: 0, z: 0 },
           RandomFlier: { topSpeed: 20 },
         });
-        world.step();
-        expect(world).toBeDefined();
+        engine.step(world);
+        expect(engine).toBeDefined();
       });
 
       it("should update a world repeatedly", () => {
-        const world = createWorld(componentRecord, [
+        const world = createWorld();
+        const engine = createEngine(componentRecord, [
           randomWalkSystem,
           playerObservationSystem,
         ]);
-        world.addEntity({
+        engine.addEntity(world, {
           Player: {},
           Position: { x: 0, y: 0, z: 0 },
         });
@@ -64,7 +68,7 @@ describe("bitecs-lib", () => {
         for (let i = 0; i < 100; i++) {
           console.log(`Entities Queue is ${entitiesQueue.join(", ")}.`);
           entitiesQueue.push(
-            world.addEntity({
+            engine.addEntity(world, {
               Position: { x: 0, y: 0, z: 0 },
               RandomFlier:
                 i % 3 === 0
@@ -73,47 +77,46 @@ describe("bitecs-lib", () => {
             })
           );
           if (i % 2 === 0) {
-            world.removeEntity(entitiesQueue.shift()!);
+            engine.removeEntity(world, entitiesQueue.shift()!);
           }
 
-          world.step();
+          engine.step(world);
         }
-        expect(world).toBeDefined();
+        expect(engine).toBeDefined();
       });
     });
 
-    describe("world.flushUpdates", () => {
+    describe(".flushUpdates", () => {
       it("it performs updates which are waiting in the queue", () => {
-        const world = createWorld(componentRecord, []);
-        const id = world.addEntity({ Position: { x: 0, y: 0, z: 0 } });
-        expect(world.hasComponent(id, "Position")).toBe(false);
+        const world = createWorld();
+        const engine = createEngine(componentRecord, []);
+        const id = engine.addEntity(world, { Position: { x: 0, y: 0, z: 0 } });
+        const Position = engine.getComponent("Position");
+        expect(hasComponent(world, Position, id)).toBe(false);
 
-        world.flushUpdates();
+        engine.flushUpdates();
 
-        expect(world.hasComponent(id, "Position")).toBe(true);
+        expect(hasComponent(world, Position, id)).toBe(true);
       });
     });
 
-    describe("world.readComponent", () => {
+    describe(".readComponent", () => {
       it("produces the expected object format", () => {
-        const world = createWorld(componentRecord, []);
-        const id = world.addEntity({});
-        world.addComponent(id, "Position", { x: 4, y: 9, z: 19 });
+        const world = createWorld();
+        const engine = createEngine(componentRecord, []);
+        const id = engine.addEntity(world, {});
+        const p = { x: 3, y: 5, z: 9 };
+        engine.addComponent(world, id, "Position", p);
 
-        world.flushUpdates();
+        engine.flushUpdates();
 
-        expect(world.readComponent(id, "Position")).toMatchObject({
-          x: 4,
-          y: 9,
-          z: 19,
-        });
+        expect(engine.readComponent(id, "Position")).toMatchObject(p);
 
         componentRecord.Position.x[id] = 22.5;
 
-        expect(world.readComponent(id, "Position")).toMatchObject({
+        expect(engine.readComponent(id, "Position")).toMatchObject({
+          ...p,
           x: 22.5,
-          y: 9,
-          z: 19,
         });
       });
     });

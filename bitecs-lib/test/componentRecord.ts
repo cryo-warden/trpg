@@ -1,8 +1,9 @@
 import { asComponentRecord } from "../src";
-import { Player, Position, RandomFlier } from "./schema";
+import { ActivityQueue, Player, Position, RandomFlier } from "./schema";
 
 export const componentRecord = asComponentRecord({
   Player,
   Position,
   RandomFlier,
+  ActivityQueue,
 } as const);
