@@ -6,7 +6,7 @@ import {
   createEntitySerializer,
   type EntityId,
   createLogger,
-  createSchedule,
+  createPipeline,
 } from "../src";
 
 import { ActivityQueue } from "./components/ActivityQueue";
@@ -34,7 +34,7 @@ const { serializeEntity, deserializeEntity } = createEntitySerializer({
   RandomFlier,
 });
 
-const step = createSchedule(
+const step = createPipeline(
   randomFlySystem,
   createPlayerObserverSystem(observationLogger.log)
 );

@@ -11,7 +11,7 @@ import {
 } from "./system";
 import { createActionQueue } from "./actionQueue";
 import { createLogger } from "./logger";
-import { createSchedule } from "./schedule";
+import { createPipeline } from "./pipeline";
 
 export {
   EntityId,
@@ -21,7 +21,7 @@ export {
   createEntitySerializer,
   createEphemeralDictionary,
   createLogger,
-  createSchedule,
+  createPipeline,
   forEachEntity,
   forEachEntityCross,
   forEachEntityCrossDistinct,
