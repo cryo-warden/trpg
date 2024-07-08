@@ -2,7 +2,7 @@ import { describe, it } from "bun:test";
 import { createPipeline } from "../src";
 import { createWorld, System } from "bitecs";
 
-const testSystem0: System<any[]> = (world) => {
+const testSystem0: System<[]> = (world) => {
   return world;
 };
 

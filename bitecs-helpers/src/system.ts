@@ -1,4 +1,4 @@
-import { Query, System } from "bitecs";
+import { IWorld, Query, System } from "bitecs";
 import { EntityId } from "./types";
 
 type Action<TArgs extends any[]> = (id: EntityId, ...args: TArgs) => void;
@@ -9,65 +9,18 @@ type CrossAction<TArgs extends any[]> = (
   ...args: TArgs
 ) => void;
 
-type ForEach = <TArgs extends any[]>(
-  ids: EntityId[],
-  f: Action<TArgs>,
-  ...args: TArgs
-) => void;
-
-type ForEachCross = <TArgs extends any[]>(
-  lhsIds: EntityId[],
-  rhsIds: EntityId[],
-  f: CrossAction<TArgs>,
-  ...args: TArgs
-) => void;
-
-type CreateSystemOfQuery = <TArgs extends any[]>(
+type CreateSystemOfQuery = <TArgs extends any[], T extends IWorld>(
   query: Query,
   f: Action<TArgs>
-) => System<TArgs>;
+) => System<TArgs, T>;
 
-type CreateSystemOf2Queries = <TArgs extends any[]>(
+type CreateSystemOf2Queries = <TArgs extends any[], T extends IWorld>(
   lhsQuery: Query,
   rhsQuery: Query,
   f: CrossAction<TArgs>
-) => System<TArgs>;
+) => System<TArgs, T>;
 
-export const forEachEntity: ForEach = (ids, f, ...args) => {
-  for (let i = 0; i < ids.length; ++i) {
-    f(ids[i], ...args);
-  }
-};
-
-export const forEachEntityCross: ForEachCross = (
-  lhsIds,
-  rhsIds,
-  f,
-  ...args
-) => {
-  for (let i = 0; i < lhsIds.length; ++i) {
-    for (let j = 0; j < rhsIds.length; ++j) {
-      f(lhsIds[i], rhsIds[j], ...args);
-    }
-  }
-};
-
-export const forEachEntityCrossDistinct: ForEachCross = (
-  lhsIds,
-  rhsIds,
-  f,
-  ...args
-) => {
-  for (let i = 0; i < lhsIds.length; ++i) {
-    for (let j = 0; j < rhsIds.length; ++j) {
-      if (lhsIds[i] !== rhsIds[j]) {
-        f(lhsIds[i], rhsIds[j], ...args);
-      }
-    }
-  }
-};
-
-export const createSystemOfQuery: CreateSystemOfQuery =
+const createSystemOfQuery: CreateSystemOfQuery =
   (query, f) =>
   (world, ...args) => {
     const ids = query(world) as EntityId[];
@@ -77,7 +30,7 @@ export const createSystemOfQuery: CreateSystemOfQuery =
     return world;
   };
 
-export const createSystemOf2Queries: CreateSystemOf2Queries =
+const createSystemOf2Queries: CreateSystemOf2Queries =
   (lhsQuery, rhsQuery, f) =>
   (world, ...args) => {
     const lhsIds = lhsQuery(world) as EntityId[];
@@ -90,7 +43,7 @@ export const createSystemOf2Queries: CreateSystemOf2Queries =
     return world;
   };
 
-export const createSystemOf2QueriesDistinct: CreateSystemOf2Queries =
+const createSystemOf2QueriesDistinct: CreateSystemOf2Queries =
   (lhsQuery, rhsQuery, f) =>
   (world, ...args) => {
     const lhsIds = lhsQuery(world) as EntityId[];
@@ -104,3 +57,50 @@ export const createSystemOf2QueriesDistinct: CreateSystemOf2Queries =
     }
     return world;
   };
+
+type SystemSpec<T extends IWorld> =
+  | System<[], T>
+  | { query: Query; action: (id: EntityId) => void }
+  | {
+      distinct?: boolean;
+      queries: [Query, Query];
+      crossAction: (lhsId: EntityId, rhsId: EntityId) => void;
+    }
+  | SystemSpec<T>[];
+
+export const createSystem = <T extends IWorld>(
+  spec: SystemSpec<T>
+): System<[], T> => {
+  if (Array.isArray(spec)) {
+    const systems = spec.map(createSystem);
+    return (value) => {
+      let result = value;
+      for (let i = 0; i < systems.length; ++i) {
+        result = systems[i](result);
+      }
+      return result;
+    };
+  }
+
+  if ("query" in spec) {
+    return createSystemOfQuery(spec.query, spec.action);
+  }
+
+  if ("queries" in spec) {
+    if (spec.distinct) {
+      return createSystemOf2QueriesDistinct(
+        spec.queries[0],
+        spec.queries[1],
+        spec.crossAction
+      );
+    }
+
+    return createSystemOf2Queries(
+      spec.queries[0],
+      spec.queries[1],
+      spec.crossAction
+    );
+  }
+
+  return spec;
+};
