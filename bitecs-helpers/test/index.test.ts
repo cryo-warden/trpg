@@ -1,12 +1,13 @@
 import { describe, it, expect } from "bun:test";
-import { createWorld, removeEntity } from "bitecs";
+import { createWorld, defineQuery, removeEntity, System } from "bitecs";
 
 import {
   componentSerializer,
   createEntitySerializer,
   type EntityId,
   createLogger,
-  createPipeline,
+  createResourceSystem,
+  ResourceSystem,
 } from "../src";
 
 import { ActivityQueue } from "./components/ActivityQueue";
@@ -14,17 +15,44 @@ import { Player } from "./components/Player";
 import { Position } from "./components/Position";
 import { RandomFlier } from "./components/RandomFlier";
 import { randomFlySystem } from "./systems/randomFlySystem";
-import { createPlayerObserverSystem } from "./systems/playerObserverSystem";
+import { playerObserverSystem } from "./systems/playerObserverSystem";
+
+const testSystem: ResourceSystem<{ text: string }> = (resource) => (world) => {
+  console.log(resource);
+  return world;
+};
+
+const testSystemBasic: System = (world) => {
+  console.log("basic");
+  return world;
+};
+
+const noopResourceAction = () => () => {};
+
+const testSystemComplicated = createResourceSystem([
+  { query: defineQuery([]), action: noopResourceAction },
+  {
+    queries: [defineQuery([]), defineQuery([])],
+    distinct: true,
+    crossAction: noopResourceAction,
+  },
+  [
+    { system: testSystem },
+    { system: (_: { a: 1; b: 2; c: 3 }) => (world) => world },
+  ],
+]);
 
 const {
   logs,
   reset: resetLogger,
   log,
 } = createLogger({
-  // onLog: console.log,
+  onLog: console.log,
 });
 
-const observationLogger = createLogger();
+const observationLogger = createLogger({
+  onLog: console.log,
+});
 
 const { serializeComponent, deserializeComponent } = componentSerializer;
 const { serializeEntity, deserializeEntity } = createEntitySerializer({
@@ -34,10 +62,23 @@ const { serializeEntity, deserializeEntity } = createEntitySerializer({
   RandomFlier,
 });
 
-const step = createPipeline(
-  randomFlySystem,
-  createPlayerObserverSystem(observationLogger.log)
-);
+const systems = [
+  { system: randomFlySystem },
+  { system: playerObserverSystem },
+  { system: testSystem },
+  { system: () => testSystemBasic },
+  { system: testSystemComplicated },
+];
+
+const stepResourceSystem = createResourceSystem(systems);
+
+const stepSystem = stepResourceSystem({
+  log: observationLogger.log,
+  text: "testing testing",
+  a: 1,
+  b: 2,
+  c: 3,
+});
 
 const origin = { x: 0, y: 0, z: 0 };
 
@@ -64,7 +105,7 @@ describe("deserializeEntity", () => {
       Position: origin,
       RandomFlier: { topSpeed: 20 },
     });
-    step(world);
+    stepSystem(world);
 
     const player = serializeEntity(world, playerId);
     log(player);
@@ -92,7 +133,7 @@ describe("deserializeEntity", () => {
         removeEntity(world, entitiesQueue.shift()!);
       }
 
-      step(world);
+      stepSystem(world);
     }
     const player = serializeEntity(world, playerId);
     log(player);

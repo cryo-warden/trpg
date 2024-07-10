@@ -1,106 +1,145 @@
 import { IWorld, Query, System } from "bitecs";
 import { EntityId } from "./types";
 
-type Action<TArgs extends any[]> = (id: EntityId, ...args: TArgs) => void;
+export type ResourceSystem<R, T extends IWorld = IWorld> = (
+  resource: R
+) => System<[], T>;
 
-type CrossAction<TArgs extends any[]> = (
-  lhsId: EntityId,
-  rhsId: EntityId,
-  ...args: TArgs
-) => void;
+type ResourceAction<R> = (resource: R) => (id: EntityId) => void;
 
-type CreateSystemOfQuery = <TArgs extends any[], T extends IWorld>(
-  query: Query,
-  f: Action<TArgs>
-) => System<TArgs, T>;
+type ActionResourceSystemSpec<R, T extends IWorld> = {
+  query: Query<T>;
+  action: ResourceAction<R>;
+};
 
-type CreateSystemOf2Queries = <TArgs extends any[], T extends IWorld>(
-  lhsQuery: Query,
-  rhsQuery: Query,
-  f: CrossAction<TArgs>
-) => System<TArgs, T>;
+type CreateResourceSystemOfQuery = <R, T extends IWorld>(
+  spec: ActionResourceSystemSpec<R, T>
+) => ResourceSystem<R, T>;
 
-const createSystemOfQuery: CreateSystemOfQuery =
-  (query, f) =>
-  (world, ...args) => {
-    const ids = query(world) as EntityId[];
-    for (let i = 0; i < ids.length; ++i) {
-      f(ids[i], ...args);
-    }
-    return world;
-  };
+type CrossActionResourceSystemSpec<R, T extends IWorld> = {
+  distinct?: boolean;
+  queries: [Query<T>, Query<T>];
+  crossAction: (resource: R) => (lhsId: EntityId, rhsId: EntityId) => void;
+};
 
-const createSystemOf2Queries: CreateSystemOf2Queries =
-  (lhsQuery, rhsQuery, f) =>
-  (world, ...args) => {
-    const lhsIds = lhsQuery(world) as EntityId[];
-    const rhsIds = rhsQuery(world) as EntityId[];
-    for (let i = 0; i < lhsIds.length; ++i) {
-      for (let j = 0; j < rhsIds.length; ++j) {
-        f(lhsIds[i], rhsIds[j], ...args);
+export type ResourceSystemSpec<R, T extends IWorld = IWorld> =
+  | { system: ResourceSystem<R, T> }
+  | ActionResourceSystemSpec<R, T>
+  | CrossActionResourceSystemSpec<R, T>
+  | readonly ResourceSystemSpec<R, T>[];
+
+type CreateResourceSystemOf2Queries = <R, T extends IWorld>(
+  spec: CrossActionResourceSystemSpec<R, T>
+) => ResourceSystem<R, T>;
+
+const createResourceSystemOfQuery: CreateResourceSystemOfQuery =
+  ({ query, action }) =>
+  (resource) => {
+    const resourcedAction = action(resource);
+
+    return (value) => {
+      const ids = query(value) as EntityId[];
+      for (let i = 0; i < ids.length; ++i) {
+        resourcedAction(ids[i]);
       }
-    }
-    return world;
+      return value;
+    };
   };
 
-const createSystemOf2QueriesDistinct: CreateSystemOf2Queries =
-  (lhsQuery, rhsQuery, f) =>
-  (world, ...args) => {
-    const lhsIds = lhsQuery(world) as EntityId[];
-    const rhsIds = rhsQuery(world) as EntityId[];
-    for (let i = 0; i < lhsIds.length; ++i) {
-      for (let j = 0; j < rhsIds.length; ++j) {
-        if (lhsIds[i] !== rhsIds[j]) {
-          f(lhsIds[i], rhsIds[j], ...args);
+const createResourceSystemOf2Queries: CreateResourceSystemOf2Queries =
+  ({ distinct, queries: [lhsQuery, rhsQuery], crossAction }) =>
+  (resource) => {
+    const resourceCrossAction = crossAction(resource);
+
+    // We duplicate this code to avoid repeated checks of the distinct flag on every pair iteration.
+    if (distinct) {
+      return (value) => {
+        const lhsIds = lhsQuery(value) as EntityId[];
+        const rhsIds = rhsQuery(value) as EntityId[];
+        for (let i = 0; i < lhsIds.length; ++i) {
+          for (let j = 0; j < rhsIds.length; ++j) {
+            if (lhsIds[i] !== rhsIds[j]) {
+              resourceCrossAction(lhsIds[i], rhsIds[j]);
+            }
+          }
+        }
+        return value;
+      };
+    }
+
+    return (value) => {
+      const lhsIds = lhsQuery(value) as EntityId[];
+      const rhsIds = rhsQuery(value) as EntityId[];
+      for (let i = 0; i < lhsIds.length; ++i) {
+        for (let j = 0; j < rhsIds.length; ++j) {
+          resourceCrossAction(lhsIds[i], rhsIds[j]);
         }
       }
-    }
-    return world;
+      return value;
+    };
   };
 
-type SystemSpec<T extends IWorld> =
-  | System<[], T>
-  | { query: Query; action: (id: EntityId) => void }
-  | {
-      distinct?: boolean;
-      queries: [Query, Query];
-      crossAction: (lhsId: EntityId, rhsId: EntityId) => void;
-    }
-  | SystemSpec<T>[];
+type CreateResourceSystemOfPipeline = <R, T extends IWorld>(
+  specs: readonly ResourceSystemSpec<R, T>[]
+) => ResourceSystem<R, T>;
 
-export const createSystem = <T extends IWorld>(
-  spec: SystemSpec<T>
-): System<[], T> => {
-  if (Array.isArray(spec)) {
-    const systems = spec.map(createSystem);
+const createResourceSystemOfPipeline: CreateResourceSystemOfPipeline = (
+  specs
+) => {
+  const systems = specs.map(internalCreateResourceSystem);
+  return (resource) => {
+    const resourcedSystems = systems.map((system) => system(resource));
     return (value) => {
       let result = value;
-      for (let i = 0; i < systems.length; ++i) {
-        result = systems[i](result);
+      for (let i = 0; i < resourcedSystems.length; ++i) {
+        result = resourcedSystems[i](result);
       }
       return result;
     };
-  }
+  };
+};
 
+// NOTE: Why are there two different types for CreateResourceSystem?
+// There seems to be a TypeScript inference limitation.
+// We want users to be able to specify an array argument where we can
+// infer the resource type R as the intersection of all elements'
+// resource types.
+// However, we need a separate internal type to gracefully handle recursion.
+// The extra inferential power seems to break the recursive case.
+
+type CreateResourceSystem = <
+  S extends ResourceSystemSpec<any, T>,
+  T extends IWorld
+>(
+  s: S
+) => ResourceSystem<S extends ResourceSystemSpec<infer R, T> ? R : never, T>;
+
+/**
+ * Create a ResourceSystem, a function which takes a specific type as a
+ * resource and returns a bitecs System.
+ */
+export const createResourceSystem: CreateResourceSystem = (spec) => {
   if ("query" in spec) {
-    return createSystemOfQuery(spec.query, spec.action);
+    return createResourceSystemOfQuery(spec);
   }
 
   if ("queries" in spec) {
-    if (spec.distinct) {
-      return createSystemOf2QueriesDistinct(
-        spec.queries[0],
-        spec.queries[1],
-        spec.crossAction
-      );
-    }
-
-    return createSystemOf2Queries(
-      spec.queries[0],
-      spec.queries[1],
-      spec.crossAction
-    );
+    return createResourceSystemOf2Queries(spec);
   }
 
-  return spec;
+  if ("system" in spec) {
+    return spec.system;
+  }
+
+  if (Array.isArray(spec)) {
+    return createResourceSystemOfPipeline(spec);
+  }
+
+  throw new Error("`createResourceSystem` received an invalid spec.", {
+    cause: spec,
+  });
 };
+
+const internalCreateResourceSystem: <R, T extends IWorld = IWorld>(
+  spec: ResourceSystemSpec<R, T>
+) => ResourceSystem<R, T> = createResourceSystem;
