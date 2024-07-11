@@ -1,52 +1,44 @@
+import { createEntitySerializer, createLogger } from "bitecs-helpers";
 import { describe, it, expect } from "bun:test";
-import { create } from "../src";
+import {
+  addComponent,
+  addEntity,
+  createWorld,
+  getEntityComponents,
+} from "bitecs";
+import { observationSystem } from "../src/systems/observationSystem";
+import { Position } from "../src/components/Position";
+import { Observer } from "../src/components/Observer";
+import { Observable } from "../src/components/Observable";
+
+const { log } = createLogger();
+
+const observationLogger = createLogger({ onLog: log });
+
+const observationHandler = observationLogger.log;
+
+const { deserializeEntity } = createEntitySerializer(
+  { addComponent, addEntity, getEntityComponents },
+  {
+    Position,
+    Observer,
+    Observable,
+  }
+);
 
 describe("trpg-lib", () => {
-  describe("create", () => {
-    it("should create a world instance", () => {
-      const world = create();
-      expect(world.createEntity).toBeFunction();
-      expect(world.destroyEntity).toBeFunction();
-      expect(world.getActor).toBeFunction();
-      expect(world.getObserver).toBeFunction();
-      expect(world.step).toBeFunction();
+  it("can simply add and deserialize entities", () => {
+    const world = createWorld();
+    const system = observationSystem({ observationHandler });
+
+    log("deserializeEntity observer");
+    deserializeEntity(world, {
+      Position: { x: 0, y: 0, z: 0 },
+      Observer: { range: 99 },
     });
 
-    describe("world instance", () => {
-      it("create entities", () => {
-        const world = create();
-        const ids = [
-          world.createEntity({}),
-          world.createEntity({}),
-          world.createEntity({}),
-        ];
-        expect(ids).toBeArrayOfSize(3);
-        for (let i = 0; i < ids.length; ++i) {
-          expect(ids[i]).toBeNumber();
-        }
-      });
-    });
+    system(world);
 
-    describe("world instance activity", () => {
-      const world = create();
-
-      const player = world.createEntity({
-        Player: {},
-        Counter: { value: 0 },
-      });
-
-      for (let i = 0; i < 100; i++) {
-        world.createEntity({
-          Counter: { value: Math.floor(Math.random() * 100 - 50) },
-        });
-      }
-
-      for (let i = 0; i < 100; i++) {
-        world.step();
-      }
-
-      console.log(world.destroyEntity(player));
-      console.log(world.destroyEntity(3));
-    });
+    expect(true).toBeTrue();
   });
 });

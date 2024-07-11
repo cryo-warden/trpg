@@ -9,9 +9,9 @@
   },
   "main": "dist/index.js",
   "devDependencies": {
-    "bun-plugin-dts": "^0.2.1",
-    "@types/bun": "^1.0.0",
-    "typescript": "^5.2.2"
+    "bun-plugin-dts": "^0.2.3",
+    "@types/bun": "^1.1.6",
+    "typescript": "^5.5.3"
   },
   "bugs": "https://github.com/cryo-warden/trpg/issues",
   "files": [
@@ -25,12 +25,16 @@
     "game",
     "role playing game"
   ],
+  "exports": {
+    "default": "./src/index.ts"
+  },
   "scripts": {
     "build": "bun run build.mjs",
     "prepublishOnly": "bun run build"
   },
   "types": "dist/index.d.ts",
   "dependencies": {
-    "bitecs": "^0.3.40"
+    "bitecs": "^0.3.40",
+    "bitecs-helpers": "../bitecs-helpers/"
   }
 }
