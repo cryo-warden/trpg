@@ -1,4 +1,5 @@
 type LoggerOptions = {
+  prefix?: string;
   onLog?: (...args: any[]) => void;
 };
 
@@ -10,7 +11,7 @@ type Logger = {
 
 type CreateLogger = (options?: LoggerOptions) => Logger;
 
-export const createLogger: CreateLogger = ({ onLog } = {}) => {
+export const createLogger: CreateLogger = ({ prefix, onLog } = {}) => {
   const logs: any[][] = [];
 
   return {
@@ -21,7 +22,11 @@ export const createLogger: CreateLogger = ({ onLog } = {}) => {
     log: (...args) => {
       logs.push(args);
       if (onLog) {
-        onLog(...args);
+        if (prefix) {
+          onLog(prefix + ":", ...args);
+        } else {
+          onLog(...args);
+        }
       }
     },
   };
