@@ -1,5 +1,13 @@
 import { describe, it, expect } from "bun:test";
-import { createWorld, defineQuery, removeEntity, System } from "bitecs";
+import {
+  addComponent,
+  addEntity,
+  createWorld,
+  defineQuery,
+  getEntityComponents,
+  removeEntity,
+  System,
+} from "bitecs";
 
 import {
   componentSerializer,
@@ -17,19 +25,34 @@ import { RandomFlier } from "./components/RandomFlier";
 import { randomFlySystem } from "./systems/randomFlySystem";
 import { playerObserverSystem } from "./systems/playerObserverSystem";
 
+const {
+  logs,
+  reset: resetLogger,
+  log,
+} = createLogger({
+  onLog: console.log,
+});
+
 const testSystem: ResourceSystem<{ text: string }> = (resource) => (world) => {
-  console.log(resource);
+  log(resource);
   return world;
 };
 
-const testSystemBasic: System = (world) => {
-  console.log("basic");
+const basicSystem: System = (world) => {
+  log("basic");
   return world;
 };
+
+const manualResourceSystem =
+  (resource: { x: number; y: number }): System =>
+  (world) => {
+    log(resource);
+    return world;
+  };
 
 const noopResourceAction = () => () => {};
 
-const testSystemComplicated = createResourceSystem([
+const complicatedCompositeSystem = createResourceSystem([
   { query: defineQuery([]), action: noopResourceAction },
   {
     queries: [defineQuery([]), defineQuery([])],
@@ -42,32 +65,26 @@ const testSystemComplicated = createResourceSystem([
   ],
 ]);
 
-const {
-  logs,
-  reset: resetLogger,
-  log,
-} = createLogger({
-  onLog: console.log,
-});
-
-const observationLogger = createLogger({
-  onLog: console.log,
-});
+const observationLogger = createLogger({ onLog: log });
 
 const { serializeComponent, deserializeComponent } = componentSerializer;
-const { serializeEntity, deserializeEntity } = createEntitySerializer({
-  ActivityQueue,
-  Position,
-  Player,
-  RandomFlier,
-});
+const { serializeEntity, deserializeEntity } = createEntitySerializer(
+  { addComponent, addEntity, getEntityComponents },
+  {
+    ActivityQueue,
+    Position,
+    Player,
+    RandomFlier,
+  }
+);
 
 const systems = [
   { system: randomFlySystem },
   { system: playerObserverSystem },
   { system: testSystem },
-  { system: () => testSystemBasic },
-  { system: testSystemComplicated },
+  { system: () => basicSystem },
+  { system: complicatedCompositeSystem },
+  { system: manualResourceSystem },
 ];
 
 const stepResourceSystem = createResourceSystem(systems);
@@ -78,6 +95,8 @@ const stepSystem = stepResourceSystem({
   a: 1,
   b: 2,
   c: 3,
+  x: 95.5,
+  y: 0,
 });
 
 const origin = { x: 0, y: 0, z: 0 };

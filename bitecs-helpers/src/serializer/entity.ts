@@ -1,35 +1,37 @@
 import {
-  Component,
-  IWorld,
   addComponent,
   addEntity,
+  Component,
   getEntityComponents,
+  IWorld,
 } from "bitecs";
 import { componentSerializer } from "./component";
 import { ComponentRecord, Entity, EntityId } from "../types";
 
 const { serializeComponent, deserializeComponent } = componentSerializer;
 
-type SerializeEntity<TComponentRecord extends ComponentRecord> = (
-  world: IWorld,
-  entityId: EntityId
-) => Entity<TComponentRecord>;
-
-type DeserializeEntity<TComponentRecord extends ComponentRecord> = (
-  world: IWorld,
-  entity: Entity<TComponentRecord>
-) => EntityId;
-
 type EntitySerializer<TComponentRecord extends ComponentRecord> = {
-  serializeEntity: SerializeEntity<TComponentRecord>;
-  deserializeEntity: DeserializeEntity<TComponentRecord>;
+  serializeEntity: (
+    world: IWorld,
+    entityId: EntityId
+  ) => Entity<TComponentRecord>;
+  deserializeEntity: (
+    world: IWorld,
+    entity: Entity<TComponentRecord>
+  ) => EntityId;
 };
 
 type CreateEntitySerializer = <TComponentRecord extends ComponentRecord>(
+  bitecs: {
+    addComponent: typeof addComponent;
+    addEntity: typeof addEntity;
+    getEntityComponents: typeof getEntityComponents;
+  },
   componentRecord: TComponentRecord
 ) => EntitySerializer<TComponentRecord>;
 
 export const createEntitySerializer: CreateEntitySerializer = (
+  { addComponent, addEntity, getEntityComponents },
   componentRecord
 ) => {
   const componentNameMap = new Map<Component, keyof typeof componentRecord>(
