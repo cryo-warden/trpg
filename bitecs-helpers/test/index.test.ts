@@ -18,12 +18,17 @@ import {
   ResourceSystem,
 } from "../src";
 
-import { ActivityQueue } from "./components/ActivityQueue";
-import { Player } from "./components/Player";
-import { Position } from "./components/Position";
-import { RandomFlier } from "./components/RandomFlier";
-import { randomFlySystem } from "./systems/randomFlySystem";
-import { playerObserverSystem } from "./systems/playerObserverSystem";
+import { createSystemRecord } from "./systemRecord";
+
+// WIP Must feed component definitions to Systems as well.
+
+import { createComponentRecord } from "./componentRecord";
+
+const componentRecord = createComponentRecord();
+const { ActivityQueue, Player, Position, RandomFlier } = componentRecord;
+
+const { playerObserverSystem, randomFlySystem } =
+  createSystemRecord(componentRecord);
 
 const {
   logs,

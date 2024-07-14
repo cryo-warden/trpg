@@ -10,8 +10,8 @@
   "main": "dist/index.js",
   "devDependencies": {
     "bun-plugin-dts": "^0.2.3",
-    "@types/bun": "^1.0.0",
-    "typescript": "^5.2.2",
+    "@types/bun": "^1.1.6",
+    "typescript": "^5.5.3",
     "bitecs": "^0.3.40"
   },
   "bugs": "https://github.com/cryo-warden/trpg/issues",
@@ -26,7 +26,9 @@
     "engine",
     "json",
     "serialize",
-    "readable"
+    "readable",
+    "declarative",
+    "boilerplate"
   ],
   "scripts": {
     "build": "bun run build.mjs",

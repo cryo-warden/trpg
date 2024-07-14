@@ -1,7 +1,7 @@
 import { IWorld, Query, System } from "bitecs";
 import { EntityId } from "./types";
 
-export type ResourceSystem<R, T extends IWorld = IWorld> = (
+export type ResourceSystem<R = {}, T extends IWorld = IWorld> = (
   resource: R
 ) => System<[], T>;
 
@@ -22,7 +22,7 @@ type CrossActionResourceSystemSpec<R, T extends IWorld> = {
   crossAction: (resource: R) => (lhsId: EntityId, rhsId: EntityId) => void;
 };
 
-export type ResourceSystemSpec<R, T extends IWorld = IWorld> =
+export type ResourceSystemSpec<R = {}, T extends IWorld = IWorld> =
   | { system: ResourceSystem<R, T> }
   | ActionResourceSystemSpec<R, T>
   | CrossActionResourceSystemSpec<R, T>

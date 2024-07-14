@@ -9,12 +9,14 @@ import {
 import { createActionQueue } from "./actionQueue";
 import { createLogger } from "./logger";
 import { createPipeline } from "./pipeline";
-
+import { animationFrame, sleep } from "./time";
+import { mergeFactoryRecords } from "./factory";
 export {
   EntityId,
   Entity,
   ResourceSystem,
   ResourceSystemSpec,
+  animationFrame,
   componentSerializer,
   createActionQueue,
   createEntitySerializer,
@@ -22,4 +24,6 @@ export {
   createLogger,
   createPipeline,
   createResourceSystem,
+  mergeFactoryRecords,
+  sleep,
 };
