@@ -6,7 +6,7 @@ type FactoryRecordArgs<T> = T extends FactoryRecord<infer TArgs>
   ? TArgs
   : never;
 
-// We give U precedence because the standard is for the rightmost value
+// We give U precedence because the convention is for the rightmost value
 // to overwrite values to the left, as in Object.assign.
 type Merge<T, U> = {
   [key in keyof T | keyof U]: key extends keyof U
@@ -39,9 +39,13 @@ type MergeFactoryRecords = <
 export const mergeFactoryRecords: MergeFactoryRecords =
   (...factoryRecords) =>
   (...args) =>
-    (factoryRecords as any).reduce((result: any, factoryRecord: any) => {
-      return Object.keys(factoryRecord).reduce((result, key) => {
-        (result as any)[key] = (factoryRecord as any)[key](...args);
-        return result;
-      }, result);
-    }, {});
+    factoryRecords.reduce(
+      (result, factoryRecord) =>
+        Object.keys(factoryRecord).reduce((result, key) => {
+          result[key as keyof typeof result] = factoryRecord[key](...args);
+          return result;
+        }, result),
+      {} as ReturnType<
+        ReturnType<typeof mergeFactoryRecords<typeof factoryRecords>>
+      >
+    );

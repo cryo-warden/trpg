@@ -31,7 +31,8 @@
     "boilerplate"
   ],
   "scripts": {
-    "build": "bun run build.mjs",
+    "check": "bun tsc && bun test",
+    "make": "bun run build.mjs",
     "prepublishOnly": "bun run build"
   },
   "types": "dist/index.d.ts"

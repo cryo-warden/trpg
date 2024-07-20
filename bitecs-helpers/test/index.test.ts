@@ -20,12 +20,10 @@ import {
 
 import { createSystemRecord } from "./systemRecord";
 
-// WIP Must feed component definitions to Systems as well.
-
 import { createComponentRecord } from "./componentRecord";
 
 const componentRecord = createComponentRecord();
-const { ActivityQueue, Player, Position, RandomFlier } = componentRecord;
+const { Position } = componentRecord;
 
 const { playerObserverSystem, randomFlySystem } =
   createSystemRecord(componentRecord);
@@ -75,12 +73,7 @@ const observationLogger = createLogger({ onLog: log });
 const { serializeComponent, deserializeComponent } = componentSerializer;
 const { serializeEntity, deserializeEntity } = createEntitySerializer(
   { addComponent, addEntity, getEntityComponents },
-  {
-    ActivityQueue,
-    Position,
-    Player,
-    RandomFlier,
-  }
+  componentRecord
 );
 
 const systems = [
