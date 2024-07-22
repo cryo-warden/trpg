@@ -9,7 +9,7 @@ import {
   sleep,
 } from "bitecs-helpers";
 import { clockSystem, createClock } from "../src/resources/clock";
-import { createComponentRecord } from "../src/components";
+import { createComponentRecord } from "../src/componentRecord";
 
 const componentRecord = createComponentRecord();
 const { Position } = componentRecord;

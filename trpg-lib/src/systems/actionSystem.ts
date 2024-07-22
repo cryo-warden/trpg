@@ -1,7 +1,7 @@
 import { createEphemeralDictionary } from "bitecs-helpers";
 import { defineQuery, IWorld } from "bitecs";
 import { Clock } from "../resources/clock";
-import { ComponentRecord } from "../components";
+import { ComponentRecord } from "../componentRecord";
 
 export const actionSystem = ({ Actor }: ComponentRecord) => {
   const dictionary = createEphemeralDictionary<any>();

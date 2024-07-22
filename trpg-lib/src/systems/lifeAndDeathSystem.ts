@@ -1,6 +1,6 @@
 import { addComponent, defineQuery, IWorld } from "bitecs";
 import { createResourceSystem } from "bitecs-helpers";
-import { ComponentRecord } from "../components";
+import { ComponentRecord } from "../componentRecord";
 
 export const lifeAndDeathSystem = ({ Life, Death }: ComponentRecord) =>
   createResourceSystem({

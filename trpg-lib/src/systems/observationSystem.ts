@@ -1,7 +1,7 @@
 import { defineQuery } from "bitecs";
 import { createResourceSystem, EntityId } from "bitecs-helpers";
 import { getDistance } from "../vector";
-import { ComponentRecord } from "../components";
+import { ComponentRecord } from "../componentRecord";
 
 // TODO Create a collision-detection-strategy resource type which provides logic for optimizing collision detections.
 

@@ -4,7 +4,7 @@ import { createLogger } from "bitecs-helpers";
 import { createObservationSystem } from "../src/systems/observationSystem";
 import { createEntitySerializerFromComponents } from "./setup/entitySerializer";
 import { debugLogger, verboseLogger } from "./setup/log";
-import { createComponentRecord } from "../src/components";
+import { createComponentRecord } from "../src/componentRecord";
 
 const componentRecord = createComponentRecord();
 

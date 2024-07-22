@@ -7,7 +7,7 @@ import {
   getEntityComponents,
 } from "bitecs";
 import { createObservationSystem } from "../src/systems/observationSystem";
-import { createComponentRecord } from "../src/components";
+import { createComponentRecord } from "../src/componentRecord";
 
 const { log } = createLogger();
 

@@ -1,7 +1,7 @@
 import { defineQuery } from "bitecs";
 import { createResourceSystem } from "bitecs-helpers";
 import { Clock } from "../resources/clock";
-import { ComponentRecord } from "../components";
+import { ComponentRecord } from "../componentRecord";
 import { add } from "../vector";
 
 export const createVelocitySystem = ({ Velocity, Position }: ComponentRecord) =>
