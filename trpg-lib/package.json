@@ -29,7 +29,9 @@
     "default": "./src/index.ts"
   },
   "scripts": {
-    "build": "bun run build.mjs",
+    "check": "bun tsc && bun test",
+    "deep_make": "(cd ../bitecs-helpers/ && bun make) && bun make",
+    "make": "bun run build.mjs",
     "prepublishOnly": "bun run build"
   },
   "types": "dist/index.d.ts",

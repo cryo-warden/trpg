@@ -1,8 +1,7 @@
 import { defineQuery } from "bitecs";
 import { createResourceSystem, EntityId } from "bitecs-helpers";
-import { Observable } from "../components/Observable";
-import { Observer } from "../components/Observer";
-import { Position } from "../components/Position";
+import { getDistance } from "../vector";
+import { ComponentRecord } from "../components";
 
 // TODO Create a collision-detection-strategy resource type which provides logic for optimizing collision detections.
 
@@ -13,26 +12,27 @@ export type ObservationHandler = (
   distance: number
 ) => void;
 
-export const observationSystem = createResourceSystem({
-  queries: [
-    defineQuery([Observer, Position]),
-    defineQuery([Observable, Position]),
-  ],
-  crossAction:
-    ({ observationHandler }: { observationHandler: ObservationHandler }) =>
-    (observer, observable) => {
-      const distance = Math.max(
-        Math.abs(Position.x[observer] - Position.x[observable]),
-        Math.abs(Position.y[observer] - Position.y[observable]),
-        Math.abs(Position.z[observer] - Position.z[observable])
-      );
+export const createObservationSystem = ({
+  Observer,
+  Position,
+  Observable,
+}: ComponentRecord) =>
+  createResourceSystem({
+    queries: [
+      defineQuery([Observer, Position]),
+      defineQuery([Observable, Position]),
+    ],
+    crossAction:
+      ({ observationHandler }: { observationHandler: ObservationHandler }) =>
+      (observer, observable) => {
+        const distance = getDistance(observer, observable, Position);
 
-      if (distance < Observer.range[observer] + Observable.range[observer]) {
-        observationHandler(
-          observer,
-          Observable.appearance[observable],
-          distance
-        );
-      }
-    },
-});
+        if (distance < Observer.range[observer] + Observable.range[observer]) {
+          observationHandler(
+            observer,
+            Observable.appearance[observable],
+            distance
+          );
+        }
+      },
+  });

@@ -1,37 +1,15 @@
-import { createEntitySerializer, createLogger } from "bitecs-helpers";
 import { describe, it, expect } from "bun:test";
-import {
-  addComponent,
-  addEntity,
-  createWorld,
-  getEntityComponents,
-} from "bitecs";
-import { observationSystem } from "../src/systems/observationSystem";
-import { Position } from "../src/components/Position";
-import { Observer } from "../src/components/Observer";
-import { Observable } from "../src/components/Observable";
+import { createWorld } from "bitecs";
+import { createLogger } from "bitecs-helpers";
+import { createObservationSystem } from "../src/systems/observationSystem";
+import { createEntitySerializerFromComponents } from "./setup/entitySerializer";
+import { debugLogger, verboseLogger } from "./setup/log";
+import { createComponentRecord } from "../src/components";
 
-const { log } = createLogger({ onLog: console.log });
+const componentRecord = createComponentRecord();
 
-const LOG_LEVEL = 1;
-
-const debugLogger = createLogger({
-  prefix: "DEBUG",
-  onLog: LOG_LEVEL > 0 ? log : undefined,
-});
-
-const verboseLogger = createLogger({
-  onLog: LOG_LEVEL > 1 ? log : undefined,
-});
-
-const { deserializeEntity } = createEntitySerializer(
-  { addComponent, addEntity, getEntityComponents },
-  {
-    Position,
-    Observer,
-    Observable,
-  }
-);
+const { deserializeEntity } =
+  createEntitySerializerFromComponents(componentRecord);
 
 describe("observationSystem", () => {
   it("generates Observations when Observables are in range of an Observer", () => {
@@ -41,7 +19,7 @@ describe("observationSystem", () => {
     });
 
     const world = createWorld();
-    const system = observationSystem({
+    const system = createObservationSystem(componentRecord)({
       observationHandler: observationLogger.log,
     });
 

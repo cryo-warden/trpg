@@ -1,3 +1,3 @@
-import { defineComponent, Types } from "bitecs";
+import { defineComponent } from "bitecs";
 
-export const Death = defineComponent({ isDead: Types.i8 });
+export const Death = () => defineComponent();
