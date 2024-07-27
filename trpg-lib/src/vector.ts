@@ -23,14 +23,33 @@ export const getDistance = (
 
 export const add = (
   scale: number,
+  assignee: EntityId,
   a: EntityId,
-  b: EntityId,
-  VectorA: Vector,
-  VectorB: Vector = VectorA
+  VectorAssignee: Vector,
+  VectorA: Vector = VectorAssignee
 ) => {
-  VectorA.x[a] += VectorB.x[b] * scale;
-  VectorA.y[a] += VectorB.y[b] * scale;
-  VectorA.z[a] += VectorB.z[b] * scale;
+  VectorAssignee.x[assignee] += VectorA.x[a] * scale;
+  VectorAssignee.y[assignee] += VectorA.y[a] * scale;
+  VectorAssignee.z[assignee] += VectorA.z[a] * scale;
+};
+
+export const direct = (
+  magnitude: number,
+  assignee: EntityId,
+  start: EntityId,
+  end: EntityId,
+  VectorAssignee: Vector,
+  VectorStart: Vector = VectorAssignee,
+  VectorEnd: Vector = VectorAssignee
+) => {
+  let x = VectorEnd.x[end] - VectorStart.x[start];
+  let y = VectorEnd.y[end] - VectorStart.y[start];
+  let z = VectorEnd.z[end] - VectorStart.z[start];
+  const m = magnitude / Math.hypot(x, y, z);
+
+  VectorAssignee.x[assignee] = x * m;
+  VectorAssignee.y[assignee] = y * m;
+  VectorAssignee.z[assignee] = z * m;
 };
 
 // WIP Add more vector ops.
