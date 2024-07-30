@@ -14,8 +14,9 @@ import {
   createEntitySerializer,
   type EntityId,
   createLogger,
-  createResourceSystem,
-  ResourceSystem,
+  createSystemOf2QueriesDistinct,
+  createSystemOfQuery,
+  createSystemOfPipeline,
 } from "../src";
 
 import { createSystemRecord } from "./systemRecord";
@@ -36,7 +37,7 @@ const {
   onLog: console.log,
 });
 
-const testSystem: ResourceSystem<{ text: string }> = (resource) => (world) => {
+const testSystem: System<[{ text: string }]> = (world, resource) => {
   log(resource);
   return world;
 };
@@ -46,27 +47,26 @@ const basicSystem: System = (world) => {
   return world;
 };
 
-const manualResourceSystem =
-  (resource: { x: number; y: number }): System =>
-  (world) => {
-    log(resource);
-    return world;
-  };
+const manualSystem: System<[{ x: number; y: number }]> = (world, resource) => {
+  log(resource);
+  return world;
+};
 
-const noopResourceAction = () => () => {};
+const noopAction = () => {};
 
-const complicatedCompositeSystem = createResourceSystem([
-  { query: defineQuery([]), action: noopResourceAction },
-  {
-    queries: [defineQuery([]), defineQuery([])],
-    distinct: true,
-    crossAction: noopResourceAction,
-  },
-  [
-    { system: testSystem },
-    { system: (_: { a: 1; b: 2; c: 3 }) => (world) => world },
-  ],
-]);
+const noopSystem = createSystemOfQuery(defineQuery([]), noopAction);
+
+const noopCrossSystem = createSystemOf2QueriesDistinct(
+  [defineQuery([]), defineQuery([])],
+  noopAction
+);
+
+const complicatedCompositeSystem = createSystemOfPipeline(
+  noopSystem,
+  noopCrossSystem,
+  testSystem,
+  (world, _: { a: 1; b: 2; c: 3 }) => world
+);
 
 const observationLogger = createLogger({ onLog: log });
 
@@ -76,18 +76,16 @@ const { serializeEntity, deserializeEntity } = createEntitySerializer(
   componentRecord
 );
 
-const systems = [
-  { system: randomFlySystem },
-  { system: playerObserverSystem },
-  { system: testSystem },
-  { system: () => basicSystem },
-  { system: complicatedCompositeSystem },
-  { system: manualResourceSystem },
-];
+const stepSystem = createSystemOfPipeline(
+  randomFlySystem,
+  playerObserverSystem,
+  testSystem,
+  basicSystem,
+  complicatedCompositeSystem,
+  manualSystem
+);
 
-const stepResourceSystem = createResourceSystem(systems);
-
-const stepSystem = stepResourceSystem({
+const resource = {
   log: observationLogger.log,
   text: "testing testing",
   a: 1,
@@ -95,7 +93,7 @@ const stepSystem = stepResourceSystem({
   c: 3,
   x: 95.5,
   y: 0,
-});
+} as const;
 
 const origin = { x: 0, y: 0, z: 0 };
 
@@ -122,7 +120,7 @@ describe("deserializeEntity", () => {
       Position: origin,
       RandomFlier: { topSpeed: 20 },
     });
-    stepSystem(world);
+    stepSystem(world, resource);
 
     const player = serializeEntity(world, playerId);
     log(player);
@@ -150,7 +148,7 @@ describe("deserializeEntity", () => {
         removeEntity(world, entitiesQueue.shift()!);
       }
 
-      stepSystem(world);
+      stepSystem(world, resource);
     }
     const player = serializeEntity(world, playerId);
     log(player);
