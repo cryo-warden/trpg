@@ -25,9 +25,7 @@ const { deserializeEntity } = createEntitySerializer(
 describe("trpg-lib", () => {
   it("can simply add and deserialize entities", () => {
     const world = createWorld();
-    const system = createObservationSystem(componentRecord)({
-      observationHandler,
-    });
+    const system = createObservationSystem(componentRecord);
 
     log("deserializeEntity observer");
     deserializeEntity(world, {
@@ -35,7 +33,7 @@ describe("trpg-lib", () => {
       Observer: { range: 99 },
     });
 
-    system(world);
+    system(world, { observationHandler });
 
     expect(true).toBeTrue();
   });

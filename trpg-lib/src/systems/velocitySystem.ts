@@ -1,15 +1,13 @@
 import { defineQuery } from "bitecs";
-import { createResourceSystem } from "bitecs-helpers";
-import { Clock } from "../resources/clock";
 import { ComponentRecord } from "../componentRecord";
 import { add } from "../vector";
+import { createSystemOfQuery } from "bitecs-helpers";
+import { Clock } from "../resources/clock";
 
 export const createVelocitySystem = ({ Velocity, Position }: ComponentRecord) =>
-  createResourceSystem({
-    query: defineQuery([Velocity, Position]),
-    action:
-      ({ clock }: { clock: Clock }) =>
-      (entity) => {
-        add(clock.deltaTimeSeconds, entity, entity, Position, Velocity);
-      },
-  });
+  createSystemOfQuery<[Clock]>(
+    defineQuery([Velocity, Position]),
+    (entity, _, { dt }) => {
+      add(dt, entity, entity, Position, Velocity);
+    }
+  );

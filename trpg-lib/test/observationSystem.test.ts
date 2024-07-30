@@ -19,9 +19,7 @@ describe("observationSystem", () => {
     });
 
     const world = createWorld();
-    const system = createObservationSystem(componentRecord)({
-      observationHandler: observationLogger.log,
-    });
+    const system = createObservationSystem(componentRecord);
 
     const observer = deserializeEntity(world, {
       Position: { x: 5, y: 4, z: 3 },
@@ -79,9 +77,13 @@ describe("observationSystem", () => {
       outOfRangeObservables
     );
 
+    const observationTransmitter = {
+      observationHandler: observationLogger.log,
+    };
+
     const iterationCount = 5;
     for (let i = 0; i < iterationCount; ++i) {
-      system(world);
+      system(world, observationTransmitter);
     }
 
     verboseLogger.log("Observation Log:", observationLogger.logs);

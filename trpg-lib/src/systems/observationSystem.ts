@@ -1,5 +1,5 @@
 import { defineQuery } from "bitecs";
-import { createResourceSystem, EntityId } from "bitecs-helpers";
+import { createSystemOf2Queries, EntityId } from "bitecs-helpers";
 import { getDistance } from "../vector";
 import { ComponentRecord } from "../componentRecord";
 
@@ -12,27 +12,31 @@ export type ObservationHandler = (
   distance: number
 ) => void;
 
+export type ObservationTransmitter = {
+  observationHandler: ObservationHandler;
+};
+
 export const createObservationSystem = ({
   Observer,
   Position,
   Observable,
 }: ComponentRecord) =>
-  createResourceSystem({
-    queries: [
-      defineQuery([Observer, Position]),
-      defineQuery([Observable, Position]),
-    ],
-    crossAction:
-      ({ observationHandler }: { observationHandler: ObservationHandler }) =>
-      (observer, observable) => {
-        const distance = getDistance(observer, observable, Position);
+  createSystemOf2Queries(
+    [defineQuery([Observer, Position]), defineQuery([Observable, Position])],
+    (
+      observer,
+      observable,
+      _,
+      { observationHandler }: ObservationTransmitter
+    ) => {
+      const distance = getDistance(observer, observable, Position);
 
-        if (distance < Observer.range[observer] + Observable.range[observer]) {
-          observationHandler(
-            observer,
-            Observable.appearance[observable],
-            distance
-          );
-        }
-      },
-  });
+      if (distance < Observer.range[observer] + Observable.range[observer]) {
+        observationHandler(
+          observer,
+          Observable.appearance[observable],
+          distance
+        );
+      }
+    }
+  );
