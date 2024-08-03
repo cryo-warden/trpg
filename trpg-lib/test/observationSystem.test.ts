@@ -1,30 +1,37 @@
 import { describe, it, expect } from "bun:test";
-import { createWorld } from "bitecs";
-import { createLogger } from "bitecs-helpers";
-import { createObservationSystem } from "../src/systems/observationSystem";
+import { addEntity, createWorld, getAllEntities } from "bitecs";
+import {
+  createObservationSystem,
+  ObservationTransmitter,
+} from "../src/systems/observationSystem";
 import { createEntitySerializerFromComponents } from "./setup/entitySerializer";
-import { debugLogger, verboseLogger } from "./setup/log";
+import { debugLogger } from "./setup/log";
 import { createComponentRecord } from "../src/componentRecord";
 
-const componentRecord = createComponentRecord();
-
-const { deserializeEntity } =
-  createEntitySerializerFromComponents(componentRecord);
+const world = createWorld();
+const nullEntity = addEntity(world);
+console.log(nullEntity);
 
 describe("observationSystem", () => {
   it("generates Observations when Observables are in range of an Observer", () => {
-    const observationLogger = createLogger({
-      prefix: "Observation",
-      // onLog: log,
-    });
+    const componentRecord = createComponentRecord();
+
+    const { deserializeEntity } =
+      createEntitySerializerFromComponents(componentRecord);
 
     const world = createWorld();
+    console.log(getAllEntities(world));
     const system = createObservationSystem(componentRecord);
+
+    console.log(getAllEntities(world));
 
     const observer = deserializeEntity(world, {
       Position: { x: 5, y: 4, z: 3 },
       Observer: { range: 30 },
     });
+
+    console.log(getAllEntities(world));
+
     const inRangeObservables = [
       deserializeEntity(world, {
         Position: { x: 5, y: 2, z: 25 },
@@ -77,19 +84,13 @@ describe("observationSystem", () => {
       outOfRangeObservables
     );
 
-    const observationTransmitter = {
-      observationHandler: observationLogger.log,
-    };
+    const observationTransmitter: ObservationTransmitter = { observations: [] };
 
-    const iterationCount = 5;
-    for (let i = 0; i < iterationCount; ++i) {
+    for (let i = 0; i < 10; ++i) {
       system(world, observationTransmitter);
+      expect(observationTransmitter.observations.length).toBe(
+        inRangeObservables.length
+      );
     }
-
-    verboseLogger.log("Observation Log:", observationLogger.logs);
-
-    expect(observationLogger.logs.length).toBe(
-      inRangeObservables.length * iterationCount
-    );
   });
 });

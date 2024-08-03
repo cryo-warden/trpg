@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { createWorld } from "bitecs";
+import { createWorld, getAllEntities } from "bitecs";
 import { createEntitySerializerFromComponents } from "./setup/entitySerializer";
 import { debugLogger, verboseLogger } from "./setup/log";
 import { createVelocitySystem } from "../src/systems/velocitySystem";
@@ -7,17 +7,17 @@ import { componentSerializer, sleep } from "bitecs-helpers";
 import { createComponentRecord } from "../src/componentRecord";
 import { direct, getDistance } from "../src/vector";
 
-const componentRecord = createComponentRecord();
-const { Position, Velocity } = componentRecord;
-const { deserializeEntity } =
-  createEntitySerializerFromComponents(componentRecord);
-
 const { serializeComponent } = componentSerializer;
-
-const system = createVelocitySystem(componentRecord);
 
 describe("velocitySystem", () => {
   it("updates an entity's position according to its velocity", async () => {
+    const componentRecord = createComponentRecord();
+    const { Position } = componentRecord;
+    const { deserializeEntity } =
+      createEntitySerializerFromComponents(componentRecord);
+
+    const system = createVelocitySystem(componentRecord);
+
     const world = createWorld();
 
     const initialPosition = { x: 5, y: 4, z: 3 };
@@ -42,9 +42,17 @@ describe("velocitySystem", () => {
       expect(Position.x[entity]).toBeCloseTo(expectedX);
       expect(Position.y[entity]).toBeCloseTo(expectedY);
     }
+    console.log(getAllEntities(world));
   });
 
   it("can move an entity toward a target destination", async () => {
+    const componentRecord = createComponentRecord();
+    const { Position, Velocity } = componentRecord;
+    const { deserializeEntity } =
+      createEntitySerializerFromComponents(componentRecord);
+
+    const system = createVelocitySystem(componentRecord);
+
     const world = createWorld();
 
     const initialPosition = { x: 5, y: 4, z: 3 };
@@ -86,5 +94,7 @@ describe("velocitySystem", () => {
       expect(newDistance).toBeLessThan(distance);
       distance = newDistance;
     }
+
+    console.log(getAllEntities(world));
   });
 });

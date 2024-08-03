@@ -11,7 +11,7 @@
   "devDependencies": {
     "bun-plugin-dts": "^0.2.3",
     "@types/bun": "^1.1.6",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.4"
   },
   "bugs": "https://github.com/cryo-warden/trpg/issues",
   "files": [
@@ -32,7 +32,8 @@
     "check": "bun tsc && bun test",
     "deep_make": "(cd ../bitecs-helpers/ && bun make) && bun make",
     "make": "bun run build.mjs",
-    "prepublishOnly": "bun run build"
+    "prepublishOnly": "bun run build",
+    "interact": "bun run src/index.ts"
   },
   "types": "dist/index.d.ts",
   "dependencies": {

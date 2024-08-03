@@ -4,16 +4,13 @@ import {
   addComponent,
   addEntity,
   createWorld,
+  getAllEntities,
   getEntityComponents,
 } from "bitecs";
 import { createObservationSystem } from "../src/systems/observationSystem";
 import { createComponentRecord } from "../src/componentRecord";
 
-const { log } = createLogger();
-
-const observationLogger = createLogger({ onLog: log });
-
-const observationHandler = observationLogger.log;
+const { log } = createLogger({ level: 2 });
 
 const componentRecord = createComponentRecord();
 
@@ -33,8 +30,9 @@ describe("trpg-lib", () => {
       Observer: { range: 99 },
     });
 
-    system(world, { observationHandler });
+    system(world, { observations: [] });
 
     expect(true).toBeTrue();
+    console.log(getAllEntities(world));
   });
 });

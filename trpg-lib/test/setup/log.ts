@@ -1,14 +1,5 @@
 import { createLogger } from "bitecs-helpers";
 
-export const { log } = createLogger({ onLog: console.log });
+export const debugLogger = createLogger({ prefix: "DEBUG", level: 1 });
 
-const LOG_LEVEL = Number.parseInt(Bun.env.LOG_LEVEL || "0", 10);
-
-export const debugLogger = createLogger({
-  prefix: "DEBUG",
-  onLog: LOG_LEVEL > 0 ? log : undefined,
-});
-
-export const verboseLogger = createLogger({
-  onLog: LOG_LEVEL > 1 ? log : undefined,
-});
+export const verboseLogger = createLogger({ level: 2 });
