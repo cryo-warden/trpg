@@ -29,13 +29,18 @@ const { Position } = componentRecord;
 const { playerObserverSystem, randomFlySystem } =
   createSystemRecord(componentRecord);
 
-const {
-  logs,
-  reset: resetLogger,
-  log,
-} = createLogger({
-  onLog: console.log,
-});
+const { log } = createLogger({ level: 2 });
+
+const createTestLogger = () => {
+  let count = 0;
+  const { log } = createLogger({
+    level: 2,
+    onLog: () => {
+      count += 1;
+    },
+  });
+  return { count, log };
+};
 
 const testSystem: System<[{ text: string }]> = (world, resource) => {
   log(resource);
@@ -68,7 +73,7 @@ const complicatedCompositeSystem = createSystemOfPipeline(
   (world, _: { a: 1; b: 2; c: 3 }) => world
 );
 
-const observationLogger = createLogger({ onLog: log });
+const observationLogger = createLogger({ prefix: "OBSERVATION" });
 
 const { serializeComponent, deserializeComponent } = componentSerializer;
 const { serializeEntity, deserializeEntity } = createEntitySerializer(
@@ -99,7 +104,7 @@ const origin = { x: 0, y: 0, z: 0 };
 
 describe("deserializeEntity", () => {
   it("creates the expected entities with the expected component values", () => {
-    resetLogger();
+    const logger = createTestLogger();
     const world = createWorld();
     const playerId = deserializeEntity(world, {
       Player: {},
@@ -123,13 +128,13 @@ describe("deserializeEntity", () => {
     stepSystem(world, resource);
 
     const player = serializeEntity(world, playerId);
-    log(player);
-    log(logs.length);
+    logger.log(player);
+    logger.log(logger.count);
     expect(player).toBeDefined();
   });
 
   it("should update a world repeatedly", () => {
-    resetLogger();
+    const logger = createTestLogger();
     const world = createWorld();
     const playerId = deserializeEntity(world, {
       Player: {},
@@ -151,15 +156,14 @@ describe("deserializeEntity", () => {
       stepSystem(world, resource);
     }
     const player = serializeEntity(world, playerId);
-    log(player);
-    log(logs.length);
+    logger.log(player);
+    logger.log(logger.count);
     expect(player).toBeDefined();
   });
 });
 
 describe("deserializeComponent", () => {
   it("produces the expected object format", () => {
-    resetLogger();
     const world = createWorld();
     const id = deserializeEntity(world, {});
     const p = { x: 3, y: 5, z: 9 };
