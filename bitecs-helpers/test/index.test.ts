@@ -18,6 +18,8 @@ import {
   createSystemOf2QueriesDistinct,
   createSystemOfQuery,
   createSystemOfPipeline,
+  Mapper,
+  EntityDataOf,
 } from "../src";
 
 import { createSystemRecord } from "./systemRecord";
@@ -76,11 +78,46 @@ const complicatedCompositeSystem = createSystemOfPipeline(
 
 const observationLogger = createLogger({ prefix: "OBSERVATION" });
 
+const activitiesList = [
+  "NULL",
+  "Wake Up",
+  "Brush Teeth",
+  "Put On Left Sock",
+  "Put On Right Sock",
+  "Examine Worrisome Growth",
+  "Refuse To Contemplate Mortality",
+  "Remove Left Sock",
+  "Remove Right Sock",
+];
+
+const activityQueueMapper: Mapper<
+  typeof ActivityQueue,
+  { activities: string[] }
+> = {
+  serialize: (value) => {
+    return {
+      ...value,
+      activities: value.activities.map((v) => activitiesList[v]),
+    };
+  },
+  deserialize: (value) => {
+    return {
+      ...value,
+      activities: value.activities.map((v) => activitiesList.indexOf(v)),
+    };
+  },
+};
+
 const { serializeComponent, deserializeComponent } = componentSerializer;
 const { serializeEntity, deserializeEntity } = createEntitySerializer(
   { addComponent, addEntity, getEntityComponents },
-  componentRecord
+  componentRecord,
+  {
+    ActivityQueue: activityQueueMapper,
+  }
 );
+
+type EntityData = EntityDataOf<typeof serializeEntity>;
 
 const stepSystem = createSystemOfPipeline(
   randomFlySystem,
@@ -103,6 +140,58 @@ const resource = {
 
 const origin = { x: 0, y: 0, z: 0 };
 
+describe("deserializeComponent", () => {
+  it("produces the expected object format", () => {
+    const world = createWorld();
+    const id = deserializeEntity(world, {});
+    const p = { x: 3, y: 5, z: 9 };
+    addComponent(world, Position, id);
+    deserializeComponent(Position, id, p);
+
+    expect(serializeComponent(Position, id)).toMatchObject(p);
+
+    Position.x[id] = 22.5;
+
+    expect(serializeComponent(Position, id)).toMatchObject({
+      ...p,
+      x: 22.5,
+    });
+  });
+
+  it("with a mapper, produces the expected object format", () => {
+    const world = createWorld();
+    const id = deserializeEntity(world, {});
+    const activityQueueSerializer = createComponentSerializer(
+      ActivityQueue,
+      activityQueueMapper
+    );
+    const rawA = {
+      activities: [1, 3, 8, 2],
+    };
+    const a = {
+      activities: rawA.activities.map((v) => activitiesList[v]),
+    };
+    addComponent(world, ActivityQueue, id);
+    activityQueueSerializer.deserializeComponent(id, a);
+
+    expect(serializeComponent(ActivityQueue, id)).toMatchObject(rawA);
+    expect(activityQueueSerializer.serializeComponent(id)).toMatchObject(a);
+
+    ActivityQueue.activities[id][2] = 7;
+
+    expect(serializeComponent(ActivityQueue, id)).toMatchObject({
+      ...rawA,
+      activities: rawA.activities.map((v, i) => (i === 2 ? 7 : v)),
+    });
+    expect(activityQueueSerializer.serializeComponent(id)).toMatchObject({
+      ...a,
+      activities: a.activities.map((v, i) =>
+        i === 2 ? "Remove Left Sock" : v
+      ),
+    });
+  });
+});
+
 describe("deserializeEntity", () => {
   it("creates the expected entities with the expected component values", () => {
     const logger = createTestLogger();
@@ -110,9 +199,6 @@ describe("deserializeEntity", () => {
     const playerId = deserializeEntity(world, {
       Player: {},
       Position: origin,
-      ActivityQueue: {
-        activities: [1, 2, 3, 4],
-      },
     });
     deserializeEntity(world, {
       Position: origin,
@@ -132,6 +218,28 @@ describe("deserializeEntity", () => {
     logger.log(player);
     logger.log(logger.count);
     expect(player).toBeDefined();
+  });
+
+  it("correctly uses a mapper", () => {
+    const world = createWorld();
+    const playerData: EntityData = {
+      Player: {},
+      Position: origin,
+      ActivityQueue: { activities: [1, 2, 3, 4].map((v) => activitiesList[v]) },
+    };
+    const otherData: EntityData = {
+      Position: origin,
+      RandomFlier: { topSpeed: 10 },
+      ActivityQueue: { activities: [5, 6, 5, 6].map((v) => activitiesList[v]) },
+    };
+    const playerId = deserializeEntity(world, playerData);
+    deserializeEntity(world, otherData);
+    deserializeEntity(world, otherData);
+    deserializeEntity(world, otherData);
+    stepSystem(world, resource);
+
+    const serializedPlayer = serializeEntity(world, playerId);
+    expect(serializedPlayer).toMatchObject(playerData);
   });
 
   it("should update a world repeatedly", () => {
@@ -160,76 +268,5 @@ describe("deserializeEntity", () => {
     logger.log(player);
     logger.log(logger.count);
     expect(player).toBeDefined();
-  });
-});
-
-describe("deserializeComponent", () => {
-  it("produces the expected object format", () => {
-    const world = createWorld();
-    const id = deserializeEntity(world, {});
-    const p = { x: 3, y: 5, z: 9 };
-    addComponent(world, Position, id);
-    deserializeComponent(Position, id, p);
-
-    expect(serializeComponent(Position, id)).toMatchObject(p);
-
-    Position.x[id] = 22.5;
-
-    expect(serializeComponent(Position, id)).toMatchObject({
-      ...p,
-      x: 22.5,
-    });
-  });
-
-  describe("deserializeComponent with a Mapper", () => {
-    it("produces the expected object format", () => {
-      const world = createWorld();
-      const id = deserializeEntity(world, {});
-      const activitiesList = [
-        "NULL",
-        "Wake Up",
-        "Brush Teeth",
-        "Put On Left Sock",
-        "Put On Right Sock",
-        "Examine Worrisome Growth",
-        "Refuse To Contemplate Mortality",
-        "Remove Left Sock",
-        "Remove Right Sock",
-      ];
-      const activityQueueSerializer = createComponentSerializer(ActivityQueue, {
-        serialize: (value) => ({
-          ...value,
-          activities: value.activities.map((v) => activitiesList[v]),
-        }),
-        deserialize: (value: any) => ({
-          ...value,
-          activities: value.activities.map((v: string) =>
-            activitiesList.indexOf(v)
-          ),
-        }),
-      });
-      const a = {
-        activities: [
-          "Wake Up",
-          "Put On Left Sock",
-          "Remove Right Sock",
-          "Brush Teeth",
-        ],
-      };
-      addComponent(world, ActivityQueue, id);
-      activityQueueSerializer.deserializeComponent(id, a);
-
-      expect(activityQueueSerializer.serializeComponent(id)).toMatchObject(a);
-
-      console.log(serializeComponent(ActivityQueue, id));
-      console.log(activityQueueSerializer.serializeComponent(id));
-
-      // Position.x[id] = 22.5;
-
-      // expect(serializeComponent(Position, id)).toMatchObject({
-      //   ...p,
-      //   x: 22.5,
-      // });
-    });
   });
 });

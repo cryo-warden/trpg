@@ -19,7 +19,3 @@ export type TsComponent<TComponent> = {
       : never
     : never;
 };
-
-export type Entity<TComponentRecord extends ComponentRecord> = {
-  [key in keyof TComponentRecord]?: TsComponent<TComponentRecord[key]>;
-};
