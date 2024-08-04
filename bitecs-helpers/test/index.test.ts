@@ -11,6 +11,7 @@ import {
 
 import {
   componentSerializer,
+  createComponentSerializer,
   createEntitySerializer,
   type EntityId,
   createLogger,
@@ -24,7 +25,7 @@ import { createSystemRecord } from "./systemRecord";
 import { createComponentRecord } from "./componentRecord";
 
 const componentRecord = createComponentRecord();
-const { Position } = componentRecord;
+const { Position, ActivityQueue } = componentRecord;
 
 const { playerObserverSystem, randomFlySystem } =
   createSystemRecord(componentRecord);
@@ -167,6 +168,7 @@ describe("deserializeComponent", () => {
     const world = createWorld();
     const id = deserializeEntity(world, {});
     const p = { x: 3, y: 5, z: 9 };
+    addComponent(world, Position, id);
     deserializeComponent(Position, id, p);
 
     expect(serializeComponent(Position, id)).toMatchObject(p);
@@ -176,6 +178,58 @@ describe("deserializeComponent", () => {
     expect(serializeComponent(Position, id)).toMatchObject({
       ...p,
       x: 22.5,
+    });
+  });
+
+  describe("deserializeComponent with a Mapper", () => {
+    it("produces the expected object format", () => {
+      const world = createWorld();
+      const id = deserializeEntity(world, {});
+      const activitiesList = [
+        "NULL",
+        "Wake Up",
+        "Brush Teeth",
+        "Put On Left Sock",
+        "Put On Right Sock",
+        "Examine Worrisome Growth",
+        "Refuse To Contemplate Mortality",
+        "Remove Left Sock",
+        "Remove Right Sock",
+      ];
+      const activityQueueSerializer = createComponentSerializer(ActivityQueue, {
+        serialize: (value) => ({
+          ...value,
+          activities: value.activities.map((v) => activitiesList[v]),
+        }),
+        deserialize: (value: any) => ({
+          ...value,
+          activities: value.activities.map((v: string) =>
+            activitiesList.indexOf(v)
+          ),
+        }),
+      });
+      const a = {
+        activities: [
+          "Wake Up",
+          "Put On Left Sock",
+          "Remove Right Sock",
+          "Brush Teeth",
+        ],
+      };
+      addComponent(world, ActivityQueue, id);
+      activityQueueSerializer.deserializeComponent(id, a);
+
+      expect(activityQueueSerializer.serializeComponent(id)).toMatchObject(a);
+
+      console.log(serializeComponent(ActivityQueue, id));
+      console.log(activityQueueSerializer.serializeComponent(id));
+
+      // Position.x[id] = 22.5;
+
+      // expect(serializeComponent(Position, id)).toMatchObject({
+      //   ...p,
+      //   x: 22.5,
+      // });
     });
   });
 });
