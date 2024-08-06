@@ -1,15 +1,15 @@
-import { createEphemeralDictionary, EntityId } from "bitecs-helpers";
+import { createEphemeralDictionary } from "bitecs-helpers";
 import { defineQuery, IWorld } from "bitecs";
 import { Clock } from "../resources/clock";
 import { ComponentRecord } from "../componentRecord";
 
 export const createActionController = ({ Actor }: ComponentRecord) => {
   return {
-    isActive: (actor: EntityId) =>
+    isActive: (actor: number) =>
       Actor.actions[actor][Actor.currentActionIndex[actor]] !== 0,
-    timeUntilAction: (actor: EntityId, now: number) =>
+    timeUntilAction: (actor: number, now: number) =>
       Actor.timeOfNextPhase[actor] - now,
-    rotateActions: (actor: EntityId) => {
+    rotateActions: (actor: number) => {
       Actor.actions[actor][Actor.currentActionIndex[actor]] = 0;
       Actor.currentActionIndex[actor] =
         (Actor.currentActionIndex[actor] + 1) % Actor.actions[actor].length;
@@ -25,7 +25,7 @@ export const createActionSystem = (componentRecord: ComponentRecord) => {
     createActionController(componentRecord);
 
   return (world: IWorld, { now }: Clock) => {
-    const actors = actorQuery(world) as EntityId[];
+    const actors = actorQuery(world);
     // WIP
     for (let i = 0; i < actors.length; ++i) {
       const actor = actors[i];

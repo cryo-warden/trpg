@@ -1,7 +1,10 @@
 import { Component, IWorld } from "bitecs";
 import * as bitecs from "bitecs";
-import { createComponentSerializer, Mapper } from "./component";
-import { ComponentRecord, EntityId, TsComponent } from "../types";
+import {
+  ComponentRecord,
+  componentSerializer,
+  ComponentData,
+} from "./component";
 
 type BitecsSubset = {
   addComponent: (typeof bitecs)["addComponent"];
@@ -9,13 +12,11 @@ type BitecsSubset = {
   getEntityComponents: (typeof bitecs)["getEntityComponents"];
 };
 
+const { serializeComponent, deserializeComponent } = componentSerializer;
+
 const createSerializeEntity =
-  (
-    { getEntityComponents }: BitecsSubset,
-    componentNameMap: any,
-    componentSerializerRecord: any
-  ) =>
-  (world: any, entityId: EntityId): any => {
+  ({ getEntityComponents }: BitecsSubset, componentNameMap: any) =>
+  (world: any, entityId: number): any => {
     const entityData: any = {};
     const components = getEntityComponents(
       world,
@@ -26,8 +27,7 @@ const createSerializeEntity =
       const name = componentNameMap.get(component);
 
       if (name != null) {
-        entityData[name] =
-          componentSerializerRecord[name].serializeComponent(entityId);
+        entityData[name] = serializeComponent(component, entityId);
       }
     }
 
@@ -35,13 +35,9 @@ const createSerializeEntity =
   };
 
 const createDeserializeEntity =
-  (
-    { addComponent, addEntity }: BitecsSubset,
-    componentRecord: any,
-    componentSerializerRecord: any
-  ) =>
-  (world: any, entity: any): EntityId => {
-    const entityId = addEntity(world) as EntityId;
+  ({ addComponent, addEntity }: BitecsSubset, componentRecord: any) =>
+  (world: any, entity: any): number => {
+    const entityId = addEntity(world);
 
     for (const key of Object.keys(entity)) {
       if (!(key in componentRecord)) {
@@ -53,109 +49,49 @@ const createDeserializeEntity =
       if (componentData != null) {
         const component: any = componentRecord[componentName];
         addComponent(world, component, entityId);
-        componentSerializerRecord[componentName].deserializeComponent(
-          entityId,
-          componentData
-        );
+        deserializeComponent(component, entityId, componentData);
       }
     }
 
     return entityId;
   };
 
-export type MapperRecord<
-  TComponentRecord extends ComponentRecord,
-  TRecord extends Record<keyof TComponentRecord, any>
-> = Partial<{
-  [key in keyof TComponentRecord]: Mapper<
-    TComponentRecord[key] extends Component ? TComponentRecord[key] : never,
-    TRecord[key]
-  >;
-}>;
-
-export type EntityData<
-  TComponentRecord extends ComponentRecord,
-  TMapperRecord extends MapperRecord<TComponentRecord, any>
-> = {
-  [key in keyof TComponentRecord]?: TMapperRecord[key] extends Mapper<
-    any,
-    infer T
-  >
-    ? T
-    : TsComponent<TComponentRecord[key]>;
+export type EntityData<TComponentRecord extends ComponentRecord> = {
+  [key in keyof TComponentRecord]?: ComponentData<TComponentRecord[key]>;
 };
 
-export type EntitySerializer<
-  TComponentRecord extends ComponentRecord,
-  TMapperRecord extends MapperRecord<TComponentRecord, any>
-> = {
+export type EntitySerializer<TComponentRecord extends ComponentRecord> = {
   serializeEntity: (
     world: IWorld,
-    entityId: EntityId
-  ) => EntityData<TComponentRecord, TMapperRecord>;
+    entityId: number
+  ) => EntityData<TComponentRecord>;
   deserializeEntity: (
     world: IWorld,
-    entity: EntityData<TComponentRecord, TMapperRecord>
-  ) => EntityId;
+    entity: EntityData<TComponentRecord>
+  ) => number;
 };
 
 const createComponentNameMap = (componentRecord: any): any =>
   new Map(Object.entries(componentRecord).map(([key, value]) => [value, key]));
 
-const createComponentSerializerRecord = (
-  componentRecord: any,
-  mapperRecord: any
-) =>
-  Object.keys(componentRecord).reduce((result: any, key) => {
-    result[key] = createComponentSerializer(
-      componentRecord[key],
-      mapperRecord[key]
-    );
-    return result;
-  }, {});
-
 export const createEntitySerializer = <
-  TComponentRecord extends ComponentRecord,
-  TMapperRecord extends MapperRecord<TComponentRecord, any>
+  TComponentRecord extends ComponentRecord
 >(
   bitecsSubset: BitecsSubset,
-  componentRecord: TComponentRecord,
-  mapperRecord: Partial<TMapperRecord> = {}
-): EntitySerializer<TComponentRecord, TMapperRecord> => {
+  componentRecord: TComponentRecord
+): EntitySerializer<TComponentRecord> => {
   const componentNameMap = createComponentNameMap(componentRecord);
 
-  const componentSerializerRecord = createComponentSerializerRecord(
-    componentRecord,
-    mapperRecord
-  );
-
   return {
-    serializeEntity: createSerializeEntity(
-      bitecsSubset,
-      componentNameMap,
-      componentSerializerRecord
-    ),
-    deserializeEntity: createDeserializeEntity(
-      bitecsSubset,
-      componentRecord,
-      componentSerializerRecord
-    ),
+    serializeEntity: createSerializeEntity(bitecsSubset, componentNameMap),
+    deserializeEntity: createDeserializeEntity(bitecsSubset, componentRecord),
   };
 };
 
-export type EntityDataOf<T> = T extends EntitySerializer<
-  infer TComponentRecord,
-  infer TMapperRecord
->
-  ? EntityData<TComponentRecord, TMapperRecord>
-  : T extends EntitySerializer<
-      infer TComponentRecord,
-      infer TMapperRecord
-    >["serializeEntity"]
-  ? EntityData<TComponentRecord, TMapperRecord>
-  : T extends EntitySerializer<
-      infer TComponentRecord,
-      infer TMapperRecord
-    >["deserializeEntity"]
-  ? EntityData<TComponentRecord, TMapperRecord>
+export type EntityDataOf<T> = T extends EntitySerializer<infer TComponentRecord>
+  ? EntityData<TComponentRecord>
+  : T extends EntitySerializer<infer TComponentRecord>["serializeEntity"]
+  ? EntityData<TComponentRecord>
+  : T extends EntitySerializer<infer TComponentRecord>["deserializeEntity"]
+  ? EntityData<TComponentRecord>
   : never;

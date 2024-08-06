@@ -1,5 +1,4 @@
 import { defineQuery, System } from "bitecs";
-import { EntityId } from "bitecs-helpers";
 import { getDistance } from "../vector";
 import { ComponentRecord } from "../componentRecord";
 
@@ -7,7 +6,7 @@ import { ComponentRecord } from "../componentRecord";
 
 // TODO Create an Observation type to hold all data to be sent to an Observer.
 export type Observation = [
-  observer: EntityId,
+  observer: number,
   appearance: number,
   distance: number
 ];
@@ -27,8 +26,8 @@ export const createObservationSystem = ({
   const observableQuery = defineQuery([Observable, Position]);
 
   return (world, resourceRecord: ObservationTransmitter) => {
-    const observers = observerQuery(world) as EntityId[];
-    const observables = observableQuery(world) as EntityId[];
+    const observers = observerQuery(world);
+    const observables = observableQuery(world);
 
     resourceRecord.observations = [];
 

@@ -11,20 +11,18 @@ import {
 
 import {
   componentSerializer,
-  createComponentSerializer,
   createEntitySerializer,
-  type EntityId,
   createLogger,
   createSystemOf2QueriesDistinct,
   createSystemOfQuery,
   createSystemOfPipeline,
-  Mapper,
   EntityDataOf,
 } from "../src";
 
 import { createSystemRecord } from "./systemRecord";
 
 import { createComponentRecord } from "./componentRecord";
+import { mapActivities } from "./componentRecord/ActivityQueue";
 
 const componentRecord = createComponentRecord();
 const { Position, ActivityQueue } = componentRecord;
@@ -78,43 +76,10 @@ const complicatedCompositeSystem = createSystemOfPipeline(
 
 const observationLogger = createLogger({ prefix: "OBSERVATION" });
 
-const activitiesList = [
-  "NULL",
-  "Wake Up",
-  "Brush Teeth",
-  "Put On Left Sock",
-  "Put On Right Sock",
-  "Examine Worrisome Growth",
-  "Refuse To Contemplate Mortality",
-  "Remove Left Sock",
-  "Remove Right Sock",
-];
-
-const activityQueueMapper: Mapper<
-  typeof ActivityQueue,
-  { activities: string[] }
-> = {
-  serialize: (value) => {
-    return {
-      ...value,
-      activities: value.activities.map((v) => activitiesList[v]),
-    };
-  },
-  deserialize: (value) => {
-    return {
-      ...value,
-      activities: value.activities.map((v) => activitiesList.indexOf(v)),
-    };
-  },
-};
-
 const { serializeComponent, deserializeComponent } = componentSerializer;
 const { serializeEntity, deserializeEntity } = createEntitySerializer(
   { addComponent, addEntity, getEntityComponents },
-  componentRecord,
-  {
-    ActivityQueue: activityQueueMapper,
-  }
+  componentRecord
 );
 
 type EntityData = EntityDataOf<typeof serializeEntity>;
@@ -158,32 +123,24 @@ describe("deserializeComponent", () => {
     });
   });
 
-  it("with a mapper, produces the expected object format", () => {
+  it("with a mapped component, produces the expected object format", () => {
     const world = createWorld();
     const id = deserializeEntity(world, {});
-    const activityQueueSerializer = createComponentSerializer(
-      ActivityQueue,
-      activityQueueMapper
-    );
     const rawA = {
       activities: [1, 3, 8, 2],
     };
     const a = {
-      activities: rawA.activities.map((v) => activitiesList[v]),
+      activities: mapActivities(rawA.activities),
     };
     addComponent(world, ActivityQueue, id);
-    activityQueueSerializer.deserializeComponent(id, a);
 
-    expect(serializeComponent(ActivityQueue, id)).toMatchObject(rawA);
-    expect(activityQueueSerializer.serializeComponent(id)).toMatchObject(a);
+    deserializeComponent(ActivityQueue, id, a);
+
+    expect(serializeComponent(ActivityQueue, id)).toMatchObject(a);
 
     ActivityQueue.activities[id][2] = 7;
 
     expect(serializeComponent(ActivityQueue, id)).toMatchObject({
-      ...rawA,
-      activities: rawA.activities.map((v, i) => (i === 2 ? 7 : v)),
-    });
-    expect(activityQueueSerializer.serializeComponent(id)).toMatchObject({
       ...a,
       activities: a.activities.map((v, i) =>
         i === 2 ? "Remove Left Sock" : v
@@ -225,12 +182,12 @@ describe("deserializeEntity", () => {
     const playerData: EntityData = {
       Player: {},
       Position: origin,
-      ActivityQueue: { activities: [1, 2, 3, 4].map((v) => activitiesList[v]) },
+      ActivityQueue: { activities: mapActivities([1, 2, 3, 4]) },
     };
     const otherData: EntityData = {
       Position: origin,
       RandomFlier: { topSpeed: 10 },
-      ActivityQueue: { activities: [5, 6, 5, 6].map((v) => activitiesList[v]) },
+      ActivityQueue: { activities: mapActivities([5, 6, 5, 6]) },
     };
     const playerId = deserializeEntity(world, playerData);
     deserializeEntity(world, otherData);
@@ -249,7 +206,7 @@ describe("deserializeEntity", () => {
       Player: {},
       Position: origin,
     });
-    let entitiesQueue: EntityId[] = [];
+    let entitiesQueue: number[] = [];
     for (let i = 0; i < 100; i++) {
       entitiesQueue.push(
         deserializeEntity(world, {

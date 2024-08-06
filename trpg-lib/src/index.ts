@@ -1,5 +1,5 @@
 import { addEntity, createWorld } from "bitecs";
-import { createSystemOfPipeline, EntityId } from "bitecs-helpers";
+import { createSystemOfPipeline } from "bitecs-helpers";
 import {
   createObservationSystem,
   ObservationTransmitter,
@@ -14,7 +14,7 @@ import {
 import { createEntitySerializer } from "./entity";
 import { InputActions, inputSystem } from "./systems/inputSystem";
 
-type EntityConfig = { nullEntity: EntityId };
+type EntityConfig = { nullEntity: number };
 
 const world = createWorld();
 
@@ -22,7 +22,7 @@ const resourceRecord: EntityConfig &
   InputActions &
   Clock &
   ObservationTransmitter = {
-  nullEntity: addEntity(world) as EntityId,
+  nullEntity: addEntity(world) as number,
   now: 0,
   dt: 1 / 60,
   observations: [],
@@ -70,7 +70,7 @@ for await (const line of console) {
     break;
   }
 
-  resourceRecord.actions.push({ actor: player, command: line });
+  resourceRecord.actions.push({ actorEntity: player, command: line });
 
   const { now: lastInputTime } = resourceRecord;
 

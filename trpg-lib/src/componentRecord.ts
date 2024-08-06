@@ -1,8 +1,8 @@
 import { defineComponent, Types } from "bitecs";
 import { vectorSchema } from "./vector";
-import { TsComponent } from "bitecs-helpers";
+import { ComponentData } from "bitecs-helpers";
 
-export const createActor = (): TsComponent<ComponentRecord["Actor"]> => {
+export const createActor = (): ComponentData<ComponentRecord["Actor"]> => {
   return {
     id: 0,
     actions: [0, 0, 0, 0, 0, 0, 0, 0],

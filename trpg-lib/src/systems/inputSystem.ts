@@ -1,10 +1,9 @@
 import { System } from "bitecs";
-import { EntityId } from "bitecs-helpers";
 import { Clock } from "../resources/clock";
 import { ComponentRecord } from "../componentRecord";
 
 export type InputActions = {
-  actions: { actor: EntityId; command: string }[];
+  actions: { actorEntity: number; command: string }[];
 };
 
 export const inputSystem =
@@ -15,7 +14,7 @@ export const inputSystem =
     resource.actions = [];
 
     for (let i = 0; i < actions.length; ++i) {
-      const { actor, command } = actions[i];
+      const { actorEntity: actor, command } = actions[i];
       // WIP Introduce configuration for various types of actions, with various phases, timings, and effects.
       if (command === "go") {
         Actor.actions[actor][Actor.currentActionIndex[actor]] = 1;

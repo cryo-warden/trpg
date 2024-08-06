@@ -31,26 +31,26 @@ trpg-lib provides some key interfaces and their fundamental implementations, sup
 
 ### `Observer`
 
-- `subscribe: (observerId: EntityId) => Subscription`
+- `subscribe: (observerId: number) => Subscription`
 
 ---
 
 ### `Actor`
 
-- `act: (actorId: EntityId, action: Action) => ActionId`
-- `cancelAction: (actorId: EntityId, actionId: ActionId) => ActionCancellationResult`
-- `cancelAllActions: (actorId: EntityId) => ActionCancellationResult[]`
+- `act: (actorId: number, action: Action) => ActionId`
+- `cancelAction: (actorId: number, actionId: ActionId) => ActionCancellationResult`
+- `cancelAllActions: (actorId: number) => ActionCancellationResult[]`
 
 ---
 
 ### `TrpgWorld`
 
-- `getController: (entityId: EntityId) => EntityController`
+- `getController: (entityId: number) => EntityController`
 - `run: () => void`
 - `stopRun: () => void`
 - `step: () => void`
-- `createEntity: (entity: Entity) => EntityId`
-- `destroyEntity: (entityId: EntityId) => Entity`
+- `createEntity: (entity: Entity) => number`
+- `destroyEntity: (entityId: number) => Entity`
 
 ---
 

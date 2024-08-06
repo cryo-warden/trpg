@@ -1,15 +1,14 @@
 import { IWorld, Query, System } from "bitecs";
-import { EntityId } from "./types";
 
 export const createSystemOfQuery = <
   R extends any[] = any[],
   T extends IWorld = IWorld
 >(
   query: Query<T>,
-  action: (id: EntityId, value: T, ...args: R) => void
+  action: (id: number, value: T, ...args: R) => void
 ): System<R, T> => {
   return (value, ...args) => {
-    const ids = query(value) as EntityId[];
+    const ids = query(value);
     for (let i = 0; i < ids.length; ++i) {
       action(ids[i], value, ...args);
     }
@@ -22,11 +21,11 @@ export const createSystemOf2Queries = <
   T extends IWorld = IWorld
 >(
   [lhsQuery, rhsQuery]: [Query<T>, Query<T>],
-  crossAction: (lhsId: EntityId, rhsId: EntityId, value: T, ...args: R) => void
+  crossAction: (lhsId: number, rhsId: number, value: T, ...args: R) => void
 ): System<R, T> => {
   return (value, ...args) => {
-    const lhsIds = lhsQuery(value) as EntityId[];
-    const rhsIds = rhsQuery(value) as EntityId[];
+    const lhsIds = lhsQuery(value);
+    const rhsIds = rhsQuery(value);
     for (let i = 0; i < lhsIds.length; ++i) {
       for (let j = 0; j < rhsIds.length; ++j) {
         crossAction(lhsIds[i], rhsIds[j], value, ...args);
@@ -41,11 +40,11 @@ export const createSystemOf2QueriesDistinct = <
   T extends IWorld = IWorld
 >(
   [lhsQuery, rhsQuery]: [Query<T>, Query<T>],
-  crossAction: (lhsId: EntityId, rhsId: EntityId, value: T, ...args: R) => void
+  crossAction: (lhsId: number, rhsId: number, value: T, ...args: R) => void
 ): System<R, T> => {
   return (value, ...args) => {
-    const lhsIds = lhsQuery(value) as EntityId[];
-    const rhsIds = rhsQuery(value) as EntityId[];
+    const lhsIds = lhsQuery(value);
+    const rhsIds = rhsQuery(value);
     for (let i = 0; i < lhsIds.length; ++i) {
       for (let j = 0; j < rhsIds.length; ++j) {
         if (lhsIds[i] !== rhsIds[j]) {
