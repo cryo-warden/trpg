@@ -1,29 +1,24 @@
 import { IWorld, Query, System } from "bitecs";
 
-export const createSystemOfQuery = <
-  R extends any[] = any[],
-  T extends IWorld = IWorld
->(
-  query: Query<T>,
-  action: (id: number, value: T, ...args: R) => void
-): System<R, T> => {
-  return (value, ...args) => {
+export const createSystemOfQuery =
+  <R extends any[] = any[], T extends IWorld = IWorld>(
+    query: Query<T>,
+    action: (id: number, value: T, ...args: R) => void
+  ): System<R, T> =>
+  (value, ...args) => {
     const ids = query(value);
     for (let i = 0; i < ids.length; ++i) {
       action(ids[i], value, ...args);
     }
     return value;
   };
-};
 
-export const createSystemOf2Queries = <
-  R extends any[] = any[],
-  T extends IWorld = IWorld
->(
-  [lhsQuery, rhsQuery]: [Query<T>, Query<T>],
-  crossAction: (lhsId: number, rhsId: number, value: T, ...args: R) => void
-): System<R, T> => {
-  return (value, ...args) => {
+export const createSystemOf2Queries =
+  <R extends any[] = any[], T extends IWorld = IWorld>(
+    [lhsQuery, rhsQuery]: [Query<T>, Query<T>],
+    crossAction: (lhsId: number, rhsId: number, value: T, ...args: R) => void
+  ): System<R, T> =>
+  (value, ...args) => {
     const lhsIds = lhsQuery(value);
     const rhsIds = rhsQuery(value);
     for (let i = 0; i < lhsIds.length; ++i) {
@@ -33,16 +28,13 @@ export const createSystemOf2Queries = <
     }
     return value;
   };
-};
 
-export const createSystemOf2QueriesDistinct = <
-  R extends any[] = any[],
-  T extends IWorld = IWorld
->(
-  [lhsQuery, rhsQuery]: [Query<T>, Query<T>],
-  crossAction: (lhsId: number, rhsId: number, value: T, ...args: R) => void
-): System<R, T> => {
-  return (value, ...args) => {
+export const createSystemOf2QueriesDistinct =
+  <R extends any[] = any[], T extends IWorld = IWorld>(
+    [lhsQuery, rhsQuery]: [Query<T>, Query<T>],
+    crossAction: (lhsId: number, rhsId: number, value: T, ...args: R) => void
+  ): System<R, T> =>
+  (value, ...args) => {
     const lhsIds = lhsQuery(value);
     const rhsIds = rhsQuery(value);
     for (let i = 0; i < lhsIds.length; ++i) {
@@ -54,7 +46,6 @@ export const createSystemOf2QueriesDistinct = <
     }
     return value;
   };
-};
 
 type PipelineReturn<TFns> = TFns extends System<any[], infer T>[] ? T : never;
 

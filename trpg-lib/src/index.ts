@@ -4,7 +4,7 @@ import {
   createObservationSystem,
   ObservationTransmitter,
 } from "./systems/observationSystem";
-import { createActor, createComponentRecord } from "./componentRecord";
+import { createComponentRecord } from "./componentRecord";
 import { createVelocitySystem } from "./systems/velocitySystem";
 import { Clock, clockSystem } from "./resources/clock";
 import {
@@ -13,6 +13,7 @@ import {
 } from "./systems/actionSystem";
 import { createEntitySerializer } from "./entity";
 import { InputActions, inputSystem } from "./systems/inputSystem";
+import { actorData } from "./componentRecord/actor";
 
 type EntityConfig = { nullEntity: number };
 
@@ -45,7 +46,7 @@ const { deserializeEntity, serializeEntity } =
   createEntitySerializer(componentRecord);
 
 const player = deserializeEntity(world, {
-  Actor: createActor(),
+  Actor: actorData,
   Observer: { range: 30 },
   Position: { x: 0, y: 0, z: 0 },
   Velocity: { x: 0, y: 0, z: 0 },
