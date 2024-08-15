@@ -1,0 +1,35 @@
+{
+  "name": "miniplex-lib",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "description": "",
+  "scripts": {
+    "check": "bun tsc && bun test",
+    "make": "bun run build.mjs",
+    "repl": "bun run src/repl.ts",
+    "prepublishOnly": "bun run build"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "bun"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/cryo-warden/trpg#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cryo-warden/trpg.git"
+  },
+  "bugs": "https://github.com/cryo-warden/trpg/issues",
+  "author": "Cory <cryo.warden@gmail.com>",
+  "devDependencies": {
+    "bun-plugin-dts": "^0.2.3",
+    "@types/bun": "^1.1.6",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "miniplex": "^2.0.0"
+  }
+}
