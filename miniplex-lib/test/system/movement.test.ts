@@ -3,7 +3,7 @@ import {
   createVector,
   createMovementSystem,
   createWorld,
-  distance,
+  gridDistance,
   copy,
   Vector,
 } from "../../src";
@@ -45,7 +45,7 @@ describe("movementSystem", () => {
       start,
       expectedDistance,
     } of cases) {
-      const d = distance(start, position);
+      const d = gridDistance(start, position);
 
       expect(d).toBeCloseTo(expectedDistance);
     }

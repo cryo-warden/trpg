@@ -14,8 +14,11 @@ export const add = (assignee: Vector, v: Vector, scale: number = 1) => {
   assignee.z += v.z * scale;
 };
 
-export const distance = (a: Vector, b: Vector) =>
+export const gridDistance = (a: Vector, b: Vector) =>
   Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.z - b.z));
+
+export const planarDistance = (a: Vector, b: Vector) =>
+  Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
 export const direct = (
   assignee: Vector,

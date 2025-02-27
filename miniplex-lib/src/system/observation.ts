@@ -1,6 +1,6 @@
 import { World } from "miniplex";
 import { Entity } from "../entity";
-import { distance } from "../vector";
+import { gridDistance } from "../vector";
 import { System } from ".";
 
 export const createObservationSystem = (world: World<Entity>): System => {
@@ -13,7 +13,7 @@ export const createObservationSystem = (world: World<Entity>): System => {
       observer.observer.observationMap = new Map();
 
       for (const observable of observableEntities) {
-        const d = distance(observer.position, observable.position);
+        const d = gridDistance(observer.position, observable.position);
         if (d < observer.observer.range + observable.observable.range) {
           observer.observer.observationMap.set(observable, { distance: d });
         }
