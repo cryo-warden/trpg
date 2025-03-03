@@ -1,4 +1,4 @@
-import { type Actor } from "./ActionSystem/Actor";
+import { type Actor } from "./ActionSystem/Actor.1";
 import type { Item } from "./Item";
 
 type PathState = "open" | "closed" | "locked";

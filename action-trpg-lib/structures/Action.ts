@@ -1,4 +1,6 @@
 import type { Factory } from "../functional/factory";
+import type { Action } from "./Action";
+import type { Target, ActionState } from "./Attack";
 import type { StatusEffectMap } from "./StatusEffectMap";
 
 export type Action = {
@@ -86,3 +88,11 @@ export const effect = {
     criticalDamage,
   }),
 } as const satisfies Record<string, Effect | Factory<Effect>>;
+export const createActionState = (
+  action: Action,
+  target: Target
+): ActionState => ({
+  action,
+  effectSequenceIndex: 0,
+  target,
+});
