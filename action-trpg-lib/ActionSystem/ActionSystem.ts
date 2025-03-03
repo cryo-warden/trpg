@@ -2,10 +2,10 @@ import {
   combineStatusEffects,
   statusEffectNames,
 } from "../structures/StatusEffectMap";
-import type { Buff, Effect } from "../structures/Action";
+import type { Buff, Effect } from "../structures/Effect";
 import { clamp } from "../math/clamp";
-import type { Actor } from "../components/Actor";
-import type { Attack, Target, ActionState } from "../structures/Attack";
+import type { Attack } from "../structures/Attack";
+import type { Target } from "../structures/Target";
 import { hasComponents, type Entity } from "../Entity";
 
 const applyAttack = (entity: Entity, attack: Attack) => {
@@ -25,18 +25,15 @@ const applyAttack = (entity: Entity, attack: Attack) => {
   );
   entity.criticalDamageTaker.accumulatedCriticalDamage += criticalDamage;
 
-  if (attack.status == null || !hasComponents(entity, ["statusTracker"])) {
+  if (attack.status == null || !hasComponents(entity, ["status"])) {
     return;
   }
 
   for (let key of statusEffectNames) {
     if (attack.status[key] != null) {
-      entity.statusTracker.status[key] =
-        entity.statusTracker.status[key] != null
-          ? combineStatusEffects[key](
-              entity.statusTracker.status[key],
-              attack.status[key]
-            )
+      entity.status[key] =
+        entity.status[key] != null
+          ? combineStatusEffects[key](entity.status[key], attack.status[key])
           : attack.status[key];
     }
   }
@@ -167,49 +164,40 @@ const enforceVariousComponentRules = (entity: Entity) => {
     );
   }
 
-  if (hasComponents(entity, ["hpTracker"])) {
+  if (hasComponents(entity, ["hp"])) {
     if (hasComponents(entity, ["healingTaker"])) {
-      entity.hpTracker.hp += entity.healingTaker.accumulatedHealing;
+      entity.hp += entity.healingTaker.accumulatedHealing;
       entity.healingTaker.accumulatedHealing = 0;
     }
     if (hasComponents(entity, ["damageTaker"])) {
-      entity.hpTracker.hp -= entity.damageTaker.accumulatedDamage;
+      entity.hp -= entity.damageTaker.accumulatedDamage;
       entity.damageTaker.accumulatedDamage = 0;
     }
 
-    entity.hpTracker.hp = clamp(entity.hpTracker.hp, 0, entity.hpTracker.mhp);
+    entity.hp = clamp(entity.hp, 0, entity.mhp ?? Infinity);
   }
 
-  if (hasComponents(entity, ["cdpTracker", "criticalDamageTaker"])) {
-    entity.cdpTracker.cdp +=
-      entity.criticalDamageTaker.accumulatedCriticalDamage;
+  if (hasComponents(entity, ["cdp", "criticalDamageTaker"])) {
+    entity.cdp += entity.criticalDamageTaker.accumulatedCriticalDamage;
     entity.criticalDamageTaker.accumulatedCriticalDamage = 0;
   }
 
-  if (hasComponents(entity, ["epTracker"])) {
-    entity.epTracker.ep = clamp(entity.epTracker.ep, 0, entity.epTracker.mep);
+  if (hasComponents(entity, ["ep"])) {
+    entity.ep = clamp(entity.ep, 0, entity.mep ?? Infinity);
   }
-  if (hasComponents(entity, ["cdpTracker"])) {
-    if (hasComponents(entity, ["hpTracker"])) {
-      entity.cdpTracker.cdp = clamp(
-        entity.cdpTracker.cdp,
-        0,
-        entity.hpTracker.mhp
-      );
-    } else {
-      entity.cdpTracker.cdp = Math.max(entity.cdpTracker.cdp, 0);
-    }
+  if (hasComponents(entity, ["cdp"])) {
+    entity.cdp = clamp(entity.cdp, 0, entity.mhp ?? Infinity);
   }
 
-  if (hasComponents(entity, ["statusTracker"])) {
-    if (hasComponents(entity, ["hpTracker"])) {
-      if (entity.hpTracker.hp <= (entity.cdpTracker?.cdp ?? 0)) {
-        entity.statusTracker.status.unconscious = true;
+  if (hasComponents(entity, ["status"])) {
+    if (hasComponents(entity, ["hp"])) {
+      if (entity.hp <= (entity.cdp ?? 0)) {
+        entity.status.unconscious = true;
       }
 
-      if (hasComponents(entity, ["cdpTracker"])) {
-        if (entity.cdpTracker.cdp >= entity.hpTracker.mhp) {
-          entity.statusTracker.status.dead = true;
+      if (hasComponents(entity, ["cdp"])) {
+        if (entity.cdp >= (entity.mhp ?? Infinity)) {
+          entity.status.dead = true;
         }
       }
     }

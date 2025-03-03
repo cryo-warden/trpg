@@ -1,5 +1,4 @@
-import { type Actor } from "./ActionSystem/Actor.1";
-import type { Item } from "./Item";
+import type { Entity } from "./Entity";
 
 type PathState = "open" | "closed" | "locked";
 export type Path = {
@@ -7,16 +6,14 @@ export type Path = {
   state: PathState;
 };
 type Room = {
-  actors: Actor[];
-  items: Item[];
-  paths: Path[];
+  entities: Entity[];
 };
 export type World = {
   turnRate: number;
   lastTurnTime: number;
   time: number;
   deltaTime: number;
-  actors: Actor[];
+  entities: Entity[];
   rooms: Room[];
 };
 
@@ -25,7 +22,7 @@ export const updateWorld = (world: World) => {
   world.time = Date.now();
   world.deltaTime = world.time - time;
 
-  for (let i = 0; i < world.actors.length; ++i) {
-    const actor = world.actors[i];
+  for (let i = 0; i < world.entities.length; ++i) {
+    const actor = world.entities[i];
   }
 };

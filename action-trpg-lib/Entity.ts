@@ -1,29 +1,36 @@
-import type {
-  Actor,
-  CDPTracker,
-  CriticalDamageTaker,
-  DamageTaker,
-  EPTracker,
-  HealingTaker,
-  HPTracker,
-  StatusTracker,
-} from "./components/Actor";
+import type { DamageTaker } from "./components/DamageTaker";
+import type { CriticalDamageTaker } from "./components/CriticalDamageTaker";
+import type { HealingTaker } from "./components/HealingTaker";
+import type { HP } from "./components/HP";
+import type { MHP } from "./components/MHP";
+import type { CDP } from "./components/CDP";
+import type { EP } from "./components/EP";
+import type { MEP } from "./components/MEP";
+import type { Status } from "./components/Status";
+import type { Actor } from "./components/Actor";
+import type { Observer } from "./components/Observer";
+import type { Observable } from "./components/Observable";
 
 export type Entity = Partial<{
   damageTaker: DamageTaker;
   criticalDamageTaker: CriticalDamageTaker;
   healingTaker: HealingTaker;
-  hpTracker: HPTracker;
-  cdpTracker: CDPTracker;
-  epTracker: EPTracker;
-  statusTracker: StatusTracker;
+  hp: HP;
+  mhp: MHP;
+  cdp: CDP;
+  ep: EP;
+  mep: MEP;
+  status: Status;
   actor: Actor;
+  observer: Observer;
+  observable: Observable;
 }>;
 
-export type EntityWithComponents<TComponentNames extends (keyof Entity)[]> =
-  Entity & {
-    [key in TComponentNames[number]]-?: Exclude<Entity[key], undefined>;
-  };
+export type EntityWithComponents<TComponentNames extends (keyof Entity)[]> = {
+  [name in Exclude<keyof Entity, TComponentNames[number]>]?: Entity[name];
+} & {
+  [name in TComponentNames[number]]-?: Exclude<Entity[name], undefined>;
+};
 
 export const hasComponents = <const TComponentNames extends (keyof Entity)[]>(
   entity: Entity,
@@ -37,11 +44,14 @@ export const hasComponents = <const TComponentNames extends (keyof Entity)[]>(
   return true;
 };
 
+export const cloneComponent = <T>(component: T): T =>
+  component === Object(component) ? { ...component } : component;
+
 export const cloneEntity = <TEntity extends EntityWithComponents<any>>(
   entity: TEntity
 ): TEntity => {
   return Object.entries(entity).reduce((newEntity, [name, component]) => {
-    (newEntity as any)[name] = { ...component };
+    (newEntity as any)[name] = cloneComponent(component);
     return newEntity;
   }, {} as TEntity);
 };
@@ -64,7 +74,7 @@ export const mergeEntity = <
   b: TEntityB
 ): MergedEntity<TEntityA, TEntityB> => {
   return Object.entries(b).reduce((a, [name, component]) => {
-    (a as any)[name] = { ...component };
+    (a as any)[name] = cloneComponent(component);
     return a;
   }, cloneEntity(a)) as any;
 };

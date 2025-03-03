@@ -1,13 +1,14 @@
 import { expect, describe, test } from "bun:test";
 import { actionSystem } from "./ActionSystem";
-import { createActionState } from "../structures/Action";
-import { buffEffect, effect } from "../structures/Action";
+import { createActionState } from "../structures/ActionState";
+import { buffEffect, effect } from "../structures/Effect";
 import type { Action } from "../structures/Action";
 import { createEntityFactory, mergeEntity, type Entity } from "../Entity";
 
 const createEntity = createEntityFactory({
-  hpTracker: { mhp: 10, hp: 10 },
-  cdpTracker: { cdp: 0 },
+  mhp: 10,
+  hp: 10,
+  cdp: 0,
   damageTaker: {
     defense: 0,
     accumulatedDamage: 0,
@@ -18,8 +19,9 @@ const createEntity = createEntityFactory({
     accumulatedCriticalDamage: 0,
   },
   healingTaker: { accumulatedHealing: 0 },
-  epTracker: { mep: 10, ep: 10 },
-  statusTracker: { status: {} },
+  ep: 10,
+  mep: 10,
+  status: {},
   actor: { attack: 0, actionState: null },
 });
 
@@ -83,14 +85,15 @@ describe("Actor", () => {
 
   test("can deal damage and heal", () => {
     const target = createEntity({
-      hpTracker: { mhp: 10, hp: 10 },
+      mhp: 10,
+      hp: 10,
       damageTaker: {
         accumulatedDamage: 0,
         criticalDamageThreshold: 3,
         defense: 0,
       },
     });
-    const aggressor = createEntity({ attack: 0 });
+    const aggressor = createEntity({});
     const entities = [target, aggressor];
 
     target.actor.actionState = createActionState(action.luckyHeal, [target]);
@@ -99,31 +102,31 @@ describe("Actor", () => {
     ]);
 
     expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(0);
-    expect(target.hpTracker.hp).toBe(10);
+    expect(target.hp).toBe(10);
 
     actionSystem(entities);
     expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(1);
-    expect(target.hpTracker.hp).toBe(10);
-    expect(target.cdpTracker.cdp).toBe(0);
+    expect(target.hp).toBe(10);
+    expect(target.cdp).toBe(0);
 
     actionSystem(entities);
     expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(2);
-    expect(target.hpTracker.hp).toBe(9);
-    expect(target.cdpTracker.cdp).toBe(0);
+    expect(target.hp).toBe(9);
+    expect(target.cdp).toBe(0);
 
     actionSystem(entities);
     expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(3);
-    expect(target.hpTracker.hp).toBe(7);
-    expect(target.cdpTracker.cdp).toBe(0);
+    expect(target.hp).toBe(7);
+    expect(target.cdp).toBe(0);
 
     actionSystem(entities);
     expect(aggressor.actor.actionState).toBeNull();
-    expect(target.hpTracker.hp).toBe(4);
-    expect(target.cdpTracker.cdp).toBe(1);
+    expect(target.hp).toBe(4);
+    expect(target.cdp).toBe(1);
 
     actionSystem(entities);
     expect(aggressor.actor.actionState).toBeNull();
-    expect(target.hpTracker.hp).toBe(10);
-    expect(target.cdpTracker.cdp).toBe(1);
+    expect(target.hp).toBe(10);
+    expect(target.cdp).toBe(1);
   });
 });
