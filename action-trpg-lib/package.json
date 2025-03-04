@@ -10,5 +10,8 @@
   },
   "scripts": {
     "check": "bun tsc && bun test"
+  },
+  "dependencies": {
+    "miniplex": "^2.0.0"
   }
 }

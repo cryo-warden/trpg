@@ -11,20 +11,20 @@ import type { Actor } from "./components/Actor";
 import type { Observer } from "./components/Observer";
 import type { Observable } from "./components/Observable";
 
-export type Entity = Partial<{
-  damageTaker: DamageTaker;
-  criticalDamageTaker: CriticalDamageTaker;
-  healingTaker: HealingTaker;
-  hp: HP;
-  mhp: MHP;
-  cdp: CDP;
-  ep: EP;
-  mep: MEP;
-  status: Status;
-  actor: Actor;
-  observer: Observer;
-  observable: Observable;
-}>;
+export type Entity = {
+  damageTaker?: DamageTaker;
+  criticalDamageTaker?: CriticalDamageTaker;
+  healingTaker?: HealingTaker;
+  hp?: HP;
+  mhp?: MHP;
+  cdp?: CDP;
+  ep?: EP;
+  mep?: MEP;
+  status?: Status;
+  actor?: Actor;
+  observer?: Observer;
+  observable?: Observable;
+};
 
 export type EntityWithComponents<TComponentNames extends (keyof Entity)[]> = {
   [name in Exclude<keyof Entity, TComponentNames[number]>]?: Entity[name];
