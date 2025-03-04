@@ -1,8 +1,8 @@
-import type { World } from "../World";
+import type { System } from "../System";
 
 /** Too much damage at one time will cause some critical damage. */
-export default (world: World) => {
-  const entities = world.with("damageTaker", "criticalDamageTaker");
+export default ((engine) => {
+  const entities = engine.world.with("damageTaker", "criticalDamageTaker");
   return () => {
     for (const entity of entities) {
       entity.criticalDamageTaker.accumulatedCriticalDamage += Math.max(
@@ -14,4 +14,4 @@ export default (world: World) => {
       );
     }
   };
-};
+}) satisfies System;

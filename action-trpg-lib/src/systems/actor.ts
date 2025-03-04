@@ -6,8 +6,7 @@ import {
   statusEffectNames,
 } from "../structures/StatusEffectMap";
 import type { Target } from "../structures/Target";
-import { bindSystems } from "../System";
-import type { World } from "../World";
+import type { System } from "../System";
 
 const applyAttack = (entity: Entity, attack: Attack) => {
   if (!hasComponents(entity, ["damageTaker"])) {
@@ -95,8 +94,8 @@ const effectTypePriorities: Effect["type"][] = [
   "rest",
 ];
 
-export default (world: World) => {
-  const entities = world.with("actor");
+export default ((engine) => {
+  const entities = engine.world.with("actor");
   return () => {
     for (const effectType of effectTypePriorities) {
       for (const entity of entities) {
@@ -135,4 +134,4 @@ export default (world: World) => {
       }
     }
   };
-};
+}) satisfies System;

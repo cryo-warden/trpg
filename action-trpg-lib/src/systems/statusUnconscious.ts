@@ -1,7 +1,7 @@
-import type { World } from "../World";
+import type { System } from "../System";
 
-export default (world: World) => {
-  const entities = world.with("status", "hp");
+export default ((engine) => {
+  const entities = engine.world.with("status", "hp");
   return () => {
     for (const entity of entities) {
       if (entity.hp <= (entity.cdp ?? 0)) {
@@ -9,4 +9,4 @@ export default (world: World) => {
       }
     }
   };
-};
+}) satisfies System;

@@ -1,9 +1,13 @@
-import type { World } from "./World";
+import type { Engine } from "./World";
 
-export const bindSystems: (
-  systems: ((world: World) => () => void)[],
-  world: World
-) => () => void = (systems, world) => {
+export type BoundSystem = () => void;
+
+export type System = (engine: Engine) => BoundSystem;
+
+export const bindSystems: (systems: System[], engine: Engine) => BoundSystem = (
+  systems,
+  world
+) => {
   const boundSystems = systems.map((system) => system(world));
   return () => {
     for (const boundSystem of boundSystems) {
@@ -11,3 +15,16 @@ export const bindSystems: (
     }
   };
 };
+
+export const periodicSystem: (periodMS: number, system: System) => System =
+  (periodMS, system) => (engine) => {
+    const boundSystem = system(engine);
+    /** The last time this periodic system updated. */
+    let lastTimeMS = engine.time - (engine.time % periodMS);
+    return () => {
+      while (engine.time > lastTimeMS + periodMS) {
+        boundSystem();
+        lastTimeMS += periodMS;
+      }
+    };
+  };

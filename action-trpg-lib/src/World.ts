@@ -1,4 +1,4 @@
-import { World as MiniplexWorld } from "miniplex";
+import { World } from "miniplex";
 import type { Entity } from "./Entity";
 
 type PathState = "open" | "closed" | "locked";
@@ -9,25 +9,21 @@ export type Path = {
 type Room = {
   entities: Entity[];
 };
-// export type World = {
-//   turnRate: number;
-//   lastTurnTime: number;
-//   time: number;
-//   deltaTime: number;
-//   entities: Entity[];
-//   rooms: Room[];
-// };
 
-// export const updateWorld = (world: World) => {
-//   const { time } = world;
-//   world.time = Date.now();
-//   world.deltaTime = world.time - time;
+export type Engine = {
+  world: World<Entity>;
+  time: number;
+  deltaTime: number;
+};
 
-//   for (let i = 0; i < world.entities.length; ++i) {
-//     const actor = world.entities[i];
-//   }
-// };
+export const createEngine = (): Engine => ({
+  world: new World<Entity>(),
+  deltaTime: 0,
+  time: Date.now(),
+});
 
-export type World = MiniplexWorld<Entity>;
-
-export const createWorld = () => new MiniplexWorld<Entity>();
+export const updateEngine = (engine: Engine) => {
+  const { time } = engine;
+  engine.time = Date.now();
+  engine.deltaTime = engine.time - time;
+};

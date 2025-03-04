@@ -1,11 +1,11 @@
-import type { World } from "../World";
+import type { System } from "../System";
 
-export default (world: World) => {
-  const entities = world.with("cdp", "criticalDamageTaker");
+export default ((engine) => {
+  const entities = engine.world.with("cdp", "criticalDamageTaker");
   return () => {
     for (const entity of entities) {
       entity.cdp += entity.criticalDamageTaker.accumulatedCriticalDamage;
       entity.criticalDamageTaker.accumulatedCriticalDamage = 0;
     }
   };
-};
+}) satisfies System;

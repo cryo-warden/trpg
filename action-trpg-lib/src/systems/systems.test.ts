@@ -3,7 +3,7 @@ import { createActionState } from "../structures/ActionState";
 import { buffEffect, effect } from "../structures/Effect";
 import type { Action } from "../structures/Action";
 import { createEntityFactory } from "../Entity";
-import { createWorld, type World } from "../World";
+import { createEngine, type Engine } from "../World";
 import { bindSystems } from "../System";
 import hp from "./hp";
 import ep from "./ep";
@@ -68,7 +68,7 @@ const action = {
 // Actions must resolve in that order when happening in the same tick.
 // The current strategy of simply looping over all actors and applying their actions in order is not viable. The realization of an effect must be separated from the application of its effect. The realized effects can then be placed into a priority queue, to resolve in the intended order.
 
-const bindRootSystem = (world: World) =>
+const bindRootSystem = (world: Engine) =>
   bindSystems(
     [
       actor,
@@ -87,10 +87,10 @@ const bindRootSystem = (world: World) =>
 
 describe("Actor", () => {
   test("can progress through an action and remove a completed action", () => {
-    const world = createWorld();
+    const engine = createEngine();
     const entity = createEntity({});
-    world.add(entity);
-    const rootSystem = bindRootSystem(world);
+    engine.world.add(entity);
+    const rootSystem = bindRootSystem(engine);
 
     const { actor } = entity;
     actor.actionState = createActionState(action.comboStrike, []);
@@ -124,10 +124,10 @@ describe("Actor", () => {
       },
     });
     const aggressor = createEntity({});
-    const world = createWorld();
-    world.add(aggressor);
-    world.add(target);
-    const rootSystem = bindRootSystem(world);
+    const engine = createEngine();
+    engine.world.add(aggressor);
+    engine.world.add(target);
+    const rootSystem = bindRootSystem(engine);
 
     target.actor.actionState = createActionState(action.luckyHeal, [target]);
     aggressor.actor.actionState = createActionState(action.comboStrike, [

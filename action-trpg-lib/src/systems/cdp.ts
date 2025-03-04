@@ -1,11 +1,11 @@
 import { clamp } from "../math/clamp";
-import type { World } from "../World";
+import type { System } from "../System";
 
-export default (world: World) => {
-  const entities = world.with("cdp");
+export default ((engine) => {
+  const entities = engine.world.with("cdp");
   return () => {
     for (const entity of entities) {
       entity.cdp = clamp(entity.cdp, 0, entity.mhp ?? Infinity);
     }
   };
-};
+}) satisfies System;
