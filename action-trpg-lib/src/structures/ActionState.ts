@@ -1,16 +1,16 @@
+import type { Entity } from "../Entity";
 import type { Action } from "./Action";
-import type { Target } from "./Target";
 
 export type ActionState = {
   action: Action;
   effectSequenceIndex: number;
-  target: Target;
+  targets: Entity[];
 };
 export const createActionState = (
   action: Action,
-  target: Target
+  targets: Entity[]
 ): ActionState => ({
   action,
   effectSequenceIndex: 0,
-  target,
+  targets,
 });

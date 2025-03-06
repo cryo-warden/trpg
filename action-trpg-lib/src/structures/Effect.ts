@@ -13,8 +13,11 @@ export type RestEffect = {
 export type AttackEffect = {
   type: "attack";
   intensity: Intensity;
+  /** Damage inflicted by the attack. */
   damage: number;
+  /** Critical Damage inflicted inherently by the attack. */
   criticalDamage: number;
+  /** Map of status effects applied by the attack. */
   status?: StatusEffectMap;
 };
 
