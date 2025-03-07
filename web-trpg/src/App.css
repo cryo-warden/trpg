@@ -1,0 +1,37 @@
+.App {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template:
+    "events entities" 1fr
+    "self target" max-content
+    "queue queue" max-content
+    / 1fr 1fr;
+}
+
+.events {
+  grid-area: events;
+}
+
+.entities {
+  grid-area: entities;
+}
+
+.self {
+  grid-area: self;
+}
+
+.target {
+  grid-area: target;
+}
+
+.queue {
+  grid-area: queue;
+}
+
+.Panel {
+  margin: 2px;
+  padding: 6px;
+  border: solid 1px darkgray;
+  border-radius: 2px;
+}
