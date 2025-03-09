@@ -3,7 +3,7 @@ import { createActionState } from "../structures/ActionState";
 import { buffEffect, effect } from "../structures/Effect";
 import type { Action } from "../structures/Action";
 import { createEntityFactory } from "../Entity";
-import { createEngine, type Engine } from "../World";
+import { createEngine, type Engine } from "../Engine";
 import { bindSystems } from "../System";
 import hp from "./hp";
 import ep from "./ep";

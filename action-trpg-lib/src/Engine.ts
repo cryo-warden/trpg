@@ -1,4 +1,4 @@
-import { World } from "miniplex";
+import { World as MiniplexWorld } from "miniplex";
 import type { Entity } from "./Entity";
 
 type PathState = "open" | "closed" | "locked";
@@ -10,14 +10,16 @@ type Room = {
   entities: Entity[];
 };
 
+export type World = MiniplexWorld<Entity>;
+
 export type Engine = {
-  world: World<Entity>;
+  world: World;
   time: number;
   deltaTime: number;
 };
 
 export const createEngine = (): Engine => ({
-  world: new World<Entity>(),
+  world: new MiniplexWorld<Entity>(),
   deltaTime: 0,
   time: Date.now(),
 });

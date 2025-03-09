@@ -1,4 +1,4 @@
-import type { Engine } from "./World";
+import type { Engine } from "./Engine";
 
 export type BoundSystem = () => void;
 
