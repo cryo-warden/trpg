@@ -1,18 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
-import { EntityComponent } from "./EntityComponent";
+import { useEffect, useMemo } from "react";
+import { WithEntity } from "./EntityComponent";
 import { HPBar } from "./HPBar";
 import { Panel } from "./Panel";
-import {
-  updateWatchable,
-  useEngine,
-  useWatchable,
-  WithEngine,
-} from "./EngineContext";
+import { useEngine, WithEngine } from "./EngineContext";
+import { updateWatchable, useWatchable } from "./useWatchable";
 import { createEngine } from "action-trpg-lib";
 
 import "./App.css";
 
-const EntityPanel: EntityComponent = ({ entity }) => {
+const EntityPanel = WithEntity(({ entity }) => {
   useWatchable(entity);
   return (
     <Panel className="EntityPanel">
@@ -20,10 +16,11 @@ const EntityPanel: EntityComponent = ({ entity }) => {
       <div>{JSON.stringify(entity)}</div>
     </Panel>
   );
-};
+});
 
 const EntitiesPanel = () => {
   const engine = useEngine();
+  useWatchable(engine);
   const entities = engine.world.with("hp");
   return (
     <Panel>
@@ -36,13 +33,13 @@ const EntitiesPanel = () => {
 
 const App = () => {
   const engine = useEngine();
-  useWatchable(engine);
 
   (window as any).dev = { engine, updateWatchable };
 
   useEffect(() => {
     engine.world.add({ hp: 20, mhp: 20, cdp: 0 });
     engine.world.add({ hp: 3, mhp: 5, cdp: 1 });
+    console.log("Adding initial entities.");
     updateWatchable(engine);
   }, [engine]);
 
@@ -56,7 +53,7 @@ const App = () => {
         <button
           onClick={() => {
             engine.world.add({ hp: 20, mhp: 20, cdp: 0 });
-            engine.world.add({ hp: 20, mhp: 20, cdp: 0 });
+            engine.world.add({ hp: 15, mhp: 15, cdp: 0 });
             updateWatchable(engine);
           }}
         >
@@ -67,6 +64,9 @@ const App = () => {
             const withHP = engine.world.with("hp").entities;
             const entity = withHP[Math.floor(Math.random() * withHP.length)];
             entity.hp -= 5;
+            if (entity.cdp != null) {
+              entity.cdp += 1;
+            }
             updateWatchable(entity);
           }}
         >
