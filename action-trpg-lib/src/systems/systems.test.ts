@@ -4,17 +4,7 @@ import { buffEffect, effect } from "../structures/Effect";
 import type { Action } from "../structures/Action";
 import { createEntityFactory } from "../Entity";
 import { createEngine, type Engine } from "../Engine";
-import { bindSystems } from "../System";
-import hp from "./hp";
-import ep from "./ep";
-import healingTaker from "./healingTaker";
-import damageTaker from "./damageTaker";
-import criticalDamageTaker from "./criticalDamageTaker";
-import damageToCriticalDamage from "./damageToCriticalDamage";
-import cdp from "./cdp";
-import statusUnconscious from "./statusUnconscious";
-import statusDead from "./statusDead";
-import actor from "./actor";
+import { bindRootSystem } from ".";
 
 const createEntity = createEntityFactory({
   mhp: 10,
@@ -67,23 +57,6 @@ const action = {
 // TODO buffs, then attacks, then movement
 // Actions must resolve in that order when happening in the same tick.
 // The current strategy of simply looping over all actors and applying their actions in order is not viable. The realization of an effect must be separated from the application of its effect. The realized effects can then be placed into a priority queue, to resolve in the intended order.
-
-const bindRootSystem = (world: Engine) =>
-  bindSystems(
-    [
-      actor,
-      damageToCriticalDamage,
-      healingTaker,
-      damageTaker,
-      criticalDamageTaker,
-      hp,
-      ep,
-      cdp,
-      statusUnconscious,
-      statusDead,
-    ],
-    world
-  );
 
 describe("Actor", () => {
   test("can progress through an action and remove a completed action", () => {

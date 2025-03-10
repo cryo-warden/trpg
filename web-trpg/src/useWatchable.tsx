@@ -28,7 +28,7 @@ export const useWatchable = <T extends object>(value: T) => {
   const updateController = watchableMap.get(value);
   if (updateController == null) {
     throw new Error(
-      "This should be unreachable. Something strange is happening."
+      "This should be unreachable. Something strange is happening. Was the WeakMap class altered?"
     );
   }
 

@@ -4,16 +4,42 @@ import { HPBar } from "./HPBar";
 import { Panel } from "./Panel";
 import { useEngine, WithEngine } from "./EngineContext";
 import { updateWatchable, useWatchable } from "./useWatchable";
-import { createEngine } from "action-trpg-lib";
+import {
+  bindRootSystem,
+  createEngine,
+  Entity,
+  updateEngine,
+} from "action-trpg-lib";
 
 import "./App.css";
+import { usePeriodicEffect } from "./usePeriodicEffect";
+
+const entities = [
+  {
+    hp: 5,
+    mhp: 20,
+    cdp: 0,
+    actor: { attack: 0, actionState: null },
+    controller: { type: "player", id: "me" },
+    healingTaker: { accumulatedHealing: 0 },
+    damageTaker: {
+      accumulatedDamage: 0,
+      defense: 0,
+      criticalDamageThreshold: 3,
+    },
+    criticalDamageTaker: {
+      accumulatedCriticalDamage: 0,
+      criticalDefense: 0,
+    },
+  },
+  { hp: 3, mhp: 5, cdp: 3 },
+] satisfies Entity[];
 
 const EntityPanel = WithEntity(({ entity }) => {
   useWatchable(entity);
   return (
     <Panel className="EntityPanel">
       <HPBar entity={entity} />
-      <div>{JSON.stringify(entity)}</div>
     </Panel>
   );
 });
@@ -36,9 +62,27 @@ const App = () => {
 
   (window as any).dev = { engine, updateWatchable };
 
+  usePeriodicEffect(
+    () => {
+      const system = bindRootSystem(engine);
+
+      return () => {
+        updateEngine(engine);
+        system();
+        updateWatchable(engine);
+        for (const entity of engine.world.with()) {
+          updateWatchable(entity);
+        }
+      };
+    },
+    3000,
+    [engine]
+  );
+
   useEffect(() => {
-    engine.world.add({ hp: 20, mhp: 20, cdp: 0 });
-    engine.world.add({ hp: 3, mhp: 5, cdp: 1 });
+    for (const entity of entities) {
+      engine.world.add(entity);
+    }
     console.log("Adding initial entities.");
     updateWatchable(engine);
   }, [engine]);
@@ -50,15 +94,6 @@ const App = () => {
         <EntitiesPanel />
       </div>
       <Panel className="self">
-        <button
-          onClick={() => {
-            engine.world.add({ hp: 20, mhp: 20, cdp: 0 });
-            engine.world.add({ hp: 15, mhp: 15, cdp: 0 });
-            updateWatchable(engine);
-          }}
-        >
-          add entity
-        </button>
         <button
           onClick={() => {
             const withHP = engine.world.with("hp").entities;

@@ -1,29 +1,55 @@
-import type { DamageTaker } from "./components/DamageTaker";
-import type { CriticalDamageTaker } from "./components/CriticalDamageTaker";
-import type { HealingTaker } from "./components/HealingTaker";
-import type { HP } from "./components/HP";
-import type { MHP } from "./components/MHP";
-import type { CDP } from "./components/CDP";
-import type { EP } from "./components/EP";
-import type { MEP } from "./components/MEP";
-import type { Status } from "./components/Status";
-import type { Actor } from "./components/Actor";
-import type { Observer } from "./components/Observer";
-import type { Observable } from "./components/Observable";
+import type { ActionState } from "./structures/ActionState";
+import type { Controller } from "./structures/Controller";
+import type { Observation } from "./structures/Observation";
+import type { StatusEffectMap } from "./structures/StatusEffectMap";
 
 export type Entity = {
-  damageTaker?: DamageTaker;
-  criticalDamageTaker?: CriticalDamageTaker;
-  healingTaker?: HealingTaker;
-  hp?: HP;
-  mhp?: MHP;
-  cdp?: CDP;
-  ep?: EP;
-  mep?: MEP;
-  status?: Status;
-  actor?: Actor;
-  observer?: Observer;
-  observable?: Observable;
+  /** A recipient of Damage */
+  damageTaker?: {
+    /** Defense subtracted from damage */
+    defense: number;
+    /** Accumulated Damage from a single round */
+    accumulatedDamage: number;
+    /** Critical Damage Threshold divides your Accumulated Damage to determine how much critical damage you will take for a round. */
+    criticalDamageThreshold: number;
+  };
+  /** A recipient of Critical Damage */
+  criticalDamageTaker?: {
+    /** Critical Defense subtracted from critical damage */
+    criticalDefense: number;
+    /** Accumulated Critical Damage from a single round */
+    accumulatedCriticalDamage: number;
+  };
+  /** A recipient of Healing */
+  healingTaker?: {
+    /** Accumulated Healing from a single round */
+    accumulatedHealing: number;
+  };
+  /** Hit Points */
+  hp?: number;
+  /** Maximum Hit Points */
+  mhp?: number;
+  /** Critical Damage Points */
+  cdp?: number;
+  /** Effort Points */
+  ep?: number;
+  /** Maximum Effort Points */
+  mep?: number;
+  /** Status Effect Map */
+  status?: StatusEffectMap;
+  /** An Actor capable of participating in combat. */
+  actor?: {
+    /** Attack added to attack effects */
+    attack: number;
+    /** Action State */
+    actionState: null | ActionState;
+  };
+  /** A recipient of Observations */
+  observer?: Observation[];
+  /** An emitter of Observations */
+  observable?: Observation[];
+  /** A Controller to assign actions */
+  controller?: Controller;
 };
 
 export type EntityWithComponents<TComponentNames extends (keyof Entity)[]> = {
