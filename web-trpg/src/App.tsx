@@ -16,6 +16,7 @@ import { usePeriodicEffect } from "./usePeriodicEffect";
 
 const entities = [
   {
+    name: "Human",
     hp: 5,
     mhp: 20,
     cdp: 0,
@@ -32,13 +33,22 @@ const entities = [
       criticalDefense: 0,
     },
   },
-  { hp: 3, mhp: 5, cdp: 3 },
+  {
+    name: "Small Bat",
+    hp: 3,
+    mhp: 5,
+    cdp: 3,
+    healingTaker: { accumulatedHealing: 0 },
+    actor: { actionState: null, attack: 0 },
+    controller: { type: "sequence", sequence: [] },
+  },
 ] satisfies Entity[];
 
 const EntityPanel = WithEntity(({ entity }) => {
   useWatchable(entity);
   return (
     <Panel className="EntityPanel">
+      <div>{entity.name}</div>
       <HPBar entity={entity} />
     </Panel>
   );
@@ -75,7 +85,7 @@ const App = () => {
         }
       };
     },
-    3000,
+    1000,
     [engine]
   );
 

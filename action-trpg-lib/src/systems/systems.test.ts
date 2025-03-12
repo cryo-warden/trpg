@@ -7,6 +7,7 @@ import { createEngine, type Engine } from "../Engine";
 import { bindRootSystem } from ".";
 
 const createEntity = createEntityFactory({
+  name: "test entity",
   mhp: 10,
   hp: 10,
   cdp: 0,
@@ -70,20 +71,20 @@ describe("Actor", () => {
 
     expect(actor.actionState?.effectSequenceIndex).toBe(0);
 
-    rootSystem();
-    expect(actor.actionState?.effectSequenceIndex).toBe(1);
+    const iterate = (index: number | null) => {
+      rootSystem();
+      if (index == null) {
+        expect(actor.actionState).toBeNull();
+      } else {
+        expect(actor.actionState?.effectSequenceIndex).toBe(index);
+      }
+    };
 
-    rootSystem();
-    expect(actor.actionState?.effectSequenceIndex).toBe(2);
-
-    rootSystem();
-    expect(actor.actionState?.effectSequenceIndex).toBe(3);
-
-    rootSystem();
-    expect(actor.actionState).toBeNull();
-
-    rootSystem();
-    expect(actor.actionState).toBeNull();
+    iterate(1);
+    iterate(2);
+    iterate(3);
+    iterate(null);
+    iterate(null);
   });
 
   test("can deal damage and heal", () => {
@@ -110,29 +111,21 @@ describe("Actor", () => {
     expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(0);
     expect(target.hp).toBe(10);
 
-    rootSystem();
-    expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(1);
-    expect(target.hp).toBe(10);
-    expect(target.cdp).toBe(0);
+    const iterate = (index: number | null, hp: number, cdp: number) => {
+      rootSystem();
+      if (index == null) {
+        expect(aggressor.actor.actionState).toBeNull();
+      } else {
+        expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(index);
+      }
+      expect(target.hp).toBe(hp);
+      expect(target.cdp).toBe(cdp);
+    };
 
-    rootSystem();
-    expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(2);
-    expect(target.hp).toBe(9);
-    expect(target.cdp).toBe(0);
-
-    rootSystem();
-    expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(3);
-    expect(target.hp).toBe(7);
-    expect(target.cdp).toBe(0);
-
-    rootSystem();
-    expect(aggressor.actor.actionState).toBeNull();
-    expect(target.hp).toBe(4);
-    expect(target.cdp).toBe(1);
-
-    rootSystem();
-    expect(aggressor.actor.actionState).toBeNull();
-    expect(target.hp).toBe(10);
-    expect(target.cdp).toBe(1);
+    iterate(1, 10, 0);
+    iterate(2, 9, 0);
+    iterate(3, 7, 0);
+    iterate(null, 4, 1);
+    iterate(null, 10, 1);
   });
 });

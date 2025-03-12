@@ -1,9 +1,12 @@
+import type { With } from "miniplex";
 import type { ActionState } from "./structures/ActionState";
 import type { Controller } from "./structures/Controller";
 import type { Observation } from "./structures/Observation";
 import type { StatusEffectMap } from "./structures/StatusEffectMap";
 
 export type Entity = {
+  /** Display Name */
+  name: string;
   /** A recipient of Damage */
   damageTaker?: {
     /** Defense subtracted from damage */
@@ -52,16 +55,10 @@ export type Entity = {
   controller?: Controller;
 };
 
-export type EntityWithComponents<TComponentNames extends (keyof Entity)[]> = {
-  [name in Exclude<keyof Entity, TComponentNames[number]>]?: Entity[name];
-} & {
-  [name in TComponentNames[number]]-?: Exclude<Entity[name], undefined>;
-};
-
 export const hasComponents = <const TComponentNames extends (keyof Entity)[]>(
   entity: Entity,
   componentNames: TComponentNames
-): entity is EntityWithComponents<TComponentNames> => {
+): entity is With<Entity, TComponentNames[number]> => {
   for (let n of componentNames) {
     if (!(n in entity)) {
       return false;
@@ -73,7 +70,7 @@ export const hasComponents = <const TComponentNames extends (keyof Entity)[]>(
 export const cloneComponent = <T>(component: T): T =>
   component === Object(component) ? { ...component } : component;
 
-export const cloneEntity = <TEntity extends EntityWithComponents<any>>(
+export const cloneEntity = <TEntity extends Entity>(
   entity: TEntity
 ): TEntity => {
   return Object.entries(entity).reduce((newEntity, [name, component]) => {
@@ -82,10 +79,7 @@ export const cloneEntity = <TEntity extends EntityWithComponents<any>>(
   }, {} as TEntity);
 };
 
-type MergedEntity<
-  T extends EntityWithComponents<any>,
-  U extends EntityWithComponents<any>
-> = {
+type MergedEntity<T extends With<Entity, any>, U extends Partial<Entity>> = {
   [name in (keyof T | keyof U) & keyof Entity]: Exclude<
     Entity[name],
     undefined
@@ -93,8 +87,8 @@ type MergedEntity<
 };
 
 export const mergeEntity = <
-  TEntityA extends EntityWithComponents<any>,
-  TEntityB extends EntityWithComponents<any>
+  TEntityA extends With<Entity, any>,
+  TEntityB extends Partial<Entity>
 >(
   a: TEntityA,
   b: TEntityB
@@ -106,8 +100,8 @@ export const mergeEntity = <
 };
 
 export const createEntityFactory =
-  <TBaseEntity extends EntityWithComponents<any>>(baseEntity: TBaseEntity) =>
-  <TCustomFields extends EntityWithComponents<any>>(
+  <TBaseEntity extends With<Entity, any>>(baseEntity: TBaseEntity) =>
+  <TCustomFields extends Partial<Entity>>(
     customFields: TCustomFields
   ): MergedEntity<TBaseEntity, TCustomFields> =>
     mergeEntity(baseEntity, customFields);
