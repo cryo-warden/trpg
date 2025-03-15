@@ -1,14 +1,15 @@
 .HPBar {
   position: relative;
-  border: solid 2px white;
+  border: solid 2px #fff;
   border-radius: clamp(2px, 25%, 12px);
   overflow: hidden;
   min-height: 10px;
   height: clamp(10px, 20%, 50px);
   max-height: 50px;
   padding: 0;
-  background-color: darkgrey;
+  background-color: #888;
 
+  .smooth-hp,
   .hp,
   .cdp {
     position: absolute;
@@ -16,20 +17,31 @@
     overflow: hidden;
     margin: 0;
     left: 0;
+    transition: width 1s ease-in-out;
   }
 
-  .hp {
-    background-color: red;
-    border-radius: clamp(2px, 25%, 12px);
-    top: 0;
-    bottom: 0;
+  .smooth-hp {
+    background-color: #fff;
     z-index: 0;
   }
 
+  .hp {
+    background-color: #f44;
+    z-index: 10;
+  }
+
+  .smooth-hp,
+  .hp {
+    border-radius: clamp(2px, 25%, 12px);
+    top: 0;
+    bottom: 0;
+  }
+
   .cdp {
-    background-color: black;
+    border-radius: clamp(2px, 25%, 12px);
+    background-color: #000;
     top: 30%;
     bottom: 30%;
-    z-index: 1;
+    z-index: 20;
   }
 }
