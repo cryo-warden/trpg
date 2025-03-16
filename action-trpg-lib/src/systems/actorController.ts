@@ -40,7 +40,10 @@ export default ((engine) => {
       }
 
       // WIP configure action and targets via Controller component.
-      entity.actor.actionState = createActionState(action.luckyHeal, [entity]);
+      entity.actor.actionState = createActionState(
+        Math.random() < 0.5 ? action.luckyHeal : action.comboStrike,
+        [entity]
+      );
     }
   };
 }) satisfies System;

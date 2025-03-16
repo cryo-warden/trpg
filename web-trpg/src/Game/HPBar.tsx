@@ -12,8 +12,9 @@ export const HPBar = WithEntity(({ entity }) => {
 
   const hpRatio = Math.max(0, 100 * entity.hp) / entity.mhp;
   const isHPRising =
-    (wasHPRisingRef.current && hpRatio >= lastHPRatioRef.current) ||
-    (!wasHPRisingRef.current && hpRatio > lastHPRatioRef.current);
+    hpRatio === lastHPRatioRef.current
+      ? wasHPRisingRef.current
+      : hpRatio >= lastHPRatioRef.current;
   lastHPRatioRef.current = hpRatio;
   wasHPRisingRef.current = isHPRising;
   const cdpRatio = Math.max(0, 100 * (entity.cdp ?? 0)) / entity.mhp;

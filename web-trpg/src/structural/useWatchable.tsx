@@ -20,7 +20,13 @@ class UpdateController {
 
 const watchableMap = new WeakMap<object, UpdateController>();
 
-export const useWatchable = <T extends object>(value: T) => {
+export const useWatchable = <T,>(value: T): void => {
+  if (value == null || value !== Object(value)) {
+    // Use an unwatched object to ensure the hook is still activated.
+    new UpdateController().useForceUpdate();
+    return;
+  }
+
   if (!watchableMap.has(value)) {
     watchableMap.set(value, new UpdateController());
   }
@@ -35,10 +41,15 @@ export const useWatchable = <T extends object>(value: T) => {
   updateController.useForceUpdate();
 };
 
-export const updateWatchable = (value: object) => {
+export const updateWatchable = <T,>(value: T): void => {
+  if (value == null || value !== Object(value)) {
+    return;
+  }
+
   const updateController = watchableMap.get(value);
   if (updateController == null) {
     return;
   }
+
   updateController.forceUpdate();
 };

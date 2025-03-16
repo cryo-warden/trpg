@@ -1,11 +1,11 @@
-.App {
+.Game {
   width: 100vw;
   height: 100vh;
   display: grid;
   grid-template:
-    "events entities" 1fr
-    "self target" max-content
-    "queue queue" max-content
+    "events entities" 10fr
+    "self target" 3fr
+    "queue queue" 1fr
     / 1fr 1fr;
 }
 
@@ -43,17 +43,18 @@
 }
 
 .Panel {
-  margin: 2px;
+  margin: 3px;
   padding: 6px;
   max-height: 100%;
-  border: solid 1px darkgray;
-  border-radius: 2px;
+  border: solid 1px #999;
+  border-radius: 6px;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-gutter: stable both-edges;
   scroll-behavior: smooth;
+  box-shadow: #999 0px 0px 2px 1px;
 }
 
-.EntityPanel {
-  min-height: 2in;
+.EntityDisplay {
+  min-height: 1in;
 }
