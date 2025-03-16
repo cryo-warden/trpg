@@ -1,3 +1,4 @@
+import "./Panel.css";
 import { ComponentProps } from "react";
 
 export const Panel = (props: ComponentProps<"div">) => (

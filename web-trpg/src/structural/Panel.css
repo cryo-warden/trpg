@@ -1,0 +1,11 @@
+.Panel {
+  margin: 3px;
+  padding: 6px;
+  max-height: 100%;
+  border-radius: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+  scroll-behavior: smooth;
+  box-shadow: #999 1px 1px 3px 1px;
+}

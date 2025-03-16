@@ -9,8 +9,10 @@ export type EntityComponent<T extends Entity = Entity> = ({
 }) => ReactNode;
 
 export const WithEntity = <
-  const TProps extends { entity: Entity },
-  T extends (props: TProps) => any
+  const TProps extends {},
+  T extends (props: TProps & { entity: Entity }) => any = (
+    props: TProps & { entity: Entity }
+  ) => ReactNode
 >(
   Component: T
 ): T =>

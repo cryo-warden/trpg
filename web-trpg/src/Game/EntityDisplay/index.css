@@ -1,0 +1,10 @@
+.EntityDisplay {
+  min-height: 1in;
+
+  .HPBar-overlay {
+    padding: 0.2em;
+    text-align: middle;
+    text-shadow: 1px 1px 1px black;
+    font-size: calc(80%);
+  }
+}

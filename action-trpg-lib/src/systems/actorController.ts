@@ -1,35 +1,6 @@
-import type { Action } from "../structures/Action";
+import { action } from "../structures/prototypeAction";
 import { createActionState } from "../structures/ActionState";
-import { buffEffect, effect } from "../structures/Effect";
 import type { System } from "../System";
-
-const action = {
-  comboStrike: {
-    effectSequence: [
-      effect.normalRest,
-      effect.normalAttack(1),
-      effect.powerfulAttack(2),
-      effect.extremeAttack(3),
-    ],
-  },
-  luckyHeal: {
-    effectSequence: [
-      effect.normalRest,
-      effect.normalRest,
-      effect.normalRest,
-      effect.normalRest,
-      buffEffect.extremeHeal(7),
-    ],
-  },
-  ultimateNap: {
-    effectSequence: [
-      effect.normalRest,
-      effect.normalRest,
-      effect.powerfulRest,
-      effect.extremeRest,
-    ],
-  },
-} as const satisfies Record<string, Action>;
 
 export default ((engine) => {
   const entities = engine.world.with("actor", "controller");
@@ -41,7 +12,7 @@ export default ((engine) => {
 
       // WIP configure action and targets via Controller component.
       entity.actor.actionState = createActionState(
-        Math.random() < 0.5 ? action.luckyHeal : action.comboStrike,
+        Math.random() < 0.5 ? action.doubleStrike : action.recover,
         [entity]
       );
     }

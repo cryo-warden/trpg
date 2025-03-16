@@ -1,7 +1,7 @@
-import { createEngine, Engine, Entity } from "action-trpg-lib";
+import { Entity } from "action-trpg-lib";
 import { Context, createContext, ReactNode, useContext, useMemo } from "react";
-import { useEngine } from "./EngineContext";
-import { useWatchable } from "../structural/useWatchable";
+import { useEngine } from "../context/EngineContext";
+import { useWatchable } from "../../structural/useWatchable";
 import { PlayerController } from "action-trpg-lib/src/structures/Controller";
 
 export type ControllerContext = Context<{

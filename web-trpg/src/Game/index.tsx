@@ -7,13 +7,15 @@ import {
   createEntityFactory,
 } from "action-trpg-lib";
 import { useMemo, useEffect } from "react";
-import { WithController } from "./ControllerContext";
-import { WithEngine } from "./EngineContext";
+import { WithController } from "./context/ControllerContext";
+import { WithEngine } from "./context/EngineContext";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 import { Panel } from "../structural/Panel";
 import { SelfDisplay } from "./SelfDisplay";
 import { usePeriodicEffect } from "../structural/usePeriodicEffect";
 import { updateWatchable } from "../structural/useWatchable";
+import { WithTarget } from "./context/TargetContext";
+import { TargetDisplay } from "./TargetDisplay";
 
 const createEntity = createEntityFactory({
   name: "Unknown",
@@ -47,6 +49,22 @@ const createBat = createEntityFactory(
   })
 );
 
+const createSlime = createEntityFactory(
+  createEntity({
+    name: "Small Slime",
+    hp: 1,
+    mhp: 1,
+    ep: 2,
+    mep: 2,
+    controller: { type: "sequence", sequence: [] },
+    damageTaker: {
+      accumulatedDamage: 0,
+      defense: 0,
+      criticalDamageThreshold: 2,
+    },
+  })
+);
+
 const entities = [
   createEntity({
     name: "Human",
@@ -56,11 +74,8 @@ const entities = [
     mep: 10,
     controller: { type: "player", id: "me" },
   }),
-  createBat({}),
-  createBat({}),
-  createBat({}),
-  createBat({}),
-  createBat({}),
+  ...Array.from({ length: 3 }, () => createBat({})),
+  ...Array.from({ length: 4 }, () => createSlime({})),
 ] satisfies Entity[];
 
 export const Game = ({
@@ -102,17 +117,21 @@ export const Game = ({
   return (
     <WithEngine engine={engine}>
       <WithController controllerId={controllerId}>
-        <div className="Game">
-          <Panel className="events">Events</Panel>
-          <Panel className="entities">
-            <EntitiesDisplay />
-          </Panel>
-          <Panel className="self">
-            <SelfDisplay />
-          </Panel>
-          <Panel className="target">Target</Panel>
-          <Panel className="queue">Queue</Panel>
-        </div>
+        <WithTarget>
+          <div className="Game">
+            <Panel className="events">Events</Panel>
+            <Panel className="entities">
+              <EntitiesDisplay />
+            </Panel>
+            <Panel className="self">
+              <SelfDisplay />
+            </Panel>
+            <Panel className="target">
+              <TargetDisplay />
+            </Panel>
+            <Panel className="queue">Queue</Panel>
+          </div>
+        </WithTarget>
       </WithController>
     </WithEngine>
   );

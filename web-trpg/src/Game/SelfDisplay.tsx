@@ -1,4 +1,4 @@
-import { useControllerEntity } from "./ControllerContext";
+import { useControllerEntity } from "./context/ControllerContext";
 import { EntityDisplay } from "./EntityDisplay";
 
 export const SelfDisplay = () => {
@@ -9,7 +9,7 @@ export const SelfDisplay = () => {
 
   return (
     <>
-      <EntityDisplay entity={entity} />
+      <EntityDisplay entity={entity} detailed />
       Self Actions
     </>
   );

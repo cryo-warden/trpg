@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { WithEntity } from "./EntityComponent";
+import { WithEntity } from "../EntityComponent";
 import "./HPBar.css";
 
 export const HPBar = WithEntity(({ entity }) => {
@@ -36,6 +36,12 @@ export const HPBar = WithEntity(({ entity }) => {
         }}
       ></div>
       <div className="cdp" style={{ width: `${cdpRatio}%` }}></div>
+      <div className="overlay">
+        <div>{(entity?.cdp ?? 0) > 0 && `${entity.cdp} CDP`}</div>
+        <div>
+          {entity.hp}/{entity.mhp} HP
+        </div>
+      </div>
     </div>
   );
 });
