@@ -1,3 +1,4 @@
+import "./SelfDisplay.css";
 import { action } from "action-trpg-lib";
 import { useControllerEntity } from "./context/ControllerContext";
 import { EntityDisplay } from "./EntityDisplay";
@@ -16,9 +17,10 @@ export const SelfDisplay = () => {
         <ActionButton action={action.recover} target={entity}>
           Recover
         </ActionButton>
-        <ActionButton action={action.doubleStrike}>
-          Double Double Strike Strike
-        </ActionButton>
+        <ActionButton action={action.doubleStrike}>Double Strike</ActionButton>
+        <ActionButton action={action.powerStrike}>Power Strike</ActionButton>
+        <ActionButton action={action.tripleStrike}>Triple Strike</ActionButton>
+        <ActionButton action={action.recover}>Restore</ActionButton>
       </div>
     </>
   );

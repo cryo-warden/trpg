@@ -3,6 +3,7 @@ import { bindSystems } from "../System";
 import actor from "./actor";
 import actorController from "./actorController";
 import cdp from "./cdp";
+import contents from "./contents";
 import criticalDamageTaker from "./criticalDamageTaker";
 import damageTaker from "./damageTaker";
 import damageToCriticalDamage from "./damageToCriticalDamage";
@@ -15,6 +16,7 @@ import statusUnconscious from "./statusUnconscious";
 export const bindRootSystem = (world: Engine) =>
   bindSystems(
     [
+      contents,
       actorController,
       actor,
       damageToCriticalDamage,

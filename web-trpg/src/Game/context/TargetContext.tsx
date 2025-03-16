@@ -4,9 +4,12 @@ import {
   createContext,
   ReactNode,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
+import { useControllerEntity } from "./ControllerContext";
+import { useWatchable } from "../../structural/useWatchable";
 
 export type TargetContext = Context<{
   target: Entity | null;
@@ -21,7 +24,15 @@ export const TargetContext: TargetContext = createContext({
 export const useTarget = () => useContext(TargetContext);
 
 export const WithTarget = ({ children }: { children: ReactNode }) => {
+  const controllerEntity = useControllerEntity();
   const [target, setTarget] = useState<Entity | null>(null);
+  useWatchable(controllerEntity);
+  useWatchable(target);
+  useEffect(() => {
+    if (controllerEntity?.location !== target?.location) {
+      setTarget(null);
+    }
+  }, [target?.location, controllerEntity?.location]);
   const value = useMemo(() => ({ target, setTarget }), [target, setTarget]);
   return (
     <TargetContext.Provider value={value}>{children}</TargetContext.Provider>

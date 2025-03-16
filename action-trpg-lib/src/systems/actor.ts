@@ -1,72 +1,15 @@
 import type { Entity } from "../Entity";
-import type { AttackEffect, Buff, Effect } from "../structures/Effect";
+import type {
+  AttackEffect,
+  Buff,
+  Effect,
+  MoveEffect,
+} from "../structures/Effect";
 import {
   combineStatusEffects,
   statusEffectNames,
 } from "../structures/StatusEffectMap";
 import type { System } from "../System";
-
-const applyAttack = (effect: AttackEffect, entity: Entity, target: Entity) => {
-  // TODO Skip target if it's no longer valid due to different location.
-  if (target.damageTaker != null) {
-    const damage = Math.max(
-      0,
-      effect.damage + (entity.actor?.attack ?? 0) - target.damageTaker.defense
-    );
-    target.damageTaker.accumulatedDamage += damage;
-  }
-
-  if (target.criticalDamageTaker) {
-    const criticalDamage = Math.max(
-      0,
-      effect.criticalDamage - target.criticalDamageTaker.criticalDefense
-    );
-    target.criticalDamageTaker.accumulatedCriticalDamage += criticalDamage;
-  }
-
-  if (effect.status != null && target.status != null) {
-    for (let key of statusEffectNames) {
-      if (effect.status[key] != null) {
-        target.status[key] =
-          target.status[key] != null
-            ? combineStatusEffects[key](target.status[key], effect.status[key])
-            : effect.status[key];
-      }
-    }
-  }
-};
-
-const performBuff = (buff: Buff, _entity: Entity, target: Entity) => {
-  switch (buff.type) {
-    case "heal":
-      if (target.healingTaker != null) {
-        target.healingTaker.accumulatedHealing += buff.heal;
-      }
-      break;
-  }
-};
-
-const performEffect = (
-  effect: Effect,
-  entity: Entity,
-  targets: Entity[]
-): void => {
-  for (let i = 0; i < targets.length; ++i) {
-    const target = targets[i];
-    switch (effect.type) {
-      case "rest":
-        break;
-      case "attack":
-        applyAttack(effect, entity, target);
-        break;
-      case "buff":
-        performBuff(effect.buff, entity, target);
-        break;
-      case "move":
-        break;
-    }
-  }
-};
 
 const effectTypePriorities: Effect["type"][] = [
   "buff",
@@ -77,6 +20,90 @@ const effectTypePriorities: Effect["type"][] = [
 
 export default ((engine) => {
   const entities = engine.world.with("actor");
+
+  const applyAttack = (
+    effect: AttackEffect,
+    entity: Entity,
+    target: Entity
+  ) => {
+    // TODO Skip target if it's no longer valid due to different location.
+    if (target.damageTaker != null) {
+      const damage = Math.max(
+        0,
+        effect.damage + (entity.actor?.attack ?? 0) - target.damageTaker.defense
+      );
+      target.damageTaker.accumulatedDamage += damage;
+    }
+
+    if (target.criticalDamageTaker) {
+      const criticalDamage = Math.max(
+        0,
+        effect.criticalDamage - target.criticalDamageTaker.criticalDefense
+      );
+      target.criticalDamageTaker.accumulatedCriticalDamage += criticalDamage;
+    }
+
+    if (effect.status != null && target.status != null) {
+      for (let key of statusEffectNames) {
+        if (effect.status[key] != null) {
+          target.status[key] =
+            target.status[key] != null
+              ? combineStatusEffects[key](
+                  target.status[key],
+                  effect.status[key]
+                )
+              : effect.status[key];
+        }
+      }
+    }
+  };
+
+  const performBuff = (buff: Buff, _entity: Entity, target: Entity) => {
+    switch (buff.type) {
+      case "heal":
+        if (target.healingTaker != null) {
+          target.healingTaker.accumulatedHealing += buff.heal;
+        }
+        break;
+    }
+  };
+
+  const performMove = (
+    _moveEffect: MoveEffect,
+    entity: Entity,
+    target: Entity
+  ) => {
+    if (target.path == null) {
+      return;
+    }
+
+    entity.location = target.path.destination;
+    engine.world.addComponent(target, "contentsDirtyFlag", true);
+  };
+
+  const performEffect = (
+    effect: Effect,
+    entity: Entity,
+    targets: Entity[]
+  ): void => {
+    for (let i = 0; i < targets.length; ++i) {
+      const target = targets[i];
+      switch (effect.type) {
+        case "rest":
+          break;
+        case "attack":
+          applyAttack(effect, entity, target);
+          break;
+        case "buff":
+          performBuff(effect.buff, entity, target);
+          break;
+        case "move":
+          performMove(effect, entity, target);
+          break;
+      }
+    }
+  };
+
   return () => {
     for (const effectType of effectTypePriorities) {
       for (const entity of entities) {

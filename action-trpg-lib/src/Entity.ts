@@ -53,7 +53,19 @@ export type Entity = {
   observable?: Observation[];
   /** A Controller to assign actions */
   controller?: Controller;
+  /** Another Entity in which this one is located, if any. */
+  location?: Entity | null;
+  /** Entities located inside this one. */
+  contents?: Entity[];
+  /** A dirty flag to update contents. */
+  contentsDirtyFlag?: true;
+  /** A path to another location. */
+  path?: { destination: Entity };
 };
+
+const entityComponentNameSet = new Set<string>([
+  "location",
+] satisfies (keyof Entity)[]);
 
 export const hasComponents = <const TComponentNames extends (keyof Entity)[]>(
   entity: Entity,
@@ -68,7 +80,11 @@ export const hasComponents = <const TComponentNames extends (keyof Entity)[]>(
 };
 
 export const cloneComponent = <T>(component: T): T =>
-  component === Object(component) ? { ...component } : component;
+  Array.isArray(component)
+    ? ([...component] as any)
+    : component === Object(component)
+    ? { ...component }
+    : component;
 
 export const cloneEntity = <TEntity extends Entity>(
   entity: TEntity
@@ -94,7 +110,11 @@ export const mergeEntity = <
   b: TEntityB
 ): MergedEntity<TEntityA, TEntityB> => {
   return Object.entries(b).reduce((a, [name, component]) => {
-    (a as any)[name] = cloneComponent(component);
+    if (entityComponentNameSet.has(name)) {
+      (a as any)[name] = component;
+    } else {
+      (a as any)[name] = cloneComponent(component);
+    }
     return a;
   }, cloneEntity(a)) as any;
 };

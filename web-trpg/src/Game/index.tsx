@@ -17,8 +17,29 @@ import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetDisplay } from "./TargetDisplay";
 
-const createEntity = createEntityFactory({
+const createRoom = createEntityFactory({
+  name: "Room",
+  contents: [],
+});
+
+const createPath = createEntityFactory({
+  name: "Path",
+  location: null,
+});
+
+const rooms = [
+  createRoom({ name: "Origin" }),
+  createRoom({ name: "Second Room" }),
+] satisfies Entity[];
+
+const paths = [
+  createPath({ location: rooms[0], path: { destination: rooms[1] } }),
+  createPath({ location: rooms[1], path: { destination: rooms[0] } }),
+] satisfies Entity[];
+
+const createActor = createEntityFactory({
   name: "Unknown",
+  location: rooms[0],
   hp: 5,
   mhp: 5,
   cdp: 0,
@@ -39,7 +60,7 @@ const createEntity = createEntityFactory({
 });
 
 const createBat = createEntityFactory(
-  createEntity({
+  createActor({
     name: "Small Bat",
     hp: 3,
     mhp: 3,
@@ -50,7 +71,7 @@ const createBat = createEntityFactory(
 );
 
 const createSlime = createEntityFactory(
-  createEntity({
+  createActor({
     name: "Small Slime",
     hp: 1,
     mhp: 1,
@@ -65,18 +86,21 @@ const createSlime = createEntityFactory(
   })
 );
 
-const entities = [
-  createEntity({
+const actors = [
+  createActor({
     name: "Human",
+    location: rooms[0],
     hp: 10,
     mhp: 10,
     ep: 10,
     mep: 10,
     controller: { type: "player", id: "me", actionQueue: [] },
   }),
-  ...Array.from({ length: 3 }, () => createBat({})),
-  ...Array.from({ length: 4 }, () => createSlime({})),
+  ...Array.from({ length: 3 }, () => createBat({ location: rooms[0] })),
+  ...Array.from({ length: 4 }, () => createSlime({ location: rooms[1] })),
 ] satisfies Entity[];
+
+const entities = [...rooms, ...paths, ...actors] satisfies Entity[];
 
 export const Game = ({
   period,
@@ -110,7 +134,6 @@ export const Game = ({
     for (const entity of entities) {
       engine.world.add(entity);
     }
-    console.log("Adding initial entities.");
     updateWatchable(engine);
   }, [engine]);
 

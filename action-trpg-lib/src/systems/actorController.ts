@@ -1,4 +1,3 @@
-import { action } from "../structures/prototypeAction";
 import { createActionState } from "../structures/ActionState";
 import type { System } from "../System";
 
