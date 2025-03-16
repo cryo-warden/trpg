@@ -1,0 +1,15 @@
+.ActionButton {
+  border-radius: 8px;
+  margin: 3px;
+  padding: 3px;
+  min-width: 1in;
+  min-height: 1in;
+  font-family: monospace;
+  background-color: #222;
+  color: #fff;
+  box-shadow: #fff 1px 1px 1px 1px;
+  overflow: hidden;
+  overflow-wrap: normal;
+  max-width: fit-content;
+  max-height: fit-content;
+}

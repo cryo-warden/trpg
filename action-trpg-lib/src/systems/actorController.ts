@@ -10,11 +10,25 @@ export default ((engine) => {
         continue;
       }
 
-      // WIP configure action and targets via Controller component.
-      entity.actor.actionState = createActionState(
-        Math.random() < 0.5 ? action.doubleStrike : action.recover,
-        [entity]
-      );
+      switch (entity.controller.type) {
+        case "player":
+          const nextAction = entity.controller.actionQueue.shift();
+          if (nextAction == null) {
+            break;
+          }
+          entity.actor.actionState = createActionState(
+            nextAction.action,
+            nextAction.targets
+          );
+          break;
+        case "sequence":
+          // WIP configure action and targets via Controller component.
+          // entity.actor.actionState = createActionState(
+          //   Math.random() < 0.5 ? action.doubleStrike : action.recover,
+          //   [entity]
+          // );
+          break;
+      }
     }
   };
 }) satisfies System;

@@ -39,7 +39,7 @@ export const HPBar = WithEntity(({ entity }) => {
       <div className="overlay">
         <div>{(entity?.cdp ?? 0) > 0 && `${entity.cdp} CDP`}</div>
         <div>
-          {entity.hp}/{entity.mhp} HP
+          {entity.hp} / {entity.mhp} HP
         </div>
       </div>
     </div>

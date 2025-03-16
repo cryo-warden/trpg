@@ -12,11 +12,7 @@ export const EntityDisplay = WithEntity<{ detailed?: boolean }>(
         <div>{entity.name}</div>
         <HPBar entity={entity} />
         <EPBar entity={entity} />
-        {detailed && (
-          <>
-            <div>Details Here</div>
-          </>
-        )}
+        {detailed && <></>}
       </div>
     );
   }

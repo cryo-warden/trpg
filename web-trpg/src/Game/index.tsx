@@ -72,7 +72,7 @@ const entities = [
     mhp: 10,
     ep: 10,
     mep: 10,
-    controller: { type: "player", id: "me" },
+    controller: { type: "player", id: "me", actionQueue: [] },
   }),
   ...Array.from({ length: 3 }, () => createBat({})),
   ...Array.from({ length: 4 }, () => createSlime({})),

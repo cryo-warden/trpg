@@ -37,7 +37,7 @@ export const EPBar = WithEntity(({ entity }) => {
       <div className="overlay">
         <div></div>
         <div>
-          {entity.ep}/{entity.mep} EP
+          {entity.ep} / {entity.mep} EP
         </div>
       </div>
     </div>
