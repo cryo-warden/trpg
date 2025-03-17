@@ -5,6 +5,9 @@ import {
   bindRootSystem,
   updateEngine,
   createEntityFactory,
+  createMapEntities,
+  createRoom,
+  createPath,
 } from "action-trpg-lib";
 import { useMemo, useEffect } from "react";
 import { WithController } from "./context/ControllerContext";
@@ -17,24 +20,22 @@ import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetDisplay } from "./TargetDisplay";
 
-const createRoom = createEntityFactory({
-  name: "Room",
-  contents: [],
-});
-
-const createPath = createEntityFactory({
-  name: "Path",
-  location: null,
-});
-
 const rooms = [
-  createRoom({ name: "Origin" }),
-  createRoom({ name: "Second Room" }),
+  createRoom("Origin"),
+  createRoom("Second Room"),
+  ...createMapEntities({
+    theme: "debug",
+    exits: [],
+    roomCount: 20,
+    mainPathRoomCount: 10,
+  }),
 ] satisfies Entity[];
 
 const paths = [
-  createPath({ location: rooms[0], path: { destination: rooms[1] } }),
-  createPath({ location: rooms[1], path: { destination: rooms[0] } }),
+  createPath(rooms[0], rooms[1]),
+  createPath(rooms[1], rooms[0]),
+  createPath(rooms[0], rooms[2]),
+  createPath(rooms[2], rooms[0]),
 ] satisfies Entity[];
 
 const createActor = createEntityFactory({
