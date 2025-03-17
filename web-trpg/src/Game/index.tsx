@@ -8,6 +8,7 @@ import {
   createMapEntities,
   createRoom,
   createPath,
+  createMutualPaths,
 } from "action-trpg-lib";
 import { useMemo, useEffect } from "react";
 import { WithController } from "./context/ControllerContext";
@@ -20,22 +21,24 @@ import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetDisplay } from "./TargetDisplay";
 
+const mapEntities = createMapEntities({
+  theme: "debug",
+  exits: [],
+  roomCount: 20,
+  mainPathRoomCount: 10,
+  decorationRange: { min: 1, max: 5 },
+});
+
 const rooms = [
   createRoom("Origin"),
   createRoom("Second Room"),
-  ...createMapEntities({
-    theme: "debug",
-    exits: [],
-    roomCount: 20,
-    mainPathRoomCount: 10,
-  }),
+  ...mapEntities.rooms,
 ] satisfies Entity[];
 
 const paths = [
-  createPath(rooms[0], rooms[1]),
-  createPath(rooms[1], rooms[0]),
-  createPath(rooms[0], rooms[2]),
-  createPath(rooms[2], rooms[0]),
+  ...createMutualPaths(rooms[0], rooms[1]),
+  ...createMutualPaths(rooms[0], rooms[2]),
+  ...mapEntities.paths,
 ] satisfies Entity[];
 
 const createActor = createEntityFactory({
@@ -101,7 +104,12 @@ const actors = [
   ...Array.from({ length: 4 }, () => createSlime({ location: rooms[1] })),
 ] satisfies Entity[];
 
-const entities = [...rooms, ...paths, ...actors] satisfies Entity[];
+const entities = [
+  ...rooms,
+  ...paths,
+  ...mapEntities.decorations,
+  ...actors,
+] satisfies Entity[];
 
 export const Game = ({
   period,

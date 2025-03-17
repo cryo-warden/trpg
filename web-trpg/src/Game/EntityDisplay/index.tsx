@@ -16,7 +16,6 @@ export const EntityDisplay = WithEntity<{ detailed?: boolean }>(
         {detailed && <></>}
         {entity.path != null && (
           <>
-            <div>{entity.path.destination.name}</div>
             <ActionButton
               action={{ effectSequence: [{ type: "move" }] }}
               target={entity}

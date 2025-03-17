@@ -1,13 +1,30 @@
 import { createEntityFactory, type Entity } from "../../Entity";
 
-export const themes = ["debug", "cave"] as const;
+const sample = <T>(items: readonly T[]): T => {
+  const i = Math.floor(Math.random() * items.length);
+  return items[i];
+};
 
-export type Theme = (typeof themes)[number];
+export const themes = {
+  debug: {
+    decorationNames: [
+      "anvil",
+      "sprocket",
+      "gizmo",
+      "dealymabob",
+      "thingamajig",
+    ],
+  },
+  cave: { decorationNames: ["stalactite", "stalagmite"] },
+} as const;
+
+export type ThemeName = keyof typeof themes;
 
 export type MapSpec = {
-  theme: Theme;
+  theme: ThemeName;
   mainPathRoomCount: number;
   roomCount: number;
+  decorationRange: { min: number; max: number };
   exits: Entity[];
 };
 
@@ -23,7 +40,23 @@ export const createPath = (location: Entity, destination: Entity) =>
     path: { destination },
   });
 
-type CreateMapEntities = (mapSpec: MapSpec) => Entity[];
+export const createMutualPaths = (room1: Entity, room2: Entity) => [
+  createPath(room1, room2),
+  createPath(room2, room1),
+];
+
+export const createDecoration = (location: Entity, mapSpec: MapSpec) =>
+  createEntity({
+    name: sample(themes[mapSpec.theme].decorationNames),
+    location,
+  });
+
+type CreateMapEntities = (mapSpec: MapSpec) => {
+  rooms: Entity[];
+  paths: Entity[];
+  decorations: Entity[];
+  allEntities: Entity[];
+};
 
 export const createMapEntities: CreateMapEntities = (mapSpec) => {
   // TODO Apply themes to room names, decorations, and spawners.
@@ -31,20 +64,33 @@ export const createMapEntities: CreateMapEntities = (mapSpec) => {
     return createRoom(`Room ${i}`);
   });
   const paths: Entity[] = [];
+  const decorations: Entity[] = [];
+
   let previousRoom = null;
   for (let i = 0; i < rooms.length; ++i) {
     const room = rooms[i];
     if (previousRoom != null) {
-      paths.push(
-        createPath(previousRoom, room),
-        createPath(room, previousRoom)
-      );
+      paths.push(...createMutualPaths(previousRoom, room));
     }
+
+    const decorationCount = Math.floor(
+      mapSpec.decorationRange.min + Math.random() * mapSpec.decorationRange.max
+    );
+    for (let i = 0; i < decorationCount; ++i) {
+      decorations.push(createDecoration(room, mapSpec));
+    }
+
     if (i < mapSpec.mainPathRoomCount) {
       previousRoom = room;
     } else {
       previousRoom = rooms[Math.floor(Math.random() * i)];
     }
   }
-  return [...rooms, ...paths];
+
+  return {
+    rooms,
+    paths,
+    decorations,
+    allEntities: [...rooms, ...paths, ...decorations],
+  };
 };
