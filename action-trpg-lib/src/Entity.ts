@@ -61,7 +61,32 @@ export type Entity = {
   contentsCleanFlag?: true;
   /** A path to another location. */
   path?: { destination: Entity };
+  /** Baseline for building an entity's changeable stats. */
+  baseline?: Partial<Entity>;
+  /** List of traits to alter an entity's changeable stats. */
+  traits?: Partial<Entity>[];
+  /** List of equipped items to alter an entity's changeable stats. */
+  equipment?: Entity[];
+  /** A clean flag to skip update of stats. */
+  statsCleanFlag?: true;
+  /** Stats applied if this is equipped. */
+  equippable?: {
+    slot: "head" | "hand" | "torso" | "legs";
+    statBlock: Partial<Entity>;
+  };
+  // TODO consumable: Action;
 };
+
+export const baseline = {
+  human: { mhp: 10, mep: 10 },
+  bat: { mhp: 3, mep: 2 },
+  slime: { mhp: 1, mep: 1 },
+} as const satisfies Record<string, Partial<Entity>>;
+
+export const trait = {
+  hero: { mhp: 10, mep: 10 },
+  champion: { mhp: 2, mep: 2 },
+} as const satisfies Record<string, Partial<Entity>>;
 
 const entityComponentNameSet = new Set<string>([
   "location",

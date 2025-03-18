@@ -1,4 +1,3 @@
-import type { Engine } from "../Engine";
 import { bindSystems, periodicSystem } from "../System";
 import actor from "./actor";
 import actorController from "./actorController";
@@ -10,6 +9,7 @@ import damageToCriticalDamage from "./damageToCriticalDamage";
 import ep from "./ep";
 import healingTaker from "./healingTaker";
 import hp from "./hp";
+import stats from "./stats";
 import statusDead from "./statusDead";
 import statusUnconscious from "./statusUnconscious";
 
@@ -27,4 +27,5 @@ export const bindRootSystem = (actorPeriodMS: number) =>
     statusUnconscious,
     statusDead,
     contents,
+    stats,
   ]);

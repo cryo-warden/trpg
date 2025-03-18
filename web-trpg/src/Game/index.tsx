@@ -7,8 +7,9 @@ import {
   createEntityFactory,
   createMapEntities,
   createRoom,
-  createPath,
   createMutualPaths,
+  baseline,
+  trait,
 } from "action-trpg-lib";
 import { useMemo, useEffect } from "react";
 import { WithController } from "./context/ControllerContext";
@@ -98,6 +99,8 @@ const actors = [
     mhp: 10,
     ep: 10,
     mep: 10,
+    baseline: baseline.human,
+    traits: [trait.hero],
     controller: { type: "player", id: "me", actionQueue: [] },
   }),
   ...Array.from({ length: 3 }, () => createBat({ location: rooms[0] })),
