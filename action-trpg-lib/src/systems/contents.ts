@@ -3,21 +3,18 @@ import type { System } from "../System";
 
 export default ((engine) => {
   const locationEntities = engine.world.with("location");
-  const entities = engine.world.with("contents", "contentsDirtyFlag");
-  let isFirstRun = true;
+  const entities = engine.world.with("contents").without("contentsCleanFlag");
   return () => {
-    if (isFirstRun) {
-      for (const entity of engine.world.with("contents")) {
-        engine.world.addComponent(entity, "contentsDirtyFlag", true);
-      }
-      isFirstRun = false;
-    }
     if (entities.size <= 0) {
       return;
     }
+    const uncleanContentsEntitySet = new Set<Entity | null>(entities);
     const locationMap = new Map<Entity, Entity[]>();
     for (const locationEntity of locationEntities) {
-      if (locationEntity.location == null) {
+      if (
+        locationEntity.location == null ||
+        !uncleanContentsEntitySet.has(locationEntity.location)
+      ) {
         continue;
       }
       if (!locationMap.has(locationEntity.location)) {
@@ -27,7 +24,7 @@ export default ((engine) => {
     }
     for (const entity of entities) {
       entity.contents = locationMap.get(entity) ?? [];
-      engine.world.removeComponent(entity, "contentsDirtyFlag");
+      engine.world.addComponent(entity, "contentsCleanFlag", true);
     }
   };
 }) satisfies System;

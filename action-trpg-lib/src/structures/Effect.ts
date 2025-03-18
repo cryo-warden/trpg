@@ -58,6 +58,7 @@ export const buffEffect = {
 } as const satisfies Record<string, BuffEffect | Factory<BuffEffect>>;
 
 export const effect = {
+  move: { type: "move" },
   normalRest: { type: "rest", intensity: "normal" },
   powerfulRest: { type: "rest", intensity: "powerful" },
   extremeRest: { type: "rest", intensity: "extreme" },

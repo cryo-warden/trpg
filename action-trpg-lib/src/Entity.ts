@@ -57,8 +57,8 @@ export type Entity = {
   location?: Entity | null;
   /** Entities located inside this one. */
   contents?: Entity[];
-  /** A dirty flag to update contents. */
-  contentsDirtyFlag?: true;
+  /** A clean flag to skip update of contents. */
+  contentsCleanFlag?: true;
   /** A path to another location. */
   path?: { destination: Entity };
 };

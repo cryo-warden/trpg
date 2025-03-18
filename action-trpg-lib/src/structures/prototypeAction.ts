@@ -2,6 +2,9 @@ import type { Action } from "./Action";
 import { effect, buffEffect } from "./Effect";
 
 export const action = {
+  move: {
+    effectSequence: [effect.move],
+  },
   doubleStrike: {
     effectSequence: [
       effect.normalRest,

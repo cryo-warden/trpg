@@ -1,3 +1,4 @@
+import type { With } from "miniplex";
 import { createEntityFactory, type Entity } from "../../Entity";
 
 const sample = <T>(items: readonly T[]): T => {
@@ -30,10 +31,13 @@ export type MapSpec = {
 
 const createEntity = createEntityFactory({ name: "Unknown " });
 
-export const createRoom = (name: string) =>
+export const createRoom = (name: string): With<Entity, "contents"> =>
   createEntity({ name, contents: [] });
 
-export const createPath = (location: Entity, destination: Entity) =>
+export const createPath = (
+  location: Entity,
+  destination: Entity
+): With<Entity, "location" | "path"> =>
   createEntity({
     name: `path to ${destination.name}`,
     location,

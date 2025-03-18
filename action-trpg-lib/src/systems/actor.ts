@@ -77,8 +77,13 @@ export default ((engine) => {
       return;
     }
 
+    if (entity.location != null) {
+      // Trigger update of old location contents.
+      engine.world.removeComponent(entity.location, "contentsCleanFlag");
+    }
     entity.location = target.path.destination;
-    engine.world.addComponent(target, "contentsDirtyFlag", true);
+    // Trigger update of new location contents.
+    engine.world.removeComponent(entity.location, "contentsCleanFlag");
   };
 
   const performEffect = (
