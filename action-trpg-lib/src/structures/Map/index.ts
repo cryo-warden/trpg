@@ -1,8 +1,8 @@
 import type { With } from "miniplex";
 import { createEntityFactory, type Entity } from "../../Entity";
 
-const sample = <T>(items: readonly T[]): T => {
-  const i = Math.floor(Math.random() * items.length);
+const sample = <T>(items: readonly T[], upperBound?: number): T => {
+  const i = Math.floor(Math.random() * (upperBound ?? items.length));
   return items[i];
 };
 
@@ -25,6 +25,7 @@ export type MapSpec = {
   theme: ThemeName;
   mainPathRoomCount: number;
   roomCount: number;
+  loopCount: number;
   decorationRange: { min: number; max: number };
   exits: Entity[];
 };
@@ -77,6 +78,10 @@ export const createMapEntities: CreateMapEntities = (mapSpec) => {
       paths.push(...createMutualPaths(previousRoom, room));
     }
 
+    if (i >= mapSpec.roomCount - mapSpec.loopCount) {
+      paths.push(...createMutualPaths(room, sample(rooms, i)));
+    }
+
     const decorationCount = Math.floor(
       mapSpec.decorationRange.min + Math.random() * mapSpec.decorationRange.max
     );
@@ -87,7 +92,7 @@ export const createMapEntities: CreateMapEntities = (mapSpec) => {
     if (i < mapSpec.mainPathRoomCount) {
       previousRoom = room;
     } else {
-      previousRoom = rooms[Math.floor(Math.random() * i)];
+      previousRoom = sample(rooms, i);
     }
   }
 

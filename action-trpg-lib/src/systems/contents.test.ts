@@ -10,7 +10,7 @@ import { action } from "../structures/prototypeAction";
 const createEntity = createEntityFactory({
   name: "test entity",
   location: null,
-  actor: { attack: 0, actionState: null },
+  actor: { actionState: null },
 });
 
 describe("contents system", () => {

@@ -10,7 +10,7 @@ export default ((engine) => {
         Math.floor(
           entity.damageTaker.accumulatedDamage /
             entity.damageTaker.criticalDamageThreshold
-        ) - entity.criticalDamageTaker.criticalDefense
+        ) - (entity.criticalDefense ?? 0)
       );
     }
   };

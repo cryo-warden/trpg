@@ -4,13 +4,27 @@ import type { Controller } from "./structures/Controller";
 import type { Observation } from "./structures/Observation";
 import type { StatusEffectMap } from "./structures/StatusEffectMap";
 
+export type Baseline = {
+  mhp?: number;
+  mep?: number;
+  attack?: number;
+  defense?: number;
+  // Add skills
+};
+
+export type Trait = {
+  mhp?: number;
+  mep?: number;
+  attack?: number;
+  defense?: number;
+  // Add/remove skills
+};
+
 export type Entity = {
   /** Display Name */
   name: string;
   /** A recipient of Damage */
   damageTaker?: {
-    /** Defense subtracted from damage */
-    defense: number;
     /** Accumulated Damage from a single round */
     accumulatedDamage: number;
     /** Critical Damage Threshold divides your Accumulated Damage to determine how much critical damage you will take for a round. */
@@ -18,8 +32,6 @@ export type Entity = {
   };
   /** A recipient of Critical Damage */
   criticalDamageTaker?: {
-    /** Critical Defense subtracted from critical damage */
-    criticalDefense: number;
     /** Accumulated Critical Damage from a single round */
     accumulatedCriticalDamage: number;
   };
@@ -40,10 +52,14 @@ export type Entity = {
   mep?: number;
   /** Status Effect Map */
   status?: StatusEffectMap;
+  /** Attack added to attack effects */
+  attack?: number;
+  /** Defense subtracted from damage */
+  defense?: number;
+  /** Critical Defense subtracted from critical damage */
+  criticalDefense?: number;
   /** An Actor capable of participating in combat. */
   actor?: {
-    /** Attack added to attack effects */
-    attack: number;
     /** Action State */
     actionState: null | ActionState;
   };
@@ -62,9 +78,9 @@ export type Entity = {
   /** A path to another location. */
   path?: { destination: Entity };
   /** Baseline for building an entity's changeable stats. */
-  baseline?: Partial<Entity>;
+  baseline?: Baseline;
   /** List of traits to alter an entity's changeable stats. */
-  traits?: Partial<Entity>[];
+  traits?: Trait[];
   /** List of equipped items to alter an entity's changeable stats. */
   equipment?: Entity[];
   /** A clean flag to skip update of stats. */
@@ -74,6 +90,7 @@ export type Entity = {
     slot: "head" | "hand" | "torso" | "legs";
     statBlock: Partial<Entity>;
   };
+  // /** The action this item takes if consumed. */
   // TODO consumable: Action;
 };
 
@@ -81,12 +98,12 @@ export const baseline = {
   human: { mhp: 10, mep: 10 },
   bat: { mhp: 3, mep: 2 },
   slime: { mhp: 1, mep: 1 },
-} as const satisfies Record<string, Partial<Entity>>;
+} as const satisfies Record<string, Baseline>;
 
 export const trait = {
   hero: { mhp: 10, mep: 10 },
   champion: { mhp: 2, mep: 2 },
-} as const satisfies Record<string, Partial<Entity>>;
+} as const satisfies Record<string, Trait>;
 
 const entityComponentNameSet = new Set<string>([
   "location",

@@ -12,19 +12,17 @@ const createEntity = createEntityFactory({
   hp: 10,
   cdp: 0,
   damageTaker: {
-    defense: 0,
     accumulatedDamage: 0,
     criticalDamageThreshold: 3,
   },
   criticalDamageTaker: {
-    criticalDefense: 0,
     accumulatedCriticalDamage: 0,
   },
   healingTaker: { accumulatedHealing: 0 },
   ep: 10,
   mep: 10,
   status: {},
-  actor: { attack: 0, actionState: null },
+  actor: { actionState: null },
 });
 
 const action = {

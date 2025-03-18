@@ -34,15 +34,15 @@ export default ((engine) => {
     if (target.damageTaker != null) {
       const damage = Math.max(
         0,
-        effect.damage + (entity.actor?.attack ?? 0) - target.damageTaker.defense
+        effect.damage + (entity.attack ?? 0) - (target.defense ?? 0)
       );
       target.damageTaker.accumulatedDamage += damage;
     }
 
-    if (target.criticalDamageTaker) {
+    if (effect.criticalDamage > 0 && target.criticalDamageTaker) {
       const criticalDamage = Math.max(
         0,
-        effect.criticalDamage - target.criticalDamageTaker.criticalDefense
+        effect.criticalDamage - (target.criticalDefense ?? 0)
       );
       target.criticalDamageTaker.accumulatedCriticalDamage += criticalDamage;
     }

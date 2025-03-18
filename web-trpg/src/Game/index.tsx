@@ -27,6 +27,7 @@ const mapEntities = createMapEntities({
   exits: [],
   roomCount: 20,
   mainPathRoomCount: 10,
+  loopCount: 5,
   decorationRange: { min: 1, max: 5 },
 });
 
@@ -50,17 +51,15 @@ const createActor = createEntityFactory({
   cdp: 0,
   ep: 5,
   mep: 5,
-  actor: { attack: 0, actionState: null },
+  actor: { actionState: null },
   controller: { type: "sequence", sequence: [] },
   healingTaker: { accumulatedHealing: 0 },
   damageTaker: {
     accumulatedDamage: 0,
-    defense: 0,
     criticalDamageThreshold: 4,
   },
   criticalDamageTaker: {
     accumulatedCriticalDamage: 0,
-    criticalDefense: 0,
   },
 });
 
@@ -85,7 +84,6 @@ const createSlime = createEntityFactory(
     controller: { type: "sequence", sequence: [] },
     damageTaker: {
       accumulatedDamage: 0,
-      defense: 0,
       criticalDamageThreshold: 2,
     },
   })
