@@ -1,5 +1,5 @@
 import type { Engine } from "../Engine";
-import { bindSystems } from "../System";
+import { bindSystems, periodicSystem } from "../System";
 import actor from "./actor";
 import actorController from "./actorController";
 import cdp from "./cdp";
@@ -13,21 +13,18 @@ import hp from "./hp";
 import statusDead from "./statusDead";
 import statusUnconscious from "./statusUnconscious";
 
-export const bindRootSystem = (world: Engine) =>
-  bindSystems(
-    [
-      contents,
-      actorController,
-      actor,
-      damageToCriticalDamage,
-      healingTaker,
-      damageTaker,
-      criticalDamageTaker,
-      hp,
-      ep,
-      cdp,
-      statusUnconscious,
-      statusDead,
-    ],
-    world
-  );
+export const bindRootSystem = (actorPeriodMS: number) =>
+  bindSystems([
+    actorController,
+    periodicSystem(actorPeriodMS, actor),
+    damageToCriticalDamage,
+    healingTaker,
+    damageTaker,
+    criticalDamageTaker,
+    hp,
+    ep,
+    cdp,
+    statusUnconscious,
+    statusDead,
+    contents,
+  ]);

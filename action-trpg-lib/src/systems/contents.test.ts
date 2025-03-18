@@ -3,7 +3,6 @@ import { createEntityFactory } from "../Entity";
 import { createMutualPaths, createRoom } from "../structures/Map";
 import { createEngine } from "../Engine";
 import contents from "./contents";
-import { bindSystems } from "../System";
 import actor from "./actor";
 import { createActionState } from "../structures/ActionState";
 import { action } from "../structures/prototypeAction";
@@ -40,13 +39,13 @@ describe("contents system", () => {
     }
 
     const actorSystem = actor(engine);
-    const system = bindSystems([actor, contents], engine);
+    const contentsSystem = contents(engine);
 
     expect(rooms[0].contents.length).toBe(0);
     expect(rooms[1].contents.length).toBe(0);
     expect(rooms[2].contents.length).toBe(0);
 
-    system();
+    contentsSystem();
     expect(rooms[0].contentsCleanFlag).toBeDefined();
     expect(rooms[1].contentsCleanFlag).toBeDefined();
     expect(rooms[2].contentsCleanFlag).toBeDefined();
@@ -64,7 +63,7 @@ describe("contents system", () => {
     expect(rooms[1].contentsCleanFlag).toBeUndefined();
     expect(rooms[2].contentsCleanFlag).toBeDefined();
 
-    system();
+    contentsSystem();
     expect(locationEntities[0].location).toBe(rooms[1]);
     expect(rooms[0].contentsCleanFlag).toBeDefined();
     expect(rooms[1].contentsCleanFlag).toBeDefined();
@@ -86,7 +85,7 @@ describe("contents system", () => {
     expect(rooms[1].contentsCleanFlag).toBeUndefined();
     expect(rooms[2].contentsCleanFlag).toBeUndefined();
 
-    system();
+    contentsSystem();
     expect(locationEntities[0].location).toBe(rooms[2]);
     expect(locationEntities[3].location).toBe(rooms[2]);
     expect(rooms[0].contentsCleanFlag).toBeDefined();

@@ -5,27 +5,25 @@ export type BoundSystem = () => void;
 
 export type System = (engine: Engine) => BoundSystem;
 
-export const bindSystems: (systems: System[], engine: Engine) => BoundSystem = (
-  systems,
-  world
-) => {
-  const boundSystems = systems.map((system) => system(world));
-  return () => {
-    for (const boundSystem of boundSystems) {
-      boundSystem();
-    }
+export const bindSystems: (systems: System[]) => System =
+  (systems) => (engine) => {
+    const boundSystems = systems.map((system) => system(engine));
+    return () => {
+      for (const boundSystem of boundSystems) {
+        boundSystem();
+      }
+    };
   };
-};
 
 export const periodicSystem: (periodMS: number, system: System) => System =
   (periodMS, system) => (engine) => {
     const boundSystem = system(engine);
-    /** The last time this periodic system updated. */
-    let lastTimeMS = engine.time - (engine.time % periodMS);
+    /** The next time this periodic system should update. */
+    let nextTimeMS = engine.time + periodMS;
     return () => {
-      while (engine.time > lastTimeMS + periodMS) {
+      while (engine.time >= nextTimeMS) {
         boundSystem();
-        lastTimeMS += periodMS;
+        nextTimeMS += periodMS;
       }
     };
   };

@@ -124,7 +124,7 @@ export const Game = ({
 
   usePeriodicEffect(
     () => {
-      const system = bindRootSystem(engine);
+      const system = bindRootSystem(period)(engine);
 
       return () => {
         updateEngine(engine);
@@ -135,8 +135,8 @@ export const Game = ({
         }
       };
     },
-    period,
-    [engine]
+    500,
+    [period, engine]
   );
 
   useEffect(() => {

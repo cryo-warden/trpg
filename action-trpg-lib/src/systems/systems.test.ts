@@ -64,7 +64,7 @@ describe("Actor", () => {
     const engine = createEngine();
     const entity = createEntity({});
     engine.world.add(entity);
-    const rootSystem = bindRootSystem(engine);
+    const rootSystem = bindRootSystem(1000)(engine);
 
     const { actor } = entity;
     actor.actionState = createActionState(action.comboStrike, []);
@@ -72,6 +72,7 @@ describe("Actor", () => {
     expect(actor.actionState?.effectSequenceIndex).toBe(0);
 
     const iterate = (index: number | null) => {
+      engine.time += 1000;
       rootSystem();
       if (index == null) {
         expect(actor.actionState).toBeNull();
@@ -101,7 +102,7 @@ describe("Actor", () => {
     const engine = createEngine();
     engine.world.add(aggressor);
     engine.world.add(target);
-    const rootSystem = bindRootSystem(engine);
+    const rootSystem = bindRootSystem(1000)(engine);
 
     target.actor.actionState = createActionState(action.luckyHeal, [target]);
     aggressor.actor.actionState = createActionState(action.comboStrike, [
@@ -112,6 +113,7 @@ describe("Actor", () => {
     expect(target.hp).toBe(10);
 
     const iterate = (index: number | null, hp: number, cdp: number) => {
+      engine.time += 1000;
       rootSystem();
       if (index == null) {
         expect(aggressor.actor.actionState).toBeNull();

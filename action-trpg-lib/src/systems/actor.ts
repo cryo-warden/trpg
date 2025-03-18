@@ -12,11 +12,12 @@ import {
 import type { System } from "../System";
 
 const effectTypePriorities: Effect["type"][] = [
+  "equip",
   "buff",
   "attack",
   "move",
   "rest",
-];
+] as const;
 
 export default ((engine) => {
   const entities = engine.world.with("actor");
@@ -26,7 +27,10 @@ export default ((engine) => {
     entity: Entity,
     target: Entity
   ) => {
-    // TODO Skip target if it's no longer valid due to different location.
+    if (target.location !== entity.location) {
+      return;
+    }
+
     if (target.damageTaker != null) {
       const damage = Math.max(
         0,

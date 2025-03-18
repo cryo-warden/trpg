@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 export const usePeriodicEffect = (
   createEffect: () => () => void,
-  period: number,
+  periodMS: number,
   dependencies: any[]
 ): void => {
   useEffect(() => {
@@ -17,12 +17,12 @@ export const usePeriodicEffect = (
       }
 
       effect();
-      timeout = setTimeout(update, period);
+      timeout = setTimeout(update, periodMS);
     };
 
-    timeout = setTimeout(update, period);
+    update();
 
-    () => {
+    return () => {
       isCancelled = true;
       if (timeout != null) {
         clearTimeout(timeout);
