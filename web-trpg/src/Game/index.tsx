@@ -66,10 +66,8 @@ const createActor = createEntityFactory({
 const createBat = createEntityFactory(
   createActor({
     name: "Small Bat",
-    hp: 3,
-    mhp: 3,
-    ep: 3,
-    mep: 3,
+    baseline: baseline.bat,
+    traits: [trait.small],
     controller: { type: "sequence", sequence: [] },
   })
 );
@@ -77,10 +75,7 @@ const createBat = createEntityFactory(
 const createSlime = createEntityFactory(
   createActor({
     name: "Small Slime",
-    hp: 1,
-    mhp: 1,
-    ep: 2,
-    mep: 2,
+    baseline: baseline.slime,
     controller: { type: "sequence", sequence: [] },
     damageTaker: {
       accumulatedDamage: 0,
@@ -94,11 +89,11 @@ const actors = [
     name: "Human",
     location: rooms[0],
     hp: 10,
-    mhp: 10,
-    ep: 10,
+    mhp: 12,
+    ep: 20,
     mep: 10,
     baseline: baseline.human,
-    traits: [trait.hero],
+    traits: [trait.hero, trait.hero, trait.hero],
     controller: { type: "player", id: "me", actionQueue: [] },
   }),
   ...Array.from({ length: 3 }, () => createBat({ location: rooms[0] })),

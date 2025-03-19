@@ -3,22 +3,8 @@ import type { ActionState } from "./structures/ActionState";
 import type { Controller } from "./structures/Controller";
 import type { Observation } from "./structures/Observation";
 import type { StatusEffectMap } from "./structures/StatusEffectMap";
-
-export type Baseline = {
-  mhp?: number;
-  mep?: number;
-  attack?: number;
-  defense?: number;
-  // Add skills
-};
-
-export type Trait = {
-  mhp?: number;
-  mep?: number;
-  attack?: number;
-  defense?: number;
-  // Add/remove skills
-};
+import type { Baseline } from "./structures/Baseline";
+import type { Trait } from "./structures/Trait";
 
 export type Entity = {
   /** Display Name */
@@ -50,60 +36,68 @@ export type Entity = {
   ep?: number;
   /** Maximum Effort Points */
   mep?: number;
-  /** Status Effect Map */
-  status?: StatusEffectMap;
   /** Attack added to attack effects */
   attack?: number;
   /** Defense subtracted from damage */
   defense?: number;
   /** Critical Defense subtracted from critical damage */
   criticalDefense?: number;
+
   /** An Actor capable of participating in combat. */
   actor?: {
     /** Action State */
     actionState: null | ActionState;
   };
+  /** A Controller to assign actions */
+  controller?: Controller;
   /** A recipient of Observations */
   observer?: Observation[];
   /** An emitter of Observations */
   observable?: Observation[];
-  /** A Controller to assign actions */
-  controller?: Controller;
+
   /** Another Entity in which this one is located, if any. */
   location?: Entity | null;
   /** Entities located inside this one. */
   contents?: Entity[];
   /** A clean flag to skip update of contents. */
   contentsCleanFlag?: true;
+
   /** A path to another location. */
   path?: { destination: Entity };
+
   /** Baseline for building an entity's changeable stats. */
   baseline?: Baseline;
   /** List of traits to alter an entity's changeable stats. */
   traits?: Trait[];
+  /** Traits stat cache. */
+  traitsStatCache?: Trait;
+  /** A clean flag to skip update of trait stat cache. */
+  traitsStatCacheCleanFlag?: true;
   /** List of equipped items to alter an entity's changeable stats. */
   equipment?: Entity[];
-  /** A clean flag to skip update of stats. */
+  /** Equipment stat cache. */
+  equipmentStatCache?: Trait;
+  /** A clean flag to skip update of equipment stat cache. */
+  equipmentStatCacheCleanFlag?: true;
+  /** Status Effect Map */
+  status?: StatusEffectMap;
+  /** Status stat cache. */
+  statusStatCache?: Trait;
+  /** A clean flag to skip update of status stat cache. */
+  statusStatCacheCleanFlag?: true;
+  /** A clean flag to skip update of total stats. */
   statsCleanFlag?: true;
+
   /** Stats applied if this is equipped. */
   equippable?: {
     slot: "head" | "hand" | "torso" | "legs";
-    statBlock: Partial<Entity>;
+    /** The amount of capacity consumed while equipping this. */
+    capacityCost: number;
+    trait: Trait;
   };
   // /** The action this item takes if consumed. */
   // TODO consumable: Action;
 };
-
-export const baseline = {
-  human: { mhp: 10, mep: 10 },
-  bat: { mhp: 3, mep: 2 },
-  slime: { mhp: 1, mep: 1 },
-} as const satisfies Record<string, Baseline>;
-
-export const trait = {
-  hero: { mhp: 10, mep: 10 },
-  champion: { mhp: 2, mep: 2 },
-} as const satisfies Record<string, Trait>;
 
 const entityComponentNameSet = new Set<string>([
   "location",

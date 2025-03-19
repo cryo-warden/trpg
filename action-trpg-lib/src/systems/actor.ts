@@ -13,8 +13,12 @@ import type { System } from "../System";
 
 const effectTypePriorities: Effect["type"][] = [
   "equip",
+  // TODO Resolve equip stat changes because
   "buff",
+  // TODO Resolve equip and buff stat changes.
+  // TODO Refactor because other systems must run between these. Keep applying them on the same phase of each period though, to allow them to interact via temporary other component states.
   "attack",
+  // TODO Resolve debuff stat changes.
   "move",
   "rest",
 ] as const;
@@ -99,6 +103,8 @@ export default ((engine) => {
       const target = targets[i];
       switch (effect.type) {
         case "rest":
+          break;
+        case "equip":
           break;
         case "attack":
           applyAttack(effect, entity, target);

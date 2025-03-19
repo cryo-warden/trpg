@@ -7,11 +7,13 @@ import criticalDamageTaker from "./criticalDamageTaker";
 import damageTaker from "./damageTaker";
 import damageToCriticalDamage from "./damageToCriticalDamage";
 import ep from "./ep";
+import equipmentStatCache from "./equipmentStatCache";
 import healingTaker from "./healingTaker";
 import hp from "./hp";
 import stats from "./stats";
 import statusDead from "./statusDead";
 import statusUnconscious from "./statusUnconscious";
+import traitsStatCache from "./traitsStatCache";
 
 export const bindRootSystem = (actorPeriodMS: number) =>
   bindSystems([
@@ -27,5 +29,8 @@ export const bindRootSystem = (actorPeriodMS: number) =>
     statusUnconscious,
     statusDead,
     contents,
+    traitsStatCache,
+    equipmentStatCache,
+    // TODO statusStatCache,
     stats,
   ]);
