@@ -7,6 +7,7 @@ import type {
 } from "../structures/Effect";
 import {
   combineStatusEffects,
+  mergeStatusEffectMap,
   statusEffectNames,
 } from "../structures/StatusEffectMap";
 import type { System } from "../System";
@@ -52,17 +53,8 @@ export default ((engine) => {
     }
 
     if (effect.status != null && target.status != null) {
-      for (let key of statusEffectNames) {
-        if (effect.status[key] != null) {
-          target.status[key] =
-            target.status[key] != null
-              ? combineStatusEffects[key](
-                  target.status[key],
-                  effect.status[key]
-                )
-              : effect.status[key];
-        }
-      }
+      mergeStatusEffectMap(target.status, effect.status);
+      engine.world.removeComponent(target, "statusStatBlockCleanFlag");
     }
   };
 
@@ -73,6 +65,11 @@ export default ((engine) => {
           target.healingTaker.accumulatedHealing += buff.heal;
         }
         break;
+      case "status":
+        if (target.status != null) {
+          mergeStatusEffectMap(target.status, buff.statusEffectMap);
+          engine.world.removeComponent(target, "statusStatBlockCleanFlag");
+        }
     }
   };
 

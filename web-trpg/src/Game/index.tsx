@@ -62,6 +62,7 @@ const createActor = createEntityFactory({
   criticalDamageTaker: {
     accumulatedCriticalDamage: 0,
   },
+  status: {},
 });
 
 const createBat = createEntityFactory(
@@ -101,7 +102,7 @@ const actors = [
         equippable: {
           capacityCost: 2,
           slot: "head",
-          statBlock: createStatBlock({ mep: 10, attack: -1 }),
+          statBlock: createStatBlock({ mep: 10 }),
         },
       },
     ],

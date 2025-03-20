@@ -17,6 +17,12 @@ export const SelfDisplay = () => {
         <ActionButton action={action.recover} target={entity}>
           Recover
         </ActionButton>
+        <ActionButton action={action.guard} target={entity}>
+          Guard
+        </ActionButton>
+        <ActionButton action={action.fancyFootwork} target={entity}>
+          Fancy Footwork
+        </ActionButton>
         <ActionButton action={action.doubleStrike}>Double Strike</ActionButton>
         <ActionButton action={action.powerStrike}>Power Strike</ActionButton>
         <ActionButton action={action.tripleStrike}>Triple Strike</ActionButton>

@@ -1,3 +1,3 @@
 export * from "./baseline";
-export * from "./prototypeAction";
+export * from "./action";
 export * from "./trait";

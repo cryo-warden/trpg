@@ -3,7 +3,9 @@ import type { StatusEffectMap } from "./StatusEffectMap";
 
 export type Intensity = "normal" | "powerful" | "extreme";
 
-export type Buff = { type: "heal"; heal: number };
+export type Buff =
+  | { type: "heal"; heal: number }
+  | { type: "status"; statusEffectMap: StatusEffectMap };
 
 export type RestEffect = {
   type: "rest";
@@ -56,6 +58,12 @@ export const buffEffect = {
     createBuffEffect("powerful", { type: "heal", heal }),
   extremeHeal: (heal: number) =>
     createBuffEffect("extreme", { type: "heal", heal }),
+  normalStatus: (statusEffectMap: StatusEffectMap) =>
+    createBuffEffect("normal", { type: "status", statusEffectMap }),
+  powerfulStatus: (statusEffectMap: StatusEffectMap) =>
+    createBuffEffect("powerful", { type: "status", statusEffectMap }),
+  extremeStatus: (statusEffectMap: StatusEffectMap) =>
+    createBuffEffect("extreme", { type: "status", statusEffectMap }),
 } as const satisfies Record<string, BuffEffect | Factory<BuffEffect>>;
 
 export const effect = {
