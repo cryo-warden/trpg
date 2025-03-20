@@ -42,6 +42,7 @@ export type Effect =
   | BuffEffect
   | MoveEffect
   | EquipEffect;
+
 const createBuffEffect = (intensity: Intensity, buff: Buff): BuffEffect => ({
   type: "buff",
   intensity,

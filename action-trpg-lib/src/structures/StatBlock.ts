@@ -1,17 +1,17 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
 
-export type Baseline = {
+export type StatBlock = {
   mhp: number;
   mep: number;
   attack: number;
   defense: number;
 };
 
-export const applyBaseline = (
+export const applyStatBlock = (
   engine: Engine,
   entity: Entity,
-  baseline: Baseline
+  baseline: StatBlock
 ) => {
   if (entity.hp != null && entity.mhp != null) {
     entity.hp += baseline.mhp - entity.mhp;
@@ -34,8 +34,20 @@ export const applyBaseline = (
   entity.defense = baseline.defense;
 };
 
-export const baseline = {
-  human: { mhp: 5, mep: 5, attack: 0, defense: 0 },
-  bat: { mhp: 3, mep: 2, attack: 0, defense: 0 },
-  slime: { mhp: 1, mep: 1, attack: 0, defense: 0 },
-} as const satisfies Record<string, Baseline>;
+export const mergeStatBlock = (target: StatBlock, source: StatBlock): void => {
+  target.mhp += source.mhp;
+  target.mep += source.mep;
+  target.attack += source.attack;
+  target.defense += source.defense;
+};
+
+export const createStatBlock = (
+  customFields: Partial<StatBlock>
+): StatBlock => {
+  return {
+    mhp: customFields.mhp ?? 0,
+    mep: customFields.mep ?? 0,
+    attack: customFields.attack ?? 0,
+    defense: customFields.defense ?? 0,
+  };
+};

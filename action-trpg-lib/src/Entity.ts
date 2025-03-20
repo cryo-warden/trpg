@@ -1,10 +1,10 @@
 import type { With } from "miniplex";
 import type { ActionState } from "./structures/ActionState";
 import type { Controller } from "./structures/Controller";
+import type { Equippable } from "./structures/Equippable";
 import type { Observation } from "./structures/Observation";
+import type { StatBlock } from "./structures/StatBlock";
 import type { StatusEffectMap } from "./structures/StatusEffectMap";
-import type { Baseline } from "./structures/Baseline";
-import type { Trait } from "./structures/Trait";
 
 export type Entity = {
   /** Display Name */
@@ -66,35 +66,30 @@ export type Entity = {
   path?: { destination: Entity };
 
   /** Baseline for building an entity's changeable stats. */
-  baseline?: Baseline;
+  baseline?: StatBlock;
   /** List of traits to alter an entity's changeable stats. */
-  traits?: Trait[];
+  traits?: StatBlock[];
   /** Traits stat cache. */
-  traitsStatCache?: Trait;
+  traitsStatBlock?: StatBlock;
   /** A clean flag to skip update of trait stat cache. */
-  traitsStatCacheCleanFlag?: true;
+  traitsStatBlockCleanFlag?: true;
   /** List of equipped items to alter an entity's changeable stats. */
   equipment?: Entity[];
   /** Equipment stat cache. */
-  equipmentStatCache?: Trait;
+  equipmentStatBlock?: StatBlock;
   /** A clean flag to skip update of equipment stat cache. */
-  equipmentStatCacheCleanFlag?: true;
+  equipmentStatBlockCleanFlag?: true;
   /** Status Effect Map */
   status?: StatusEffectMap;
   /** Status stat cache. */
-  statusStatCache?: Trait;
+  statusStatBlock?: StatBlock;
   /** A clean flag to skip update of status stat cache. */
-  statusStatCacheCleanFlag?: true;
+  statusStatBlockCleanFlag?: true;
   /** A clean flag to skip update of total stats. */
   statsCleanFlag?: true;
 
   /** Stats applied if this is equipped. */
-  equippable?: {
-    slot: "head" | "hand" | "torso" | "legs";
-    /** The amount of capacity consumed while equipping this. */
-    capacityCost: number;
-    trait: Trait;
-  };
+  equippable?: Equippable;
   // /** The action this item takes if consumed. */
   // TODO consumable: Action;
 };

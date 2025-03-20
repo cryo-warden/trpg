@@ -1,20 +1,24 @@
-import { trait, type Trait } from "../structures/Trait";
+import {
+  createStatBlock,
+  mergeStatBlock,
+  type StatBlock,
+} from "../structures/StatBlock";
 import type { System } from "../System";
 
 export default ((engine) => {
   const entities = engine.world
     .with("traits")
-    .without("traitsStatCacheCleanFlag");
+    .without("traitsStatBlockCleanFlag");
   return () => {
     for (const entity of entities) {
-      let traitsStatCache: Trait = trait.zero;
-      for (const t of entity.traits) {
-        traitsStatCache = trait.merge(traitsStatCache, t);
+      let traitsStatBlock: StatBlock = createStatBlock({});
+      for (const trait of entity.traits) {
+        mergeStatBlock(traitsStatBlock, trait);
       }
-      engine.world.addComponent(entity, "traitsStatCache", traitsStatCache);
-      entity.traitsStatCache = traitsStatCache;
+      engine.world.addComponent(entity, "traitsStatBlock", traitsStatBlock);
+      entity.traitsStatBlock = traitsStatBlock;
 
-      engine.world.addComponent(entity, "traitsStatCacheCleanFlag", true);
+      engine.world.addComponent(entity, "traitsStatBlockCleanFlag", true);
       engine.world.removeComponent(entity, "statsCleanFlag");
     }
   };

@@ -10,6 +10,7 @@ import {
   createMutualPaths,
   baseline,
   trait,
+  createStatBlock,
 } from "action-trpg-lib";
 import { useMemo, useEffect } from "react";
 import { WithController } from "./context/ControllerContext";
@@ -94,6 +95,16 @@ const actors = [
     mep: 10,
     baseline: baseline.human,
     traits: [trait.hero, trait.hero, trait.hero],
+    equipment: [
+      {
+        name: "magic hat",
+        equippable: {
+          capacityCost: 2,
+          slot: "head",
+          statBlock: createStatBlock({ mep: 10, attack: -1 }),
+        },
+      },
+    ],
     controller: { type: "player", id: "me", actionQueue: [] },
   }),
   ...Array.from({ length: 3 }, () => createBat({ location: rooms[0] })),

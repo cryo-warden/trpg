@@ -1,5 +1,5 @@
-import type { Action } from "./Action";
-import { effect, buffEffect } from "./Effect";
+import type { Action } from "../src/structures/Action";
+import { effect, buffEffect } from "../src/structures/Effect";
 
 export const action = {
   move: {

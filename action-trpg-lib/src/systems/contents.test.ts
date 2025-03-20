@@ -1,11 +1,11 @@
-import { expect, describe, test } from "bun:test";
-import { createEntityFactory } from "../Entity";
-import { createMutualPaths, createRoom } from "../structures/Map";
+import { describe, expect, test } from "bun:test";
+import { action } from "../../prototypeData";
 import { createEngine } from "../Engine";
-import contents from "./contents";
-import actor from "./actor";
+import { createEntityFactory } from "../Entity";
 import { createActionState } from "../structures/ActionState";
-import { action } from "../structures/prototypeAction";
+import { createMutualPaths, createRoom } from "../structures/Map";
+import actor from "./actor";
+import contents from "./contents";
 
 const createEntity = createEntityFactory({
   name: "test entity",
