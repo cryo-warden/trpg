@@ -1,5 +1,5 @@
 import { bindSystems, periodicSystem } from "../System";
-import actor from "./actor";
+import actor from "./action/actor";
 import actorController from "./actorController";
 import cdp from "./cdp";
 import contents from "./contents";

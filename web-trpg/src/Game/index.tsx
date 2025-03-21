@@ -52,7 +52,6 @@ const createActor = createEntityFactory({
   cdp: 0,
   ep: 5,
   mep: 5,
-  actor: { actionState: null },
   controller: { type: "sequence", sequence: [] },
   healingTaker: { accumulatedHealing: 0 },
   damageTaker: {

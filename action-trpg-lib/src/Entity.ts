@@ -43,11 +43,9 @@ export type Entity = {
   /** Critical Defense subtracted from critical damage */
   criticalDefense?: number;
 
-  /** An Actor capable of participating in combat. */
-  actor?: {
-    /** Action State */
-    actionState: null | ActionState;
-  };
+  /** The action this entity is currently performing. */
+  actionState?: ActionState;
+
   /** A Controller to assign actions */
   controller?: Controller;
   /** A recipient of Observations */

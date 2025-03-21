@@ -9,7 +9,7 @@ import { useEngine } from "./context/EngineContext";
 import { Entity } from "action-trpg-lib";
 
 const weighEntity = (entity: Entity) =>
-  ((entity.actor != null ? 1 : 0) << 7) +
+  ((entity.controller != null ? 1 : 0) << 7) +
   ((entity.path != null ? 1 : 0) << 6) +
   ((entity.mhp != null ? 1 : 0) << 5) +
   ((entity.contents != null ? 1 : 0) << 4);

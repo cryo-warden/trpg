@@ -22,7 +22,6 @@ const createEntity = createEntityFactory({
   ep: 10,
   mep: 10,
   status: {},
-  actor: { actionState: null },
 });
 
 const action = {
@@ -81,22 +80,30 @@ const createRootSystemTest = (periodMS = 1000) => {
     return entity;
   };
 
-  return { iterate, addEntity };
+  const addComponent = <TName extends keyof Entity>(
+    entity: Entity,
+    name: TName,
+    value: Entity[TName]
+  ) => {
+    engine.world.addComponent(entity, name, value);
+  };
+
+  return { iterate, addEntity, addComponent };
 };
 
 describe("systems", () => {
   describe("actor system", () => {
     test("can progress through an action and remove a completed action", () => {
       const { iterate, addEntity } = createRootSystemTest();
-      const { actor } = addEntity({});
+      const entity = addEntity({});
 
-      actor.actionState = createActionState(action.comboStrike, []);
+      entity.actionState = createActionState(action.comboStrike, []);
 
       const assertCase = (index: number | null) => {
         if (index == null) {
-          expect(actor.actionState).toBeNull();
+          expect(entity.actionState).toBeUndefined();
         } else {
-          expect(actor.actionState?.effectSequenceIndex).toBe(index);
+          expect(entity.actionState?.effectSequenceIndex).toBe(index);
         }
         iterate();
       };
@@ -110,7 +117,7 @@ describe("systems", () => {
     });
 
     test("can deal damage and heal", () => {
-      const { iterate, addEntity } = createRootSystemTest();
+      const { iterate, addEntity, addComponent } = createRootSystemTest();
       const target = addEntity({
         mhp: 10,
         hp: 10,
@@ -121,16 +128,22 @@ describe("systems", () => {
       });
       const aggressor = addEntity({});
 
-      target.actor.actionState = createActionState(action.luckyHeal, [target]);
-      aggressor.actor.actionState = createActionState(action.comboStrike, [
+      addComponent(
         target,
-      ]);
+        "actionState",
+        createActionState(action.luckyHeal, [target])
+      );
+      addComponent(
+        aggressor,
+        "actionState",
+        createActionState(action.comboStrike, [target])
+      );
 
       const assertCase = (index: number | null, hp: number, cdp: number) => {
         if (index == null) {
-          expect(aggressor.actor.actionState).toBeNull();
+          expect(aggressor.actionState).toBeUndefined();
         } else {
-          expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(index);
+          expect(aggressor.actionState?.effectSequenceIndex).toBe(index);
         }
         expect(target.hp).toBe(hp);
         expect(target.cdp).toBe(cdp);
@@ -157,7 +170,7 @@ describe("systems", () => {
       });
       const aggressor = addEntity({});
 
-      aggressor.actor.actionState = createActionState(
+      aggressor.actionState = createActionState(
         {
           effectSequence: [
             effect.normalStatusAttack({
@@ -181,9 +194,9 @@ describe("systems", () => {
 
       const assertCase = (index: number | null, hp: number, cdp: number) => {
         if (index == null) {
-          expect(aggressor.actor.actionState).toBeNull();
+          expect(aggressor.actionState).toBeUndefined();
         } else {
-          expect(aggressor.actor.actionState?.effectSequenceIndex).toBe(index);
+          expect(aggressor.actionState?.effectSequenceIndex).toBe(index);
         }
         expect(target.hp).toBe(hp);
         expect(target.cdp).toBe(cdp);

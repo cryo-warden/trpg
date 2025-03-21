@@ -4,13 +4,12 @@ import { createEngine } from "../Engine";
 import { createEntityFactory } from "../Entity";
 import { createActionState } from "../structures/ActionState";
 import { createMutualPaths, createRoom } from "../structures/Map";
-import actor from "./actor";
+import actor from "./action/actor";
 import contents from "./contents";
 
 const createEntity = createEntityFactory({
   name: "test entity",
   location: null,
-  actor: { actionState: null },
 });
 
 describe("contents system", () => {
@@ -53,9 +52,11 @@ describe("contents system", () => {
     expect(rooms[1].contents.length).toBe(4);
     expect(rooms[2].contents.length).toBe(2);
 
-    locationEntities[0].actor.actionState = createActionState(action.move, [
-      paths[0],
-    ]);
+    engine.world.addComponent(
+      locationEntities[0],
+      "actionState",
+      createActionState(action.move, [paths[0]])
+    );
 
     // After actions but before updating contents, expect two clean flags to be gone.
     actorSystem();
@@ -72,12 +73,16 @@ describe("contents system", () => {
     expect(rooms[1].contents.length).toBe(5);
     expect(rooms[2].contents.length).toBe(2);
 
-    locationEntities[0].actor.actionState = createActionState(action.move, [
-      paths[2],
-    ]);
-    locationEntities[3].actor.actionState = createActionState(action.move, [
-      paths[2],
-    ]);
+    engine.world.addComponent(
+      locationEntities[0],
+      "actionState",
+      createActionState(action.move, [paths[2]])
+    );
+    engine.world.addComponent(
+      locationEntities[3],
+      "actionState",
+      createActionState(action.move, [paths[2]])
+    );
 
     // After actions but before updating contents, expect two clean flags to be gone.
     actorSystem();

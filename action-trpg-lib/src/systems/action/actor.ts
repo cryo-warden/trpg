@@ -1,16 +1,12 @@
-import type { Entity } from "../Entity";
+import type { Entity } from "../../Entity";
 import type {
   AttackEffect,
   Buff,
   Effect,
   MoveEffect,
-} from "../structures/Effect";
-import {
-  combineStatusEffects,
-  mergeStatusEffectMap,
-  statusEffectNames,
-} from "../structures/StatusEffectMap";
-import type { System } from "../System";
+} from "../../structures/Effect";
+import { mergeStatusEffectMap } from "../../structures/StatusEffectMap";
+import type { System } from "../../System";
 
 const effectTypePriorities: Effect["type"][] = [
   "equip",
@@ -25,7 +21,7 @@ const effectTypePriorities: Effect["type"][] = [
 ] as const;
 
 export default ((engine) => {
-  const entities = engine.world.with("actor");
+  const entities = engine.world.with("actionState");
 
   const applyAttack = (
     effect: AttackEffect,
@@ -119,16 +115,13 @@ export default ((engine) => {
   return () => {
     for (const effectType of effectTypePriorities) {
       for (const entity of entities) {
-        const { actionState } = entity.actor;
-        if (actionState == null) {
-          continue;
-        }
-
         const {
-          effectSequenceIndex,
-          action: { effectSequence },
-          targets,
-        } = actionState;
+          actionState: {
+            effectSequenceIndex,
+            action: { effectSequence },
+            targets,
+          },
+        } = entity;
 
         const effect = effectSequence[effectSequenceIndex];
         if (effect != null && effect.type === effectType) {
@@ -137,18 +130,15 @@ export default ((engine) => {
       }
     }
 
-    for (const { actor } of entities) {
-      const { actionState } = actor;
-      if (actionState == null) {
-        continue;
-      }
+    for (const entity of entities) {
+      const { actionState } = entity;
 
       actionState.effectSequenceIndex += 1;
       if (
         actionState.effectSequenceIndex >=
         actionState.action.effectSequence.length
       ) {
-        actor.actionState = null;
+        engine.world.removeComponent(entity, "actionState");
       }
     }
   };
