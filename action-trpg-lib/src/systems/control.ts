@@ -1,9 +1,11 @@
 // import { action } from "../../prototypeData";
 import { createActionState } from "../structures/ActionState";
-import { createSystem } from "../System";
+import { createSystem } from "./createSystem";
 
 export default createSystem((engine) => {
-  const entities = engine.world.with("controller").without("actionState");
+  const entities = engine.world
+    .with("controller")
+    .without("actionState", "unconscious", "dead");
   return () => {
     for (const entity of entities) {
       switch (entity.controller.type) {

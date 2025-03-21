@@ -1,5 +1,4 @@
 import type { Engine } from "./Engine";
-export * from "./systems";
 
 export type System = (engine: Engine) => () => void;
 
@@ -26,5 +25,4 @@ export const periodicSystem: (periodMS: number, system: System) => System =
     };
   };
 
-/** Does nothing, but helps enforce System typing. */
-export const createSystem = (system: System): System => system;
+export * from "./systems";

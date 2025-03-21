@@ -11,7 +11,9 @@ export const createActionEffectSystem = <const TType extends Effect["type"]>(
     target: Entity
   ) => void
 ): (() => void) => {
-  const entities = engine.world.with("actionState");
+  const entities = engine.world
+    .with("actionState")
+    .without("unconscious", "dead");
 
   return () => {
     for (const entity of entities) {

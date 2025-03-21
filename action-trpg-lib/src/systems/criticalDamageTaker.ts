@@ -1,4 +1,4 @@
-import { createSystem } from "../System";
+import { createSystem } from "./createSystem";
 
 export default createSystem((engine) => {
   const entities = engine.world.with("cdp", "criticalDamageTaker");

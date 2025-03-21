@@ -53,6 +53,8 @@ export type Entity = {
   /** An emitter of Observations */
   observable?: Observation[];
 
+  /*** Location and Contents ***/
+
   /** Another Entity in which this one is located, if any. */
   location?: Entity | null;
   /** Entities located inside this one. */
@@ -62,6 +64,8 @@ export type Entity = {
 
   /** A path to another location. */
   path?: { destination: Entity };
+
+  /*** Stats ***/
 
   /** Baseline for building an entity's changeable stats. */
   baseline?: StatBlock;
@@ -77,14 +81,34 @@ export type Entity = {
   equipmentStatBlock?: StatBlock;
   /** A clean flag to skip update of equipment stat cache. */
   equipmentStatBlockCleanFlag?: true;
-  /** Status Effect Map */
-  status?: StatusEffectMap;
+
+  /*** Status Effects ***/
+
+  /** Unconscious status for having CDP >= HP */
+  unconscious?: true;
+  /** Dead status for having CDP >= MHP */
+  dead?: true;
+  /** Poison which will cause repeated damage after an initial delay. */
+  poison?: {
+    damage: number;
+    delay: number;
+    duration: number;
+  };
+  /** Temporarily boost attack. */
+  advantage?: { attack: number; duration: number };
+  /** Temporarily boost defense. */
+  guard?: { defense: number; duration: number };
+  /** Temporarily boost MHP. */
+  fortify?: { mhp: number; duration: number };
   /** Status stat cache. */
   statusStatBlock?: StatBlock;
   /** A clean flag to skip update of status stat cache. */
   statusStatBlockCleanFlag?: true;
+
   /** A clean flag to skip update of total stats. */
   statsCleanFlag?: true;
+
+  /*** Items ***/
 
   /** Stats applied if this is equipped. */
   equippable?: Equippable;
@@ -95,18 +119,6 @@ export type Entity = {
 const entityComponentNameSet = new Set<string>([
   "location",
 ] satisfies (keyof Entity)[]);
-
-export const hasComponents = <const TComponentNames extends (keyof Entity)[]>(
-  entity: Entity,
-  componentNames: TComponentNames
-): entity is With<Entity, TComponentNames[number]> => {
-  for (let n of componentNames) {
-    if (!(n in entity)) {
-      return false;
-    }
-  }
-  return true;
-};
 
 export const cloneComponent = <T>(component: T): T =>
   Array.isArray(component)
@@ -124,11 +136,13 @@ export const cloneEntity = <TEntity extends Entity>(
   }, {} as TEntity);
 };
 
-type MergedEntity<T extends With<Entity, any>, U extends Partial<Entity>> = {
+type MergedEntity<T extends Entity, U extends Partial<Entity>> = {
   [name in (keyof T | keyof U) & keyof Entity]: Exclude<
     Entity[name],
     undefined
   >;
+} & {
+  [name in Exclude<keyof Entity, keyof T | keyof U>]: Entity[name];
 };
 
 export const mergeEntity = <

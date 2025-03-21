@@ -3,7 +3,7 @@ import {
   createStatBlock,
   mergeStatBlock,
 } from "../structures/StatBlock";
-import { createSystem } from "../System";
+import { createSystem } from "./createSystem";
 
 export default createSystem((engine) => {
   const entities = engine.world.with("baseline").without("statsCleanFlag");

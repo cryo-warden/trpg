@@ -1,4 +1,4 @@
-import { createSystem } from "../System";
+import { createSystem } from "./createSystem";
 
 /** Too much damage at one time will cause some critical damage. */
 export default createSystem((engine) => {

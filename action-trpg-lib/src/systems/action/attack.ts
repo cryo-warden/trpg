@@ -1,5 +1,5 @@
-import { mergeStatusEffectMap } from "../../structures/StatusEffectMap";
-import { createSystem } from "../../System";
+import { applyStatusEffectMap } from "../../structures/StatusEffectMap";
+import { createSystem } from "../createSystem";
 import { createActionEffectSystem } from "./createActionEffectSystem";
 
 export default createSystem((engine) => {
@@ -27,9 +27,8 @@ export default createSystem((engine) => {
         target.criticalDamageTaker.accumulatedCriticalDamage += criticalDamage;
       }
 
-      if (effect.status != null && target.status != null) {
-        mergeStatusEffectMap(target.status, effect.status);
-        engine.world.removeComponent(target, "statusStatBlockCleanFlag");
+      if (effect.statusEffectMap != null) {
+        applyStatusEffectMap(engine, target, effect.statusEffectMap);
       }
     }
   );

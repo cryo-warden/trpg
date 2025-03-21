@@ -205,11 +205,12 @@ describe("systems", () => {
 
       assertCase(0, 10, 0);
       assertCase(1, 10, 0);
-      expect(target.status.poison).toEqual({
+      expect(target.poison).toEqual({
         damage: 1,
-        delay: 0,
+        delay: 1,
         duration: 5,
       });
+      assertCase(null, 10, 0);
       assertCase(null, 10, 0);
       assertCase(null, 9, 0);
       assertCase(null, 8, 0);

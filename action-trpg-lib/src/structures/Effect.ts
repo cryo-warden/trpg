@@ -20,7 +20,7 @@ export type AttackEffect = {
   /** Critical Damage inflicted inherently by the attack. */
   criticalDamage: number;
   /** Map of status effects applied by the attack. */
-  status?: StatusEffectMap;
+  statusEffectMap?: StatusEffectMap;
 };
 
 export type BuffEffect = {
@@ -96,7 +96,7 @@ export const effect = {
     criticalDamage,
   }),
   normalStatusAttack: (
-    status: StatusEffectMap,
+    statusEffectMap: StatusEffectMap,
     damage: number = 0,
     criticalDamage: number = 0
   ): AttackEffect => ({
@@ -104,10 +104,10 @@ export const effect = {
     intensity: "normal",
     damage,
     criticalDamage,
-    status,
+    statusEffectMap,
   }),
   powerfulStatusAttack: (
-    status: StatusEffectMap,
+    statusEffectMap: StatusEffectMap,
     damage: number = 0,
     criticalDamage: number = 0
   ): AttackEffect => ({
@@ -115,10 +115,10 @@ export const effect = {
     intensity: "powerful",
     damage,
     criticalDamage,
-    status,
+    statusEffectMap,
   }),
   extremeStatusAttack: (
-    status: StatusEffectMap,
+    statusEffectMap: StatusEffectMap,
     damage: number = 0,
     criticalDamage: number = 0
   ): AttackEffect => ({
@@ -126,6 +126,6 @@ export const effect = {
     intensity: "extreme",
     damage,
     criticalDamage,
-    status,
+    statusEffectMap,
   }),
 } as const satisfies Record<string, Effect | Factory<Effect>>;

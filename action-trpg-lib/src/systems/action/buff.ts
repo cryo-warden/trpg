@@ -1,5 +1,5 @@
-import { mergeStatusEffectMap } from "../../structures/StatusEffectMap";
-import { createSystem } from "../../System";
+import { applyStatusEffectMap } from "../../structures/StatusEffectMap";
+import { createSystem } from "../createSystem";
 import { createActionEffectSystem } from "./createActionEffectSystem";
 
 export default createSystem((engine) => {
@@ -14,10 +14,8 @@ export default createSystem((engine) => {
           }
           break;
         case "status":
-          if (target.status != null) {
-            mergeStatusEffectMap(target.status, buff.statusEffectMap);
-            engine.world.removeComponent(target, "statusStatBlockCleanFlag");
-          }
+          applyStatusEffectMap(engine, target, buff.statusEffectMap);
+          break;
       }
     }
   );

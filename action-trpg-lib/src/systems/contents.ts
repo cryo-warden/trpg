@@ -1,5 +1,5 @@
 import type { Entity } from "../Entity";
-import { createSystem } from "../System";
+import { createSystem } from "./createSystem";
 
 export default createSystem((engine) => {
   const locationEntities = engine.world.with("location");

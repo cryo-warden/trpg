@@ -1,46 +1,27 @@
-import type { Schema } from "../Schema";
+import type { Engine } from "../Engine";
+import type { Entity } from "../Entity";
 import { createStatBlock, type StatBlock } from "./StatBlock";
 
-export const statusEffectSchema = {
-  /** Unconscious status for having CDP >= HP */
-  unconscious: true,
-  /** Dead status for having CDP >= MHP */
-  dead: true,
-  /** Poison which will cause repeated damage after an initial delay. */
-  poison: {
-    damage: "number",
-    delay: "number",
-    duration: "number",
-  },
-  /** Temporarily boost attack. */
-  advantage: { attack: "number", duration: "number" },
-  /** Temporarily boost defense. */
-  guard: { defense: "number", duration: "number" },
-  /** Temporarily boost MHP. */
-  fortify: { mhp: "number", duration: "number" },
-} as const satisfies {
-  [key: string]: Schema<any>;
+export const statusEffectNames = [
+  "dead",
+  "unconscious",
+  "poison",
+  "advantage",
+  "guard",
+  "fortify",
+] as const satisfies (keyof Entity)[];
+
+export type StatusEffectComponents = {
+  [key in (typeof statusEffectNames)[number]]: NonNullable<Entity[key]>;
 };
 
-export const statusEffectNames = Object.keys(
-  statusEffectSchema
-) as (keyof typeof statusEffectSchema)[];
-
-export type AllStatusEffectMap = {
-  [name in keyof typeof statusEffectSchema]: Schema<
-    (typeof statusEffectSchema)[name]
-  >;
-};
-
-export type StatusEffectMap = {
-  -readonly [name in keyof AllStatusEffectMap]?: AllStatusEffectMap[name];
-};
+export type StatusEffectMap = Partial<StatusEffectComponents>;
 
 export const combineStatusEffects: {
-  [key in keyof AllStatusEffectMap]: (
-    first: AllStatusEffectMap[key],
-    additive: AllStatusEffectMap[key]
-  ) => AllStatusEffectMap[key];
+  [key in keyof StatusEffectComponents]: (
+    base: StatusEffectComponents[key],
+    additive: StatusEffectComponents[key]
+  ) => StatusEffectComponents[key];
 } = {
   unconscious: (_, additive) => additive,
   dead: (_, additive) => additive,
@@ -63,34 +44,37 @@ export const combineStatusEffects: {
   }),
 } as const;
 
-export const mergeStatusEffectMap = (
-  target: StatusEffectMap,
-  source: StatusEffectMap
+export const applyStatusEffectMap = (
+  engine: Engine,
+  entity: Entity,
+  statusEffectMap: StatusEffectMap
 ): void => {
   for (const key of statusEffectNames) {
-    if (source[key] == null) {
+    if (statusEffectMap[key] == null) {
       continue;
     }
 
-    if (target[key] != null) {
-      (target as any)[key] = combineStatusEffects[key](
-        (target as any)[key],
-        (source as any)[key]
+    if (entity[key] != null) {
+      (entity as any)[key] = combineStatusEffects[key](
+        (entity as any)[key],
+        (statusEffectMap as any)[key]
       );
     } else {
-      (target as any)[key] =
-        source[key] === Object(source[key])
-          ? { ...(source as any)[key] }
-          : source[key];
+      engine.world.addComponent(
+        entity,
+        key,
+        statusEffectMap[key] === Object(statusEffectMap[key])
+          ? { ...(statusEffectMap as any)[key] }
+          : statusEffectMap[key]
+      );
     }
+    engine.world.removeComponent(entity, "statusStatBlockCleanFlag");
   }
 };
 
-export const createStatusStatBlock = (
-  statusEffectMap: StatusEffectMap
-): StatBlock => {
-  const attack = statusEffectMap.advantage?.attack ?? 0;
-  const defense = statusEffectMap.guard?.defense ?? 0;
-  const mhp = statusEffectMap.fortify?.mhp ?? 0;
+export const createStatusStatBlock = (entity: Entity): StatBlock => {
+  const attack = entity.advantage?.attack ?? 0;
+  const defense = entity.guard?.defense ?? 0;
+  const mhp = entity.fortify?.mhp ?? 0;
   return createStatBlock({ mhp, attack, defense });
 };
