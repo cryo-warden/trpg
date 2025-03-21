@@ -1,5 +1,3 @@
-import { clamp } from "../math/clamp";
-import { statusEffectNames } from "../structures/StatusEffectMap";
 import type { System } from "../System";
 
 export default ((engine) => {

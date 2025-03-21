@@ -95,4 +95,37 @@ export const effect = {
     damage,
     criticalDamage,
   }),
+  normalStatusAttack: (
+    status: StatusEffectMap,
+    damage: number = 0,
+    criticalDamage: number = 0
+  ): AttackEffect => ({
+    type: "attack",
+    intensity: "normal",
+    damage,
+    criticalDamage,
+    status,
+  }),
+  powerfulStatusAttack: (
+    status: StatusEffectMap,
+    damage: number = 0,
+    criticalDamage: number = 0
+  ): AttackEffect => ({
+    type: "attack",
+    intensity: "powerful",
+    damage,
+    criticalDamage,
+    status,
+  }),
+  extremeStatusAttack: (
+    status: StatusEffectMap,
+    damage: number = 0,
+    criticalDamage: number = 0
+  ): AttackEffect => ({
+    type: "attack",
+    intensity: "extreme",
+    damage,
+    criticalDamage,
+    status,
+  }),
 } as const satisfies Record<string, Effect | Factory<Effect>>;
