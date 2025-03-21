@@ -1,6 +1,4 @@
-import { bindSystems, periodicSystem } from "../System";
-import actor from "./action/actor";
-import actorController from "./actorController";
+import { joinSystems, periodicSystem } from "../System";
 import cdp from "./cdp";
 import contents from "./contents";
 import criticalDamageTaker from "./criticalDamageTaker";
@@ -16,11 +14,23 @@ import statusEffect from "./statusEffect";
 import statusStatBlock from "./statusStatBlock";
 import statusUnconscious from "./statusUnconscious";
 import traitsStatBlock from "./traitsStatBlock";
+import control from "./control";
+import { action } from "./action";
 
 export const bindRootSystem = (actorPeriodMS: number) =>
-  bindSystems([
-    actorController,
-    periodicSystem(actorPeriodMS, actor),
+  joinSystems([
+    control,
+    periodicSystem(
+      actorPeriodMS,
+      joinSystems([
+        action.buff,
+        statusStatBlock,
+        stats,
+        action.attack,
+        action.move,
+        action.advance,
+      ])
+    ),
     periodicSystem(actorPeriodMS, statusEffect),
     damageToCriticalDamage,
     healingTaker,

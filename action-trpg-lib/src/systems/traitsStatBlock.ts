@@ -3,9 +3,9 @@ import {
   mergeStatBlock,
   type StatBlock,
 } from "../structures/StatBlock";
-import type { System } from "../System";
+import { createSystem } from "../System";
 
-export default ((engine) => {
+export default createSystem((engine) => {
   const entities = engine.world
     .with("traits")
     .without("traitsStatBlockCleanFlag");
@@ -22,4 +22,4 @@ export default ((engine) => {
       engine.world.removeComponent(entity, "statsCleanFlag");
     }
   };
-}) satisfies System;
+});

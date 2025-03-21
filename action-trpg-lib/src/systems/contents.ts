@@ -1,7 +1,7 @@
 import type { Entity } from "../Entity";
-import type { System } from "../System";
+import { createSystem } from "../System";
 
-export default ((engine) => {
+export default createSystem((engine) => {
   const locationEntities = engine.world.with("location");
   const entities = engine.world.with("contents").without("contentsCleanFlag");
   return () => {
@@ -27,4 +27,4 @@ export default ((engine) => {
       engine.world.addComponent(entity, "contentsCleanFlag", true);
     }
   };
-}) satisfies System;
+});

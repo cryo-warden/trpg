@@ -1,11 +1,11 @@
-import type { System } from "../System";
 import {
   applyStatBlock,
   createStatBlock,
   mergeStatBlock,
 } from "../structures/StatBlock";
+import { createSystem } from "../System";
 
-export default ((engine) => {
+export default createSystem((engine) => {
   const entities = engine.world.with("baseline").without("statsCleanFlag");
   return () => {
     for (const entity of entities) {
@@ -28,4 +28,4 @@ export default ((engine) => {
       engine.world.addComponent(entity, "statsCleanFlag", true);
     }
   };
-}) satisfies System;
+});

@@ -1,7 +1,7 @@
-import type { System } from "../System";
+import { createSystem } from "../System";
 
 /** Too much damage at one time will cause some critical damage. */
-export default ((engine) => {
+export default createSystem((engine) => {
   const entities = engine.world.with("damageTaker", "criticalDamageTaker");
   return () => {
     for (const entity of entities) {
@@ -14,4 +14,4 @@ export default ((engine) => {
       );
     }
   };
-}) satisfies System;
+});

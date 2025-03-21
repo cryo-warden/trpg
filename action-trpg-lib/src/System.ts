@@ -1,11 +1,9 @@
 import type { Engine } from "./Engine";
 export * from "./systems";
 
-export type BoundSystem = () => void;
+export type System = (engine: Engine) => () => void;
 
-export type System = (engine: Engine) => BoundSystem;
-
-export const bindSystems: (systems: System[]) => System =
+export const joinSystems: (systems: System[]) => System =
   (systems) => (engine) => {
     const boundSystems = systems.map((system) => system(engine));
     return () => {
@@ -27,3 +25,6 @@ export const periodicSystem: (periodMS: number, system: System) => System =
       }
     };
   };
+
+/** Does nothing, but helps enforce System typing. */
+export const createSystem = (system: System): System => system;

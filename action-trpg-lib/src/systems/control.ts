@@ -1,8 +1,8 @@
-import { action } from "../../prototypeData";
+// import { action } from "../../prototypeData";
 import { createActionState } from "../structures/ActionState";
-import type { System } from "../System";
+import { createSystem } from "../System";
 
-export default ((engine) => {
+export default createSystem((engine) => {
   const entities = engine.world.with("controller").without("actionState");
   return () => {
     for (const entity of entities) {
@@ -32,4 +32,4 @@ export default ((engine) => {
       }
     }
   };
-}) satisfies System;
+});

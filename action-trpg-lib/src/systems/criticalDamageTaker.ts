@@ -1,6 +1,6 @@
-import type { System } from "../System";
+import { createSystem } from "../System";
 
-export default ((engine) => {
+export default createSystem((engine) => {
   const entities = engine.world.with("cdp", "criticalDamageTaker");
   return () => {
     for (const entity of entities) {
@@ -8,4 +8,4 @@ export default ((engine) => {
       entity.criticalDamageTaker.accumulatedCriticalDamage = 0;
     }
   };
-}) satisfies System;
+});

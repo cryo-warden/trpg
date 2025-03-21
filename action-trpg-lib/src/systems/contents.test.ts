@@ -4,8 +4,10 @@ import { createEngine } from "../Engine";
 import { createEntityFactory } from "../Entity";
 import { createActionState } from "../structures/ActionState";
 import { createMutualPaths, createRoom } from "../structures/Map";
-import actor from "./action/actor";
 import contents from "./contents";
+import move from "./action/move";
+import { joinSystems } from "../System";
+import advance from "./action/advance";
 
 const createEntity = createEntityFactory({
   name: "test entity",
@@ -37,7 +39,7 @@ describe("contents system", () => {
       engine.world.add(entity);
     }
 
-    const actorSystem = actor(engine);
+    const moveSystem = joinSystems([move, advance])(engine);
     const contentsSystem = contents(engine);
 
     expect(rooms[0].contents.length).toBe(0);
@@ -59,7 +61,7 @@ describe("contents system", () => {
     );
 
     // After actions but before updating contents, expect two clean flags to be gone.
-    actorSystem();
+    moveSystem();
     expect(rooms[0].contentsCleanFlag).toBeUndefined();
     expect(rooms[1].contentsCleanFlag).toBeUndefined();
     expect(rooms[2].contentsCleanFlag).toBeDefined();
@@ -85,7 +87,7 @@ describe("contents system", () => {
     );
 
     // After actions but before updating contents, expect two clean flags to be gone.
-    actorSystem();
+    moveSystem();
     expect(rooms[0].contentsCleanFlag).toBeDefined();
     expect(rooms[1].contentsCleanFlag).toBeUndefined();
     expect(rooms[2].contentsCleanFlag).toBeUndefined();
