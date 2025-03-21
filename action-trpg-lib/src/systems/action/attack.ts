@@ -11,20 +11,23 @@ export default createSystem((engine) => {
         return;
       }
 
-      if (target.damageTaker != null) {
-        const damage = Math.max(
+      engine.world.addComponent(target, "accumulatedDamage", 0);
+      if (target.accumulatedDamage != null) {
+        target.accumulatedDamage += Math.max(
           0,
           effect.damage + (entity.attack ?? 0) - (target.defense ?? 0)
         );
-        target.damageTaker.accumulatedDamage += damage;
       }
 
-      if (effect.criticalDamage > 0 && target.criticalDamageTaker) {
-        const criticalDamage = Math.max(
+      engine.world.addComponent(target, "accumulatedCriticalDamage", 0);
+      if (
+        effect.criticalDamage > 0 &&
+        target.accumulatedCriticalDamage != null
+      ) {
+        target.accumulatedCriticalDamage += Math.max(
           0,
           effect.criticalDamage - (target.criticalDefense ?? 0)
         );
-        target.criticalDamageTaker.accumulatedCriticalDamage += criticalDamage;
       }
 
       if (effect.statusEffectMap != null) {

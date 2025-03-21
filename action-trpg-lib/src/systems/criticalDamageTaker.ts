@@ -1,11 +1,11 @@
 import { createSystem } from "./createSystem";
 
 export default createSystem((engine) => {
-  const entities = engine.world.with("cdp", "criticalDamageTaker");
+  const entities = engine.world.with("cdp", "accumulatedCriticalDamage");
   return () => {
     for (const entity of entities) {
-      entity.cdp += entity.criticalDamageTaker.accumulatedCriticalDamage;
-      entity.criticalDamageTaker.accumulatedCriticalDamage = 0;
+      entity.cdp += entity.accumulatedCriticalDamage;
+      entity.accumulatedCriticalDamage = 0;
     }
   };
 });

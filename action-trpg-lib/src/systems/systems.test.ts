@@ -11,14 +11,7 @@ const createEntity = createEntityFactory({
   mhp: 10,
   hp: 10,
   cdp: 0,
-  damageTaker: {
-    accumulatedDamage: 0,
-    criticalDamageThreshold: 3,
-  },
-  criticalDamageTaker: {
-    accumulatedCriticalDamage: 0,
-  },
-  healingTaker: { accumulatedHealing: 0 },
+  criticalDamageThreshold: 3,
   ep: 10,
   mep: 10,
   status: {},
@@ -121,10 +114,7 @@ describe("systems", () => {
       const target = addEntity({
         mhp: 10,
         hp: 10,
-        damageTaker: {
-          accumulatedDamage: 0,
-          criticalDamageThreshold: 3,
-        },
+        criticalDamageThreshold: 3,
       });
       const aggressor = addEntity({});
 
@@ -163,10 +153,7 @@ describe("systems", () => {
       const target = addEntity({
         mhp: 10,
         hp: 10,
-        damageTaker: {
-          accumulatedDamage: 0,
-          criticalDamageThreshold: 3,
-        },
+        criticalDamageThreshold: 3,
       });
       const aggressor = addEntity({});
 

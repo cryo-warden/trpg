@@ -4,28 +4,18 @@ import type { Controller } from "./structures/Controller";
 import type { Equippable } from "./structures/Equippable";
 import type { Observation } from "./structures/Observation";
 import type { StatBlock } from "./structures/StatBlock";
-import type { StatusEffectMap } from "./structures/StatusEffectMap";
 
 export type Entity = {
   /** Display Name */
   name: string;
-  /** A recipient of Damage */
-  damageTaker?: {
-    /** Accumulated Damage from a single round */
-    accumulatedDamage: number;
-    /** Critical Damage Threshold divides your Accumulated Damage to determine how much critical damage you will take for a round. */
-    criticalDamageThreshold: number;
-  };
-  /** A recipient of Critical Damage */
-  criticalDamageTaker?: {
-    /** Accumulated Critical Damage from a single round */
-    accumulatedCriticalDamage: number;
-  };
-  /** A recipient of Healing */
-  healingTaker?: {
-    /** Accumulated Healing from a single round */
-    accumulatedHealing: number;
-  };
+  /** Accumulated Damage from a single round */
+  accumulatedDamage?: number;
+  /** Critical Damage Threshold divides your Accumulated Damage to determine how much critical damage you will take for a round. */
+  criticalDamageThreshold?: number;
+  /** Accumulated Critical Damage from a single round */
+  accumulatedCriticalDamage?: number;
+  /** Accumulated Healing from a single round */
+  accumulatedHealing?: number;
   /** Hit Points */
   hp?: number;
   /** Maximum Hit Points */

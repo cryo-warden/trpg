@@ -7,8 +7,9 @@ export default createSystem((engine) => {
       if (entity.regeneration.delay > 0) {
         entity.regeneration.delay -= 1;
       } else {
-        if (entity.healingTaker != null) {
-          entity.healingTaker.accumulatedHealing += entity.regeneration.heal;
+        engine.world.addComponent(entity, "accumulatedHealing", 0);
+        if (entity.accumulatedHealing != null) {
+          entity.accumulatedHealing += entity.regeneration.heal;
         }
         entity.regeneration.duration -= 1;
         if (entity.regeneration.duration <= 0) {

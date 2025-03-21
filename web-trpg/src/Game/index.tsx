@@ -53,14 +53,7 @@ const createActor = createEntityFactory({
   ep: 5,
   mep: 5,
   controller: { type: "sequence", sequence: [] },
-  healingTaker: { accumulatedHealing: 0 },
-  damageTaker: {
-    accumulatedDamage: 0,
-    criticalDamageThreshold: 4,
-  },
-  criticalDamageTaker: {
-    accumulatedCriticalDamage: 0,
-  },
+  criticalDamageThreshold: 4,
   status: {},
 });
 
@@ -78,9 +71,11 @@ const createSlime = createEntityFactory(
     name: "Small Slime",
     baseline: baseline.slime,
     controller: { type: "sequence", sequence: [] },
-    damageTaker: {
-      accumulatedDamage: 0,
-      criticalDamageThreshold: 2,
+    criticalDamageThreshold: 2,
+    regeneration: {
+      delay: 0,
+      heal: 1,
+      duration: Infinity,
     },
   })
 );

@@ -2,16 +2,17 @@ import { createSystem } from "./createSystem";
 
 /** Too much damage at one time will cause some critical damage. */
 export default createSystem((engine) => {
-  const entities = engine.world.with("damageTaker", "criticalDamageTaker");
+  const entities = engine.world.with("accumulatedDamage");
   return () => {
     for (const entity of entities) {
-      entity.criticalDamageTaker.accumulatedCriticalDamage += Math.max(
-        0,
-        Math.floor(
-          entity.damageTaker.accumulatedDamage /
-            entity.damageTaker.criticalDamageThreshold
-        ) - (entity.criticalDefense ?? 0)
-      );
+      if (entity.accumulatedCriticalDamage != null) {
+        entity.accumulatedCriticalDamage += Math.max(
+          0,
+          Math.floor(
+            entity.accumulatedDamage / (entity.criticalDamageThreshold ?? 2)
+          ) - (entity.criticalDefense ?? 0)
+        );
+      }
     }
   };
 });

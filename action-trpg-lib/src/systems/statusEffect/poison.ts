@@ -7,8 +7,9 @@ export default createSystem((engine) => {
       if (entity.poison.delay > 0) {
         entity.poison.delay -= 1;
       } else {
-        if (entity.damageTaker != null) {
-          entity.damageTaker.accumulatedDamage += entity.poison.damage;
+        engine.world.addComponent(entity, "accumulatedDamage", 0);
+        if (entity.accumulatedDamage != null) {
+          entity.accumulatedDamage += entity.poison.damage;
         }
         entity.poison.duration -= 1;
         if (entity.poison.duration <= 0) {

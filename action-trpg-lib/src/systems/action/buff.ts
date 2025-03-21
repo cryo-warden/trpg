@@ -9,8 +9,9 @@ export default createSystem((engine) => {
     ({ buff }, _entity, target) => {
       switch (buff.type) {
         case "heal":
-          if (target.healingTaker != null) {
-            target.healingTaker.accumulatedHealing += buff.heal;
+          engine.world.addComponent(target, "accumulatedHealing", 0);
+          if (target.accumulatedHealing != null) {
+            target.accumulatedHealing += buff.heal;
           }
           break;
         case "status":
