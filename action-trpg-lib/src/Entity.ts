@@ -94,6 +94,12 @@ export type Entity = {
     delay: number;
     duration: number;
   };
+  /** Regeneration which will cause repeated healing after an initial delay. */
+  regeneration?: {
+    heal: number;
+    delay: number;
+    duration: number;
+  };
   /** Temporarily boost attack. */
   advantage?: { attack: number; duration: number };
   /** Temporarily boost defense. */

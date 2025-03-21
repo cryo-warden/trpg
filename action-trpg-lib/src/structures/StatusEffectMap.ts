@@ -6,6 +6,7 @@ export const statusEffectNames = [
   "dead",
   "unconscious",
   "poison",
+  "regeneration",
   "advantage",
   "guard",
   "fortify",
@@ -27,6 +28,11 @@ export const combineStatusEffects: {
   dead: (_, additive) => additive,
   poison: (base, additive) => ({
     damage: Math.max(base.damage, additive.damage),
+    duration: base.duration + additive.duration,
+    delay: Math.max(base.delay, additive.delay),
+  }),
+  regeneration: (base, additive) => ({
+    heal: Math.max(base.heal, additive.heal),
     duration: base.duration + additive.duration,
     delay: Math.max(base.delay, additive.delay),
   }),

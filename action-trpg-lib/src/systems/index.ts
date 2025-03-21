@@ -24,6 +24,7 @@ export const bindRootSystem = (actorPeriodMS: number) =>
       actorPeriodMS,
       joinSystems([
         statusEffect.poison,
+        statusEffect.regeneration,
         statusEffect.advantage,
         statusEffect.guard,
         statusEffect.fortify,
