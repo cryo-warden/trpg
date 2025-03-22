@@ -21,10 +21,11 @@ export const ActionButton = ({
   return (
     <button
       className="ActionButton"
-      onClick={() => {
+      onClick={(e) => {
         if (entity?.controller?.type !== "player") {
           return;
         }
+        e.stopPropagation();
         entity.controller.actionQueue.push({
           action,
           targets: finalTarget == null ? [] : [finalTarget],

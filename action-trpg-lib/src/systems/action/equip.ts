@@ -7,15 +7,19 @@ export default createSystem((engine) => {
     "equip",
     (_equipEffect, entity, target) => {
       if (
+        target.equippable == null ||
         target.location !== entity ||
         entity.equipment == null ||
-        target.equippable == null
+        entity.contents == null
       ) {
         return;
       }
 
-      const alreadyEquipped = entity.equipment.includes(target);
-      if (alreadyEquipped) {
+      if (!entity.contents.includes(target)) {
+        return;
+      }
+
+      if (entity.equipment.includes(target)) {
         return;
       }
 

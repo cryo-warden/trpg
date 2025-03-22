@@ -5,15 +5,20 @@ export type Action = {
   effectSequence: Effect[];
 };
 
-export const recommendActions = (target: Entity): Action[] => [
+export const recommendActions = (entity: Entity, target: Entity): Action[] => [
   ...(target.path != null ? [{ effectSequence: [effect.move] }] : []),
-  ...(target.takeable != null
-    ? [{ effectSequence: [effect.drop] }, { effectSequence: [effect.take] }]
+  ...(target.takeable != null && !entity.equipment?.includes(target)
+    ? [
+        entity.contents?.includes(target)
+          ? { effectSequence: [effect.drop] }
+          : { effectSequence: [effect.take] },
+      ]
     : []),
   ...(target.equippable != null
     ? [
-        { effectSequence: [effect.normalEquip] },
-        { effectSequence: [effect.normalUnequip] },
+        entity.equipment?.includes(target)
+          ? { effectSequence: [effect.normalUnequip] }
+          : { effectSequence: [effect.normalEquip] },
       ]
     : []),
 ];

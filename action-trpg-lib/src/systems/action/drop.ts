@@ -10,6 +10,10 @@ export default createSystem((engine) => {
         return;
       }
 
+      if (entity.equipment != null && entity.equipment.includes(target)) {
+        return;
+      }
+
       if (target.location != null) {
         // Trigger update of old location contents.
         engine.world.removeComponent(target.location, "contentsCleanFlag");
