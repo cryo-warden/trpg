@@ -8,7 +8,7 @@ import { recommendActions } from "action-trpg-lib/src/structures/Action";
 import { useControllerEntity } from "../context/ControllerContext";
 
 export const EntityDisplay = WithEntity<{ detailed?: boolean }>(
-  ({ entity, detailed }) => {
+  ({ entity, detailed = false }) => {
     useWatchable(entity);
     const controllerEntity = useControllerEntity();
     const recommendedActions =
@@ -19,10 +19,15 @@ export const EntityDisplay = WithEntity<{ detailed?: boolean }>(
         <div>{entity.name}</div>
         <HPBar entity={entity} />
         <EPBar entity={entity} />
-        {detailed && <></>}
-        {recommendedActions?.map((action, i) => (
-          <ActionButton key={i} action={action} target={entity} />
-        ))}
+        {detailed && (
+          <>
+            <div className="ActionBar">
+              {recommendedActions?.map((action, i) => (
+                <ActionButton key={i} action={action} target={entity} />
+              ))}
+            </div>
+          </>
+        )}
       </div>
     );
   }

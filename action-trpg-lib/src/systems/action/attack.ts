@@ -7,10 +7,6 @@ export default createSystem((engine) => {
     engine,
     "attack",
     (effect, entity, target) => {
-      if (target.location !== entity.location) {
-        return;
-      }
-
       engine.world.addComponent(target, "accumulatedDamage", 0);
       if (target.accumulatedDamage != null) {
         target.accumulatedDamage += Math.max(

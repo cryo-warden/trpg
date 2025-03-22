@@ -6,20 +6,7 @@ export default createSystem((engine) => {
     engine,
     "equip",
     (_equipEffect, entity, target) => {
-      if (
-        target.equippable == null ||
-        target.location !== entity ||
-        entity.equipment == null ||
-        entity.contents == null
-      ) {
-        return;
-      }
-
-      if (!entity.contents.includes(target)) {
-        return;
-      }
-
-      if (entity.equipment.includes(target)) {
+      if (entity.equipment == null || entity.contents == null) {
         return;
       }
 

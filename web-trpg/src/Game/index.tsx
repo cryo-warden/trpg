@@ -11,6 +11,7 @@ import {
   baseline,
   trait,
   createStatBlock,
+  action,
 } from "action-trpg-lib";
 import { useMemo, useEffect } from "react";
 import { WithController } from "./context/ControllerContext";
@@ -92,6 +93,20 @@ const player = createActor({
   mhp: 12,
   ep: 20,
   mep: 10,
+  actions: [
+    action.move,
+    action.take,
+    action.drop,
+    action.equip,
+    action.unequip,
+    action.recover,
+    action.guard,
+    action.fancyFootwork,
+    action.doubleStrike,
+    action.powerStrike,
+    action.tripleStrike,
+    action.recover,
+  ],
   baseline: baseline.human,
   traits: [trait.hero, trait.hero, trait.hero],
   equipment: [magicHat],

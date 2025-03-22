@@ -2,10 +2,11 @@ import type { Action } from "../src/structures/Action";
 import { effect, buffEffect } from "../src/structures/Effect";
 
 export const action = {
-  move: {
-    name: "Move",
-    effectSequence: [effect.move],
-  },
+  move: { name: "Move", effectSequence: [effect.move] },
+  take: { name: "Take", effectSequence: [effect.take] },
+  drop: { name: "Drop", effectSequence: [effect.drop] },
+  equip: { name: "Equip", effectSequence: [effect.normalEquip] },
+  unequip: { name: "Unequip", effectSequence: [effect.normalUnequip] },
   guard: {
     name: "Guard",
     effectSequence: [

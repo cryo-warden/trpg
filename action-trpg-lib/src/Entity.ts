@@ -4,6 +4,7 @@ import type { Controller } from "./structures/Controller";
 import type { Equippable } from "./structures/Equippable";
 import type { Observation } from "./structures/Observation";
 import type { StatBlock } from "./structures/StatBlock";
+import type { Action } from "./structures/Action";
 
 export type Entity = {
   /** Display Name */
@@ -32,6 +33,8 @@ export type Entity = {
   defense?: number;
   /** Critical Defense subtracted from critical damage */
   criticalDefense?: number;
+  /** The actions available to this entity. */
+  actions?: Action[];
 
   /** The action this entity is currently performing. */
   actionState?: ActionState;

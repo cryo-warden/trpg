@@ -19,7 +19,7 @@ export const TargetDisplay = () => {
           const id = engine.world.id(entity);
           return (
             <Panel key={id}>
-              <EntityDisplay entity={entity} />
+              <EntityDisplay entity={entity} detailed />
             </Panel>
           );
         })}

@@ -6,10 +6,6 @@ export default createSystem((engine) => {
     engine,
     "take",
     (_takeEffect, entity, target) => {
-      if (target.takeable == null) {
-        return;
-      }
-
       if (target.location != null) {
         // Trigger update of old location contents.
         engine.world.removeComponent(target.location, "contentsCleanFlag");

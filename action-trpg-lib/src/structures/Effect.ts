@@ -1,3 +1,4 @@
+import type { Entity } from "../Entity";
 import type { Factory } from "../functional/factory";
 import type { StatusEffectMap } from "./StatusEffectMap";
 
@@ -61,6 +62,45 @@ export type Effect =
   | EquipEffect
   | UnequipEffect;
 
+export const validateEffect = (
+  effect: Effect,
+  entity: Entity,
+  target: Entity
+) => {
+  if (target.location !== entity.location && target.location !== entity) {
+    return false;
+  }
+
+  switch (effect.type) {
+    case "attack":
+      // TODO Add allegiance.
+      return target.hp != null;
+    case "buff":
+      // TODO Add allegiance.
+      return target.hp != null;
+    case "drop":
+      return (
+        target.takeable &&
+        entity.contents?.includes(target) &&
+        !entity.equipment?.includes(target)
+      );
+    case "equip":
+      return (
+        target.equippable != null &&
+        !entity.equipment?.includes(target) &&
+        entity.contents?.includes(target)
+      );
+    case "move":
+      return target.path != null;
+    case "rest":
+      return true;
+    case "take":
+      return target.takeable && !entity.contents?.includes(target);
+    case "unequip":
+      return target.equippable != null && entity.equipment?.includes(target);
+  }
+};
+
 const createBuffEffect = (intensity: Intensity, buff: Buff): BuffEffect => ({
   type: "buff",
   intensity,
@@ -74,6 +114,7 @@ export const buffEffect = {
     createBuffEffect("powerful", { type: "heal", heal }),
   extremeHeal: (heal: number) =>
     createBuffEffect("extreme", { type: "heal", heal }),
+
   normalStatus: (statusEffectMap: StatusEffectMap) =>
     createBuffEffect("normal", { type: "status", statusEffectMap }),
   powerfulStatus: (statusEffectMap: StatusEffectMap) =>
@@ -84,17 +125,21 @@ export const buffEffect = {
 
 export const effect = {
   move: { type: "move" },
+
   take: { type: "take" },
   drop: { type: "drop" },
+
   normalEquip: { type: "equip", intensity: "normal" },
   powerfulEquip: { type: "equip", intensity: "powerful" },
   extremeEquip: { type: "equip", intensity: "extreme" },
   normalUnequip: { type: "unequip", intensity: "normal" },
   powerfulUnequip: { type: "unequip", intensity: "powerful" },
   extremeUnequip: { type: "unequip", intensity: "extreme" },
+
   normalRest: { type: "rest", intensity: "normal" },
   powerfulRest: { type: "rest", intensity: "powerful" },
   extremeRest: { type: "rest", intensity: "extreme" },
+
   normalAttack: (damage: number, criticalDamage: number = 0): AttackEffect => ({
     type: "attack",
     intensity: "normal",

@@ -1,5 +1,5 @@
 import type { Entity } from "../../Entity";
-import type { Effect } from "../../structures/Effect";
+import { validateEffect, type Effect } from "../../structures/Effect";
 import type { Engine } from "../../Engine";
 
 export const createActionEffectSystem = <const TType extends Effect["type"]>(
@@ -28,7 +28,11 @@ export const createActionEffectSystem = <const TType extends Effect["type"]>(
       const effect = effectSequence[effectSequenceIndex];
       if (effect.type === effectType) {
         for (let i = 0; i < targets.length; ++i) {
-          apply(effect as Extract<Effect, { type: TType }>, entity, targets[i]);
+          const target = targets[i];
+          if (!validateEffect(effect, entity, target)) {
+            continue;
+          }
+          apply(effect as Extract<Effect, { type: TType }>, entity, target);
         }
       }
     }

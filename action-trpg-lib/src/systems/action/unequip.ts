@@ -6,11 +6,7 @@ export default createSystem((engine) => {
     engine,
     "unequip",
     (_unequipEffect, entity, target) => {
-      if (
-        target.location !== entity ||
-        entity.equipment == null ||
-        target.equippable == null
-      ) {
+      if (entity.equipment == null) {
         return;
       }
 
