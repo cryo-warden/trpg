@@ -3,9 +3,11 @@ import { effect, buffEffect } from "../src/structures/Effect";
 
 export const action = {
   move: {
+    name: "Move",
     effectSequence: [effect.move],
   },
   guard: {
+    name: "Guard",
     effectSequence: [
       effect.powerfulRest,
       effect.extremeRest,
@@ -15,6 +17,7 @@ export const action = {
     ],
   },
   fancyFootwork: {
+    name: "Fancy Footwork",
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -25,6 +28,7 @@ export const action = {
     ],
   },
   doubleStrike: {
+    name: "Double Strike",
     effectSequence: [
       effect.normalRest,
       effect.normalAttack(0),
@@ -33,6 +37,7 @@ export const action = {
     ],
   },
   tripleStrike: {
+    name: "Triple Strike",
     effectSequence: [
       effect.normalRest,
       effect.normalAttack(0),
@@ -44,6 +49,7 @@ export const action = {
     ],
   },
   powerStrike: {
+    name: "Power Strike",
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -52,6 +58,7 @@ export const action = {
     ],
   },
   extremeStrike: {
+    name: "Extreme Strike",
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -61,6 +68,7 @@ export const action = {
     ],
   },
   comboStrike: {
+    name: "Combo Strike",
     effectSequence: [
       effect.extremeRest,
       effect.powerfulRest,
@@ -74,9 +82,11 @@ export const action = {
     ],
   },
   recover: {
+    name: "Recover",
     effectSequence: [effect.normalRest, buffEffect.normalHeal(2)],
   },
   luckyHeal: {
+    name: "Lucky Heal",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -88,6 +98,7 @@ export const action = {
     ],
   },
   ultimateNap: {
+    name: "Ultimate Nap",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,

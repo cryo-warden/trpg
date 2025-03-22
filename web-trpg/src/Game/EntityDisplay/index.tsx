@@ -21,10 +21,7 @@ export const EntityDisplay = WithEntity<{ detailed?: boolean }>(
         <EPBar entity={entity} />
         {detailed && <></>}
         {recommendedActions?.map((action, i) => (
-          <ActionButton key={i} action={action} target={entity}>
-            {/* TODO Add name property to actions. */}
-            {action.effectSequence[0].type}
-          </ActionButton>
+          <ActionButton key={i} action={action} target={entity} />
         ))}
       </div>
     );

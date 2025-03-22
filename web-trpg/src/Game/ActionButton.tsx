@@ -9,11 +9,9 @@ import { useTarget } from "./context/TargetContext";
 export const ActionButton = ({
   target,
   action,
-  children,
 }: {
   target?: Entity;
   action: Action;
-  children: ReactNode;
 }) => {
   const entity = useControllerEntity();
   const { target: contextualTarget } = useTarget();
@@ -33,7 +31,7 @@ export const ActionButton = ({
         updateWatchable(entity);
       }}
     >
-      {children}
+      {action.name}
     </button>
   );
 };

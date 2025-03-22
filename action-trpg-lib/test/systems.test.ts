@@ -19,6 +19,7 @@ const createEntity = createEntityFactory({
 
 const action = {
   comboStrike: {
+    name: "Test Combo Strike",
     effectSequence: [
       effect.normalRest,
       effect.normalAttack(1),
@@ -27,6 +28,7 @@ const action = {
     ],
   },
   luckyHeal: {
+    name: "Test Lucky Heal",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -36,6 +38,7 @@ const action = {
     ],
   },
   ultimateNap: {
+    name: "Test Ultimate Nap",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -44,6 +47,7 @@ const action = {
     ],
   },
   gainAdvantage: {
+    name: "Test Gain Afvantage",
     effectSequence: [
       effect.normalRest,
       buffEffect.normalStatus({ advantage: { attack: 1, duration: 1 } }),
@@ -159,6 +163,7 @@ describe("systems", () => {
 
       aggressor.actionState = createActionState(
         {
+          name: "Test Poison",
           effectSequence: [
             effect.normalStatusAttack({
               poison: {

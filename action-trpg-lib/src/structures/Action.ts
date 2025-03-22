@@ -2,23 +2,26 @@ import type { Entity } from "../Entity";
 import { effect, type Effect } from "./Effect";
 
 export type Action = {
+  name: string;
   effectSequence: Effect[];
 };
 
 export const recommendActions = (entity: Entity, target: Entity): Action[] => [
-  ...(target.path != null ? [{ effectSequence: [effect.move] }] : []),
+  ...(target.path != null
+    ? [{ name: "Move", effectSequence: [effect.move] }]
+    : []),
   ...(target.takeable != null && !entity.equipment?.includes(target)
     ? [
         entity.contents?.includes(target)
-          ? { effectSequence: [effect.drop] }
-          : { effectSequence: [effect.take] },
+          ? { name: "Drop", effectSequence: [effect.drop] }
+          : { name: "Take", effectSequence: [effect.take] },
       ]
     : []),
   ...(target.equippable != null
     ? [
         entity.equipment?.includes(target)
-          ? { effectSequence: [effect.normalUnequip] }
-          : { effectSequence: [effect.normalEquip] },
+          ? { name: "Unequip", effectSequence: [effect.normalUnequip] }
+          : { name: "Equip", effectSequence: [effect.normalEquip] },
       ]
     : []),
 ];

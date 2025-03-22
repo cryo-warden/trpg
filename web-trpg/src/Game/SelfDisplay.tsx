@@ -16,19 +16,13 @@ export const SelfDisplay = () => {
     <div onClick={() => setTarget(entity)}>
       <EntityDisplay entity={entity} detailed />
       <div className="ActionBar">
-        <ActionButton action={action.recover} target={entity}>
-          Recover
-        </ActionButton>
-        <ActionButton action={action.guard} target={entity}>
-          Guard
-        </ActionButton>
-        <ActionButton action={action.fancyFootwork} target={entity}>
-          Fancy Footwork
-        </ActionButton>
-        <ActionButton action={action.doubleStrike}>Double Strike</ActionButton>
-        <ActionButton action={action.powerStrike}>Power Strike</ActionButton>
-        <ActionButton action={action.tripleStrike}>Triple Strike</ActionButton>
-        <ActionButton action={action.recover}>Restore</ActionButton>
+        <ActionButton action={action.recover} target={entity} />
+        <ActionButton action={action.guard} target={entity} />
+        <ActionButton action={action.fancyFootwork} target={entity} />
+        <ActionButton action={action.doubleStrike} />
+        <ActionButton action={action.powerStrike} />
+        <ActionButton action={action.tripleStrike} />
+        <ActionButton action={action.recover} />
       </div>
     </div>
   );
