@@ -106,10 +106,16 @@ export type Entity = {
 
   /*** Items ***/
 
+  /** Whether this can be taken as an inventory item. */
+  takeable?: true;
   /** Stats applied if this is equipped. */
   equippable?: Equippable;
   // /** The action this item takes if consumed. */
   // TODO consumable: Action;
+  // /** A seed for deterministic pseudo-random behaviors such as room decorations and randomly-assigned special components. Not used for loot generation because loot shouldn't be predictable (outside of testing). */
+  // TODO seed: number;
+  // /** Quality of items generated as loot when opened/defeated. */
+  // TODO lootQuality: LootQuality;
 };
 
 const entityComponentNameSet = new Set<string>([
@@ -127,7 +133,11 @@ export const cloneEntity = <TEntity extends Entity>(
   entity: TEntity
 ): TEntity => {
   return Object.entries(entity).reduce((newEntity, [name, component]) => {
-    (newEntity as any)[name] = cloneComponent(component);
+    if (entityComponentNameSet.has(name)) {
+      (newEntity as any)[name] = component;
+    } else {
+      (newEntity as any)[name] = cloneComponent(component);
+    }
     return newEntity;
   }, {} as TEntity);
 };

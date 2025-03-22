@@ -3,8 +3,6 @@ import type { Entity } from "../Entity";
 import { createStatBlock, type StatBlock } from "./StatBlock";
 
 export const statusEffectNames = [
-  "dead",
-  "unconscious",
   "poison",
   "regeneration",
   "advantage",
@@ -24,8 +22,6 @@ export const combineStatusEffects: {
     additive: StatusEffectComponents[key]
   ) => StatusEffectComponents[key];
 } = {
-  unconscious: (_, additive) => additive,
-  dead: (_, additive) => additive,
   poison: (base, additive) => ({
     damage: Math.max(base.damage, additive.damage),
     duration: base.duration + additive.duration,

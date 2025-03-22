@@ -1,6 +1,6 @@
-import { type StatBlock } from "../structures/StatBlock";
-import { createStatusStatBlock } from "../structures/StatusEffectMap";
-import { createSystem } from "./createSystem";
+import { type StatBlock } from "../../structures/StatBlock";
+import { createStatusStatBlock } from "../../structures/StatusEffectMap";
+import { createSystem } from "../createSystem";
 
 export default createSystem((engine) => {
   const entities = engine.world.without("statusStatBlockCleanFlag");

@@ -1,21 +1,18 @@
 import { joinSystems, periodicSystem } from "../System";
 import { action } from "./action";
+import applyAccumulatedCriticalDamage from "./applyAccumulatedCriticalDamage";
+import applyAccumulatedDamage from "./applyAccumulatedDamage";
 import cdp from "./cdp";
 import contents from "./contents";
 import control from "./control";
-import criticalDamageTaker from "./criticalDamageTaker";
-import damageTaker from "./damageTaker";
 import damageToCriticalDamage from "./damageToCriticalDamage";
+import dead from "./dead";
 import ep from "./ep";
-import equipmentStatBlock from "./equipmentStatBlock";
 import healingTaker from "./healingTaker";
 import hp from "./hp";
-import stats from "./stats";
-import statusDead from "./statusDead";
+import { stats } from "./stats";
 import { statusEffect } from "./statusEffect";
-import statusStatBlock from "./statusStatBlock";
-import statusUnconscious from "./statusUnconscious";
-import traitsStatBlock from "./traitsStatBlock";
+import unconscious from "./unconscious";
 
 export const bindRootSystem = (actorPeriodMS: number) =>
   joinSystems([
@@ -29,25 +26,30 @@ export const bindRootSystem = (actorPeriodMS: number) =>
         statusEffect.guard,
         statusEffect.fortify,
         action.buff,
-        statusStatBlock,
-        stats,
+        action.unequip,
+        action.equip,
+        stats.equipment,
+        stats.status,
+        stats.apply,
         action.attack,
+        action.drop,
+        action.take,
         action.move,
         action.advance,
       ])
     ),
     damageToCriticalDamage,
     healingTaker,
-    damageTaker,
-    criticalDamageTaker,
+    applyAccumulatedDamage,
+    applyAccumulatedCriticalDamage,
     hp,
     ep,
     cdp,
-    statusUnconscious,
-    statusDead,
+    unconscious,
+    dead,
     contents,
-    traitsStatBlock,
-    equipmentStatBlock,
-    statusStatBlock,
-    stats,
+    stats.traits,
+    stats.equipment,
+    stats.status,
+    stats.apply,
   ]);

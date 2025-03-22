@@ -14,6 +14,7 @@ export default createSystem((engine) => {
         // Trigger update of old location contents.
         engine.world.removeComponent(entity.location, "contentsCleanFlag");
       }
+      engine.world.addComponent(entity, "location", target.path.destination);
       entity.location = target.path.destination;
       // Trigger update of new location contents.
       engine.world.removeComponent(entity.location, "contentsCleanFlag");

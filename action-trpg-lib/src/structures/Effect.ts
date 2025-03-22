@@ -33,8 +33,21 @@ export type MoveEffect = {
   type: "move";
 };
 
+export type TakeEffect = {
+  type: "take";
+};
+
+export type DropEffect = {
+  type: "drop";
+};
+
 export type EquipEffect = {
   type: "equip";
+  intensity: Intensity;
+};
+
+export type UnequipEffect = {
+  type: "unequip";
   intensity: Intensity;
 };
 
@@ -43,7 +56,10 @@ export type Effect =
   | AttackEffect
   | BuffEffect
   | MoveEffect
-  | EquipEffect;
+  | TakeEffect
+  | DropEffect
+  | EquipEffect
+  | UnequipEffect;
 
 const createBuffEffect = (intensity: Intensity, buff: Buff): BuffEffect => ({
   type: "buff",
@@ -68,6 +84,14 @@ export const buffEffect = {
 
 export const effect = {
   move: { type: "move" },
+  take: { type: "take" },
+  drop: { type: "drop" },
+  normalEquip: { type: "equip", intensity: "normal" },
+  powerfulEquip: { type: "equip", intensity: "powerful" },
+  extremeEquip: { type: "equip", intensity: "extreme" },
+  normalUnequip: { type: "unequip", intensity: "normal" },
+  powerfulUnequip: { type: "unequip", intensity: "powerful" },
+  extremeUnequip: { type: "unequip", intensity: "extreme" },
   normalRest: { type: "rest", intensity: "normal" },
   powerfulRest: { type: "rest", intensity: "powerful" },
   extremeRest: { type: "rest", intensity: "extreme" },

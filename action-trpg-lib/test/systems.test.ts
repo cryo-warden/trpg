@@ -1,10 +1,10 @@
 import { expect, describe, test } from "bun:test";
-import { createActionState } from "../structures/ActionState";
-import { buffEffect, effect } from "../structures/Effect";
-import type { Action } from "../structures/Action";
-import { createEntityFactory, type Entity } from "../Entity";
-import { createEngine, type Engine } from "../Engine";
-import { bindRootSystem } from ".";
+import { createActionState } from "../src/structures/ActionState";
+import { buffEffect, effect } from "../src/structures/Effect";
+import type { Action } from "../src/structures/Action";
+import { createEntityFactory, type Entity } from "../src/Entity";
+import { createEngine, type Engine } from "../src/Engine";
+import { bindRootSystem } from "../src/systems";
 
 const createEntity = createEntityFactory({
   name: "test entity",

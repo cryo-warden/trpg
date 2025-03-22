@@ -44,6 +44,12 @@ const paths = [
   ...mapEntities.paths,
 ] satisfies Entity[];
 
+const createItem = createEntityFactory({
+  name: "item",
+  location: rooms[0],
+  takeable: true,
+});
+
 const createActor = createEntityFactory({
   name: "Unknown",
   location: rooms[0],
@@ -56,6 +62,43 @@ const createActor = createEntityFactory({
   criticalDamageThreshold: 4,
   status: {},
 });
+
+const magicHat = createItem({
+  name: "magic hat",
+  equippable: {
+    capacityCost: 2,
+    slot: "head",
+    statBlock: createStatBlock({ mep: 10 }),
+  },
+});
+
+const items = [
+  magicHat,
+  createItem({
+    name: "magic stick",
+    equippable: {
+      capacityCost: 2,
+      slot: "hand",
+      statBlock: createStatBlock({ attack: 1 }),
+    },
+  }),
+] satisfies Entity[];
+
+const player = createActor({
+  name: "Human",
+  location: rooms[0],
+  contents: [],
+  hp: 10,
+  mhp: 12,
+  ep: 20,
+  mep: 10,
+  baseline: baseline.human,
+  traits: [trait.hero, trait.hero, trait.hero],
+  equipment: [magicHat],
+  controller: { type: "player", id: "me", actionQueue: [] },
+});
+
+magicHat.location = player;
 
 const createBat = createEntityFactory(
   createActor({
@@ -81,27 +124,7 @@ const createSlime = createEntityFactory(
 );
 
 const actors = [
-  createActor({
-    name: "Human",
-    location: rooms[0],
-    hp: 10,
-    mhp: 12,
-    ep: 20,
-    mep: 10,
-    baseline: baseline.human,
-    traits: [trait.hero, trait.hero, trait.hero],
-    equipment: [
-      {
-        name: "magic hat",
-        equippable: {
-          capacityCost: 2,
-          slot: "head",
-          statBlock: createStatBlock({ mep: 10 }),
-        },
-      },
-    ],
-    controller: { type: "player", id: "me", actionQueue: [] },
-  }),
+  player,
   ...Array.from({ length: 3 }, () => createBat({ location: rooms[0] })),
   ...Array.from({ length: 4 }, () => createSlime({ location: rooms[1] })),
 ] satisfies Entity[];
@@ -110,6 +133,7 @@ const entities = [
   ...rooms,
   ...paths,
   ...mapEntities.decorations,
+  ...items,
   ...actors,
 ] satisfies Entity[];
 
@@ -122,7 +146,14 @@ export const Game = ({
 }) => {
   const engine = useMemo(() => createEngine(), []);
 
-  (window as any).dev = { engine, updateWatchable };
+  (window as any).dev = {
+    engine,
+    updateWatchable,
+    rooms,
+    paths,
+    items,
+    actors,
+  };
 
   usePeriodicEffect(
     () => {

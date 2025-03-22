@@ -12,7 +12,8 @@ const weighEntity = (entity: Entity) =>
   ((entity.controller != null ? 1 : 0) << 7) +
   ((entity.path != null ? 1 : 0) << 6) +
   ((entity.mhp != null ? 1 : 0) << 5) +
-  ((entity.contents != null ? 1 : 0) << 4);
+  ((entity.contents != null ? 1 : 0) << 4) +
+  ((entity.takeable != null ? 1 : 0) << 3);
 
 export const EntitiesDisplay = () => {
   const engine = useEngine();
