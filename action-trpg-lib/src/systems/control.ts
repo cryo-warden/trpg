@@ -1,4 +1,5 @@
 // import { action } from "../../prototypeData";
+import { validateActionTarget } from "../structures/Action";
 import { createActionState } from "../structures/ActionState";
 import { createSystem } from "./createSystem";
 
@@ -21,15 +22,31 @@ export default createSystem((engine) => {
           );
           break;
         case "sequence":
-          // WIP configure action and targets via Controller component.
-          // engine.world.addComponent(
-          //   entity,
-          //   "actionState",
-          //   createActionState(
-          //     Math.random() < 0.5 ? action.doubleStrike : action.recover,
-          //     [entity]
-          //   )
-          // );
+          if (entity.actions == null || entity.actions.length < 1) {
+            continue;
+          }
+          if (entity.controller.sequenceIndex >= entity.actions.length) {
+            entity.controller.sequenceIndex = 0;
+          }
+          const action = entity.actions[entity.controller.sequenceIndex];
+          entity.controller.sequenceIndex += 1;
+          const target = (
+            entity.location?.contents == null
+              ? [entity]
+              : entity.location.contents
+          )
+            .toSorted(() => Math.random() - 0.5)
+            .find((t) => validateActionTarget(action, entity, t));
+
+          if (target == null) {
+            continue;
+          }
+
+          engine.world.addComponent(
+            entity,
+            "actionState",
+            createActionState(action, [target])
+          );
           break;
       }
     }

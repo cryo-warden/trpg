@@ -42,6 +42,17 @@ export const action = {
       effect.normalRest,
     ],
   },
+  nibble: {
+    name: "Nibble",
+    effectSequence: [
+      effect.normalRest,
+      effect.normalRest,
+      effect.powerfulRest,
+      effect.extremeRest,
+      effect.normalAttack(1),
+      effect.normalRest,
+    ],
+  },
   jab: {
     name: "Jab",
     effectSequence: [

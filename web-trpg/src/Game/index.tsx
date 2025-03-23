@@ -67,7 +67,7 @@ const createActor = createEntityFactory({
   cdp: 0,
   ep: 5,
   mep: 5,
-  controller: { type: "sequence", sequence: [] },
+  controller: { type: "sequence", sequenceIndex: 0 },
   criticalDamageThreshold: 4,
   status: {},
 });
@@ -88,22 +88,37 @@ const items = [
     equippable: {
       capacityCost: 2,
       slot: "hand",
-      statBlock: createStatBlock({ attack: 1, actions: [action.jab] }),
+      statBlock: createStatBlock({ actions: [action.jab] }),
     },
   }),
 ] satisfies Entity[];
 
-const player = createActor({
-  name: "Human",
+const createHuman = createEntityFactory(
+  createActor({
+    name: "Human",
+    location: null,
+    contents: [],
+    allegiance: humanity,
+    baseline: baseline.human,
+  })
+);
+
+const player = createHuman({
+  name: "Player",
   location: rooms[0],
   contents: [],
-  allegiance: humanity,
   hp: 10,
   mhp: 12,
   ep: 20,
   mep: 10,
-  baseline: baseline.human,
-  traits: [trait.hero, trait.hero, trait.hero],
+  traits: [
+    trait.hero,
+    trait.hero,
+    trait.hero,
+    trait.mobile,
+    trait.collecting,
+    trait.equipping,
+  ],
   equipment: [magicHat],
   controller: { type: "player", id: "me", actionQueue: [] },
 });
@@ -112,20 +127,17 @@ magicHat.location = player;
 
 const createBat = createEntityFactory(
   createActor({
-    name: "Small Bat",
+    name: "Bat",
     allegiance: batkind,
     baseline: baseline.bat,
-    traits: [trait.small],
-    controller: { type: "sequence", sequence: [] },
   })
 );
 
 const createSlime = createEntityFactory(
   createActor({
-    name: "Small Slime",
+    name: "Slime",
     allegiance: slimekind,
     baseline: baseline.slime,
-    controller: { type: "sequence", sequence: [] },
     criticalDamageThreshold: 2,
   })
 );
@@ -166,12 +178,13 @@ export const Game = ({
   usePeriodicEffect(
     () => {
       const system = bindRootSystem(period)(engine);
+      const allEntities = engine.world.with();
 
       return () => {
         updateEngine(engine);
         system();
         updateWatchable(engine);
-        for (const entity of engine.world.with()) {
+        for (const entity of allEntities) {
           updateWatchable(entity);
         }
       };

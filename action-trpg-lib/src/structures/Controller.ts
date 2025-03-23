@@ -7,6 +7,13 @@ export type PlayerController = {
   actionQueue: { action: Action; targets: Entity[] }[];
 };
 
-export type SequenceController = { type: "sequence"; sequence: Action[] };
+export type SequenceController = { type: "sequence"; sequenceIndex: number };
 
-export type Controller = PlayerController | SequenceController;
+export type AwarenessState = "idle" | "alert";
+
+export type AwarenessController = { type: "awareness"; state: AwarenessState };
+
+export type Controller =
+  | PlayerController
+  | SequenceController
+  | AwarenessController;
