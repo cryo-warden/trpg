@@ -24,6 +24,14 @@ import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetDisplay } from "./TargetDisplay";
 
+const createAllegiance = createEntityFactory({ name: "Unknown Allegiance" });
+
+const humanity = createAllegiance({ name: "Humanity" });
+const batkind = createAllegiance({ name: "Batkind" });
+const slimekind = createAllegiance({ name: "Slimekind" });
+
+const allegiances = [humanity, batkind, slimekind] satisfies Entity[];
+
 const mapEntities = createMapEntities({
   theme: "debug",
   exits: [],
@@ -89,6 +97,7 @@ const player = createActor({
   name: "Human",
   location: rooms[0],
   contents: [],
+  allegiance: humanity,
   hp: 10,
   mhp: 12,
   ep: 20,
@@ -118,6 +127,7 @@ magicHat.location = player;
 const createBat = createEntityFactory(
   createActor({
     name: "Small Bat",
+    allegiance: batkind,
     baseline: baseline.bat,
     traits: [trait.small],
     controller: { type: "sequence", sequence: [] },
@@ -127,6 +137,7 @@ const createBat = createEntityFactory(
 const createSlime = createEntityFactory(
   createActor({
     name: "Small Slime",
+    allegiance: slimekind,
     baseline: baseline.slime,
     controller: { type: "sequence", sequence: [] },
     criticalDamageThreshold: 2,
@@ -145,6 +156,7 @@ const actors = [
 ] satisfies Entity[];
 
 const entities = [
+  ...allegiances,
   ...rooms,
   ...paths,
   ...mapEntities.decorations,

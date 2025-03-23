@@ -47,7 +47,7 @@ const action = {
     ],
   },
   gainAdvantage: {
-    name: "Test Gain Afvantage",
+    name: "Test Gain Advantage",
     effectSequence: [
       effect.normalRest,
       buffEffect.normalStatus({ advantage: { attack: 1, duration: 1 } }),

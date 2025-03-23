@@ -73,11 +73,18 @@ export const validateEffect = (
 
   switch (effect.type) {
     case "attack":
-      // TODO Add allegiance.
-      return target.hp != null;
+      return (
+        target.hp != null &&
+        entity !== target &&
+        (target.allegiance == null || target.allegiance !== entity.allegiance)
+      );
     case "buff":
-      // TODO Add allegiance.
-      return target.hp != null;
+      return (
+        target.hp != null &&
+        (entity === target ||
+          (target.allegiance != null &&
+            target.allegiance === entity.allegiance))
+      );
     case "drop":
       return (
         target.takeable &&

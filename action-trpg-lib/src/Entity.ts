@@ -39,6 +39,8 @@ export type Entity = {
   /** The action this entity is currently performing. */
   actionState?: ActionState;
 
+  /** Allegiance to other entities. */
+  allegiance?: Entity;
   /** A Controller to assign actions */
   controller?: Controller;
   /** A recipient of Observations */
@@ -123,6 +125,7 @@ export type Entity = {
 
 const entityComponentNameSet = new Set<string>([
   "location",
+  "allegiance",
 ] satisfies (keyof Entity)[]);
 
 export const cloneComponent = <T>(component: T): T =>
