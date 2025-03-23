@@ -1,37 +1,42 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
+import type { Action } from "./Action";
 
 export type StatBlock = {
   mhp: number;
   mep: number;
   attack: number;
   defense: number;
+  actions: Action[];
 };
 
 export const applyStatBlock = (
   engine: Engine,
   entity: Entity,
-  baseline: StatBlock
+  statBlock: StatBlock
 ) => {
-  if (entity.hp != null && entity.mhp != null) {
-    entity.hp += baseline.mhp - entity.mhp;
+  if (entity.hp != null && entity.hp > 0 && entity.mhp != null) {
+    entity.hp += statBlock.mhp - entity.mhp;
   }
-  engine.world.addComponent(entity, "mhp", baseline.mhp);
-  engine.world.addComponent(entity, "hp", baseline.mhp);
-  entity.mhp = baseline.mhp;
+  engine.world.addComponent(entity, "mhp", statBlock.mhp);
+  engine.world.addComponent(entity, "hp", statBlock.mhp);
+  entity.mhp = statBlock.mhp;
 
-  if (entity.ep != null && entity.mep != null) {
-    entity.ep += baseline.mep - entity.mep;
+  if (entity.ep != null && entity.ep > 0 && entity.mep != null) {
+    entity.ep += statBlock.mep - entity.mep;
   }
-  engine.world.addComponent(entity, "mep", baseline.mep);
-  engine.world.addComponent(entity, "ep", baseline.mep);
-  entity.mep = baseline.mep;
+  engine.world.addComponent(entity, "mep", statBlock.mep);
+  engine.world.addComponent(entity, "ep", statBlock.mep);
+  entity.mep = statBlock.mep;
 
-  engine.world.addComponent(entity, "attack", baseline.attack);
-  entity.attack = baseline.attack;
+  engine.world.addComponent(entity, "attack", statBlock.attack);
+  entity.attack = statBlock.attack;
 
-  engine.world.addComponent(entity, "defense", baseline.defense);
-  entity.defense = baseline.defense;
+  engine.world.addComponent(entity, "defense", statBlock.defense);
+  entity.defense = statBlock.defense;
+
+  engine.world.addComponent(entity, "actions", statBlock.actions);
+  entity.actions = statBlock.actions;
 };
 
 export const mergeStatBlock = (target: StatBlock, source: StatBlock): void => {
@@ -39,6 +44,7 @@ export const mergeStatBlock = (target: StatBlock, source: StatBlock): void => {
   target.mep += source.mep;
   target.attack += source.attack;
   target.defense += source.defense;
+  target.actions = [...new Set([...target.actions, ...source.actions])];
 };
 
 export const createStatBlock = (
@@ -49,5 +55,6 @@ export const createStatBlock = (
     mep: customFields.mep ?? 0,
     attack: customFields.attack ?? 0,
     defense: customFields.defense ?? 0,
+    actions: customFields.actions ?? [],
   };
 };

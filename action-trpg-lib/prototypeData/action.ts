@@ -28,12 +28,36 @@ export const action = {
       }),
     ],
   },
+  slowStrike: {
+    name: "Slow Strike",
+    effectSequence: [
+      effect.normalRest,
+      effect.normalRest,
+      effect.normalRest,
+      effect.normalRest,
+      effect.normalRest,
+      effect.normalRest,
+      effect.normalAttack(1),
+      effect.normalRest,
+      effect.normalRest,
+    ],
+  },
+  jab: {
+    name: "Jab",
+    effectSequence: [
+      effect.normalRest,
+      effect.powerfulRest,
+      effect.extremeRest,
+      effect.normalAttack(2),
+      effect.normalRest,
+    ],
+  },
   doubleStrike: {
     name: "Double Strike",
     effectSequence: [
       effect.normalRest,
-      effect.normalAttack(0),
-      effect.normalAttack(0),
+      effect.normalAttack(1),
+      effect.normalAttack(1),
       effect.extremeRest,
     ],
   },
@@ -41,8 +65,8 @@ export const action = {
     name: "Triple Strike",
     effectSequence: [
       effect.normalRest,
-      effect.normalAttack(0),
-      effect.normalAttack(0),
+      effect.normalAttack(1),
+      effect.normalAttack(1),
       effect.normalAttack(0),
       effect.extremeRest,
       effect.powerfulRest,
@@ -54,7 +78,7 @@ export const action = {
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
-      effect.powerfulAttack(1),
+      effect.powerfulAttack(2),
       effect.extremeRest,
     ],
   },
@@ -63,7 +87,7 @@ export const action = {
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
-      effect.extremeAttack(2),
+      effect.extremeAttack(3),
       effect.powerfulRest,
       effect.normalRest,
     ],

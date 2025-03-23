@@ -88,7 +88,7 @@ const items = [
     equippable: {
       capacityCost: 2,
       slot: "hand",
-      statBlock: createStatBlock({ attack: 1 }),
+      statBlock: createStatBlock({ attack: 1, actions: [action.jab] }),
     },
   }),
 ] satisfies Entity[];
@@ -102,20 +102,6 @@ const player = createActor({
   mhp: 12,
   ep: 20,
   mep: 10,
-  actions: [
-    action.move,
-    action.take,
-    action.drop,
-    action.equip,
-    action.unequip,
-    action.recover,
-    action.guard,
-    action.fancyFootwork,
-    action.doubleStrike,
-    action.powerStrike,
-    action.tripleStrike,
-    action.recover,
-  ],
   baseline: baseline.human,
   traits: [trait.hero, trait.hero, trait.hero],
   equipment: [magicHat],
@@ -141,11 +127,6 @@ const createSlime = createEntityFactory(
     baseline: baseline.slime,
     controller: { type: "sequence", sequence: [] },
     criticalDamageThreshold: 2,
-    regeneration: {
-      delay: 0,
-      heal: 1,
-      duration: Infinity,
-    },
   })
 );
 
