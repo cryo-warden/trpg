@@ -10,12 +10,14 @@ import dead from "./dead";
 import ep from "./ep";
 import healingTaker from "./healingTaker";
 import hp from "./hp";
+import { observation } from "./observation";
 import { stats } from "./stats";
 import { statusEffect } from "./statusEffect";
 import unconscious from "./unconscious";
 
 export const bindRootSystem = (actorPeriodMS: number) =>
   joinSystems([
+    observation.reset,
     control,
     periodicSystem(
       actorPeriodMS,
@@ -52,4 +54,5 @@ export const bindRootSystem = (actorPeriodMS: number) =>
     stats.equipment,
     stats.status,
     stats.apply,
+    observation.proliferate,
   ]);

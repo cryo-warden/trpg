@@ -23,6 +23,7 @@ import { usePeriodicEffect } from "../structural/usePeriodicEffect";
 import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetDisplay } from "./TargetDisplay";
+import { ObservationsDisplay } from "./ObservationsDisplay";
 
 const createAllegiance = createEntityFactory({ name: "Unknown Allegiance" });
 
@@ -68,6 +69,7 @@ const createActor = createEntityFactory({
   ep: 5,
   mep: 5,
   controller: { type: "sequence", sequenceIndex: 0 },
+  observable: [],
   criticalDamageThreshold: 4,
   status: {},
 });
@@ -121,6 +123,7 @@ const player = createHuman({
   ],
   equipment: [magicHat],
   controller: { type: "player", id: "me", actionQueue: [] },
+  observer: [],
 });
 
 magicHat.location = player;
@@ -145,7 +148,7 @@ const createSlime = createEntityFactory(
 const actors = [
   player,
   ...Array.from({ length: 3 }, () => createBat({ location: rooms[0] })),
-  ...Array.from({ length: 4 }, () => createSlime({ location: rooms[1] })),
+  ...Array.from({ length: 4 }, () => createSlime({ location: rooms[0] })),
 ] satisfies Entity[];
 
 const entities = [
@@ -205,7 +208,9 @@ export const Game = ({
       <WithController controllerId={controllerId}>
         <WithTarget>
           <div className="Game">
-            <Panel className="events">Events</Panel>
+            <Panel className="events">
+              <ObservationsDisplay />
+            </Panel>
             <Panel className="entities">
               <EntitiesDisplay />
             </Panel>

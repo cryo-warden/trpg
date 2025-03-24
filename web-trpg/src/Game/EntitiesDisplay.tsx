@@ -7,6 +7,7 @@ import { useTarget } from "./context/TargetContext";
 import { useMemo } from "react";
 import { useEngine } from "./context/EngineContext";
 import { Entity } from "action-trpg-lib";
+import { Scroller } from "../structural/Scroller";
 
 const weighEntity = (entity: Entity) =>
   ((entity.controller != null ? 1 : 0) << 7) +
@@ -25,22 +26,24 @@ export const EntitiesDisplay = () => {
   }, [entities]);
   return (
     <div className="EntitiesDisplay">
-      {sortedEntities.map((entity) => {
-        if (entity === selfEntity) {
-          return null;
-        }
+      <Scroller>
+        {sortedEntities.map((entity) => {
+          if (entity === selfEntity) {
+            return null;
+          }
 
-        const id = engine.world.id(entity);
-        return (
-          <Panel
-            key={id}
-            className="entityPanel"
-            onClick={() => setTarget(entity)}
-          >
-            <EntityDisplay entity={entity} />
-          </Panel>
-        );
-      })}
+          const id = engine.world.id(entity);
+          return (
+            <Panel
+              key={id}
+              className="entityPanel"
+              onClick={() => setTarget(entity)}
+            >
+              <EntityDisplay entity={entity} />
+            </Panel>
+          );
+        })}
+      </Scroller>
     </div>
   );
 };

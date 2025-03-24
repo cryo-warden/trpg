@@ -7,23 +7,29 @@ export default createSystem((engine) => {
     engine,
     "attack",
     (effect, entity, target) => {
-      engine.world.addComponent(target, "accumulatedDamage", 0);
-      if (target.accumulatedDamage != null) {
-        target.accumulatedDamage += Math.max(
-          0,
-          effect.damage + (entity.attack ?? 0) - (target.defense ?? 0)
-        );
+      const damage = Math.max(
+        0,
+        effect.damage + (entity.attack ?? 0) - (target.defense ?? 0)
+      );
+      const criticalDamage = Math.max(
+        0,
+        effect.criticalDamage - (target.criticalDefense ?? 0)
+      );
+
+      if (damage > 0) {
+        engine.world.addComponent(target, "accumulatedDamage", 0);
+        target.accumulatedDamage = (target.accumulatedDamage ?? 0) + damage;
+      }
+      if (criticalDamage > 0) {
+        engine.world.addComponent(target, "accumulatedCriticalDamage", 0);
+        target.accumulatedCriticalDamage =
+          (target.accumulatedCriticalDamage ?? 0) + criticalDamage;
       }
 
-      engine.world.addComponent(target, "accumulatedCriticalDamage", 0);
-      if (
-        effect.criticalDamage > 0 &&
-        target.accumulatedCriticalDamage != null
-      ) {
-        target.accumulatedCriticalDamage += Math.max(
-          0,
-          effect.criticalDamage - (target.criticalDefense ?? 0)
-        );
+      if (target.observable != null) {
+        target.observable.push({
+          message: `${entity.name} dealt ${damage} damage to ${target.name}!`,
+        });
       }
 
       if (effect.statusEffectMap != null) {

@@ -1,4 +1,5 @@
 import { Panel } from "../structural/Panel";
+import { Scroller } from "../structural/Scroller";
 import { useControllerEntity } from "./context/ControllerContext";
 import { useEngine } from "./context/EngineContext";
 import { useTarget } from "./context/TargetContext";
@@ -14,7 +15,7 @@ export const TargetDisplay = () => {
 
   if (target === controllerEntity) {
     return (
-      <>
+      <Scroller>
         {controllerEntity.contents?.map((entity) => {
           const id = engine.world.id(entity);
           return (
@@ -23,7 +24,7 @@ export const TargetDisplay = () => {
             </Panel>
           );
         })}
-      </>
+      </Scroller>
     );
   }
 

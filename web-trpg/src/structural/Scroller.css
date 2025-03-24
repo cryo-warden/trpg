@@ -1,0 +1,32 @@
+.Scroller {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  flex-grow: 1;
+  width: 100%;
+  height: 100%;
+
+  .scrollArea {
+    position: relative;
+    display: block;
+    margin: 0;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    scrollbar-gutter: stable both-edges;
+    scroll-behavior: smooth;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .scrollToBottom {
+    position: absolute;
+    display: inline-block;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-width: 0;
+    max-width: none;
+    display: block;
+  }
+}
