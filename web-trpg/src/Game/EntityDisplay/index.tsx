@@ -23,7 +23,12 @@ export const EntityDisplay = WithEntity<{ detailed?: boolean }>(
           <>
             <div className="ActionBar">
               {recommendedActions?.map((action, i) => (
-                <ActionButton key={i} action={action} target={entity} />
+                <ActionButton
+                  key={i}
+                  hotkey={action.name === "Move" ? "m" : undefined}
+                  action={action}
+                  target={entity}
+                />
               ))}
             </div>
           </>
