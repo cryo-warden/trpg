@@ -5,6 +5,7 @@ export type PlayerController = {
   type: "player";
   id: string;
   actionQueue: { action: Action; targets: Entity[] }[];
+  hotkeyMap: Record<string, string>;
 };
 
 export type SequenceController = { type: "sequence"; sequenceIndex: number };

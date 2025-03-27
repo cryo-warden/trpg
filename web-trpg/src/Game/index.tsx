@@ -122,7 +122,7 @@ const player = createHuman({
     trait.equipping,
   ],
   equipment: [magicHat],
-  controller: { type: "player", id: "me", actionQueue: [] },
+  controller: { type: "player", id: "me", actionQueue: [], hotkeyMap: {} },
   observer: [],
 });
 
