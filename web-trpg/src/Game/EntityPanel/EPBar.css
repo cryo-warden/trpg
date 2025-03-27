@@ -1,18 +1,17 @@
-.HPBar {
+.EPBar {
   position: relative;
   border-radius: 1em;
   border: inset #fff 3px;
   overflow: hidden;
   min-height: 10px;
-  height: clamp(10px, 1em + 4px, 50px);
-  max-height: 50px;
+  height: clamp(10px, 1em + 4px, 2em);
+  max-height: 2em;
   margin: 4px;
   padding: 2px;
   background-color: #000;
 
-  .smooth-hp,
-  .hp,
-  .cdp {
+  .smooth-ep,
+  .ep {
     position: absolute;
     border: none;
     overflow: hidden;
@@ -21,29 +20,21 @@
     transition: width 1s ease-in-out;
   }
 
-  .smooth-hp {
+  .smooth-ep {
     background-color: #fff;
     z-index: 0;
   }
 
-  .hp {
-    background-color: #f44;
+  .ep {
+    background-color: #44f;
     z-index: 10;
   }
 
-  .smooth-hp,
-  .hp {
+  .smooth-ep,
+  .ep {
     border-radius: 1em;
     top: 0;
     bottom: 0;
-  }
-
-  .cdp {
-    border-radius: 1em;
-    background-color: #000;
-    top: 30%;
-    bottom: 30%;
-    z-index: 20;
   }
 
   .overlay {

@@ -5,8 +5,8 @@
     display: inline-block;
     margin: 4px;
     width: calc(50% - 20px);
-    height: 1in;
-    min-width: 1.5in;
-    min-height: 1in;
+    height: 19mm;
+    min-width: 40mm;
+    min-height: 19mm;
   }
 }

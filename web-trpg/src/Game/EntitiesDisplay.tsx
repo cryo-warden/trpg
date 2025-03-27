@@ -1,7 +1,7 @@
 import "./EntitiesDisplay.css";
 
 import { useControllerEntity } from "./context/ControllerContext";
-import { EntityDisplay } from "./EntityDisplay";
+import { EntityPanel } from "./EntityPanel";
 import { Panel } from "../structural/Panel";
 import { useTarget } from "./context/TargetContext";
 import { useMemo } from "react";
@@ -34,13 +34,12 @@ export const EntitiesDisplay = () => {
 
           const id = engine.world.id(entity);
           return (
-            <Panel
+            <EntityPanel
               key={id}
               className="entityPanel"
+              entity={entity}
               onClick={() => setTarget(entity)}
-            >
-              <EntityDisplay entity={entity} />
-            </Panel>
+            />
           );
         })}
       </Scroller>

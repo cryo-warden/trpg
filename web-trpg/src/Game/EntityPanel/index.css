@@ -1,0 +1,18 @@
+.EntityPanel {
+  min-height: 19mm;
+  transition: background-color 1s ease-in-out;
+
+  &.hostile {
+    background-color: #522;
+  }
+
+  &.friendly {
+    background-color: #224;
+  }
+
+  .ActionBar {
+    overflow-x: auto;
+    scroll-behavior: smooth;
+    scrollbar-color: #333 rgba(0, 0, 0, 0);
+  }
+}

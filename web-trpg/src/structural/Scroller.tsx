@@ -1,14 +1,14 @@
 import "./Scroller.css";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 export const Scroller = ({
-  children = null,
+  children,
   bottomLock = false,
+  ...props
 }: {
-  children?: ReactNode;
   bottomLock?: boolean;
-}) => {
+} & React.HTMLProps<HTMLDivElement>) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = useRef(0);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(bottomLock);
@@ -25,7 +25,7 @@ export const Scroller = ({
   });
 
   return (
-    <div className="Scroller">
+    <div {...props} className={"Scroller " + (props.className ?? "")}>
       <div
         ref={ref}
         className="scrollArea"

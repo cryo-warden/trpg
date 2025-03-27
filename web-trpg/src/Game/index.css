@@ -7,37 +7,24 @@
     "self target" 3fr
     "queue queue" 1fr
     / 1fr 1fr;
-}
 
-.events,
-.entities,
-.self,
-.target,
-.queue {
-  display: flex;
-  flex-direction: column;
-
-  & > * {
-    flex-grow: 1;
+  .events {
+    grid-area: events;
   }
-}
 
-.events {
-  grid-area: events;
-}
+  .entities {
+    grid-area: entities;
+  }
 
-.entities {
-  grid-area: entities;
-}
+  .self {
+    grid-area: self;
+  }
 
-.self {
-  grid-area: self;
-}
+  .target {
+    grid-area: target;
+  }
 
-.target {
-  grid-area: target;
-}
-
-.queue {
-  grid-area: queue;
+  .queue {
+    grid-area: queue;
+  }
 }

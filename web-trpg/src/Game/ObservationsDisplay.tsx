@@ -7,11 +7,7 @@ import { Scroller } from "../structural/Scroller";
 
 export const ObservationsDisplay = () => {
   const controllerEntity = useControllerEntity();
-  const [observations, setObservations] = useState<Observation[]>(
-    Array.from({ length: 100 }, () => ({
-      message: "Filler message.",
-    }))
-  );
+  const [observations, setObservations] = useState<Observation[]>([]);
   useEffect(() => {
     setObservations((observations) => {
       if (controllerEntity?.observer == null) {
@@ -22,12 +18,10 @@ export const ObservationsDisplay = () => {
   }, [controllerEntity?.observer]);
 
   return (
-    <div className="ObservationsDisplay">
-      <Scroller bottomLock>
-        {observations.map((observation, i) => (
-          <div key={i}>{observation.message}</div>
-        ))}
-      </Scroller>
-    </div>
+    <Scroller bottomLock>
+      {observations.map((observation, i) => (
+        <div key={i}>{observation.message}</div>
+      ))}
+    </Scroller>
   );
 };

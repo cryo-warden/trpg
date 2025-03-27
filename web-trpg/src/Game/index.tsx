@@ -18,11 +18,11 @@ import { WithController } from "./context/ControllerContext";
 import { WithEngine } from "./context/EngineContext";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 import { Panel } from "../structural/Panel";
-import { SelfDisplay } from "./SelfDisplay";
+import { SelfPanel } from "./SelfPanel";
 import { usePeriodicEffect } from "../structural/usePeriodicEffect";
 import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
-import { TargetDisplay } from "./TargetDisplay";
+import { TargetPanel } from "./TargetPanel";
 import { ObservationsDisplay } from "./ObservationsDisplay";
 
 const createAllegiance = createEntityFactory({ name: "Unknown Allegiance" });
@@ -214,12 +214,8 @@ export const Game = ({
             <Panel className="entities">
               <EntitiesDisplay />
             </Panel>
-            <Panel className="self">
-              <SelfDisplay />
-            </Panel>
-            <Panel className="target">
-              <TargetDisplay />
-            </Panel>
+            <SelfPanel className="self" />
+            <TargetPanel className="target" />
             <Panel className="queue">Queue</Panel>
           </div>
         </WithTarget>
