@@ -1,14 +1,14 @@
 .EPBar {
   position: relative;
   border-radius: 1em;
+  border: inset #fff 3px;
   overflow: hidden;
   min-height: 10px;
   height: clamp(10px, 1em + 4px, 50px);
   max-height: 50px;
   margin: 4px;
-  padding: 0;
-  background-color: #888;
-  box-shadow: #fff 1px 1px 1px 1px;
+  padding: 2px;
+  background-color: #000;
 
   .smooth-ep,
   .ep {
@@ -32,7 +32,7 @@
 
   .smooth-ep,
   .ep {
-    border-radius: clamp(2px, 25%, 12px);
+    border-radius: 1em;
     top: 0;
     bottom: 0;
   }
@@ -52,7 +52,6 @@
     margin: 0;
     z-index: 1000;
     padding: 2px;
-    text-shadow: 1px 1px 2px black;
 
     div {
       flex-basis: 0;

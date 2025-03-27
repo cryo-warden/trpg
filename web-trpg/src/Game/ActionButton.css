@@ -1,14 +1,17 @@
 .ActionButton {
   position: relative;
-  min-width: 1in;
-  min-height: 1in;
+  padding: 1em;
+  min-width: 14mm;
+  min-height: 14mm;
   max-width: fit-content;
   max-height: fit-content;
+  color: #fff;
 
   .hotkey {
     position: absolute;
     top: 0;
     right: 0;
     padding: 4px;
+    color: #bbb;
   }
 }

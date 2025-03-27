@@ -1,12 +1,13 @@
 html {
   font-family: monospace;
-  background-color: black;
-  color: white;
+  background-color: #000;
+  color: #fff;
+  text-shadow: 1px 1px 0px #000;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #333 black;
+  scrollbar-color: #333 #000;
 }
 
 #root,
@@ -27,12 +28,20 @@ div {
 
 button {
   border-radius: 8px;
+  border: outset #888 2px;
   margin: 3px;
   padding: 3px;
+  min-width: 11mm;
+  min-height: 11mm;
   font-family: monospace;
   background-color: #222;
   color: #fff;
-  box-shadow: #fff 1px 1px 1px 1px;
+  box-shadow: #000 1px 1px 2px 2px;
   overflow: hidden;
   overflow-wrap: normal;
+
+  &:active {
+    border-style: inset;
+    box-shadow: #000 1px 1px 1px 1px;
+  }
 }
