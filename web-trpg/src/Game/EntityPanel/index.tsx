@@ -38,7 +38,7 @@ export const EntityPanel = WithEntity<
             {recommendedActions?.map((action, i) => (
               <ActionButton
                 key={i}
-                hotkey={action.name === "Move" ? "m" : undefined}
+                hotkey={controllerEntity?.controller.hotkeyMap[action.name]}
                 action={action}
                 target={entity}
               />

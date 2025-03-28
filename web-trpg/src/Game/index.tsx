@@ -114,7 +114,12 @@ const player = createHuman({
   contents: [],
   traits: [trait.hero, trait.mobile, trait.collecting, trait.equipping],
   equipment: [magicHat],
-  controller: { type: "player", id: "me", actionQueue: [], hotkeyMap: {} },
+  controller: {
+    type: "player",
+    id: "me",
+    actionQueue: [],
+    hotkeyMap: { move: "m", take: "t", guard: "g", jab: "j" },
+  },
   observer: [],
 });
 
