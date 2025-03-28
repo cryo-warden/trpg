@@ -1,14 +1,14 @@
-import type { Action } from "../src/structures/Action";
+import { createActionRecord, type Action } from "../src/structures/Action";
 import { effect, buffEffect } from "../src/structures/Effect";
 
-export const action = {
-  move: { name: "Move", effectSequence: [effect.move] },
-  take: { name: "Take", effectSequence: [effect.take] },
-  drop: { name: "Drop", effectSequence: [effect.drop] },
-  equip: { name: "Equip", effectSequence: [effect.normalEquip] },
-  unequip: { name: "Unequip", effectSequence: [effect.normalUnequip] },
-  guard: {
-    name: "Guard",
+export const action = createActionRecord([
+  { name: "move", effectSequence: [effect.move] },
+  { name: "take", effectSequence: [effect.take] },
+  { name: "drop", effectSequence: [effect.drop] },
+  { name: "equip", effectSequence: [effect.normalEquip] },
+  { name: "unequip", effectSequence: [effect.normalUnequip] },
+  {
+    name: "guard",
     effectSequence: [
       effect.powerfulRest,
       effect.extremeRest,
@@ -17,8 +17,8 @@ export const action = {
       }),
     ],
   },
-  fancyFootwork: {
-    name: "Fancy Footwork",
+  {
+    name: "fancyFootwork",
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -28,8 +28,8 @@ export const action = {
       }),
     ],
   },
-  slowStrike: {
-    name: "Slow Strike",
+  {
+    name: "slowStrike",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -42,8 +42,8 @@ export const action = {
       effect.normalRest,
     ],
   },
-  nibble: {
-    name: "Nibble",
+  {
+    name: "nibble",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -53,8 +53,8 @@ export const action = {
       effect.normalRest,
     ],
   },
-  jab: {
-    name: "Jab",
+  {
+    name: "jab",
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -63,8 +63,8 @@ export const action = {
       effect.normalRest,
     ],
   },
-  doubleStrike: {
-    name: "Double Strike",
+  {
+    name: "doubleStrike",
     effectSequence: [
       effect.normalRest,
       effect.normalAttack(1),
@@ -72,8 +72,8 @@ export const action = {
       effect.extremeRest,
     ],
   },
-  tripleStrike: {
-    name: "Triple Strike",
+  {
+    name: "tripleStrike",
     effectSequence: [
       effect.normalRest,
       effect.normalAttack(1),
@@ -84,8 +84,8 @@ export const action = {
       effect.normalRest,
     ],
   },
-  powerStrike: {
-    name: "Power Strike",
+  {
+    name: "powerStrike",
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -93,8 +93,8 @@ export const action = {
       effect.extremeRest,
     ],
   },
-  extremeStrike: {
-    name: "Extreme Strike",
+  {
+    name: "extremeStrike",
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -103,8 +103,8 @@ export const action = {
       effect.normalRest,
     ],
   },
-  comboStrike: {
-    name: "Combo Strike",
+  {
+    name: "comboStrike",
     effectSequence: [
       effect.extremeRest,
       effect.powerfulRest,
@@ -117,12 +117,12 @@ export const action = {
       effect.extremeAttack(2),
     ],
   },
-  recover: {
-    name: "Recover",
+  {
+    name: "recover",
     effectSequence: [effect.normalRest, buffEffect.normalHeal(2)],
   },
-  luckyHeal: {
-    name: "Lucky Heal",
+  {
+    name: "luckyHeal",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -133,8 +133,8 @@ export const action = {
       buffEffect.extremeHeal(7),
     ],
   },
-  ultimateNap: {
-    name: "Ultimate Nap",
+  {
+    name: "ultimateNap",
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -161,4 +161,4 @@ export const action = {
       }),
     ],
   },
-} as const satisfies Record<string, Action>;
+]);

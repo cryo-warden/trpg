@@ -24,6 +24,7 @@ import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetPanel } from "./TargetPanel";
 import { ObservationsDisplay } from "./ObservationsDisplay";
+import { createActionRecord } from "action-trpg-lib/src/structures/Action";
 
 const createAllegiance = createEntityFactory({ name: "Unknown Allegiance" });
 
@@ -90,7 +91,9 @@ const items = [
     equippable: {
       capacityCost: 2,
       slot: "hand",
-      statBlock: createStatBlock({ actions: [action.jab] }),
+      statBlock: createStatBlock({
+        actionRecord: createActionRecord([action.jab]),
+      }),
     },
   }),
 ] satisfies Entity[];
@@ -109,18 +112,7 @@ const player = createHuman({
   name: "Player",
   location: rooms[0],
   contents: [],
-  hp: 10,
-  mhp: 12,
-  ep: 20,
-  mep: 10,
-  traits: [
-    trait.hero,
-    trait.hero,
-    trait.hero,
-    trait.mobile,
-    trait.collecting,
-    trait.equipping,
-  ],
+  traits: [trait.hero, trait.mobile, trait.collecting, trait.equipping],
   equipment: [magicHat],
   controller: { type: "player", id: "me", actionQueue: [], hotkeyMap: {} },
   observer: [],

@@ -22,13 +22,17 @@ export default createSystem((engine) => {
           );
           break;
         case "sequence":
-          if (entity.actions == null || entity.actions.length < 1) {
+          if (entity.actionRecord == null) {
             continue;
           }
-          if (entity.controller.sequenceIndex >= entity.actions.length) {
+          const actions = Object.values(entity.actionRecord);
+          if (actions.length < 1) {
+            continue;
+          }
+          if (entity.controller.sequenceIndex >= actions.length) {
             entity.controller.sequenceIndex = 0;
           }
-          const action = entity.actions[entity.controller.sequenceIndex];
+          const action = actions[entity.controller.sequenceIndex];
           entity.controller.sequenceIndex += 1;
           const target = (
             entity.location?.contents == null

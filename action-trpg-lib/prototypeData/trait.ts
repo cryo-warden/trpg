@@ -1,15 +1,16 @@
+import { createActionRecord } from "../src/structures/Action";
 import { createStatBlock, type StatBlock } from "../src/structures/StatBlock";
 import { action } from "./action";
 
 export const trait = {
   mobile: createStatBlock({
-    actions: [action.move],
+    actionRecord: createActionRecord([action.move]),
   }),
   collecting: createStatBlock({
-    actions: [action.take, action.drop],
+    actionRecord: createActionRecord([action.take, action.drop]),
   }),
   equipping: createStatBlock({
-    actions: [action.equip, action.unequip],
+    actionRecord: createActionRecord([action.equip, action.unequip]),
   }),
   small: createStatBlock({ mhp: -1 }),
   hero: createStatBlock({ mhp: 5, mep: 5 }),

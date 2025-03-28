@@ -1,13 +1,13 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
-import type { Action } from "./Action";
+import type { ActionRecord } from "./Action";
 
 export type StatBlock = {
   mhp: number;
   mep: number;
   attack: number;
   defense: number;
-  actions: Action[];
+  actionRecord: ActionRecord;
 };
 
 export const applyStatBlock = (
@@ -19,15 +19,15 @@ export const applyStatBlock = (
     entity.hp += statBlock.mhp - entity.mhp;
   }
   engine.world.addComponent(entity, "mhp", statBlock.mhp);
-  engine.world.addComponent(entity, "hp", statBlock.mhp);
   entity.mhp = statBlock.mhp;
+  engine.world.addComponent(entity, "hp", statBlock.mhp);
 
   if (entity.ep != null && entity.ep > 0 && entity.mep != null) {
     entity.ep += statBlock.mep - entity.mep;
   }
   engine.world.addComponent(entity, "mep", statBlock.mep);
-  engine.world.addComponent(entity, "ep", statBlock.mep);
   entity.mep = statBlock.mep;
+  engine.world.addComponent(entity, "ep", statBlock.mep);
 
   engine.world.addComponent(entity, "attack", statBlock.attack);
   entity.attack = statBlock.attack;
@@ -35,8 +35,8 @@ export const applyStatBlock = (
   engine.world.addComponent(entity, "defense", statBlock.defense);
   entity.defense = statBlock.defense;
 
-  engine.world.addComponent(entity, "actions", statBlock.actions);
-  entity.actions = statBlock.actions;
+  engine.world.addComponent(entity, "actionRecord", statBlock.actionRecord);
+  entity.actionRecord = statBlock.actionRecord;
 };
 
 export const mergeStatBlock = (target: StatBlock, source: StatBlock): void => {
@@ -44,7 +44,10 @@ export const mergeStatBlock = (target: StatBlock, source: StatBlock): void => {
   target.mep += source.mep;
   target.attack += source.attack;
   target.defense += source.defense;
-  target.actions = [...new Set([...target.actions, ...source.actions])];
+  target.actionRecord = {
+    ...target.actionRecord,
+    ...source.actionRecord,
+  };
 };
 
 export const createStatBlock = (
@@ -55,6 +58,7 @@ export const createStatBlock = (
     mep: customFields.mep ?? 0,
     attack: customFields.attack ?? 0,
     defense: customFields.defense ?? 0,
-    actions: customFields.actions ?? [],
+    actionRecord:
+      (customFields.actionRecord && { ...customFields.actionRecord }) ?? {},
   };
 };
