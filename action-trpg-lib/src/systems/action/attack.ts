@@ -27,9 +27,7 @@ export default createSystem((engine) => {
       }
 
       if (target.observable != null) {
-        target.observable.push({
-          message: `${entity.name} dealt ${damage} damage to ${target.name}!`,
-        });
+        target.observable.push({ type: "damage", damage, entity, target });
       }
 
       if (effect.statusEffectMap != null) {

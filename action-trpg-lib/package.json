@@ -12,6 +12,7 @@
     "check": "bun tsc && bun test"
   },
   "dependencies": {
+    "@types/react": "^19.0.12",
     "miniplex": "^2.0.0"
   }
 }

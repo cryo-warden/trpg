@@ -45,7 +45,7 @@ export const EntityPanel = WithEntity<
       {detailed && (
         <>
           <div className="ActionBar">
-            {recommendedActions?.map((action, i) => (
+            {recommendedActions?.map((action) => (
               <ActionButton
                 key={action.name}
                 hotkey={controllerEntity?.controller.hotkeyMap[action.name]}

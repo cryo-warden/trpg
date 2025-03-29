@@ -27,6 +27,7 @@ export const bindRootSystem = (actorPeriodMS: number) =>
         statusEffect.advantage,
         statusEffect.guard,
         statusEffect.fortify,
+        action.begin,
         action.buff,
         action.unequip,
         action.equip,

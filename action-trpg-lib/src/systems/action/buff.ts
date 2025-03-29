@@ -15,7 +15,10 @@ export default createSystem((engine) => {
           }
           if (target.observable != null) {
             target.observable.push({
-              message: `${entity.name} healed ${target.name} for ${buff.heal}!`,
+              type: "heal",
+              heal: buff.heal,
+              entity,
+              target,
             });
           }
           break;
@@ -23,11 +26,10 @@ export default createSystem((engine) => {
           applyStatusEffectMap(engine, target, buff.statusEffectMap);
           if (target.observable != null) {
             target.observable.push({
-              message: `${entity.name} applied ${Object.keys(
-                buff.statusEffectMap
-              )
-                .sort()
-                .join(", ")} to ${target.name}!`,
+              type: "status",
+              statusEffectMap: buff.statusEffectMap,
+              entity,
+              target,
             });
           }
           break;
