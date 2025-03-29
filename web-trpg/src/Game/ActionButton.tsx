@@ -1,12 +1,11 @@
-import "./ActionButton.css";
 import { Entity } from "action-trpg-lib";
 import { Action } from "action-trpg-lib/src/structures/Action";
+import { useCallback } from "react";
+import { useHotkey } from "../structural/useHotkey";
 import { updateWatchable } from "../structural/useWatchable";
+import "./ActionButton.css";
 import { useControllerEntity } from "./context/ControllerContext";
 import { useTarget } from "./context/TargetContext";
-import { useCallback, useEffect, useState } from "react";
-
-const hotkeySet = new Set<string>();
 
 export const ActionButton = ({
   target,
@@ -17,7 +16,6 @@ export const ActionButton = ({
   action: Action;
   hotkey?: string;
 }) => {
-  const [isPointerIn, setIsPointerIn] = useState(false);
   const entity = useControllerEntity();
   const { target: contextualTarget } = useTarget();
   const finalTarget = target ?? contextualTarget;
@@ -37,47 +35,7 @@ export const ActionButton = ({
     action,
   ]);
 
-  const setPointerIn = useCallback(() => {
-    setIsPointerIn(true);
-  }, [setIsPointerIn]);
-
-  const setPointerOut = useCallback(() => {
-    setIsPointerIn(false);
-  }, [setIsPointerIn]);
-
-  useEffect(() => {
-    if (hotkey != null) {
-      if (hotkeySet.has(hotkey)) {
-        console.warn(`Hotkey "${hotkey}" is already used elsewhere.`);
-        return;
-      } else {
-        hotkeySet.add(hotkey);
-      }
-    }
-
-    const abortController = new AbortController();
-    document.addEventListener(
-      "keydown",
-      (e) => {
-        if (isPointerIn) {
-          if (entity?.controller != null) {
-            entity.controller.hotkeyMap[action.name] = e.key;
-          }
-          updateWatchable(entity);
-        } else if (e.key === hotkey) {
-          queueAction();
-        }
-      },
-      abortController
-    );
-
-    return () => {
-      abortController.abort();
-      if (hotkey != null) {
-        hotkeySet.delete(hotkey);
-      }
-    };
-  }, [isPointerIn, queueAction, hotkey]);
+  useHotkey(hotkey, queueAction);
 
   return (
     <button
@@ -86,8 +44,6 @@ export const ActionButton = ({
         e.stopPropagation();
         queueAction();
       }}
-      onPointerOver={setPointerIn}
-      onPointerOut={setPointerOut}
     >
       {action.name}
       {hotkey && <div className="hotkey">{hotkey.toUpperCase()}</div>}

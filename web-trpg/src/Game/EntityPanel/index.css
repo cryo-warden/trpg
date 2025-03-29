@@ -1,6 +1,15 @@
 .EntityPanel {
+  position: relative;
   min-height: 19mm;
   transition: background-color 1s ease-in-out;
+
+  .hotkey {
+    position: absolute;
+    top: 0;
+    right: 0;
+    margin: 2px;
+    color: #bbb;
+  }
 
   &.hostile {
     background-color: #522;
