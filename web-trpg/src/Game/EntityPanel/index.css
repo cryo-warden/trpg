@@ -19,6 +19,10 @@
     background-color: #224;
   }
 
+  &.targetted {
+    box-shadow: #fff 0px 0px 1px 1px;
+  }
+
   .ActionBar {
     overflow-x: auto;
     scroll-behavior: smooth;

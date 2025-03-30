@@ -40,8 +40,10 @@ button {
   overflow: hidden;
   overflow-wrap: normal;
 
+  &:focus,
   &:active {
     border-style: inset;
     box-shadow: #000 1px 1px 1px 1px;
+    transform: translate(1px, 1px);
   }
 }

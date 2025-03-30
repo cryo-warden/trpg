@@ -144,8 +144,8 @@ const createSlime = createEntityFactory(
 
 const actors = [
   player,
-  ...Array.from({ length: 3 }, () => createBat({ location: rooms[0] })),
-  ...Array.from({ length: 4 }, () => createSlime({ location: rooms[0] })),
+  ...Array.from({ length: 3 }, () => createBat({ location: rooms[1] })),
+  ...Array.from({ length: 4 }, () => createSlime({ location: rooms[1] })),
 ] satisfies Entity[];
 
 const entities = [
