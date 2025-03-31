@@ -29,7 +29,10 @@ export const WithTarget = ({ children }: { children: ReactNode }) => {
   useWatchable(controllerEntity);
   useWatchable(target);
   useEffect(() => {
-    if (controllerEntity?.location !== target?.location) {
+    if (
+      target?.location !== controllerEntity &&
+      target?.location !== controllerEntity?.location
+    ) {
       setTarget(null);
     }
   }, [target?.location, controllerEntity?.location]);

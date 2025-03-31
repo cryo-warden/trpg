@@ -3,7 +3,7 @@
   height: 100vh;
   display: grid;
   grid-template:
-    "events entities" 10fr
+    "events dynamic" 10fr
     "self target" 3fr
     "queue queue" 1fr
     / 1fr 1fr;
@@ -12,8 +12,8 @@
     grid-area: events;
   }
 
-  .entities {
-    grid-area: entities;
+  .dynamic {
+    grid-area: dynamic;
   }
 
   .self {

@@ -16,15 +16,16 @@ import {
 import { useMemo, useEffect } from "react";
 import { WithController } from "./context/ControllerContext";
 import { WithEngine } from "./context/EngineContext";
-import { EntitiesDisplay } from "./EntitiesDisplay";
 import { Panel } from "../structural/Panel";
 import { SelfPanel } from "./SelfPanel";
 import { usePeriodicEffect } from "../structural/usePeriodicEffect";
 import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetPanel } from "./TargetPanel";
-import { ObservationsDisplay } from "./ObservationsDisplay";
+import { ObservationsPanel } from "./ObservationsDisplay";
 import { createActionRecord } from "action-trpg-lib/src/structures/Action";
+import { DynamicPanel } from "./DynamicPanel";
+import { WithDynamicPanel } from "./context/DynamicPanelContext";
 
 const createAllegiance = createEntityFactory({ name: "Unknown Allegiance" });
 
@@ -118,7 +119,14 @@ const player = createHuman({
     type: "player",
     id: "me",
     actionQueue: [],
-    hotkeyMap: { move: "m", take: "t", guard: "g", jab: "j" },
+    hotkeyMap: {
+      move: "m",
+      take: "t",
+      guard: "g",
+      jab: "j",
+      equip: "e",
+      unequip: "u",
+    },
   },
   observer: [],
 });
@@ -201,22 +209,20 @@ export const Game = ({
   }, [engine]);
 
   return (
-    <WithEngine engine={engine}>
-      <WithController controllerId={controllerId}>
-        <WithTarget>
-          <div className="Game">
-            <Panel className="events">
-              <ObservationsDisplay />
-            </Panel>
-            <Panel className="entities">
-              <EntitiesDisplay />
-            </Panel>
-            <SelfPanel className="self" />
-            <TargetPanel className="target" />
-            <Panel className="queue">Queue</Panel>
-          </div>
-        </WithTarget>
-      </WithController>
-    </WithEngine>
+    <WithDynamicPanel>
+      <WithEngine engine={engine}>
+        <WithController controllerId={controllerId}>
+          <WithTarget>
+            <div className="Game">
+              <ObservationsPanel className="events" />
+              <DynamicPanel className="dynamic" />
+              <SelfPanel className="self" />
+              <TargetPanel className="target" />
+              <Panel className="queue">Queue</Panel>
+            </div>
+          </WithTarget>
+        </WithController>
+      </WithEngine>
+    </WithDynamicPanel>
   );
 };

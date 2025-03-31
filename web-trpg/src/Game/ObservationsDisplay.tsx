@@ -4,8 +4,12 @@ import React, { ReactNode, useEffect, useMemo, useState } from "react";
 import { useControllerEntity } from "./context/ControllerContext";
 import { Observation, renderer } from "action-trpg-lib";
 import { Scroller } from "../structural/Scroller";
+import { Panel } from "../structural/Panel";
+import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
+import { useHotkeyRef } from "../structural/useHotkeyRef";
 
-export const ObservationsDisplay = () => {
+export const ObservationsPanel = ({ ...props }) => {
+  const setMode = useSetDynamicPanelMode();
   const rendererName = "debug";
   const { renderObservation } = useMemo(
     () => renderer[rendererName]({ React }),
@@ -35,11 +39,15 @@ export const ObservationsDisplay = () => {
     });
   }, [controllerEntity?.observer]);
 
+  const ref = useHotkeyRef<HTMLDivElement>("Escape");
+
   return (
-    <Scroller bottomLock>
-      {observations.map((observation, i) => (
-        <ObservationDisplay key={i} observation={observation} />
-      ))}
-    </Scroller>
+    <Panel {...props} ref={ref} onClick={() => setMode("location")}>
+      <Scroller bottomLock>
+        {observations.map((observation, i) => (
+          <ObservationDisplay key={i} observation={observation} />
+        ))}
+      </Scroller>
+    </Panel>
   );
 };
