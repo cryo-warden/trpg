@@ -2,13 +2,15 @@ import "./Scroller.css";
 
 import React, { useEffect, useRef, useState } from "react";
 
+export type ScrollerProps = {
+  bottomLock?: boolean;
+} & React.HTMLProps<HTMLDivElement>;
+
 export const Scroller = ({
   children,
   bottomLock = false,
   ...props
-}: {
-  bottomLock?: boolean;
-} & React.HTMLProps<HTMLDivElement>) => {
+}: ScrollerProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = useRef(0);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(bottomLock);

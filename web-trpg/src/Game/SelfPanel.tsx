@@ -1,9 +1,9 @@
-import { Panel } from "../structural/Panel";
+import { PanelProps } from "../structural/Panel";
 import { EntityPanel } from "./EntityPanel";
 import "./SelfPanel.css";
 import { useControllerEntity } from "./context/ControllerContext";
 
-export const SelfPanel = ({ ...props }: Parameters<typeof Panel>[0]) => {
+export const SelfPanel = (props: PanelProps) => {
   const entity = useControllerEntity();
   if (entity == null) {
     return null;

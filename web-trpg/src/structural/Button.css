@@ -1,0 +1,18 @@
+.Button {
+  position: relative;
+  margin: 4px;
+  padding: 1em;
+  min-width: 16mm;
+  min-height: 16mm;
+  max-width: fit-content;
+  max-height: fit-content;
+  color: #fff;
+
+  .hotkey {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 4px;
+    color: #bbb;
+  }
+}

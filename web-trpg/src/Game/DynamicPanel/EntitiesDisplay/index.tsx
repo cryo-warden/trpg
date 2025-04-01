@@ -1,9 +1,8 @@
-import "./index.css";
-
-import { EntityPanel } from "../EntityPanel";
-import { useEngine } from "../context/EngineContext";
 import { Entity } from "action-trpg-lib";
-import { Scroller } from "../../structural/Scroller";
+import { Scroller } from "../../../structural/Scroller";
+import { EntityPanel } from "../../EntityPanel";
+import { useEngine } from "../../context/EngineContext";
+import "./index.css";
 
 export const EntitiesDisplay = ({ entities }: { entities: Entity[] }) => {
   const engine = useEngine();

@@ -1,15 +1,21 @@
 import "./index.css";
 
-import React, { ReactNode, useEffect, useMemo, useState } from "react";
-import { useControllerEntity } from "./context/ControllerContext";
 import { Observation, renderer } from "action-trpg-lib";
+import React, {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { Panel, PanelProps } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
-import { Panel } from "../structural/Panel";
-import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
+import { useControllerEntity } from "./context/ControllerContext";
+import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
+import { useTarget } from "./context/TargetContext";
 
-export const ObservationsPanel = ({ ...props }) => {
-  const setMode = useSetDynamicPanelMode();
+export const ObservationsPanel = (props: PanelProps) => {
   const rendererName = "debug";
   const { renderObservation } = useMemo(
     () => renderer[rendererName]({ React }),
@@ -39,10 +45,17 @@ export const ObservationsPanel = ({ ...props }) => {
     });
   }, [controllerEntity?.observer]);
 
+  const setMode = useSetDynamicPanelMode();
+  const { setTarget } = useTarget();
+  const clearSelection = useCallback(() => {
+    setMode("location");
+    setTarget(null);
+  }, [setMode, setTarget]);
+
   const ref = useHotkeyRef<HTMLDivElement>("Escape");
 
   return (
-    <Panel {...props} ref={ref} onClick={() => setMode("location")}>
+    <Panel {...props} ref={ref} onClick={clearSelection}>
       <Scroller bottomLock>
         {observations.map((observation, i) => (
           <ObservationDisplay key={i} observation={observation} />

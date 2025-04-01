@@ -22,7 +22,7 @@ import { usePeriodicEffect } from "../structural/usePeriodicEffect";
 import { updateWatchable } from "../structural/useWatchable";
 import { WithTarget } from "./context/TargetContext";
 import { TargetPanel } from "./TargetPanel";
-import { ObservationsPanel } from "./ObservationsDisplay";
+import { ObservationsPanel } from "./ObservationsPanel";
 import { createActionRecord } from "action-trpg-lib/src/structures/Action";
 import { DynamicPanel } from "./DynamicPanel";
 import { WithDynamicPanel } from "./context/DynamicPanelContext";
