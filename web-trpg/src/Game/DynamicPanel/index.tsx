@@ -3,6 +3,8 @@ import { ComponentPropsWithRef } from "react";
 import { Panel } from "../../structural/Panel";
 import { useControllerEntity } from "../context/ControllerContext";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
+import { EPBar } from "../EntityPanel/EPBar";
+import { HPBar } from "../EntityPanel/HPBar";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 
 const weighEntity = (entity: Entity) =>
@@ -16,6 +18,27 @@ const weighEntity = (entity: Entity) =>
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
   const selfEntity = useControllerEntity();
+
+  if (mode === "stats") {
+    if (selfEntity == null) {
+      return <Panel {...props} />;
+    }
+
+    return (
+      <Panel {...props}>
+        <div>{selfEntity.name}</div>
+        <HPBar entity={selfEntity} />
+        <EPBar entity={selfEntity} />
+        <div>Attack: {selfEntity.attack ?? 0}</div>
+        <div>Defense: {selfEntity.defense ?? 0}</div>
+        <div>Critical Defense: {selfEntity.criticalDefense ?? 0}</div>
+        <div>
+          Critical Damage Threshold: {selfEntity.criticalDamageThreshold ?? 1}
+        </div>
+      </Panel>
+    );
+  }
+
   const entities =
     mode === "location"
       ? selfEntity?.location?.contents ?? []

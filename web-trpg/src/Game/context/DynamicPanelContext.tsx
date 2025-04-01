@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
-// TODO Add "stats", "actions", and "equipment" to show own stats, actions, and equipment.
-type DynamicPanelMode = "location" | "inventory" | "equipment";
+// TODO Add "actions" to show own actions and set their hotkeys.
+type DynamicPanelMode = "location" | "inventory" | "equipment" | "stats";
 
 export const DynamicPanelContext = createContext<{
   mode: DynamicPanelMode;
