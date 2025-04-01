@@ -1,6 +1,6 @@
 import { recommendActions } from "action-trpg-lib/src/structures/Action";
-import { useCallback } from "react";
-import { Panel, PanelProps } from "../../structural/Panel";
+import { ComponentPropsWithoutRef, useCallback } from "react";
+import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { useWatchable } from "../../structural/useWatchable";
 import { ActionButton } from "../ActionButton";
@@ -12,7 +12,9 @@ import { HPBar } from "./HPBar";
 import "./index.css";
 
 export const EntityPanel = WithEntity<
-  { hotkey?: string; detailed?: boolean } & PanelProps
+  { hotkey?: string; detailed?: boolean } & ComponentPropsWithoutRef<
+    typeof Panel
+  >
 >(({ entity, hotkey, detailed = false, ...props }) => {
   useWatchable(entity);
   const controllerEntity = useControllerEntity();

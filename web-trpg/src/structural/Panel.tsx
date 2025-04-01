@@ -1,8 +1,6 @@
 import "./Panel.css";
-import { ComponentProps } from "react";
+import { ComponentPropsWithRef } from "react";
 
-export type PanelProps = ComponentProps<"div">;
-
-export const Panel = (props: PanelProps) => (
+export const Panel = (props: ComponentPropsWithRef<"div">) => (
   <div {...props} className={"Panel " + (props.className ?? "")} />
 );

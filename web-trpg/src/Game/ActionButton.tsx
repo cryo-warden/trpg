@@ -1,27 +1,25 @@
 import { Entity } from "action-trpg-lib";
 import { Action } from "action-trpg-lib/src/structures/Action";
-import { useCallback } from "react";
+import { ComponentPropsWithoutRef, useCallback } from "react";
+import { Button } from "../structural/Button";
 import { updateWatchable } from "../structural/useWatchable";
-import "./ActionButton.css";
 import { useControllerEntity } from "./context/ControllerContext";
 import { useTarget } from "./context/TargetContext";
-import { useHotkeyRef } from "../structural/useHotkeyRef";
 
 export const ActionButton = ({
   target,
   action,
-  hotkey,
+  ...props
 }: {
   target?: Entity;
   action: Action;
-  hotkey?: string;
-}) => {
-  const buttonRef = useHotkeyRef(hotkey);
+} & ComponentPropsWithoutRef<typeof Button>) => {
   const entity = useControllerEntity();
   const { target: contextualTarget } = useTarget();
   const finalTarget = target ?? contextualTarget;
+  const hotkey = entity?.controller.hotkeyMap[action.name];
   const queueAction = useCallback(() => {
-    if (entity?.controller?.type !== "player") {
+    if (entity == null) {
       return;
     }
     entity.controller.actionQueue.push({
@@ -37,22 +35,8 @@ export const ActionButton = ({
   ]);
 
   return (
-    <button
-      ref={buttonRef}
-      className="ActionButton"
-      onClick={(e) => {
-        e.stopPropagation();
-        queueAction();
-        const button = buttonRef.current;
-        if (button != null) {
-          setTimeout(() => {
-            button.blur();
-          }, 200);
-        }
-      }}
-    >
+    <Button {...props} hotkey={hotkey} onClick={queueAction}>
       {action.name}
-      {hotkey && <div className="hotkey">{hotkey.toUpperCase()}</div>}
-    </button>
+    </Button>
   );
 };

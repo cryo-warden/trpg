@@ -1,5 +1,6 @@
 import { Entity } from "action-trpg-lib";
-import { Panel, PanelProps } from "../../structural/Panel";
+import { ComponentPropsWithRef } from "react";
+import { Panel } from "../../structural/Panel";
 import { useControllerEntity } from "../context/ControllerContext";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
 import { EntitiesDisplay } from "./EntitiesDisplay";
@@ -12,7 +13,7 @@ const weighEntity = (entity: Entity) =>
   (entity.equippable != null ? 1 << 3 : 0) |
   (entity.takeable != null ? 1 << 2 : 0);
 
-export const DynamicPanel = (props: PanelProps) => {
+export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
   const selfEntity = useControllerEntity();
   const entities =

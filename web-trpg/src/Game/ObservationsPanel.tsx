@@ -2,20 +2,23 @@ import "./index.css";
 
 import { Observation, renderer } from "action-trpg-lib";
 import React, {
+  ComponentPropsWithoutRef,
   ReactNode,
   useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { Panel, PanelProps } from "../structural/Panel";
+import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useControllerEntity } from "./context/ControllerContext";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
 
-export const ObservationsPanel = (props: PanelProps) => {
+export const ObservationsPanel = (
+  props: ComponentPropsWithoutRef<typeof Panel>
+) => {
   const rendererName = "debug";
   const { renderObservation } = useMemo(
     () => renderer[rendererName]({ React }),

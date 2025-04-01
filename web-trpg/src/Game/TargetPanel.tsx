@@ -1,13 +1,13 @@
-import { useCallback } from "react";
+import { ComponentPropsWithRef, useCallback } from "react";
 import { Button } from "../structural/Button";
-import { Panel, PanelProps } from "../structural/Panel";
+import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
 import { useControllerEntity } from "./context/ControllerContext";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
 import { EntityPanel } from "./EntityPanel";
 
-const SelfTargetPanel = (props: PanelProps) => {
+const SelfTargetPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const setMode = useSetDynamicPanelMode();
   const setLocationMode = useCallback(() => {
     setMode("location");
@@ -37,7 +37,7 @@ const SelfTargetPanel = (props: PanelProps) => {
   );
 };
 
-export const TargetPanel = (props: PanelProps) => {
+export const TargetPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const controllerEntity = useControllerEntity();
   const { target } = useTarget();
   if (target == null) {
