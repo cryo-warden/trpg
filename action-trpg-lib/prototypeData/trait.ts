@@ -1,18 +1,20 @@
 import { createActionRecord } from "../src/structures/Action";
-import { createStatBlock, type StatBlock } from "../src/structures/StatBlock";
+import { createTrait, createTraitRecord } from "../src/structures/StatBlock";
 import { action } from "./action";
 
-export const trait = {
-  mobile: createStatBlock({
+export const trait = createTraitRecord([
+  createTrait("mobile", {
     actionRecord: createActionRecord([action.move]),
   }),
-  collecting: createStatBlock({
+  createTrait("collecting", {
     actionRecord: createActionRecord([action.take, action.drop]),
   }),
-  equipping: createStatBlock({
+  createTrait("equipping", {
     actionRecord: createActionRecord([action.equip, action.unequip]),
   }),
-  small: createStatBlock({ mhp: -1 }),
-  hero: createStatBlock({ mhp: 5, mep: 5 }),
-  champion: createStatBlock({ mhp: 2, mep: 2 }),
-} as const satisfies Record<string, StatBlock>;
+  createTrait("soft", { defense: -2 }),
+  createTrait("tiny", { attack: -1, defense: -1 }),
+  createTrait("little", { mhp: -1 }),
+  createTrait("hero", { mhp: 5, mep: 5 }),
+  createTrait("champion", { mhp: 2, mep: 2 }),
+]);

@@ -1,21 +1,24 @@
 import { createActionRecord } from "../src/structures/Action";
-import { createStatBlock, type StatBlock } from "../src/structures/StatBlock";
+import {
+  createBaseline,
+  createBaselineRecord,
+} from "../src/structures/StatBlock";
 import { action } from "./action";
 
-export const baseline = {
-  human: createStatBlock({
+export const baseline = createBaselineRecord([
+  createBaseline("human", {
     mhp: 5,
     mep: 5,
     actionRecord: createActionRecord([action.guard, action.slowStrike]),
   }),
-  bat: createStatBlock({
+  createBaseline("bat", {
     mhp: 3,
     mep: 2,
     actionRecord: createActionRecord([action.nibble]),
   }),
-  slime: createStatBlock({
+  createBaseline("slime", {
     mhp: 2,
     mep: 1,
     actionRecord: createActionRecord([action.recover, action.slowStrike]),
   }),
-} as const satisfies Record<string, StatBlock>;
+]);

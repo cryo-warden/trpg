@@ -62,3 +62,54 @@ export const createStatBlock = (
       (customFields.actionRecord && { ...customFields.actionRecord }) ?? {},
   };
 };
+
+export type Baseline = { name: string; statBlock: StatBlock };
+
+export const createBaseline = <
+  const TName extends string,
+  const TStatBlock extends StatBlock
+>(
+  name: TName,
+  customFields: Partial<TStatBlock>
+) => ({
+  name,
+  statBlock: createStatBlock(customFields),
+});
+
+export type BaselineRecord<TBaselines extends Baseline[] = Baseline[]> = {
+  [name in TBaselines[number]["name"]]: Extract<
+    TBaselines[number],
+    { name: name }
+  >;
+};
+
+export const createBaselineRecord = <const T extends Baseline[]>(
+  baselines: T
+): BaselineRecord<T> =>
+  baselines.reduce((result, baseline) => {
+    result[baseline.name] = baseline;
+    return result;
+  }, {} as any);
+
+// May not always be the same as Baseline. Do not combine these.
+export type Trait = { name: string; statBlock: StatBlock };
+
+export const createTrait = <const TName extends string>(
+  name: TName,
+  customFields: Partial<StatBlock>
+) => ({
+  name,
+  statBlock: createStatBlock(customFields),
+});
+
+export type TraitRecord<TTraits extends Trait[] = Trait[]> = {
+  [name in TTraits[number]["name"]]: Extract<TTraits[number], { name: name }>;
+};
+
+export const createTraitRecord = <const T extends Trait[]>(
+  traits: T
+): TraitRecord<T> =>
+  traits.reduce((result, trait) => {
+    result[trait.name] = trait;
+    return result;
+  }, {} as any);

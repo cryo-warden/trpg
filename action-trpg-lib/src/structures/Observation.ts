@@ -26,4 +26,12 @@ export type Observation =
       statusEffectMap: StatusEffectMap;
       entity: Entity;
       target: Entity;
+    }
+  | {
+      type: "unconscious";
+      entity: Entity;
+    }
+  | {
+      type: "dead";
+      entity: Entity;
     };

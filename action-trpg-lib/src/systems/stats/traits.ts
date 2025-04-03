@@ -13,7 +13,7 @@ export default createSystem((engine) => {
     for (const entity of entities) {
       let traitsStatBlock: StatBlock = createStatBlock({});
       for (const trait of entity.traits) {
-        mergeStatBlock(traitsStatBlock, trait);
+        mergeStatBlock(traitsStatBlock, trait.statBlock);
       }
       engine.world.addComponent(entity, "traitsStatBlock", traitsStatBlock);
       entity.traitsStatBlock = traitsStatBlock;

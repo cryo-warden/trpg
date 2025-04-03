@@ -34,6 +34,10 @@ export const bindRenderer = ({ React }: { React: any }) => {
             {observation.target.name}.
           </div>
         );
+      case "dead":
+        return <div>{observation.entity.name} has died!</div>;
+      case "unconscious":
+        return <div>{observation.entity.name} became unconscious!</div>;
     }
 
     return <div>{JSON.stringify(observation)}</div>;

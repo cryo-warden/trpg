@@ -9,7 +9,7 @@ export default createSystem((engine) => {
   const entities = engine.world.with("baseline").without("statsCleanFlag");
   return () => {
     for (const entity of entities) {
-      const statBlock = createStatBlock(entity.baseline);
+      const statBlock = createStatBlock(entity.baseline.statBlock);
 
       if (entity.traitsStatBlock != null) {
         mergeStatBlock(statBlock, entity.traitsStatBlock);

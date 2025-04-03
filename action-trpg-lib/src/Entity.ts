@@ -3,7 +3,7 @@ import type { ActionState } from "./structures/ActionState";
 import type { Controller } from "./structures/Controller";
 import type { Equippable } from "./structures/Equippable";
 import type { Observation } from "./structures/Observation";
-import type { StatBlock } from "./structures/StatBlock";
+import type { Baseline, StatBlock, Trait } from "./structures/StatBlock";
 import type { ActionRecord } from "./structures/Action";
 
 export type Entity = {
@@ -63,9 +63,9 @@ export type Entity = {
   /*** Stats ***/
 
   /** Baseline for building an entity's changeable stats. */
-  baseline?: StatBlock;
+  baseline?: Baseline;
   /** List of traits to alter an entity's changeable stats. */
-  traits?: StatBlock[];
+  traits?: Trait[];
   /** Traits stat cache. */
   traitsStatBlock?: StatBlock;
   /** A clean flag to skip update of trait stat cache. */
