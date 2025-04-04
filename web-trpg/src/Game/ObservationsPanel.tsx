@@ -24,20 +24,21 @@ export const ObservationsPanel = (
     () => renderer[rendererName]({ React }),
     [rendererName]
   );
-
-  const ObservationDisplay = useMemo(
-    () =>
-      ({ observation }: { observation: Observation }): ReactNode => {
-        // TODO Fix peer dependency.
-        return useMemo(
-          () => renderObservation(observation),
-          [observation]
-        ) as any;
-      },
-    [renderObservation]
-  );
-
   const controllerEntity = useControllerEntity();
+
+  const ObservationDisplay = useMemo(() => {
+    if (controllerEntity == null) {
+      return () => null;
+    }
+    return ({ observation }: { observation: Observation }): ReactNode => {
+      // TODO Fix peer dependency.
+      return useMemo(
+        () => renderObservation(controllerEntity, observation),
+        [observation]
+      ) as any;
+    };
+  }, [renderObservation, controllerEntity]);
+
   const [observations, setObservations] = useState<Observation[]>([]);
   useEffect(() => {
     setObservations((observations) => {

@@ -1,0 +1,9 @@
+.debug.Observation {
+  .hostile {
+    color: #f88;
+  }
+
+  .friendly {
+    color: #88f;
+  }
+}
