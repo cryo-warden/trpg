@@ -28,6 +28,7 @@
 
   .hp {
     background-color: #f44;
+    box-shadow: inset 0px 0px 0px 2px #f66;
     z-index: 10;
   }
 

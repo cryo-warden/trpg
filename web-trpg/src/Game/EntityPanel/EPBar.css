@@ -27,6 +27,7 @@
 
   .ep {
     background-color: #44f;
+    box-shadow: inset 0px 0px 0px 2px #66f;
     z-index: 10;
   }
 
