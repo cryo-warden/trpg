@@ -118,6 +118,7 @@ const renderSentence = ({
 
 // TODO Fix React peer dependency.
 export const bindRenderer = ({ React }: { React: any }) => {
+  React;
   const renderObservation = (
     viewpointEntity: Entity,
     observation: Observation

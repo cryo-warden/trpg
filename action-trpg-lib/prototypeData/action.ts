@@ -1,4 +1,4 @@
-import { createActionRecord, type Action } from "../src/structures/Action";
+import { createActionRecord } from "../src/structures/Action";
 import { effect, buffEffect } from "../src/structures/Effect";
 
 export const action = createActionRecord([
