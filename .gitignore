@@ -1,0 +1,4 @@
+.vscode
+.private/
+node_modules/
+backup_**
