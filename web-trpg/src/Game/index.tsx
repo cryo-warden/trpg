@@ -135,7 +135,7 @@ magicHat.location = player;
 
 const createBat = createEntityFactory(
   createActor({
-    name: "Bat",
+    name: "bat",
     allegiance: batkind,
     baseline: baseline.bat,
   })
@@ -143,7 +143,7 @@ const createBat = createEntityFactory(
 
 const createSlime = createEntityFactory(
   createActor({
-    name: "Slime",
+    name: "slime",
     allegiance: slimekind,
     baseline: baseline.slime,
     criticalDamageThreshold: 2,

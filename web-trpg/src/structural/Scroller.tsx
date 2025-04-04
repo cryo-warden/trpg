@@ -1,6 +1,7 @@
 import "./Scroller.css";
 
 import React, {
+  UIEvent,
   MouseEvent,
   useCallback,
   useEffect,
@@ -15,6 +16,7 @@ export type ScrollerProps = {
 export const Scroller = ({
   children,
   bottomLock = false,
+  className,
   ...props
 }: ScrollerProps) => {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -33,6 +35,21 @@ export const Scroller = ({
     },
     [scrollToBottom]
   );
+  const handleScroll = useCallback(
+    (e: UIEvent) => {
+      const element = e.currentTarget;
+      if (element.scrollTop < lastScrollTopRef.current) {
+        setIsScrolledToBottom(false);
+      } else if (
+        element.scrollTop + 10 >=
+        element.scrollHeight - element.clientHeight
+      ) {
+        setIsScrolledToBottom(true);
+      }
+      lastScrollTopRef.current = element.scrollTop;
+    },
+    [lastScrollTopRef, setIsScrolledToBottom]
+  );
   useEffect(() => {
     if (bottomLock && isScrolledToBottom) {
       setTimeout(scrollToBottom, 0);
@@ -40,23 +57,8 @@ export const Scroller = ({
   });
 
   return (
-    <div {...props} className={"Scroller " + (props.className ?? "")}>
-      <div
-        ref={ref}
-        className="scrollArea"
-        onScroll={(e) => {
-          const element = e.currentTarget;
-          if (element.scrollTop < lastScrollTopRef.current) {
-            setIsScrolledToBottom(false);
-          } else if (
-            element.scrollTop + 10 >=
-            element.scrollHeight - element.clientHeight
-          ) {
-            setIsScrolledToBottom(true);
-          }
-          lastScrollTopRef.current = element.scrollTop;
-        }}
-      >
+    <div {...props} className={["Scroller", className ?? ""].join(" ")}>
+      <div ref={ref} className="scrollArea" onScroll={handleScroll}>
         {children}
       </div>
       {bottomLock && !isScrolledToBottom && (
