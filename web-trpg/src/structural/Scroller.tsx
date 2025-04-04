@@ -1,6 +1,12 @@
 import "./Scroller.css";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 export type ScrollerProps = {
   bottomLock?: boolean;
@@ -14,12 +20,19 @@ export const Scroller = ({
   const ref = useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = useRef(0);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(bottomLock);
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     if (ref.current != null) {
       ref.current.scrollTop =
         ref.current.scrollHeight - ref.current.clientHeight;
     }
-  };
+  }, [ref]);
+  const handleClick = useCallback(
+    (e: MouseEvent) => {
+      scrollToBottom();
+      e.stopPropagation();
+    },
+    [scrollToBottom]
+  );
   useEffect(() => {
     if (bottomLock && isScrolledToBottom) {
       setTimeout(scrollToBottom, 0);
@@ -47,7 +60,7 @@ export const Scroller = ({
         {children}
       </div>
       {bottomLock && !isScrolledToBottom && (
-        <button className="scrollToBottom" onClick={scrollToBottom}>
+        <button className="scrollToBottom" onClick={handleClick}>
           end
         </button>
       )}
