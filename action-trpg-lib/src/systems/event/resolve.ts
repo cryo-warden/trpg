@@ -1,5 +1,6 @@
 import type { Entity } from "../../Entity";
 import type { EntityEvent } from "../../structures/EntityEvent";
+import { applyStatBlock } from "../../structures/StatBlock";
 import { applyStatusEffectMap } from "../../structures/StatusEffectMap";
 import { createSystem } from "../createSystem";
 
@@ -64,7 +65,7 @@ export default createSystem((engine) => {
             break;
           }
           case "drop": {
-            const { source, target } = event;
+            const { source: source, target } = event;
             if (target.location != null) {
               // Trigger update of old location contents.
               engine.world.removeComponent(
@@ -80,7 +81,7 @@ export default createSystem((engine) => {
             break;
           }
           case "equip": {
-            const { source, target } = event;
+            const { source: source, target } = event;
             if (source.equipment == null || source.contents == null) {
               break;
             }
@@ -95,7 +96,7 @@ export default createSystem((engine) => {
             break;
           }
           case "move": {
-            const { source, target } = event;
+            const { source: source, target } = event;
             if (target.path == null) {
               break;
             }
@@ -117,12 +118,18 @@ export default createSystem((engine) => {
             engine.world.removeComponent(source.location, "contentsCleanFlag");
             break;
           }
+          case "stats": {
+            const { source: entity, statBlock } = event;
+            applyStatBlock(engine, entity, statBlock);
+            engine.world.addComponent(entity, "statsCleanFlag", true);
+            break;
+          }
           case "status": {
             applyStatusEffectMap(engine, event.target, event.statusEffectMap);
             break;
           }
           case "take": {
-            const { source, target } = event;
+            const { source: source, target } = event;
             if (target.location != null) {
               // Trigger update of old location contents.
               engine.world.removeComponent(
@@ -141,7 +148,7 @@ export default createSystem((engine) => {
             break;
           }
           case "unequip": {
-            const { source, target } = event;
+            const { source: source, target } = event;
             if (source.equipment == null) {
               break;
             }

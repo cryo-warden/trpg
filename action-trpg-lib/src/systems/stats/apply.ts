@@ -1,8 +1,5 @@
-import {
-  applyStatBlock,
-  createStatBlock,
-  mergeStatBlock,
-} from "../../structures/StatBlock";
+import { applyEvent } from "../../structures/EntityEvent";
+import { createStatBlock, mergeStatBlock } from "../../structures/StatBlock";
 import { createSystem } from "../createSystem";
 
 export default createSystem((engine) => {
@@ -23,9 +20,11 @@ export default createSystem((engine) => {
         mergeStatBlock(statBlock, entity.statusStatBlock);
       }
 
-      applyStatBlock(engine, entity, statBlock);
-
-      engine.world.addComponent(entity, "statsCleanFlag", true);
+      applyEvent(engine, entity, {
+        type: "stats",
+        source: entity,
+        statBlock,
+      });
     }
   };
 });

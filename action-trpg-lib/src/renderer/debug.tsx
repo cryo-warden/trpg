@@ -190,6 +190,9 @@ export const bindRenderer = ({ React }: { React: any }) => {
           verb: "moved through",
           finalPunctuation: ".",
         });
+      case "stats": {
+        return null;
+      }
       case "status":
         return renderSentence({
           viewpointEntity,

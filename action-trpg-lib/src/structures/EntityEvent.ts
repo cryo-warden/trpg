@@ -1,6 +1,7 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
 import type { Action } from "./Action";
+import type { StatBlock } from "./StatBlock";
 import { type StatusEffectMap } from "./StatusEffectMap";
 
 export type EntityEvent =
@@ -41,6 +42,11 @@ export type EntityEvent =
       type: "move";
       source: Entity;
       target: Entity;
+    }
+  | {
+      type: "stats";
+      statBlock: StatBlock;
+      source: Entity;
     }
   | {
       type: "status";
