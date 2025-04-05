@@ -116,11 +116,12 @@ describe("systems", () => {
     test("can deal damage and heal", () => {
       const { iterate, addEntity, addComponent } = createRootSystemTest();
       const target = addEntity({
+        name: "target",
         mhp: 10,
         hp: 10,
         criticalDamageThreshold: 3,
       });
-      const aggressor = addEntity({});
+      const aggressor = addEntity({ name: "aggressor" });
 
       addComponent(
         target,
@@ -155,11 +156,12 @@ describe("systems", () => {
     test("can cause poison, which causes damage after a delay then wears off", () => {
       const { iterate, addEntity } = createRootSystemTest();
       const target = addEntity({
+        name: "target",
         mhp: 10,
         hp: 10,
         criticalDamageThreshold: 3,
       });
-      const aggressor = addEntity({});
+      const aggressor = addEntity({ name: "aggressor" });
 
       aggressor.actionState = createActionState(
         {

@@ -9,21 +9,18 @@ export default createSystem((engine) => {
       return;
     }
     const uncleanContentsEntitySet = new Set<Entity | null>(entities);
-    const locationMap = new Map<Entity, Entity[]>();
+    const contentsMap = new Map<Entity, Entity[]>();
     for (const locationEntity of locationEntities) {
-      if (
-        locationEntity.location == null ||
-        !uncleanContentsEntitySet.has(locationEntity.location)
-      ) {
+      if (!uncleanContentsEntitySet.has(locationEntity.location)) {
         continue;
       }
-      if (!locationMap.has(locationEntity.location)) {
-        locationMap.set(locationEntity.location, []);
+      if (!contentsMap.has(locationEntity.location)) {
+        contentsMap.set(locationEntity.location, []);
       }
-      locationMap.get(locationEntity.location)?.push(locationEntity);
+      contentsMap.get(locationEntity.location)?.push(locationEntity);
     }
     for (const entity of entities) {
-      entity.contents = locationMap.get(entity) ?? [];
+      entity.contents = contentsMap.get(entity) ?? [];
       engine.world.addComponent(entity, "contentsCleanFlag", true);
     }
   };

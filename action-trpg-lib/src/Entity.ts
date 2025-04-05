@@ -2,9 +2,9 @@ import type { With } from "miniplex";
 import type { ActionState } from "./structures/ActionState";
 import type { Controller } from "./structures/Controller";
 import type { Equippable } from "./structures/Equippable";
-import type { Observation } from "./structures/Observation";
 import type { Baseline, StatBlock, Trait } from "./structures/StatBlock";
 import type { ActionRecord } from "./structures/Action";
+import type { EntityEvent } from "./structures/EntityEvent";
 
 export type Entity = {
   /** Display Name */
@@ -33,25 +33,25 @@ export type Entity = {
   defense?: number;
   /** Critical Defense subtracted from critical damage */
   criticalDefense?: number;
-  /** The actions available to this entity. */
+  /** The actions available to this entity */
   actionRecord?: ActionRecord;
 
-  /** The action this entity is currently performing. */
+  /** The action this entity is currently performing */
   actionState?: ActionState;
 
-  /** Allegiance to other entities. */
+  /** Allegiance to other entities */
   allegiance?: Entity;
   /** A Controller to assign actions */
   controller?: Controller;
-  /** A recipient of Observations */
-  observer?: Observation[];
-  /** An emitter of Observations */
-  observable?: Observation[];
+  /** Events applied to this entity */
+  events?: EntityEvent[];
+  /** A recipient of entity events from the same location */
+  observer?: EntityEvent[];
 
   /*** Location and Contents ***/
 
-  /** Another Entity in which this one is located, if any. */
-  location?: Entity | null;
+  /** Another Entity in which this one is located */
+  location?: Entity;
   /** Entities located inside this one. */
   contents?: Entity[];
   /** A clean flag to skip update of contents. */

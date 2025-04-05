@@ -11,7 +11,6 @@ import advance from "../src/systems/action/advance";
 
 const createEntity = createEntityFactory({
   name: "test entity",
-  location: null,
 });
 
 describe("contents system", () => {

@@ -10,12 +10,11 @@ export default createSystem((engine) => {
         // Trigger update of old location contents.
         engine.world.removeComponent(target.location, "contentsCleanFlag");
       }
-      engine.world.addComponent(target, "location", entity.location ?? null);
-      target.location = entity.location ?? null;
-      if (target.location != null) {
-        // Trigger update of new location contents.
-        engine.world.removeComponent(target.location, "contentsCleanFlag");
-      }
+      const newLocation = entity.location ?? entity;
+      engine.world.addComponent(target, "location", newLocation);
+      target.location = newLocation;
+      // Trigger update of new location contents.
+      engine.world.removeComponent(newLocation, "contentsCleanFlag");
     }
   );
 });

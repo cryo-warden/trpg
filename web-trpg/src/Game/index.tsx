@@ -1,31 +1,31 @@
-import "./index.css";
 import {
   Entity,
-  createEngine,
+  action,
+  baseline,
   bindRootSystem,
-  updateEngine,
+  createEngine,
   createEntityFactory,
   createMapEntities,
-  createRoom,
   createMutualPaths,
-  baseline,
-  trait,
+  createRoom,
   createStatBlock,
-  action,
+  trait,
+  updateEngine,
 } from "action-trpg-lib";
-import { useMemo, useEffect } from "react";
-import { WithController } from "./context/ControllerContext";
-import { WithEngine } from "./context/EngineContext";
+import { createActionRecord } from "action-trpg-lib/src/structures/Action";
+import { useEffect, useMemo } from "react";
 import { Panel } from "../structural/Panel";
-import { SelfPanel } from "./SelfPanel";
 import { usePeriodicEffect } from "../structural/usePeriodicEffect";
 import { updateWatchable } from "../structural/useWatchable";
-import { WithTarget } from "./context/TargetContext";
-import { TargetPanel } from "./TargetPanel";
-import { ObservationsPanel } from "./ObservationsPanel";
-import { createActionRecord } from "action-trpg-lib/src/structures/Action";
-import { DynamicPanel } from "./DynamicPanel";
+import { WithController } from "./context/ControllerContext";
 import { WithDynamicPanel } from "./context/DynamicPanelContext";
+import { WithEngine } from "./context/EngineContext";
+import { WithTarget } from "./context/TargetContext";
+import { DynamicPanel } from "./DynamicPanel";
+import { EventsPanel } from "./EventsPanel";
+import "./index.css";
+import { SelfPanel } from "./SelfPanel";
+import { TargetPanel } from "./TargetPanel";
 
 const createAllegiance = createEntityFactory({ name: "Unknown Allegiance" });
 
@@ -102,7 +102,6 @@ const items = [
 const createHuman = createEntityFactory(
   createActor({
     name: "Human",
-    location: null,
     contents: [],
     allegiance: humanity,
     baseline: baseline.human,
@@ -214,7 +213,7 @@ export const Game = ({
         <WithController controllerId={controllerId}>
           <WithTarget>
             <div className="Game">
-              <ObservationsPanel className="events" />
+              <EventsPanel className="events" />
               <DynamicPanel className="dynamic" />
               <SelfPanel className="self" />
               <TargetPanel className="target" />

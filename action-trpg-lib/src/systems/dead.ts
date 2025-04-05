@@ -1,3 +1,4 @@
+import { applyEvent } from "../structures/EntityEvent";
 import { createSystem } from "./createSystem";
 
 export default createSystem((engine) => {
@@ -5,10 +6,7 @@ export default createSystem((engine) => {
   return () => {
     for (const entity of entities) {
       if (entity.cdp >= entity.mhp) {
-        engine.world.addComponent(entity, "dead", true);
-        if (entity.observable != null) {
-          entity.observable.push({ type: "dead", entity });
-        }
+        applyEvent(engine, entity, { type: "dead", source: entity });
       }
     }
   };

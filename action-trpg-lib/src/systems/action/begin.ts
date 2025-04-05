@@ -1,17 +1,18 @@
+import { applyEvent } from "../../structures/EntityEvent";
 import { createSystem } from "../createSystem";
 
 export default createSystem((engine) => {
-  const entities = engine.world.with("actionState", "observable");
+  const entities = engine.world.with("actionState");
 
   return () => {
     for (const entity of entities) {
-      const { actionState, observable } = entity;
+      const { actionState } = entity;
 
       if (actionState.effectSequenceIndex === 0) {
-        observable.push({
+        applyEvent(engine, entity, {
           type: "action",
           action: actionState.action,
-          entity,
+          source: entity,
           target: actionState.targets[0],
         });
       }

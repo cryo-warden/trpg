@@ -1,6 +1,6 @@
 import "./index.css";
 
-import { Observation, renderer } from "action-trpg-lib";
+import { EntityEvent, renderer } from "action-trpg-lib";
 import React, {
   ComponentPropsWithoutRef,
   ReactNode,
@@ -16,36 +16,34 @@ import { useControllerEntity } from "./context/ControllerContext";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
 
-export const ObservationsPanel = (
-  props: ComponentPropsWithoutRef<typeof Panel>
-) => {
+export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const rendererName = "debug";
-  const { renderObservation } = useMemo(
+  const { renderEvent } = useMemo(
     () => renderer[rendererName]({ React }),
     [rendererName]
   );
   const controllerEntity = useControllerEntity();
 
-  const ObservationDisplay = useMemo(() => {
+  const EventDisplay = useMemo(() => {
     if (controllerEntity == null) {
       return () => null;
     }
-    return ({ observation }: { observation: Observation }): ReactNode => {
+    return ({ event }: { event: EntityEvent }): ReactNode => {
       // TODO Fix peer dependency.
       return useMemo(
-        () => renderObservation(controllerEntity, observation),
-        [observation]
+        () => renderEvent(controllerEntity, event),
+        [event]
       ) as any;
     };
-  }, [renderObservation, controllerEntity]);
+  }, [renderEvent, controllerEntity]);
 
-  const [observations, setObservations] = useState<Observation[]>([]);
+  const [events, setEvents] = useState<EntityEvent[]>([]);
   useEffect(() => {
-    setObservations((observations) => {
+    setEvents((events) => {
       if (controllerEntity?.observer == null) {
-        return observations;
+        return events;
       }
-      return [...observations, ...(controllerEntity.observer ?? [])];
+      return [...events, ...(controllerEntity.observer ?? [])];
     });
   }, [controllerEntity?.observer]);
 
@@ -61,8 +59,8 @@ export const ObservationsPanel = (
   return (
     <Panel {...props} ref={ref} onClick={clearSelection}>
       <Scroller bottomLock>
-        {observations.map((observation, i) => (
-          <ObservationDisplay key={i} observation={observation} />
+        {events.map((event, i) => (
+          <EventDisplay key={i} event={event} />
         ))}
       </Scroller>
     </Panel>

@@ -8,16 +8,16 @@ import control from "./control";
 import damageToCriticalDamage from "./damageToCriticalDamage";
 import dead from "./dead";
 import ep from "./ep";
+import { event } from "./event";
 import healingTaker from "./healingTaker";
 import hp from "./hp";
-import { observation } from "./observation";
 import { stats } from "./stats";
 import { statusEffect } from "./statusEffect";
 import unconscious from "./unconscious";
 
 export const bindRootSystem = (actorPeriodMS: number) =>
   joinSystems([
-    observation.reset,
+    event.resetObservers,
     control,
     periodicSystem(
       actorPeriodMS,
@@ -39,6 +39,7 @@ export const bindRootSystem = (actorPeriodMS: number) =>
         action.take,
         action.move,
         action.advance,
+        event.resolve,
       ])
     ),
     damageToCriticalDamage,
@@ -48,6 +49,7 @@ export const bindRootSystem = (actorPeriodMS: number) =>
     hp,
     ep,
     cdp,
+    event.resolve,
     unconscious,
     dead,
     contents,
@@ -55,5 +57,5 @@ export const bindRootSystem = (actorPeriodMS: number) =>
     stats.equipment,
     stats.status,
     stats.apply,
-    observation.proliferate,
+    event.resolve,
   ]);
