@@ -1,0 +1,11 @@
+.ActionButton {
+  &.active {
+    box-shadow: inset 0px 0px 4px 4px #fff;
+  }
+  &.queued {
+    box-shadow: inset 0px 0px 1px 1px #fff;
+  }
+
+  transition: box-shadow 1s;
+  box-shadow: inset 0px 0px 0px 0px rgba(0, 0, 0, 0);
+}

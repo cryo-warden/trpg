@@ -136,8 +136,8 @@ export const bindRenderer = ({ React }: { React: any }) => {
           subject: event.source,
           directObject: event.action.name,
           indirectObject: event.target,
-          verb: "began to perform",
-          particle: "on",
+          verb: "began to",
+          particle: "",
         });
       case "damage":
         return renderSentence({
