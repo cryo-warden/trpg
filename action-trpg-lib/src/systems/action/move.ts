@@ -1,3 +1,4 @@
+import { applyEvent } from "../../structures/EntityEvent";
 import { createSystem } from "../createSystem";
 import { createActionEffectSystem } from "./createActionEffectSystem";
 
@@ -6,18 +7,11 @@ export default createSystem((engine) => {
     engine,
     "move",
     (_moveEffect, entity, target) => {
-      if (target.path == null) {
-        return;
-      }
-
-      if (entity.location != null) {
-        // Trigger update of old location contents.
-        engine.world.removeComponent(entity.location, "contentsCleanFlag");
-      }
-      engine.world.addComponent(entity, "location", target.path.destination);
-      entity.location = target.path.destination;
-      // Trigger update of new location contents.
-      engine.world.removeComponent(entity.location, "contentsCleanFlag");
+      applyEvent(engine, target, {
+        type: "move",
+        source: entity,
+        target,
+      });
     }
   );
 });

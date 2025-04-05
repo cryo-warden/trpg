@@ -18,8 +18,27 @@ export type EntityEvent =
       target: Entity;
     }
   | {
+      type: "dead";
+      source: Entity;
+    }
+  | {
+      type: "drop";
+      source: Entity;
+      target: Entity;
+    }
+  | {
+      type: "equip";
+      source: Entity;
+      target: Entity;
+    }
+  | {
       type: "heal";
       heal: number;
+      source: Entity;
+      target: Entity;
+    }
+  | {
+      type: "move";
       source: Entity;
       target: Entity;
     }
@@ -30,12 +49,18 @@ export type EntityEvent =
       target: Entity;
     }
   | {
+      type: "take";
+      source: Entity;
+      target: Entity;
+    }
+  | {
       type: "unconscious";
       source: Entity;
     }
   | {
-      type: "dead";
+      type: "unequip";
       source: Entity;
+      target: Entity;
     };
 
 export const applyEvent = (

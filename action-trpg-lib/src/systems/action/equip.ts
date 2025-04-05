@@ -1,3 +1,4 @@
+import { applyEvent } from "../../structures/EntityEvent";
 import { createSystem } from "../createSystem";
 import { createActionEffectSystem } from "./createActionEffectSystem";
 
@@ -6,12 +7,11 @@ export default createSystem((engine) => {
     engine,
     "equip",
     (_equipEffect, entity, target) => {
-      if (entity.equipment == null || entity.contents == null) {
-        return;
-      }
-
-      entity.equipment.push(target);
-      engine.world.removeComponent(entity, "equipmentStatBlockCleanFlag");
+      applyEvent(engine, entity, {
+        type: "equip",
+        source: entity,
+        target,
+      });
     }
   );
 });

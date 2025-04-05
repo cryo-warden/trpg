@@ -149,6 +149,29 @@ export const bindRenderer = ({ React }: { React: any }) => {
           particle: "to",
           finalPunctuation: "!",
         });
+      case "dead":
+        return renderSentence({
+          viewpointEntity,
+          subject: event.source,
+          verb: "died",
+          finalPunctuation: "!",
+        });
+      case "drop":
+        return renderSentence({
+          viewpointEntity,
+          subject: event.source,
+          directObject: event.target,
+          verb: "dropped",
+          finalPunctuation: ".",
+        });
+      case "equip":
+        return renderSentence({
+          viewpointEntity,
+          subject: event.source,
+          directObject: event.target,
+          verb: "equipped",
+          finalPunctuation: ".",
+        });
       case "heal":
         return renderSentence({
           viewpointEntity,
@@ -158,6 +181,14 @@ export const bindRenderer = ({ React }: { React: any }) => {
           verb: "healed",
           particle: "for",
           finalPunctuation: "!",
+        });
+      case "move":
+        return renderSentence({
+          viewpointEntity,
+          subject: event.source,
+          directObject: event.target,
+          verb: "moved through",
+          finalPunctuation: ".",
         });
       case "status":
         return renderSentence({
@@ -169,12 +200,13 @@ export const bindRenderer = ({ React }: { React: any }) => {
           particle: "to",
           finalPunctuation: "!",
         });
-      case "dead":
+      case "take":
         return renderSentence({
           viewpointEntity,
           subject: event.source,
-          verb: "died",
-          finalPunctuation: "!",
+          directObject: event.target,
+          verb: "took",
+          finalPunctuation: ".",
         });
       case "unconscious":
         return renderSentence({
@@ -183,9 +215,17 @@ export const bindRenderer = ({ React }: { React: any }) => {
           verb: "became unconscious",
           finalPunctuation: "!",
         });
+      case "unequip":
+        return renderSentence({
+          viewpointEntity,
+          subject: event.source,
+          directObject: event.target,
+          verb: "unequipped",
+          finalPunctuation: ".",
+        });
     }
 
-    return <div>{JSON.stringify(event)}</div>;
+    return <div>Unknown event type: "{(event as any).type}".</div>;
   };
 
   return { renderEvent };

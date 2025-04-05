@@ -4,10 +4,11 @@ import { createEngine } from "../src/Engine";
 import { createEntityFactory } from "../src/Entity";
 import { createActionState } from "../src/structures/ActionState";
 import { createMutualPaths, createRoom } from "../src/structures/Map";
-import contents from "../src/systems/contents";
-import move from "../src/systems/action/move";
 import { joinSystems } from "../src/System";
 import advance from "../src/systems/action/advance";
+import move from "../src/systems/action/move";
+import contents from "../src/systems/contents";
+import { event } from "../src/systems/event";
 
 const createEntity = createEntityFactory({
   name: "test entity",
@@ -38,7 +39,7 @@ describe("contents system", () => {
       engine.world.add(entity);
     }
 
-    const moveSystem = joinSystems([move, advance])(engine);
+    const moveSystem = joinSystems([move, advance, event.resolve])(engine);
     const contentsSystem = contents(engine);
 
     expect(rooms[0].contents.length).toBe(0);

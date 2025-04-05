@@ -34,11 +34,11 @@ export default createSystem((engine) => {
       entity.observer.push(...events);
     }
 
-    for (const entity of eventHavers) {
-      const { events } = entity;
+    for (const eventHaver of eventHavers) {
+      const { events } = eventHaver;
       // Any new events triggered during resolution will wait for the next pass.
       // Also, if anything goes wrong, events will fail to resolve rather than resolve repeatedly.
-      engine.world.removeComponent(entity, "events");
+      engine.world.removeComponent(eventHaver, "events");
       for (const event of events) {
         switch (event.type) {
           case "action": {
@@ -63,17 +63,96 @@ export default createSystem((engine) => {
             engine.world.addComponent(event.source, "dead", true);
             break;
           }
+          case "drop": {
+            const { source, target } = event;
+            if (target.location != null) {
+              // Trigger update of old location contents.
+              engine.world.removeComponent(
+                target.location,
+                "contentsCleanFlag"
+              );
+            }
+            const newLocation = source.location ?? source;
+            engine.world.addComponent(target, "location", newLocation);
+            target.location = newLocation;
+            // Trigger update of new location contents.
+            engine.world.removeComponent(newLocation, "contentsCleanFlag");
+            break;
+          }
+          case "equip": {
+            const { source, target } = event;
+            if (source.equipment == null || source.contents == null) {
+              break;
+            }
+
+            source.equipment.push(target);
+            engine.world.removeComponent(source, "equipmentStatBlockCleanFlag");
+            break;
+          }
           case "heal": {
             engine.world.addComponent(event.target, "accumulatedHealing", 0);
             event.target.accumulatedHealing! += event.heal;
+            break;
+          }
+          case "move": {
+            const { source, target } = event;
+            if (target.path == null) {
+              break;
+            }
+
+            if (source.location != null) {
+              // Trigger update of old location contents.
+              engine.world.removeComponent(
+                source.location,
+                "contentsCleanFlag"
+              );
+            }
+            engine.world.addComponent(
+              source,
+              "location",
+              target.path.destination
+            );
+            source.location = target.path.destination;
+            // Trigger update of new location contents.
+            engine.world.removeComponent(source.location, "contentsCleanFlag");
             break;
           }
           case "status": {
             applyStatusEffectMap(engine, event.target, event.statusEffectMap);
             break;
           }
+          case "take": {
+            const { source, target } = event;
+            if (target.location != null) {
+              // Trigger update of old location contents.
+              engine.world.removeComponent(
+                target.location,
+                "contentsCleanFlag"
+              );
+            }
+            engine.world.addComponent(target, "location", source);
+            target.location = source;
+            // Trigger update of new location contents.
+            engine.world.removeComponent(target.location, "contentsCleanFlag");
+            break;
+          }
           case "unconscious": {
             engine.world.addComponent(event.source, "unconscious", true);
+            break;
+          }
+          case "unequip": {
+            const { source, target } = event;
+            if (source.equipment == null) {
+              break;
+            }
+
+            const equippedIndex = source.equipment.indexOf(target);
+            if (equippedIndex < 0) {
+              break;
+            }
+
+            source.equipment.splice(equippedIndex, 1);
+            engine.world.removeComponent(source, "equipmentStatBlockCleanFlag");
             break;
           }
         }
