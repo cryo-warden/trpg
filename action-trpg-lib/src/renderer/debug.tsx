@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Entity } from "../Entity";
 import type { EntityEvent } from "../structures/EntityEvent";
 import "./debug.css";
+import type { Action, AttackRenderer } from "../structures/Action";
 
 // TODO Fix React peer dependency.
 export const bindRenderer = ({ React }: { React: any }) => {
@@ -125,20 +126,93 @@ export const bindRenderer = ({ React }: { React: any }) => {
     );
   };
 
+  const getActionWeightAdjective = (r: AttackRenderer): string => {
+    switch (r.weightType) {
+      case "heavy":
+        return " great";
+      case "neutral":
+        return "";
+      case "light":
+        return " small";
+    }
+  };
+
+  const getActionSpeedVerb = (r: AttackRenderer): string => {
+    switch (r.speedType) {
+      case "slow":
+        return "heave";
+      case "neutral":
+        return "swing";
+      case "fast":
+        return "fling";
+    }
+  };
+
+  const getActionObjectName = (r: AttackRenderer): string => {
+    switch (r.armamentType) {
+      case "blade":
+        return "blade";
+      case "sword":
+        return "sword";
+      case "club":
+        return "club";
+      case "staff":
+        return "staff";
+      case "fist":
+        return "fist";
+      case "claw":
+        return "claw";
+      case "teeth":
+        return "fangs";
+      case "spout":
+        return "spout";
+      case "stick":
+        return "stick";
+    }
+  };
+
+  const getActionDirectObject = (r: AttackRenderer): string => {
+    const verb = getActionSpeedVerb(r);
+    const adjective = getActionWeightAdjective(r);
+
+    switch (r.armamentType) {
+      case "fist":
+        return `${verb} a${adjective} fist`;
+      case "teeth":
+        return `bare${adjective} fangs`;
+      case "spout":
+        return `well up a${adjective} spout`;
+    }
+
+    const objectName = getActionObjectName(r);
+
+    return `${verb} a${adjective} ${objectName}`;
+  };
+
+  const renderAction = (
+    viewpointEntity: Entity,
+    { source, target, action }: Extract<EntityEvent, { type: "action" }>
+  ): ReactNode => {
+    return renderSentence({
+      viewpointEntity,
+      subject: source,
+      directObject:
+        action.renderer != null
+          ? getActionDirectObject(action.renderer)
+          : action.name,
+      indirectObject: target,
+      verb: "began to",
+      particle: action.renderer != null ? "at" : "",
+    });
+  };
+
   const renderEvent = (
     viewpointEntity: Entity,
     event: EntityEvent
   ): ReactNode => {
     switch (event.type) {
       case "action":
-        return renderSentence({
-          viewpointEntity,
-          subject: event.source,
-          directObject: event.action.name,
-          indirectObject: event.target,
-          verb: "began to",
-          particle: "",
-        });
+        return renderAction(viewpointEntity, event);
       case "damage":
         return renderSentence({
           viewpointEntity,

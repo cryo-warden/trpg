@@ -9,7 +9,7 @@ export const baseline = createBaselineRecord([
   createBaseline("human", {
     mhp: 5,
     mep: 5,
-    actionRecord: createActionRecord([action.guard, action.slowStrike]),
+    actionRecord: createActionRecord([action.guard, action.doubleStrike]),
   }),
   createBaseline("bat", {
     mhp: 3,
@@ -19,6 +19,6 @@ export const baseline = createBaselineRecord([
   createBaseline("slime", {
     mhp: 2,
     mep: 1,
-    actionRecord: createActionRecord([action.recover, action.slowStrike]),
+    actionRecord: createActionRecord([action.recover, action.slowSpout]),
   }),
 ]);

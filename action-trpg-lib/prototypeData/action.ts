@@ -2,13 +2,14 @@ import { createActionRecord } from "../src/structures/Action";
 import { effect, buffEffect } from "../src/structures/Effect";
 
 export const action = createActionRecord([
-  { name: "move", effectSequence: [effect.move] },
-  { name: "take", effectSequence: [effect.take] },
-  { name: "drop", effectSequence: [effect.drop] },
-  { name: "equip", effectSequence: [effect.normalEquip] },
-  { name: "unequip", effectSequence: [effect.normalUnequip] },
+  { name: "move", effectSequence: [effect.move], renderer: null },
+  { name: "take", effectSequence: [effect.take], renderer: null },
+  { name: "drop", effectSequence: [effect.drop], renderer: null },
+  { name: "equip", effectSequence: [effect.normalEquip], renderer: null },
+  { name: "unequip", effectSequence: [effect.normalUnequip], renderer: null },
   {
     name: "guard",
+    renderer: null,
     effectSequence: [
       effect.powerfulRest,
       effect.extremeRest,
@@ -19,6 +20,7 @@ export const action = createActionRecord([
   },
   {
     name: "fancyFootwork",
+    renderer: null,
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -29,7 +31,12 @@ export const action = createActionRecord([
     ],
   },
   {
-    name: "slowStrike",
+    name: "slowSpout",
+    renderer: {
+      armamentType: "spout",
+      speedType: "slow",
+      weightType: "light",
+    },
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -44,6 +51,11 @@ export const action = createActionRecord([
   },
   {
     name: "nibble",
+    renderer: {
+      armamentType: "teeth",
+      speedType: "neutral",
+      weightType: "light",
+    },
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -55,6 +67,11 @@ export const action = createActionRecord([
   },
   {
     name: "jab",
+    renderer: {
+      armamentType: "stick",
+      speedType: "neutral",
+      weightType: "light",
+    },
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -65,6 +82,11 @@ export const action = createActionRecord([
   },
   {
     name: "doubleStrike",
+    renderer: {
+      armamentType: "fist",
+      speedType: "fast",
+      weightType: "light",
+    },
     effectSequence: [
       effect.normalRest,
       effect.normalAttack(1),
@@ -74,6 +96,11 @@ export const action = createActionRecord([
   },
   {
     name: "tripleStrike",
+    renderer: {
+      armamentType: "fist",
+      speedType: "fast",
+      weightType: "light",
+    },
     effectSequence: [
       effect.normalRest,
       effect.normalAttack(1),
@@ -86,6 +113,11 @@ export const action = createActionRecord([
   },
   {
     name: "powerStrike",
+    renderer: {
+      armamentType: "fist",
+      speedType: "fast",
+      weightType: "heavy",
+    },
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -95,6 +127,11 @@ export const action = createActionRecord([
   },
   {
     name: "extremeStrike",
+    renderer: {
+      armamentType: "fist",
+      speedType: "neutral",
+      weightType: "heavy",
+    },
     effectSequence: [
       effect.normalRest,
       effect.powerfulRest,
@@ -105,6 +142,11 @@ export const action = createActionRecord([
   },
   {
     name: "comboStrike",
+    renderer: {
+      armamentType: "fist",
+      speedType: "fast",
+      weightType: "heavy",
+    },
     effectSequence: [
       effect.extremeRest,
       effect.powerfulRest,
@@ -119,10 +161,12 @@ export const action = createActionRecord([
   },
   {
     name: "recover",
+    renderer: null,
     effectSequence: [effect.normalRest, buffEffect.normalHeal(2)],
   },
   {
     name: "luckyHeal",
+    renderer: null,
     effectSequence: [
       effect.normalRest,
       effect.normalRest,
@@ -135,6 +179,7 @@ export const action = createActionRecord([
   },
   {
     name: "ultimateNap",
+    renderer: null,
     effectSequence: [
       effect.normalRest,
       effect.normalRest,

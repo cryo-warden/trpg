@@ -1,9 +1,38 @@
 import type { Entity } from "../Entity";
 import { validateEffect, type Effect } from "./Effect";
 
+export const actionWeightType = ["heavy", "neutral", "light"] as const;
+
+export type ActionWeightType = (typeof actionWeightType)[number];
+
+export const actionSpeedType = ["slow", "neutral", "fast"] as const;
+
+export type ActionSpeedType = (typeof actionSpeedType)[number];
+
+export const actionArmamentType = [
+  "blade",
+  "sword",
+  "club",
+  "staff",
+  "fist",
+  "claw",
+  "teeth",
+  "stick",
+  "spout",
+] as const;
+
+export type ActionArmamentType = (typeof actionArmamentType)[number];
+
+export type AttackRenderer = {
+  weightType: ActionWeightType;
+  speedType: ActionSpeedType;
+  armamentType: ActionArmamentType;
+};
+
 export type Action = {
   name: string;
   effectSequence: Effect[];
+  renderer: AttackRenderer | null;
 };
 
 export type ActionRecord<T extends Action[] = Action[]> = {
