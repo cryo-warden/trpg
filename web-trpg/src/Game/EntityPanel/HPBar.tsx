@@ -2,22 +2,24 @@ import { useRef } from "react";
 import { WithEntity } from "../EntityComponent";
 import "./HPBar.css";
 
-export const HPBar = WithEntity(({ entity }) => {
+export const HPBar = WithEntity(({ entityToken }) => {
   const lastHPRatioRef = useRef(0);
   const wasHPRisingRef = useRef(true);
 
-  if (entity.hp == null || entity.mhp == null) {
+  if (entityToken.value.hp == null || entityToken.value.mhp == null) {
     return null;
   }
 
-  const hpRatio = Math.max(0, 100 * entity.hp) / entity.mhp;
+  const hpRatio =
+    Math.max(0, 100 * entityToken.value.hp) / entityToken.value.mhp;
   const isHPRising =
     hpRatio === lastHPRatioRef.current
       ? wasHPRisingRef.current
       : hpRatio >= lastHPRatioRef.current;
   lastHPRatioRef.current = hpRatio;
   wasHPRisingRef.current = isHPRising;
-  const cdpRatio = Math.max(0, 100 * (entity.cdp ?? 0)) / entity.mhp;
+  const cdpRatio =
+    Math.max(0, 100 * (entityToken.value.cdp ?? 0)) / entityToken.value.mhp;
 
   return (
     <div className="HPBar">
@@ -37,9 +39,11 @@ export const HPBar = WithEntity(({ entity }) => {
       ></div>
       <div className="cdp" style={{ width: `${cdpRatio}%` }}></div>
       <div className="overlay">
-        <div>{(entity?.cdp ?? 0) > 0 && `${entity.cdp} CDP`}</div>
         <div>
-          {entity.hp} / {entity.mhp} HP
+          {(entityToken.value.cdp ?? 0) > 0 && `${entityToken.value.cdp} CDP`}
+        </div>
+        <div>
+          {entityToken.value.hp} / {entityToken.value.mhp} HP
         </div>
       </div>
     </div>

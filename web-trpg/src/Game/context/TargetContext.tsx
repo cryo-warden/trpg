@@ -8,35 +8,37 @@ import {
   useMemo,
   useState,
 } from "react";
-import { useControllerEntity } from "./ControllerContext";
-import { useWatchable } from "../../structural/useWatchable";
+import { useControllerEntityToken } from "./ControllerContext";
+import { Token, useToken } from "../../structural/mutable";
 
 export type TargetContext = Context<{
-  target: Entity | null;
+  targetToken: Token<Entity> | Token<null>;
   setTarget: (entity: Entity | null) => void;
 }>;
 
 export const TargetContext: TargetContext = createContext({
-  target: null,
+  targetToken: null,
   setTarget: () => {},
 } as any);
 
 export const useTarget = () => useContext(TargetContext);
 
 export const WithTarget = ({ children }: { children: ReactNode }) => {
-  const controllerEntity = useControllerEntity();
+  const controllerEntityToken = useControllerEntityToken();
   const [target, setTarget] = useState<Entity | null>(null);
-  useWatchable(controllerEntity);
-  useWatchable(target);
+  const targetToken: Token<Entity> | Token<null> = useToken(target);
   useEffect(() => {
     if (
-      target?.location !== controllerEntity &&
-      target?.location !== controllerEntity?.location
+      targetToken.value?.location !== controllerEntityToken.value &&
+      targetToken.value?.location !== controllerEntityToken.value?.location
     ) {
       setTarget(null);
     }
-  }, [target?.location, controllerEntity?.location]);
-  const value = useMemo(() => ({ target, setTarget }), [target, setTarget]);
+  }, [targetToken, controllerEntityToken]);
+  const value = useMemo(
+    () => ({ targetToken, setTarget }),
+    [targetToken, setTarget]
+  );
   return (
     <TargetContext.Provider value={value}>{children}</TargetContext.Provider>
   );

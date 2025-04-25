@@ -1,7 +1,7 @@
 import { Entity } from "action-trpg-lib";
 import { ComponentPropsWithRef } from "react";
 import { Panel } from "../../structural/Panel";
-import { useControllerEntity } from "../context/ControllerContext";
+import { useControllerEntityToken } from "../context/ControllerContext";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
 import { EPBar } from "../EntityPanel/EPBar";
 import { HPBar } from "../EntityPanel/HPBar";
@@ -17,23 +17,26 @@ const weighEntity = (entity: Entity) =>
 
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
-  const selfEntity = useControllerEntity();
+  const selfEntityToken = useControllerEntityToken();
 
   if (mode === "stats") {
-    if (selfEntity == null) {
+    if (selfEntityToken.value == null) {
       return <Panel {...props} />;
     }
 
     return (
       <Panel {...props}>
-        <div>{selfEntity.name}</div>
-        <HPBar entity={selfEntity} />
-        <EPBar entity={selfEntity} />
-        <div>Attack: {selfEntity.attack ?? 0}</div>
-        <div>Defense: {selfEntity.defense ?? 0}</div>
-        <div>Critical Defense: {selfEntity.criticalDefense ?? 0}</div>
+        <div>{selfEntityToken.value.name}</div>
+        <HPBar entityToken={selfEntityToken} />
+        <EPBar entityToken={selfEntityToken} />
+        <div>Attack: {selfEntityToken.value.attack ?? 0}</div>
+        <div>Defense: {selfEntityToken.value.defense ?? 0}</div>
         <div>
-          Critical Damage Threshold: {selfEntity.criticalDamageThreshold ?? 1}
+          Critical Defense: {selfEntityToken.value.criticalDefense ?? 0}
+        </div>
+        <div>
+          Critical Damage Threshold:{" "}
+          {selfEntityToken.value.criticalDamageThreshold ?? 1}
         </div>
       </Panel>
     );
@@ -41,16 +44,17 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
 
   const entities =
     mode === "location"
-      ? selfEntity?.location?.contents ?? []
+      ? selfEntityToken.value?.location?.contents ?? []
       : mode === "inventory"
-      ? selfEntity?.contents ?? []
+      ? selfEntityToken.value?.contents ?? []
       : mode === "equipment"
-      ? selfEntity?.equipment ?? []
+      ? selfEntityToken.value?.equipment ?? []
       : [];
   const sortedEntities = entities
-    .filter((entity) => entity !== selfEntity)
+    .filter((entity) => entity !== selfEntityToken.value)
     .toSorted((a, b) => weighEntity(b) - weighEntity(a));
 
+  // TODO Extend the token concept to also handle references between entities.
   return (
     <Panel {...props}>
       <EntitiesDisplay entities={sortedEntities} />

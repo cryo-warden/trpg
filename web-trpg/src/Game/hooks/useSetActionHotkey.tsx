@@ -1,10 +1,10 @@
 import { Action } from "action-trpg-lib/src/structures/Action";
 import { useCallback, useEffect, useRef } from "react";
-import { updateWatchable } from "../../structural/useWatchable";
-import { useControllerEntity } from "../context/ControllerContext";
+import { regenerateToken } from "../../structural/mutable";
+import { useControllerEntityToken } from "../context/ControllerContext";
 
 export const useSetActionHotkey = (action: Action) => {
-  const entity = useControllerEntity();
+  const entityToken = useControllerEntityToken();
   const isPointerInRef = useRef(false);
 
   const setPointerIn = useCallback(() => {
@@ -20,9 +20,9 @@ export const useSetActionHotkey = (action: Action) => {
     document.addEventListener(
       "keydown",
       (e) => {
-        if (isPointerInRef.current && entity?.controller != null) {
-          entity.controller.hotkeyMap[action.name] = e.key;
-          updateWatchable(entity);
+        if (isPointerInRef.current && entityToken.value?.controller != null) {
+          entityToken.value.controller.hotkeyMap[action.name] = e.key;
+          regenerateToken(entityToken);
         }
       },
       abortController
@@ -30,7 +30,7 @@ export const useSetActionHotkey = (action: Action) => {
     return () => {
       abortController.abort();
     };
-  }, [entity, isPointerInRef]);
+  }, [entityToken, isPointerInRef]);
 
   return {
     onPointerOver: setPointerIn,

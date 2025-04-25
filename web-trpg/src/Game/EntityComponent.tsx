@@ -1,6 +1,6 @@
 import { Entity } from "action-trpg-lib";
 import { ReactNode } from "react";
-import { useWatchable } from "../structural/useWatchable";
+import { Token, useToken } from "../structural/mutable";
 import { useEngine } from "./context/EngineContext";
 
 export type EntityComponent<T extends Entity = Entity> = ({
@@ -11,16 +11,15 @@ export type EntityComponent<T extends Entity = Entity> = ({
 
 export const WithEntity = <
   const TProps extends {},
-  T extends (props: TProps & { entity: Entity }) => any = (
-    props: TProps & { entity: Entity }
+  T extends (props: TProps & { entityToken: Token<Entity> }) => any = (
+    props: TProps & { entityToken: Token<Entity> }
   ) => ReactNode
 >(
   Component: T
 ): T =>
   ((props) => {
     const engine = useEngine();
-    useWatchable(props.entity);
-    const entityId = engine.world.id(props.entity);
+    const entityId = engine.world.id(props.entityToken.value);
     const AnyComponent = Component as any;
     return <AnyComponent key={entityId} {...props} />;
   }) as T;

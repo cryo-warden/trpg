@@ -12,7 +12,7 @@ import React, {
 import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
-import { useControllerEntity } from "./context/ControllerContext";
+import { useControllerEntityToken } from "./context/ControllerContext";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
 
@@ -22,30 +22,33 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     () => renderer[rendererName]({ React }),
     [rendererName]
   );
-  const controllerEntity = useControllerEntity();
+  const controllerEntityToken = useControllerEntityToken();
 
   const EventDisplay = useMemo(() => {
-    if (controllerEntity == null) {
+    if (controllerEntityToken.value == null) {
       return () => null;
     }
     return ({ event }: { event: EntityEvent }): ReactNode => {
       // TODO Fix peer dependency.
       return useMemo(
-        () => renderEvent(controllerEntity, event),
+        () => renderEvent(controllerEntityToken.value, event),
         [event]
       ) as any;
     };
-  }, [renderEvent, controllerEntity]);
+  }, [renderEvent, controllerEntityToken]);
 
   const [events, setEvents] = useState<EntityEvent[]>([]);
   useEffect(() => {
     setEvents((events) => {
-      if (controllerEntity?.observer == null) {
+      if (controllerEntityToken.value?.observer == null) {
         return events;
       }
-      return [...events, ...(controllerEntity.observer ?? [])];
+      return [...events, ...(controllerEntityToken.value.observer ?? [])];
     });
-  }, [controllerEntity?.observer]);
+  }, [
+    // We count on the observer itself being replaced between game iterations.
+    controllerEntityToken.value?.observer,
+  ]);
 
   const setMode = useSetDynamicPanelMode();
   const { setTarget } = useTarget();

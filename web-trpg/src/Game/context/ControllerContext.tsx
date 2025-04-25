@@ -1,7 +1,7 @@
 import { Entity } from "action-trpg-lib";
 import { Context, createContext, ReactNode, useContext, useMemo } from "react";
 import { useEngine } from "../context/EngineContext";
-import { useWatchable } from "../../structural/useWatchable";
+import { Token, useToken } from "../../structural/mutable";
 import { PlayerController } from "action-trpg-lib/src/structures/Controller";
 
 export type ControllerContext = Context<{
@@ -12,11 +12,11 @@ export const ControllerContext: ControllerContext = createContext({
   controllerId: "",
 });
 
-export const useControllerEntity = ():
-  | (Entity & { controller: PlayerController })
-  | null => {
+export const useControllerEntityToken = ():
+  | Token<Entity & { controller: PlayerController }>
+  | Token<null> => {
   const engine = useEngine();
-  useWatchable(engine);
+  useToken(engine);
 
   const { controllerId } = useContext(ControllerContext);
 
@@ -31,15 +31,14 @@ export const useControllerEntity = ():
     [engine, controllerId]
   );
 
-  if (controllerId === "") {
-    useWatchable(null);
-    return null;
-  }
-
   const entity = entityQuery.first;
 
-  useWatchable(entity);
-  return entity as any;
+  if (controllerId === "" || entity == null) {
+    return useToken(null);
+  }
+
+  // TODO Remove this any cast by making playerController a distinct component.
+  return useToken(entity) as any;
 };
 
 export const WithController = ({

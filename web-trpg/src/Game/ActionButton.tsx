@@ -2,42 +2,38 @@ import { Entity } from "action-trpg-lib";
 import { Action } from "action-trpg-lib/src/structures/Action";
 import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Button } from "../structural/Button";
-import { updateWatchable } from "../structural/useWatchable";
+import { regenerateToken, Token } from "../structural/mutable";
 import "./ActionButton.css";
-import { useControllerEntity } from "./context/ControllerContext";
+import { useControllerEntityToken } from "./context/ControllerContext";
 import { useTarget } from "./context/TargetContext";
 
 export const ActionButton = ({
-  target,
+  targetToken,
   action,
   ...props
 }: {
-  target?: Entity;
+  targetToken?: Token<Entity>;
   action: Action;
 } & ComponentPropsWithoutRef<typeof Button>) => {
-  const entity = useControllerEntity();
-  const { target: contextualTarget } = useTarget();
-  const finalTarget = target ?? contextualTarget;
-  const hotkey = entity?.controller.hotkeyMap[action.name];
+  const controllerEntityToken = useControllerEntityToken();
+  const { targetToken: contextualTargetToken } = useTarget();
+  const finalTargetToken = targetToken ?? contextualTargetToken;
+  const hotkey = controllerEntityToken.value?.controller.hotkeyMap[action.name];
   const queueAction = useCallback(() => {
-    if (entity == null) {
+    if (controllerEntityToken.value == null) {
       return;
     }
-    entity.controller.actionQueue.splice(0, 1, {
+    controllerEntityToken.value.controller.actionQueue.splice(0, 1, {
       action,
-      targets: finalTarget == null ? [] : [finalTarget],
+      targets: finalTargetToken.value == null ? [] : [finalTargetToken.value],
     });
-    updateWatchable(entity);
-  }, [
-    entity?.controller?.type,
-    entity?.controller.actionQueue,
-    finalTarget,
-    action,
-  ]);
+    regenerateToken(controllerEntityToken);
+  }, [controllerEntityToken, finalTargetToken, action]);
 
-  const isActive = entity?.actionState?.action.name === action.name;
+  const isActive =
+    controllerEntityToken.value?.actionState?.action.name === action.name;
 
-  const isQueued = entity?.controller.actionQueue.some(
+  const isQueued = controllerEntityToken.value?.controller.actionQueue.some(
     (queuedAction) => queuedAction.action.name === action.name
   );
 

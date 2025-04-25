@@ -16,7 +16,7 @@ import { createActionRecord } from "action-trpg-lib/src/structures/Action";
 import { useEffect, useMemo } from "react";
 import { Panel } from "../structural/Panel";
 import { usePeriodicEffect } from "../structural/usePeriodicEffect";
-import { updateWatchable } from "../structural/useWatchable";
+import { regenerateToken } from "../structural/mutable";
 import { WithController } from "./context/ControllerContext";
 import { WithDynamicPanel } from "./context/DynamicPanelContext";
 import { WithEngine } from "./context/EngineContext";
@@ -175,7 +175,7 @@ export const Game = ({
 
   (window as any).dev = {
     engine,
-    updateWatchable,
+    regenerateToken,
     rooms,
     paths,
     items,
@@ -190,9 +190,9 @@ export const Game = ({
       return () => {
         updateEngine(engine);
         system();
-        updateWatchable(engine);
+        regenerateToken({ value: engine });
         for (const entity of allEntities) {
-          updateWatchable(entity);
+          regenerateToken({ value: entity });
         }
       };
     },
@@ -204,7 +204,7 @@ export const Game = ({
     for (const entity of entities) {
       engine.world.add(entity);
     }
-    updateWatchable(engine);
+    regenerateToken({ value: engine });
   }, [engine]);
 
   return (
