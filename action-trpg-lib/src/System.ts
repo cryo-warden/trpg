@@ -1,6 +1,9 @@
 import type { Engine } from "./Engine";
+import type { Resource } from "./structures/Resource";
 
-export type System = (engine: Engine) => () => void;
+export type System = <TResource extends Resource<TResource>>(
+  engine: Engine<TResource>
+) => () => void;
 
 export const joinSystems: (systems: System[]) => System =
   (systems) => (engine) => {

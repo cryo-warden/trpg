@@ -1,10 +1,13 @@
 import type { Entity } from "../Entity";
-import type { Action } from "./Action";
+import type { Resource, ResourceActionName } from "./Resource";
 
-export type PlayerController = {
+export type PlayerController<TResource extends Resource<TResource>> = {
   type: "player";
   id: string;
-  actionQueue: { action: Action; targets: Entity[] }[];
+  actionQueue: {
+    action: ResourceActionName<TResource>;
+    targets: readonly Entity<TResource>[];
+  }[];
   hotkeyMap: Record<string, string>;
 };
 
@@ -14,7 +17,7 @@ export type AwarenessState = "idle" | "alert";
 
 export type AwarenessController = { type: "awareness"; state: AwarenessState };
 
-export type Controller =
-  | PlayerController
+export type Controller<TResource extends Resource<TResource>> =
+  | PlayerController<TResource>
   | SequenceController
   | AwarenessController;

@@ -1,4 +1,3 @@
-import { Entity } from "action-trpg-lib";
 import {
   Context,
   createContext,
@@ -10,6 +9,7 @@ import {
 } from "react";
 import { useControllerEntityToken } from "./ControllerContext";
 import { Token, useToken } from "../../structural/mutable";
+import { Entity } from "../entities";
 
 export type TargetContext = Context<{
   targetToken: Token<Entity> | Token<null>;

@@ -8,10 +8,8 @@ export default createSystem((engine) => {
       const { actionState } = entity;
 
       actionState.effectSequenceIndex += 1;
-      if (
-        actionState.effectSequenceIndex >=
-        actionState.action.effectSequence.length
-      ) {
+      const action = engine.resource.actionRecord[actionState.action];
+      if (actionState.effectSequenceIndex >= action.effectSequence.length) {
         engine.world.removeComponent(entity, "actionState");
       }
     }

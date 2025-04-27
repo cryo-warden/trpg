@@ -1,11 +1,14 @@
 import type { With } from "miniplex";
-import { createEntityFactory, type Entity } from "../../Entity";
+import { type Entity } from "../../Entity";
+import type { Resource } from "../Resource";
+import type { Engine } from "../../Engine";
 
 const sample = <T>(items: readonly T[], upperBound?: number): T => {
   const i = Math.floor(Math.random() * (upperBound ?? items.length));
   return items[i];
 };
 
+// TODO Move themes to resource.themeRecord. Kind of the entire point of this painful exercise of adding the generic TResource type parameter to everything.
 export const themes = {
   debug: {
     decorationNames: [
@@ -21,72 +24,101 @@ export const themes = {
 
 export type ThemeName = keyof typeof themes;
 
-export type MapSpec = {
+export type MapSpec<TResource extends Resource<TResource>> = {
   theme: ThemeName;
   mainPathRoomCount: number;
   roomCount: number;
   loopCount: number;
   decorationRange: { min: number; max: number };
-  exits: Entity[];
+  exits: Entity<TResource>[];
 };
 
-const createEntity = createEntityFactory({ name: "Unknown " });
+export type RoomEntity<TResource extends Resource<TResource>> = With<
+  Entity<TResource>,
+  "name" | "contents"
+>;
 
-export const createRoom = (name: string): With<Entity, "contents"> =>
-  createEntity({ name, contents: [] });
+export const createRoom = <const TResource extends Resource<TResource>>(
+  _engine: Engine<TResource>,
+  name: string
+): RoomEntity<TResource> => ({
+  name,
+  contents: [],
+});
 
-export const createPath = (
-  location: Entity,
-  destination: Entity
-): With<Entity, "location" | "path"> =>
-  createEntity({
-    name: `path to ${destination.name}`,
-    location,
-    path: { destination },
-  });
+export type PathEntity<TResource extends Resource<TResource>> = With<
+  Entity<TResource>,
+  "name" | "location" | "path"
+>;
 
-export const createMutualPaths = (room1: Entity, room2: Entity) => [
-  createPath(room1, room2),
-  createPath(room2, room1),
+export const createPath = <const TResource extends Resource<TResource>>(
+  _engine: Engine<TResource>,
+  location: Entity<TResource>,
+  destination: Entity<TResource>
+): PathEntity<TResource> => ({
+  name: `path to ${destination.name}`,
+  location,
+  path: { destination },
+});
+
+export const createMutualPaths = <const TResource extends Resource<TResource>>(
+  engine: Engine<TResource>,
+  room1: Entity<TResource>,
+  room2: Entity<TResource>
+): PathEntity<TResource>[] => [
+  createPath(engine, room1, room2),
+  createPath(engine, room2, room1),
 ];
 
-export const createDecoration = (location: Entity, mapSpec: MapSpec) =>
-  createEntity({
-    name: sample(themes[mapSpec.theme].decorationNames),
-    location,
-  });
+export type DecorationEntity<TResource extends Resource<TResource>> = With<
+  Entity<TResource>,
+  "name" | "location"
+>;
 
-type CreateMapEntities = (mapSpec: MapSpec) => {
-  rooms: Entity[];
-  paths: Entity[];
-  decorations: Entity[];
-  allEntities: Entity[];
-};
+export const createDecoration = <const TResource extends Resource<TResource>>(
+  _engine: Engine<TResource>,
+  location: Entity<TResource>,
+  mapSpec: MapSpec<TResource>
+): DecorationEntity<TResource> => ({
+  name: sample(themes[mapSpec.theme].decorationNames),
+  location,
+});
 
-export const createMapEntities: CreateMapEntities = (mapSpec) => {
+export const createMapEntities = <const TResource extends Resource<TResource>>(
+  engine: Engine<TResource>,
+  mapSpec: MapSpec<TResource>
+): {
+  rooms: RoomEntity<TResource>[];
+  paths: PathEntity<TResource>[];
+  decorations: DecorationEntity<TResource>[];
+  allEntities: Entity<TResource>[];
+} => {
   // TODO Apply themes to room names, decorations, and spawners.
-  const rooms = Array.from({ length: mapSpec.roomCount }, (_, i) => {
-    return createRoom(`Room ${i}`);
-  });
-  const paths: Entity[] = [];
-  const decorations: Entity[] = [];
+  const rooms: RoomEntity<TResource>[] = Array.from(
+    { length: mapSpec.roomCount },
+    (_, i) => {
+      return createRoom(engine, `Room ${i}`);
+    }
+  );
+  const paths: PathEntity<TResource>[] = [];
+  const decorations: DecorationEntity<TResource>[] = [];
 
   let previousRoom = null;
   for (let i = 0; i < rooms.length; ++i) {
     const room = rooms[i];
     if (previousRoom != null) {
-      paths.push(...createMutualPaths(previousRoom, room));
+      paths.push(...createMutualPaths(engine, previousRoom, room));
     }
 
     if (i >= mapSpec.roomCount - mapSpec.loopCount) {
-      paths.push(...createMutualPaths(room, sample(rooms, i)));
+      paths.push(...createMutualPaths(engine, room, sample(rooms, i)));
     }
 
     const decorationCount = Math.floor(
       mapSpec.decorationRange.min + Math.random() * mapSpec.decorationRange.max
     );
     for (let i = 0; i < decorationCount; ++i) {
-      decorations.push(createDecoration(room, mapSpec));
+      decorations.push(createDecoration(engine, room, mapSpec));
     }
 
     if (i < mapSpec.mainPathRoomCount) {

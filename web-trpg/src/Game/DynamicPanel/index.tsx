@@ -1,4 +1,3 @@
-import { Entity } from "action-trpg-lib";
 import { ComponentPropsWithRef } from "react";
 import { Panel } from "../../structural/Panel";
 import { useControllerEntityToken } from "../context/ControllerContext";
@@ -6,6 +5,7 @@ import { useDynamicPanelMode } from "../context/DynamicPanelContext";
 import { EPBar } from "../EntityPanel/EPBar";
 import { HPBar } from "../EntityPanel/HPBar";
 import { EntitiesDisplay } from "./EntitiesDisplay";
+import { Entity } from "../entities";
 
 const weighEntity = (entity: Entity) =>
   (entity.controller != null && !entity.unconscious ? 1 << 7 : 0) |

@@ -1,16 +1,14 @@
-import { createActionRecord } from "../src/structures/Action";
 import { createTrait, createTraitRecord } from "../src/structures/StatBlock";
-import { action } from "./action";
 
 export const trait = createTraitRecord([
   createTrait("mobile", {
-    actionRecord: createActionRecord([action.move]),
+    actionSet: new Set(["move"]),
   }),
   createTrait("collecting", {
-    actionRecord: createActionRecord([action.take, action.drop]),
+    actionSet: new Set(["take", "drop"]),
   }),
   createTrait("equipping", {
-    actionRecord: createActionRecord([action.equip, action.unequip]),
+    actionSet: new Set(["equip", "unequip"]),
   }),
   createTrait("soft", { defense: -2 }),
   createTrait("tiny", { attack: -1, defense: -1 }),

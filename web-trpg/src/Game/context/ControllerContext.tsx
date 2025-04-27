@@ -1,8 +1,7 @@
-import { Entity } from "action-trpg-lib";
 import { Context, createContext, ReactNode, useContext, useMemo } from "react";
 import { useEngine } from "../context/EngineContext";
 import { Token, useToken } from "../../structural/mutable";
-import { PlayerController } from "action-trpg-lib/src/structures/Controller";
+import { Entity, PlayerController } from "../entities";
 
 export type ControllerContext = Context<{
   controllerId: string;

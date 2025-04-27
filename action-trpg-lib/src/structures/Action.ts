@@ -1,5 +1,7 @@
+import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
 import { validateEffect, type Effect } from "./Effect";
+import type { EngineResource, Resource, ResourceActionName } from "./Resource";
 
 export const actionWeightType = ["heavy", "neutral", "light"] as const;
 
@@ -29,34 +31,53 @@ export type AttackRenderer = {
   armamentType: ActionArmamentType;
 };
 
-export type Action = {
+export type Action<TResource extends Resource<TResource>> = {
   name: string;
-  effectSequence: Effect[];
+  effectSequence: readonly Effect<TResource>[];
   renderer: AttackRenderer | null;
 };
 
-export type ActionRecord<T extends Action[] = Action[]> = {
-  [name in T[number]["name"]]: Extract<T[number], { name: name }>;
+export type EngineAction<TEngine> = Action<EngineResource<TEngine>>;
+
+export type ActionRecord<
+  TResource extends Resource<TResource>,
+  T extends Action<TResource>[] = Action<TResource>[]
+> = {
+  readonly [name in string & T[number]["name"]]: Extract<
+    T[number],
+    { name: name }
+  >;
 };
 
-export const createActionRecord = <const T extends Action[]>(
+export const createActionRecord = <
+  const TResource extends Resource<TResource>,
+  const T extends Action<TResource>[]
+>(
   actions: T
-): ActionRecord<T> =>
+): ActionRecord<TResource, T> =>
   actions.reduce((result, action) => {
     result[action.name] = action;
     return result;
   }, {} as any);
 
-export const validateActionTarget = (
-  action: Action,
-  entity: Entity,
-  target: Entity
+export const validateActionTarget = <
+  const TResource extends Resource<TResource, TActionRecord>,
+  const TActionRecord extends ActionRecord<TResource>
+>(
+  engine: Engine<TResource>,
+  action: keyof TActionRecord,
+  entity: Entity<TResource>,
+  target: Entity<TResource>
 ) =>
-  action.effectSequence.every((effect) =>
+  engine.resource.actionRecord[action].effectSequence.every((effect) =>
     validateEffect(effect, entity, target)
   );
 
-export const recommendActions = (entity: Entity, target: Entity): Action[] =>
-  Object.values(entity.actionRecord ?? {}).filter((action) =>
-    validateActionTarget(action, entity, target)
+export const recommendActions = <const TResource extends Resource<TResource>>(
+  engine: Engine<TResource>,
+  entity: Entity<TResource>,
+  target: Entity<TResource>
+): readonly ResourceActionName<TResource>[] =>
+  (entity.actions ?? []).filter((action) =>
+    validateActionTarget(engine, action, entity, target)
   );

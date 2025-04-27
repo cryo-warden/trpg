@@ -1,12 +1,23 @@
 import type { ReactNode } from "react";
-import type { Entity } from "../Entity";
-import type { EntityEvent } from "../structures/EntityEvent";
+import type { EngineEntityEvent } from "../structures/EntityEvent";
 import "./debug.css";
-import type { Action, AttackRenderer } from "../structures/Action";
+import type { AttackRenderer } from "../structures/Action";
+import type { Resource } from "../structures/Resource";
+import type { Engine } from "../Engine";
+import type { EngineEntity } from "../Entity";
 
 // TODO Fix React peer dependency.
-export const bindRenderer = ({ React }: { React: any }) => {
+export const bindRenderer = <const TResource extends Resource<TResource>>({
+  engine,
+  React,
+}: {
+  engine: Engine<TResource>;
+  React: any;
+}) => {
   React; // Make React count as a used parameter.
+
+  type Entity = EngineEntity<typeof engine>;
+  type EntityEvent = EngineEntityEvent<typeof engine>;
 
   const getName = (
     viewpointEntity: Entity,
@@ -193,16 +204,15 @@ export const bindRenderer = ({ React }: { React: any }) => {
     viewpointEntity: Entity,
     { source, target, action }: Extract<EntityEvent, { type: "action" }>
   ): ReactNode => {
+    const a = engine.resource.actionRecord[action];
     return renderSentence({
       viewpointEntity,
       subject: source,
       directObject:
-        action.renderer != null
-          ? getActionDirectObject(action.renderer)
-          : action.name,
+        a.renderer != null ? getActionDirectObject(a.renderer) : a.name,
       indirectObject: target,
       verb: "began to",
-      particle: action.renderer != null ? "at" : "",
+      particle: a.renderer != null ? "at" : "",
     });
   };
 

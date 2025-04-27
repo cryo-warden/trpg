@@ -1,11 +1,10 @@
-import { Entity } from "action-trpg-lib";
-import { Action } from "action-trpg-lib/src/structures/Action";
 import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Button } from "../structural/Button";
 import { regenerateToken, Token } from "../structural/mutable";
 import "./ActionButton.css";
 import { useControllerEntityToken } from "./context/ControllerContext";
 import { useTarget } from "./context/TargetContext";
+import { ActionName, Entity } from "./entities";
 
 export const ActionButton = ({
   targetToken,
@@ -13,12 +12,12 @@ export const ActionButton = ({
   ...props
 }: {
   targetToken?: Token<Entity>;
-  action: Action;
+  action: ActionName;
 } & ComponentPropsWithoutRef<typeof Button>) => {
   const controllerEntityToken = useControllerEntityToken();
   const { targetToken: contextualTargetToken } = useTarget();
   const finalTargetToken = targetToken ?? contextualTargetToken;
-  const hotkey = controllerEntityToken.value?.controller.hotkeyMap[action.name];
+  const hotkey = controllerEntityToken.value?.controller.hotkeyMap[action];
   const queueAction = useCallback(() => {
     if (controllerEntityToken.value == null) {
       return;
@@ -30,11 +29,10 @@ export const ActionButton = ({
     regenerateToken(controllerEntityToken);
   }, [controllerEntityToken, finalTargetToken, action]);
 
-  const isActive =
-    controllerEntityToken.value?.actionState?.action.name === action.name;
+  const isActive = controllerEntityToken.value?.actionState?.action === action;
 
   const isQueued = controllerEntityToken.value?.controller.actionQueue.some(
-    (queuedAction) => queuedAction.action.name === action.name
+    (queuedAction) => queuedAction.action === action
   );
 
   return (
@@ -48,7 +46,7 @@ export const ActionButton = ({
       hotkey={hotkey}
       onClick={queueAction}
     >
-      {action.name}
+      {action}
     </Button>
   );
 };

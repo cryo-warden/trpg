@@ -1,78 +1,82 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
-import type { Action } from "./Action";
+import type { Resource, ResourceActionName } from "./Resource";
 import type { StatBlock } from "./StatBlock";
 import { type StatusEffectMap } from "./StatusEffectMap";
 
-export type EntityEvent =
+export type EntityEvent<TResource extends Resource<TResource>> =
   | {
       type: "action";
-      action: Action;
-      source: Entity;
-      target: Entity;
+      action: ResourceActionName<TResource>;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "damage";
       damage: number;
       criticalDamage: number;
-      source: Entity;
-      target: Entity;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "dead";
-      source: Entity;
+      source: Entity<TResource>;
     }
   | {
       type: "drop";
-      source: Entity;
-      target: Entity;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "equip";
-      source: Entity;
-      target: Entity;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "heal";
       heal: number;
-      source: Entity;
-      target: Entity;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "move";
-      source: Entity;
-      target: Entity;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "stats";
-      statBlock: StatBlock;
-      source: Entity;
+      statBlock: StatBlock<TResource>;
+      source: Entity<TResource>;
     }
   | {
       type: "status";
-      statusEffectMap: StatusEffectMap;
-      source: Entity;
-      target: Entity;
+      statusEffectMap: StatusEffectMap<TResource>;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "take";
-      source: Entity;
-      target: Entity;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "unconscious";
-      source: Entity;
+      source: Entity<TResource>;
     }
   | {
       type: "unequip";
-      source: Entity;
-      target: Entity;
+      source: Entity<TResource>;
+      target: Entity<TResource>;
     };
 
-export const applyEvent = (
-  engine: Engine,
-  entity: Entity,
-  event: EntityEvent
+export type EngineEntityEvent<TEngine> = TEngine extends Engine<infer TResource>
+  ? EntityEvent<TResource>
+  : never;
+
+export const applyEvent = <const TResource extends Resource<TResource>>(
+  engine: Engine<TResource>,
+  entity: Entity<TResource>,
+  event: EntityEvent<TResource>
 ) => {
   if (entity.events != null) {
     entity.events.push(event);

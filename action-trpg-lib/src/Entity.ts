@@ -2,11 +2,17 @@ import type { With } from "miniplex";
 import type { ActionState } from "./structures/ActionState";
 import type { Controller } from "./structures/Controller";
 import type { Equippable } from "./structures/Equippable";
-import type { Baseline, StatBlock, Trait } from "./structures/StatBlock";
-import type { ActionRecord } from "./structures/Action";
+import type { StatBlock } from "./structures/StatBlock";
 import type { EntityEvent } from "./structures/EntityEvent";
+import type {
+  Resource,
+  ResourceActionName,
+  ResourceBaselineName,
+  ResourceTraitName,
+} from "./structures/Resource";
+import type { Engine } from "./Engine";
 
-export type Entity = {
+export type Entity<TResource extends Resource<TResource>> = {
   /** Display Name */
   name: string;
   /** Accumulated Damage from a single round */
@@ -34,46 +40,46 @@ export type Entity = {
   /** Critical Defense subtracted from critical damage */
   criticalDefense?: number;
   /** The actions available to this entity */
-  actionRecord?: ActionRecord;
+  actions?: ResourceActionName<TResource>[];
 
   /** The action this entity is currently performing */
-  actionState?: ActionState;
+  actionState?: ActionState<TResource>;
 
   /** Allegiance to other entities */
-  allegiance?: Entity;
+  allegiance?: Entity<TResource>;
   /** A Controller to assign actions */
-  controller?: Controller;
+  controller?: Controller<TResource>;
   /** Events applied to this entity */
-  events?: EntityEvent[];
+  events?: EntityEvent<TResource>[];
   /** A recipient of entity events from the same location */
-  observer?: EntityEvent[];
+  observer?: EntityEvent<TResource>[];
 
   /*** Location and Contents ***/
 
   /** Another Entity in which this one is located */
-  location?: Entity;
+  location?: Entity<TResource>;
   /** Entities located inside this one. */
-  contents?: Entity[];
+  contents?: Entity<TResource>[];
   /** A clean flag to skip update of contents. */
   contentsCleanFlag?: true;
 
   /** A path to another location. */
-  path?: { destination: Entity };
+  path?: { destination: Entity<TResource> };
 
   /*** Stats ***/
 
   /** Baseline for building an entity's changeable stats. */
-  baseline?: Baseline;
+  baseline?: ResourceBaselineName<TResource>;
   /** List of traits to alter an entity's changeable stats. */
-  traits?: Trait[];
+  traits?: ResourceTraitName<TResource>[];
   /** Traits stat cache. */
-  traitsStatBlock?: StatBlock;
+  traitsStatBlock?: StatBlock<TResource>;
   /** A clean flag to skip update of trait stat cache. */
   traitsStatBlockCleanFlag?: true;
   /** List of equipped items to alter an entity's changeable stats. */
-  equipment?: Entity[];
+  equipment?: Entity<TResource>[];
   /** Equipment stat cache. */
-  equipmentStatBlock?: StatBlock;
+  equipmentStatBlock?: StatBlock<TResource>;
   /** A clean flag to skip update of equipment stat cache. */
   equipmentStatBlockCleanFlag?: true;
 
@@ -102,7 +108,7 @@ export type Entity = {
   /** Temporarily boost MHP. */
   fortify?: { mhp: number; duration: number };
   /** Status stat cache. */
-  statusStatBlock?: StatBlock;
+  statusStatBlock?: StatBlock<TResource>;
   /** A clean flag to skip update of status stat cache. */
   statusStatBlockCleanFlag?: true;
 
@@ -114,7 +120,7 @@ export type Entity = {
   /** Whether this can be taken as an inventory item. */
   takeable?: true;
   /** Stats applied if this is equipped. */
-  equippable?: Equippable;
+  equippable?: Equippable<TResource>;
   // /** The action this item takes if consumed. */
   // TODO consumable: Action;
   // /** A seed for deterministic pseudo-random behaviors such as room decorations and randomly-assigned special components. Not used for loot generation because loot shouldn't be predictable (outside of testing). */
@@ -126,7 +132,7 @@ export type Entity = {
 const entityComponentNameSet = new Set<string>([
   "location",
   "allegiance",
-] satisfies (keyof Entity)[]);
+] satisfies (keyof Entity<any>)[]);
 
 export const cloneComponent = <T>(component: T): T =>
   Array.isArray(component)
@@ -135,7 +141,10 @@ export const cloneComponent = <T>(component: T): T =>
     ? { ...component }
     : component;
 
-export const cloneEntity = <TEntity extends Entity>(
+export const cloneEntity = <
+  const TResource extends Resource<TResource>,
+  const TEntity extends Entity<TResource>
+>(
   entity: TEntity
 ): TEntity => {
   return Object.entries(entity).reduce((newEntity, [name, component]) => {
@@ -148,22 +157,30 @@ export const cloneEntity = <TEntity extends Entity>(
   }, {} as TEntity);
 };
 
-type MergedEntity<T extends Entity, U extends Partial<Entity>> = {
-  [name in (keyof T | keyof U) & keyof Entity]: Exclude<
-    Entity[name],
+type MergedEntity<
+  TResource extends Resource<TResource>,
+  T extends Entity<TResource>,
+  U extends Partial<Entity<TResource>>
+> = {
+  [name in (keyof T | keyof U) & keyof Entity<TResource>]: Exclude<
+    Entity<TResource>[name],
     undefined
   >;
 } & {
-  [name in Exclude<keyof Entity, keyof T | keyof U>]: Entity[name];
+  [name in Exclude<
+    keyof Entity<TResource>,
+    keyof T | keyof U
+  >]: Entity<TResource>[name];
 };
 
 export const mergeEntity = <
-  TEntityA extends With<Entity, any>,
-  TEntityB extends Partial<Entity>
+  const TResource extends Resource<TResource>,
+  const TEntityA extends With<Entity<TResource>, any>,
+  const TEntityB extends Partial<Entity<TResource>>
 >(
   a: TEntityA,
   b: TEntityB
-): MergedEntity<TEntityA, TEntityB> => {
+): MergedEntity<TResource, TEntityA, TEntityB> => {
   return Object.entries(b).reduce((a, [name, component]) => {
     if (entityComponentNameSet.has(name)) {
       (a as any)[name] = component;
@@ -171,12 +188,21 @@ export const mergeEntity = <
       (a as any)[name] = cloneComponent(component);
     }
     return a;
-  }, cloneEntity(a)) as any;
+  }, cloneEntity(a as any)) as any;
 };
 
 export const createEntityFactory =
-  <TBaseEntity extends With<Entity, any>>(baseEntity: TBaseEntity) =>
-  <TCustomFields extends Partial<Entity>>(
+  <
+    const TResource extends Resource<TResource>,
+    const TBaseEntity extends With<Entity<TResource>, any>
+  >(
+    _engine: Engine<TResource>,
+    baseEntity: TBaseEntity
+  ) =>
+  <const TCustomFields extends Partial<Entity<TResource>>>(
     customFields: TCustomFields
-  ): MergedEntity<TBaseEntity, TCustomFields> =>
+  ): MergedEntity<TResource, TBaseEntity, TCustomFields> =>
     mergeEntity(baseEntity, customFields);
+export type EngineEntity<TEngine> = TEngine extends Engine<infer TResource>
+  ? Entity<TResource>
+  : never;

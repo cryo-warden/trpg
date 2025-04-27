@@ -1,14 +1,20 @@
 import type { Entity } from "../../Entity";
 import { validateEffect, type Effect } from "../../structures/Effect";
 import type { Engine } from "../../Engine";
+import type { Resource } from "../../structures/Resource";
+import type { ActionRecord } from "../../structures/Action";
 
-export const createActionEffectSystem = <const TType extends Effect["type"]>(
-  engine: Engine,
+export const createActionEffectSystem = <
+  const TResource extends Resource<TResource, TActionRecord>,
+  const TActionRecord extends ActionRecord<TResource>,
+  const TType extends Effect<TResource>["type"]
+>(
+  engine: Engine<TResource>,
   effectType: TType,
   apply: (
-    effect: Extract<Effect, { type: TType }>,
-    entity: Entity,
-    target: Entity
+    effect: Extract<Effect<TResource>, { type: TType }>,
+    entity: Entity<TResource>,
+    target: Entity<TResource>
   ) => void
 ): (() => void) => {
   const entities = engine.world
@@ -18,21 +24,24 @@ export const createActionEffectSystem = <const TType extends Effect["type"]>(
   return () => {
     for (const entity of entities) {
       const {
-        actionState: {
-          effectSequenceIndex,
-          action: { effectSequence },
-          targets,
-        },
+        actionState: { effectSequenceIndex, action, targets },
       } = entity;
 
-      const effect = effectSequence[effectSequenceIndex];
+      const effect =
+        engine.resource.actionRecord[action].effectSequence[
+          effectSequenceIndex
+        ];
       if (effect.type === effectType) {
         for (let i = 0; i < targets.length; ++i) {
           const target = targets[i];
           if (!validateEffect(effect, entity, target)) {
             continue;
           }
-          apply(effect as Extract<Effect, { type: TType }>, entity, target);
+          apply(
+            effect as Extract<Effect<TResource>, { type: TType }>,
+            entity,
+            target
+          );
         }
       }
     }

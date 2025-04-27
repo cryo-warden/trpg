@@ -1,8 +1,4 @@
-import {
-  createStatBlock,
-  mergeStatBlock,
-  type StatBlock,
-} from "../../structures/StatBlock";
+import { createStatBlock, mergeStatBlock } from "../../structures/StatBlock";
 import { createSystem } from "../createSystem";
 
 export default createSystem((engine) => {
@@ -11,9 +7,12 @@ export default createSystem((engine) => {
     .without("traitsStatBlockCleanFlag");
   return () => {
     for (const entity of entities) {
-      let traitsStatBlock: StatBlock = createStatBlock({});
+      let traitsStatBlock = createStatBlock({});
       for (const trait of entity.traits) {
-        mergeStatBlock(traitsStatBlock, trait.statBlock);
+        mergeStatBlock(
+          traitsStatBlock,
+          engine.resource.traitRecord[trait].statBlock
+        );
       }
       engine.world.addComponent(entity, "traitsStatBlock", traitsStatBlock);
       entity.traitsStatBlock = traitsStatBlock;

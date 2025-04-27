@@ -1,7 +1,7 @@
-import { Entity } from "action-trpg-lib";
 import { ReactNode } from "react";
-import { Token, useToken } from "../structural/mutable";
+import { Token } from "../structural/mutable";
 import { useEngine } from "./context/EngineContext";
+import { Entity } from "./entities";
 
 export type EntityComponent<T extends Entity = Entity> = ({
   entity,
@@ -19,6 +19,7 @@ export const WithEntity = <
 ): T =>
   ((props) => {
     const engine = useEngine();
+    // Use the entity id as a key to prevent state leakage when switching entities.
     const entityId = engine.world.id(props.entityToken.value);
     const AnyComponent = Component as any;
     return <AnyComponent key={entityId} {...props} />;

@@ -1,3 +1,4 @@
+import type { EngineResource } from "../../structures/Resource";
 import {
   createStatBlock,
   mergeStatBlock,
@@ -6,12 +7,13 @@ import {
 import { createSystem } from "../createSystem";
 
 export default createSystem((engine) => {
+  type Resource = EngineResource<typeof engine>;
   const entities = engine.world
     .with("equipment")
     .without("equipmentStatBlockCleanFlag");
   return () => {
     for (const entity of entities) {
-      let equipmentStatBlock: StatBlock = createStatBlock({});
+      let equipmentStatBlock: StatBlock<Resource> = createStatBlock({});
       for (const { equippable } of entity.equipment) {
         if (equippable != null) {
           mergeStatBlock(equipmentStatBlock, equippable.statBlock);

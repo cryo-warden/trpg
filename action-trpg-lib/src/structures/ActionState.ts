@@ -1,15 +1,18 @@
+import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
-import type { Action } from "./Action";
+import type { Resource, ResourceActionName } from "./Resource";
 
-export type ActionState = {
-  action: Action;
+export type ActionState<TResource extends Resource<TResource>> = {
+  action: ResourceActionName<TResource>;
   effectSequenceIndex: number;
-  targets: Entity[];
+  targets: readonly Entity<TResource>[];
 };
-export const createActionState = (
-  action: Action,
-  targets: Entity[]
-): ActionState => ({
+export const createActionState = <const TResource extends Resource<TResource>>(
+  /** `_engine` is included for type safety. */
+  _engine: Engine<TResource>,
+  action: ResourceActionName<TResource>,
+  targets: readonly Entity<TResource>[]
+): ActionState<TResource> => ({
   action,
   effectSequenceIndex: 0,
   targets,

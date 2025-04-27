@@ -1,5 +1,5 @@
-import { createEngine, Engine } from "action-trpg-lib";
 import { Context, createContext, ReactNode, useContext, useMemo } from "react";
+import { createEngine, Engine } from "../entities";
 
 export type EngineContext = Context<{
   engine: Engine;

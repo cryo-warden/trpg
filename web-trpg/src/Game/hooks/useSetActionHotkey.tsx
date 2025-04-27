@@ -1,9 +1,9 @@
-import { Action } from "action-trpg-lib/src/structures/Action";
 import { useCallback, useEffect, useRef } from "react";
 import { regenerateToken } from "../../structural/mutable";
 import { useControllerEntityToken } from "../context/ControllerContext";
+import { ActionName } from "../entities";
 
-export const useSetActionHotkey = (action: Action) => {
+export const useSetActionHotkey = (actionName: ActionName) => {
   const entityToken = useControllerEntityToken();
   const isPointerInRef = useRef(false);
 
@@ -21,7 +21,7 @@ export const useSetActionHotkey = (action: Action) => {
       "keydown",
       (e) => {
         if (isPointerInRef.current && entityToken.value?.controller != null) {
-          entityToken.value.controller.hotkeyMap[action.name] = e.key;
+          entityToken.value.controller.hotkeyMap[actionName] = e.key;
           regenerateToken(entityToken);
         }
       },

@@ -1,168 +1,18 @@
-import {
-  Entity,
-  action,
-  baseline,
-  bindRootSystem,
-  createEngine,
-  createEntityFactory,
-  createMapEntities,
-  createMutualPaths,
-  createRoom,
-  createStatBlock,
-  trait,
-  updateEngine,
-} from "action-trpg-lib";
-import { createActionRecord } from "action-trpg-lib/src/structures/Action";
+import { bindRootSystem, updateEngine } from "action-trpg-lib";
 import { useEffect, useMemo } from "react";
+import { regenerateToken } from "../structural/mutable";
 import { Panel } from "../structural/Panel";
 import { usePeriodicEffect } from "../structural/usePeriodicEffect";
-import { regenerateToken } from "../structural/mutable";
 import { WithController } from "./context/ControllerContext";
 import { WithDynamicPanel } from "./context/DynamicPanelContext";
 import { WithEngine } from "./context/EngineContext";
 import { WithTarget } from "./context/TargetContext";
 import { DynamicPanel } from "./DynamicPanel";
+import { createEngine, createEntities } from "./entities";
 import { EventsPanel } from "./EventsPanel";
 import "./index.css";
 import { SelfPanel } from "./SelfPanel";
 import { TargetPanel } from "./TargetPanel";
-
-const createAllegiance = createEntityFactory({ name: "Unknown Allegiance" });
-
-const humanity = createAllegiance({ name: "Humanity" });
-const batkind = createAllegiance({ name: "Batkind" });
-const slimekind = createAllegiance({ name: "Slimekind" });
-
-const allegiances = [humanity, batkind, slimekind] satisfies Entity[];
-
-const mapEntities = createMapEntities({
-  theme: "debug",
-  exits: [],
-  roomCount: 20,
-  mainPathRoomCount: 10,
-  loopCount: 5,
-  decorationRange: { min: 1, max: 5 },
-});
-
-const rooms = [
-  createRoom("Origin"),
-  createRoom("Second Room"),
-  ...mapEntities.rooms,
-] satisfies Entity[];
-
-const paths = [
-  ...createMutualPaths(rooms[0], rooms[1]),
-  ...createMutualPaths(rooms[0], rooms[2]),
-  ...mapEntities.paths,
-] satisfies Entity[];
-
-const createItem = createEntityFactory({
-  name: "item",
-  location: rooms[0],
-  takeable: true,
-});
-
-const createActor = createEntityFactory({
-  name: "Unknown",
-  location: rooms[0],
-  hp: 5,
-  mhp: 5,
-  cdp: 0,
-  ep: 5,
-  mep: 5,
-  controller: { type: "sequence", sequenceIndex: 0 },
-  observable: [],
-  criticalDamageThreshold: 4,
-  status: {},
-});
-
-const magicHat = createItem({
-  name: "magic hat",
-  equippable: {
-    capacityCost: 2,
-    slot: "head",
-    statBlock: createStatBlock({ mep: 10 }),
-  },
-});
-
-const items = [
-  magicHat,
-  createItem({
-    name: "magic stick",
-    equippable: {
-      capacityCost: 2,
-      slot: "hand",
-      statBlock: createStatBlock({
-        actionRecord: createActionRecord([action.jab]),
-      }),
-    },
-  }),
-] satisfies Entity[];
-
-const createHuman = createEntityFactory(
-  createActor({
-    name: "Human",
-    contents: [],
-    allegiance: humanity,
-    baseline: baseline.human,
-  })
-);
-
-const player = createHuman({
-  name: "Player",
-  location: rooms[0],
-  contents: [],
-  traits: [trait.hero, trait.mobile, trait.collecting, trait.equipping],
-  equipment: [magicHat],
-  controller: {
-    type: "player",
-    id: "me",
-    actionQueue: [],
-    hotkeyMap: {
-      move: "m",
-      take: "t",
-      guard: "g",
-      jab: "j",
-      equip: "e",
-      unequip: "u",
-    },
-  },
-  observer: [],
-});
-
-magicHat.location = player;
-
-const createBat = createEntityFactory(
-  createActor({
-    name: "bat",
-    allegiance: batkind,
-    baseline: baseline.bat,
-  })
-);
-
-const createSlime = createEntityFactory(
-  createActor({
-    name: "slime",
-    allegiance: slimekind,
-    baseline: baseline.slime,
-    criticalDamageThreshold: 2,
-  })
-);
-
-const actors = [
-  player,
-  ...Array.from({ length: 3 }, () => createBat({ location: rooms[1] })),
-  ...Array.from({ length: 4 }, () => createSlime({ location: rooms[1] })),
-] satisfies Entity[];
-
-const entities = [
-  ...allegiances,
-  ...rooms,
-  ...paths,
-  ...mapEntities.decorations,
-  ...items,
-  ...actors,
-] satisfies Entity[];
 
 export const Game = ({
   period,
@@ -172,14 +22,16 @@ export const Game = ({
   controllerId: string;
 }) => {
   const engine = useMemo(() => createEngine(), []);
+  const entities = useMemo(() => createEntities(engine), [engine]);
 
   (window as any).dev = {
     engine,
     regenerateToken,
-    rooms,
-    paths,
-    items,
-    actors,
+    // TODO Also pass split version of entity lists, or add queryable system to find actions, rooms, paths, etc.
+    // rooms,
+    // paths,
+    // items,
+    // actors,
   };
 
   usePeriodicEffect(
@@ -208,8 +60,8 @@ export const Game = ({
   }, [engine]);
 
   return (
-    <WithDynamicPanel>
-      <WithEngine engine={engine}>
+    <WithEngine engine={engine}>
+      <WithDynamicPanel>
         <WithController controllerId={controllerId}>
           <WithTarget>
             <div className="Game">
@@ -221,7 +73,7 @@ export const Game = ({
             </div>
           </WithTarget>
         </WithController>
-      </WithEngine>
-    </WithDynamicPanel>
+      </WithDynamicPanel>
+    </WithEngine>
   );
 };

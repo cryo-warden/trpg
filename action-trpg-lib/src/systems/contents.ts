@@ -1,15 +1,17 @@
+import type { EngineResource } from "../structures/Resource";
 import type { Entity } from "../Entity";
 import { createSystem } from "./createSystem";
 
 export default createSystem((engine) => {
+  type Resource = EngineResource<typeof engine>;
   const locationEntities = engine.world.with("location");
   const entities = engine.world.with("contents").without("contentsCleanFlag");
   return () => {
     if (entities.size <= 0) {
       return;
     }
-    const uncleanContentsEntitySet = new Set<Entity | null>(entities);
-    const contentsMap = new Map<Entity, Entity[]>();
+    const uncleanContentsEntitySet = new Set<Entity<Resource> | null>(entities);
+    const contentsMap = new Map<Entity<Resource>, Entity<Resource>[]>();
     for (const locationEntity of locationEntities) {
       if (!uncleanContentsEntitySet.has(locationEntity.location)) {
         continue;

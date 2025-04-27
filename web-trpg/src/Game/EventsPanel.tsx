@@ -1,6 +1,6 @@
 import "./index.css";
 
-import { EntityEvent, renderer } from "action-trpg-lib";
+import { renderer } from "action-trpg-lib";
 import React, {
   ComponentPropsWithoutRef,
   ReactNode,
@@ -15,12 +15,15 @@ import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useControllerEntityToken } from "./context/ControllerContext";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
+import { useEngine } from "./context/EngineContext";
+import { EntityEvent } from "./entities";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
+  const engine = useEngine();
   const rendererName = "debug";
   const { renderEvent } = useMemo(
-    () => renderer[rendererName]({ React }),
-    [rendererName]
+    () => renderer[rendererName]({ engine, React }),
+    [engine, rendererName]
   );
   const controllerEntityToken = useControllerEntityToken();
 

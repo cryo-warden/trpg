@@ -1,5 +1,6 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
+import type { Resource } from "./Resource";
 import { createStatBlock, type StatBlock } from "./StatBlock";
 
 export const statusEffectNames = [
@@ -8,19 +9,25 @@ export const statusEffectNames = [
   "advantage",
   "guard",
   "fortify",
-] as const satisfies (keyof Entity)[];
+] as const satisfies (keyof Entity<any>)[];
 
-export type StatusEffectComponents = {
-  [key in (typeof statusEffectNames)[number]]: NonNullable<Entity[key]>;
+export type StatusEffectComponents<TResource extends Resource<TResource>> = {
+  [key in (typeof statusEffectNames)[number]]: NonNullable<
+    Entity<TResource>[key]
+  >;
 };
 
-export type StatusEffectMap = Partial<StatusEffectComponents>;
+export type StatusEffectMap<TResource extends Resource<TResource>> = Partial<
+  StatusEffectComponents<TResource>
+>;
 
 export const combineStatusEffects: {
-  [key in keyof StatusEffectComponents]: (
-    base: StatusEffectComponents[key],
-    additive: StatusEffectComponents[key]
-  ) => StatusEffectComponents[key];
+  [key in (typeof statusEffectNames)[number]]: <
+    const TResource extends Resource<TResource>
+  >(
+    base: StatusEffectComponents<TResource>[key],
+    additive: StatusEffectComponents<TResource>[key]
+  ) => StatusEffectComponents<TResource>[key];
 } = {
   poison: (base, additive) => ({
     damage: Math.max(base.damage, additive.damage),
@@ -46,10 +53,12 @@ export const combineStatusEffects: {
   }),
 } as const;
 
-export const applyStatusEffectMap = (
-  engine: Engine,
-  entity: Entity,
-  statusEffectMap: StatusEffectMap
+export const applyStatusEffectMap = <
+  const TResource extends Resource<TResource>
+>(
+  engine: Engine<TResource>,
+  entity: Entity<TResource>,
+  statusEffectMap: StatusEffectMap<TResource>
 ): void => {
   for (const key of statusEffectNames) {
     if (statusEffectMap[key] == null) {
@@ -74,7 +83,11 @@ export const applyStatusEffectMap = (
   }
 };
 
-export const createStatusStatBlock = (entity: Entity): StatBlock => {
+export const createStatusStatBlock = <
+  const TResource extends Resource<TResource>
+>(
+  entity: Entity<TResource>
+): StatBlock<TResource> => {
   const attack = entity.advantage?.attack ?? 0;
   const defense = entity.guard?.defense ?? 0;
   const mhp = entity.fortify?.mhp ?? 0;

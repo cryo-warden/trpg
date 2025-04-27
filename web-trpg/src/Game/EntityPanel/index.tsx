@@ -9,17 +9,19 @@ import { WithEntity } from "../EntityComponent";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
+import { useEngine } from "../context/EngineContext";
 
 export const EntityPanel = WithEntity<
   { hotkey?: string; detailed?: boolean } & ComponentPropsWithoutRef<
     typeof Panel
   >
 >(({ entityToken, hotkey, detailed = false, ...props }) => {
+  const engine = useEngine();
   const controllerEntityToken = useControllerEntityToken();
   const { targetToken: target, setTarget } = useTarget();
   const recommendedActions =
     controllerEntityToken.value &&
-    recommendActions(controllerEntityToken.value, entityToken.value);
+    recommendActions(engine, controllerEntityToken.value, entityToken.value);
   const targetThis = useCallback(() => {
     setTarget(entityToken.value);
   }, [entityToken, setTarget]);
@@ -51,9 +53,9 @@ export const EntityPanel = WithEntity<
           <div className="ActionBar">
             {recommendedActions?.map((action) => (
               <ActionButton
-                key={action.name}
+                key={action}
                 hotkey={
-                  controllerEntityToken.value?.controller.hotkeyMap[action.name]
+                  controllerEntityToken.value?.controller.hotkeyMap[action]
                 }
                 action={action}
                 targetToken={entityToken}

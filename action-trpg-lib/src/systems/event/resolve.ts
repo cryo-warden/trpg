@@ -1,10 +1,12 @@
-import type { Entity } from "../../Entity";
-import type { EntityEvent } from "../../structures/EntityEvent";
+import type { EngineEntity } from "../../Entity";
+import type { EngineEntityEvent } from "../../structures/EntityEvent";
 import { applyStatBlock } from "../../structures/StatBlock";
 import { applyStatusEffectMap } from "../../structures/StatusEffectMap";
 import { createSystem } from "../createSystem";
 
 export default createSystem((engine) => {
+  type Entity = EngineEntity<typeof engine>;
+  type EntityEvent = EngineEntityEvent<typeof engine>;
   const unlocatedSelfObservers = engine.world
     .with("events", "observer")
     .without("location");

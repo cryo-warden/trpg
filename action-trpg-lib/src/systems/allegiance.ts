@@ -1,8 +1,9 @@
-import type { Entity } from "../Entity";
+import type { EngineEntity } from "../Entity";
 import { createSystem } from "./createSystem";
 
 /** Flatten all allegiances to the topmost Entity in the allegiance tree. */
 export default createSystem((engine) => {
+  type Entity = EngineEntity<typeof engine>;
   const entities = engine.world.with("allegiance");
   return () => {
     for (const entity of entities) {

@@ -1,9 +1,9 @@
-import { Entity } from "action-trpg-lib";
 import { Scroller } from "../../../structural/Scroller";
 import { EntityPanel } from "../../EntityPanel";
 import { useEngine } from "../../context/EngineContext";
 import "./index.css";
 import { useToken } from "../../../structural/mutable";
+import { Entity } from "../../entities";
 
 /** Temporary workaround to re-tokenize entity references taken from another entity. */
 const WrapEntityPanel = ({

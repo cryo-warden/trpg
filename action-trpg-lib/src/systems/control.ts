@@ -18,14 +18,14 @@ export default createSystem((engine) => {
           engine.world.addComponent(
             entity,
             "actionState",
-            createActionState(nextAction.action, nextAction.targets)
+            createActionState(engine, nextAction.action, nextAction.targets)
           );
           break;
         case "sequence":
-          if (entity.actionRecord == null) {
+          if (entity.actions == null) {
             continue;
           }
-          const actions = Object.values(entity.actionRecord);
+          const actions = entity.actions;
           if (actions.length < 1) {
             continue;
           }
@@ -40,7 +40,7 @@ export default createSystem((engine) => {
               : entity.location.contents
           )
             .toSorted(() => Math.random() - 0.5)
-            .find((t) => validateActionTarget(action, entity, t));
+            .find((t) => validateActionTarget(engine, action, entity, t));
 
           if (target == null) {
             continue;
@@ -49,7 +49,7 @@ export default createSystem((engine) => {
           engine.world.addComponent(
             entity,
             "actionState",
-            createActionState(action, [target])
+            createActionState(engine, action, [target])
           );
           break;
       }

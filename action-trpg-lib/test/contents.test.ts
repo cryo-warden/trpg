@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { action } from "../prototypeData";
 import { createEngine } from "../src/Engine";
+import { type EngineEntity } from "../src/Entity";
 import { createEntityFactory } from "../src/Entity";
 import { createActionState } from "../src/structures/ActionState";
 import { createMutualPaths, createRoom } from "../src/structures/Map";
@@ -10,21 +11,27 @@ import move from "../src/systems/action/move";
 import contents from "../src/systems/contents";
 import { event } from "../src/systems/event";
 
-const createEntity = createEntityFactory({
-  name: "test entity",
-});
-
 describe("contents system", () => {
   test("can correctly determine contents from location", () => {
-    const engine = createEngine();
+    const engine = createEngine({
+      actionRecord: action,
+      baselineRecord: {},
+      traitRecord: {},
+    });
+
+    const createEntity = createEntityFactory(engine, {
+      name: "test entity",
+    });
+
+    type TestEntity = EngineEntity<typeof engine>;
     const rooms = [
-      createRoom("test room 1"),
-      createRoom("test room 2"),
-      createRoom("test room 3"),
+      createRoom(engine, "test room 1"),
+      createRoom(engine, "test room 2"),
+      createRoom(engine, "test room 3"),
     ];
     const paths = [
-      ...createMutualPaths(rooms[0], rooms[1]),
-      ...createMutualPaths(rooms[1], rooms[2]),
+      ...createMutualPaths(engine, rooms[0], rooms[1]),
+      ...createMutualPaths(engine, rooms[1], rooms[2]),
     ];
     const locationEntities = [
       createEntity({ location: rooms[0] }),
@@ -57,7 +64,7 @@ describe("contents system", () => {
     engine.world.addComponent(
       locationEntities[0],
       "actionState",
-      createActionState(action.move, [paths[0]])
+      createActionState(engine, "move", [paths[0]])
     );
 
     // After actions but before updating contents, expect two clean flags to be gone.
@@ -78,12 +85,12 @@ describe("contents system", () => {
     engine.world.addComponent(
       locationEntities[0],
       "actionState",
-      createActionState(action.move, [paths[2]])
+      createActionState(engine, "move", [paths[2]])
     );
     engine.world.addComponent(
       locationEntities[3],
       "actionState",
-      createActionState(action.move, [paths[2]])
+      createActionState(engine, "move", [paths[2]])
     );
 
     // After actions but before updating contents, expect two clean flags to be gone.

@@ -1,19 +1,20 @@
 import type { Entity } from "../Entity";
 import type { Factory } from "../functional/factory";
+import type { Resource } from "./Resource";
 import type { StatusEffectMap } from "./StatusEffectMap";
 
 export type Intensity = "normal" | "powerful" | "extreme";
 
-export type Buff =
+export type Buff<TResource extends Resource<TResource>> =
   | { type: "heal"; heal: number }
-  | { type: "status"; statusEffectMap: StatusEffectMap };
+  | { type: "status"; statusEffectMap: StatusEffectMap<TResource> };
 
 export type RestEffect = {
   type: "rest";
   intensity: Intensity;
 };
 
-export type AttackEffect = {
+export type AttackEffect<TResource extends Resource<TResource>> = {
   type: "attack";
   intensity: Intensity;
   /** Damage inflicted by the attack. */
@@ -21,13 +22,13 @@ export type AttackEffect = {
   /** Critical Damage inflicted inherently by the attack. */
   criticalDamage: number;
   /** Map of status effects applied by the attack. */
-  statusEffectMap?: StatusEffectMap;
+  statusEffectMap?: StatusEffectMap<TResource>;
 };
 
-export type BuffEffect = {
+export type BuffEffect<TResource extends Resource<TResource>> = {
   type: "buff";
   intensity: Intensity;
-  buff: Buff;
+  buff: Buff<TResource>;
 };
 
 export type MoveEffect = {
@@ -52,20 +53,20 @@ export type UnequipEffect = {
   intensity: Intensity;
 };
 
-export type Effect =
+export type Effect<TResource extends Resource<TResource>> =
   | RestEffect
-  | AttackEffect
-  | BuffEffect
+  | AttackEffect<TResource>
+  | BuffEffect<TResource>
   | MoveEffect
   | TakeEffect
   | DropEffect
   | EquipEffect
   | UnequipEffect;
 
-export const validateEffect = (
-  effect: Effect,
-  entity: Entity,
-  target: Entity
+export const validateEffect = <const TResource extends Resource<TResource>>(
+  effect: Effect<TResource>,
+  entity: Entity<TResource>,
+  target: Entity<TResource>
 ) => {
   if (target.location !== entity.location && target.location !== entity) {
     return false;
@@ -108,7 +109,10 @@ export const validateEffect = (
   }
 };
 
-const createBuffEffect = (intensity: Intensity, buff: Buff): BuffEffect => ({
+const createBuffEffect = <const TResource extends Resource<TResource>>(
+  intensity: Intensity,
+  buff: Buff<TResource>
+): BuffEffect<TResource> => ({
   type: "buff",
   intensity,
   buff,
@@ -122,13 +126,16 @@ export const buffEffect = {
   extremeHeal: (heal: number) =>
     createBuffEffect("extreme", { type: "heal", heal }),
 
-  normalStatus: (statusEffectMap: StatusEffectMap) =>
-    createBuffEffect("normal", { type: "status", statusEffectMap }),
-  powerfulStatus: (statusEffectMap: StatusEffectMap) =>
-    createBuffEffect("powerful", { type: "status", statusEffectMap }),
-  extremeStatus: (statusEffectMap: StatusEffectMap) =>
-    createBuffEffect("extreme", { type: "status", statusEffectMap }),
-} as const satisfies Record<string, BuffEffect | Factory<BuffEffect>>;
+  normalStatus: <const TResource extends Resource<TResource>>(
+    statusEffectMap: StatusEffectMap<TResource>
+  ) => createBuffEffect("normal", { type: "status", statusEffectMap }),
+  powerfulStatus: <const TResource extends Resource<TResource>>(
+    statusEffectMap: StatusEffectMap<TResource>
+  ) => createBuffEffect("powerful", { type: "status", statusEffectMap }),
+  extremeStatus: <const TResource extends Resource<TResource>>(
+    statusEffectMap: StatusEffectMap<TResource>
+  ) => createBuffEffect("extreme", { type: "status", statusEffectMap }),
+} as const satisfies Record<string, BuffEffect<any> | Factory<BuffEffect<any>>>;
 
 export const effect = {
   move: { type: "move" },
@@ -147,61 +154,64 @@ export const effect = {
   powerfulRest: { type: "rest", intensity: "powerful" },
   extremeRest: { type: "rest", intensity: "extreme" },
 
-  normalAttack: (damage: number, criticalDamage: number = 0): AttackEffect => ({
+  normalAttack: <const TResource extends Resource<TResource>>(
+    damage: number,
+    criticalDamage: number = 0
+  ): AttackEffect<TResource> => ({
     type: "attack",
     intensity: "normal",
     damage,
     criticalDamage,
   }),
-  powerfulAttack: (
+  powerfulAttack: <const TResource extends Resource<TResource>>(
     damage: number,
     criticalDamage: number = 0
-  ): AttackEffect => ({
+  ): AttackEffect<TResource> => ({
     type: "attack",
     intensity: "powerful",
     damage,
     criticalDamage,
   }),
-  extremeAttack: (
+  extremeAttack: <const TResource extends Resource<TResource>>(
     damage: number,
     criticalDamage: number = 0
-  ): AttackEffect => ({
+  ): AttackEffect<TResource> => ({
     type: "attack",
     intensity: "extreme",
     damage,
     criticalDamage,
   }),
-  normalStatusAttack: (
-    statusEffectMap: StatusEffectMap,
+  normalStatusAttack: <const TResource extends Resource<TResource>>(
+    statusEffectMap: StatusEffectMap<TResource>,
     damage: number = 0,
     criticalDamage: number = 0
-  ): AttackEffect => ({
+  ): AttackEffect<TResource> => ({
     type: "attack",
     intensity: "normal",
     damage,
     criticalDamage,
     statusEffectMap,
   }),
-  powerfulStatusAttack: (
-    statusEffectMap: StatusEffectMap,
+  powerfulStatusAttack: <const TResource extends Resource<TResource>>(
+    statusEffectMap: StatusEffectMap<TResource>,
     damage: number = 0,
     criticalDamage: number = 0
-  ): AttackEffect => ({
+  ): AttackEffect<TResource> => ({
     type: "attack",
     intensity: "powerful",
     damage,
     criticalDamage,
     statusEffectMap,
   }),
-  extremeStatusAttack: (
-    statusEffectMap: StatusEffectMap,
+  extremeStatusAttack: <const TResource extends Resource<TResource>>(
+    statusEffectMap: StatusEffectMap<TResource>,
     damage: number = 0,
     criticalDamage: number = 0
-  ): AttackEffect => ({
+  ): AttackEffect<TResource> => ({
     type: "attack",
     intensity: "extreme",
     damage,
     criticalDamage,
     statusEffectMap,
   }),
-} as const satisfies Record<string, Effect | Factory<Effect>>;
+} as const satisfies Record<string, Effect<any> | Factory<Effect<any>>>;
