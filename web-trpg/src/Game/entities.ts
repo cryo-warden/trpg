@@ -1,28 +1,21 @@
 import {
   createEntityFactory,
   createMapEntities,
-  createRoom,
   createMutualPaths,
+  createRoom,
   createStatBlock,
-  action,
-  baseline,
-  trait,
-  createEngine as unboundCreateEngine,
+  EngineAction,
   EngineEntity,
-  EngineResource,
-  ResourceActionName,
   EngineEntityEvent,
+  EngineResource,
+  prototypeResource,
+  ResourceActionName,
+  createEngine as unboundCreateEngine,
+  PlayerController as UnboundPlayerController,
 } from "action-trpg-lib";
-import { EngineAction } from "action-trpg-lib/src/structures/Action";
-import { PlayerController as UnboundPlayerController } from "action-trpg-lib/src/structures/Controller";
 
 // TODO Handle loading resources here.
-export const createEngine = () =>
-  unboundCreateEngine({
-    actionRecord: action,
-    baselineRecord: baseline,
-    traitRecord: trait,
-  });
+export const createEngine = () => unboundCreateEngine(prototypeResource);
 
 export type Engine = ReturnType<typeof createEngine>;
 export type Resource = EngineResource<Engine>;

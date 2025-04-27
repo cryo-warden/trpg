@@ -1,5 +1,5 @@
 import type { Engine } from "./Engine";
-import type { Resource } from "./structures/Resource";
+import type { Resource } from "./Resource";
 
 export type System = <TResource extends Resource<TResource>>(
   engine: Engine<TResource>

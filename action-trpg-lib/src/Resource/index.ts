@@ -1,6 +1,7 @@
 import type { Engine } from "../Engine";
 import type { ActionRecord } from "./Action";
-import type { BaselineRecord, TraitRecord } from "./StatBlock";
+import type { TraitRecord } from "./Trait";
+import type { BaselineRecord } from "./Baseline";
 
 export type Resource<
   TResource extends Resource<
@@ -43,3 +44,5 @@ export type ResourceTraitName<TResource extends Resource<TResource>> = string &
 export type EngineResource<TEngine> = TEngine extends Engine<infer TResource>
   ? TResource
   : never;
+
+export * from "./Action";

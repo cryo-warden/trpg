@@ -1,5 +1,4 @@
-// import { action } from "../../prototypeData";
-import { validateActionTarget } from "../structures/Action";
+import { validateActionTarget } from "../Resource";
 import { createActionState } from "../structures/ActionState";
 import { createSystem } from "./createSystem";
 

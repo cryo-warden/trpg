@@ -1,12 +1,9 @@
-import type { Entity } from "../../Entity";
-import { validateEffect, type Effect } from "../../structures/Effect";
 import type { Engine } from "../../Engine";
-import type { Resource } from "../../structures/Resource";
-import type { ActionRecord } from "../../structures/Action";
+import type { Entity } from "../../Entity";
+import { validateEffect, type Effect, type Resource } from "../../Resource";
 
 export const createActionEffectSystem = <
-  const TResource extends Resource<TResource, TActionRecord>,
-  const TActionRecord extends ActionRecord<TResource>,
+  const TResource extends Resource<TResource>,
   const TType extends Effect<TResource>["type"]
 >(
   engine: Engine<TResource>,

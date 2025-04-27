@@ -1,7 +1,7 @@
-import type { Entity } from "../Entity";
-import type { Factory } from "../functional/factory";
-import type { Resource } from "./Resource";
-import type { StatusEffectMap } from "./StatusEffectMap";
+import type { Entity } from "../../Entity";
+import type { Factory } from "../../functional/factory";
+import type { Resource } from "..";
+import type { StatusEffectMap } from "../../structures/StatusEffectMap";
 
 export type Intensity = "normal" | "powerful" | "extreme";
 

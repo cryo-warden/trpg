@@ -1,4 +1,4 @@
-import { createTrait, createTraitRecord } from "../src/structures/StatBlock";
+import { createTrait, createTraitRecord } from "../src/Resource/Trait";
 
 export const trait = createTraitRecord([
   createTrait("mobile", {

@@ -1,5 +1,5 @@
 import type { Entity } from "../Entity";
-import type { Resource, ResourceActionName } from "./Resource";
+import type { Resource, ResourceActionName } from "../Resource";
 
 export type PlayerController<TResource extends Resource<TResource>> = {
   type: "player";

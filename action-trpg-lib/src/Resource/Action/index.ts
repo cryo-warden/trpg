@@ -1,7 +1,7 @@
-import type { Engine } from "../Engine";
-import type { Entity } from "../Entity";
+import type { Engine } from "../../Engine";
+import type { Entity } from "../../Entity";
 import { validateEffect, type Effect } from "./Effect";
-import type { EngineResource, Resource, ResourceActionName } from "./Resource";
+import type { EngineResource, Resource, ResourceActionName } from "..";
 
 export const actionWeightType = ["heavy", "neutral", "light"] as const;
 
@@ -61,11 +61,10 @@ export const createActionRecord = <
   }, {} as any);
 
 export const validateActionTarget = <
-  const TResource extends Resource<TResource, TActionRecord>,
-  const TActionRecord extends ActionRecord<TResource>
+  const TResource extends Resource<TResource>
 >(
   engine: Engine<TResource>,
-  action: keyof TActionRecord,
+  action: ResourceActionName<TResource>,
   entity: Entity<TResource>,
   target: Entity<TResource>
 ) =>
@@ -81,3 +80,5 @@ export const recommendActions = <const TResource extends Resource<TResource>>(
   (entity.actions ?? []).filter((action) =>
     validateActionTarget(engine, action, entity, target)
   );
+
+export * from "./Effect";

@@ -1,5 +1,4 @@
-import { createActionRecord } from "../src/structures/Action";
-import { effect, buffEffect } from "../src/structures/Effect";
+import { buffEffect, createActionRecord, effect } from "../src/Resource";
 
 export const action = createActionRecord([
   { name: "move", effectSequence: [effect.move], renderer: null },

@@ -1,7 +1,4 @@
-import {
-  createBaseline,
-  createBaselineRecord,
-} from "../src/structures/StatBlock";
+import { createBaseline, createBaselineRecord } from "../src/Resource/Baseline";
 
 export const baseline = createBaselineRecord([
   createBaseline("human", {

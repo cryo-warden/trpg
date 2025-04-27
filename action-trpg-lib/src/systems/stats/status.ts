@@ -1,4 +1,4 @@
-import type { EngineResource } from "../../structures/Resource";
+import type { EngineResource } from "../../Resource";
 import { type StatBlock } from "../../structures/StatBlock";
 import { createStatusStatBlock } from "../../structures/StatusEffectMap";
 import { createSystem } from "../createSystem";

@@ -1,6 +1,6 @@
 import { World as MiniplexWorld } from "miniplex";
 import type { Entity } from "./Entity";
-import type { Resource } from "./structures/Resource";
+import type { Resource } from "./Resource";
 
 export type Engine<TResource extends Resource<TResource>> = {
   world: MiniplexWorld<Entity<TResource>>;

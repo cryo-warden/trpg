@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
-import type { EngineEntityEvent } from "../structures/EntityEvent";
-import "./debug.css";
-import type { AttackRenderer } from "../structures/Action";
-import type { Resource } from "../structures/Resource";
 import type { Engine } from "../Engine";
 import type { EngineEntity } from "../Entity";
+import type { AttackRenderer, Resource } from "../Resource";
+import type { EngineEntityEvent } from "../structures/EntityEvent";
+import "./debug.css";
 
 // TODO Fix React peer dependency.
 export const bindRenderer = <const TResource extends Resource<TResource>>({

@@ -1,4 +1,4 @@
-import type { Resource } from "./Resource";
+import type { Resource } from "../Resource";
 import type { StatBlock } from "./StatBlock";
 
 export type Equippable<TResource extends Resource<TResource>> = {

@@ -1,4 +1,4 @@
-import type { EngineResource } from "../structures/Resource";
+import type { EngineResource } from "../Resource";
 import type { Entity } from "../Entity";
 import { createSystem } from "./createSystem";
 

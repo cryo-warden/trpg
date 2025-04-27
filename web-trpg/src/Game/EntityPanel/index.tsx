@@ -1,15 +1,15 @@
-import { recommendActions } from "action-trpg-lib/src/structures/Action";
+import { recommendActions } from "action-trpg-lib";
 import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
 import { useControllerEntityToken } from "../context/ControllerContext";
+import { useEngine } from "../context/EngineContext";
 import { useTarget } from "../context/TargetContext";
 import { WithEntity } from "../EntityComponent";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
-import { useEngine } from "../context/EngineContext";
 
 export const EntityPanel = WithEntity<
   { hotkey?: string; detailed?: boolean } & ComponentPropsWithoutRef<

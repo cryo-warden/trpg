@@ -1,4 +1,4 @@
-import type { EngineResource } from "../../structures/Resource";
+import type { EngineResource } from "../../Resource";
 import {
   createStatBlock,
   mergeStatBlock,

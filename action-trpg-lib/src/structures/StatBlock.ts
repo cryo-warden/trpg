@@ -1,6 +1,6 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
-import type { Resource, ResourceActionName } from "./Resource";
+import type { Resource, ResourceActionName } from "../Resource";
 
 export type StatBlock<TResource extends Resource<TResource>> = {
   mhp: number;
@@ -62,76 +62,3 @@ export const createStatBlock = <const TResource extends Resource<TResource>>(
     actionSet: new Set(customFields.actionSet),
   };
 };
-
-export type Baseline<TResource extends Resource<TResource>> = {
-  name: string;
-  statBlock: StatBlock<TResource>;
-};
-
-export const createBaseline = <
-  const TResource extends Resource<TResource>,
-  const TName extends string,
-  const TStatBlock extends StatBlock<TResource>
->(
-  name: TName,
-  customFields: Partial<TStatBlock>
-) => ({
-  name,
-  statBlock: createStatBlock(customFields),
-});
-
-export type BaselineRecord<
-  TResource extends Resource<TResource>,
-  TBaselines extends Baseline<TResource>[] = Baseline<TResource>[]
-> = {
-  [name in TBaselines[number]["name"]]: Extract<
-    TBaselines[number],
-    { name: name }
-  >;
-};
-
-export const createBaselineRecord = <
-  TResource extends Resource<TResource>,
-  const T extends Baseline<TResource>[]
->(
-  baselines: T
-): BaselineRecord<TResource, T> =>
-  baselines.reduce((result, baseline) => {
-    result[baseline.name] = baseline;
-    return result;
-  }, {} as any);
-
-// May not always be the same as Baseline. Do not combine these.
-export type Trait<TResource extends Resource<TResource>> = {
-  name: string;
-  statBlock: StatBlock<TResource>;
-};
-
-export const createTrait = <
-  const TResource extends Resource<TResource>,
-  const TName extends string
->(
-  name: TName,
-  customFields: Partial<StatBlock<TResource>>
-) => ({
-  name,
-  statBlock: createStatBlock(customFields),
-});
-
-export type TraitRecord<
-  TResource extends Resource<TResource>,
-  TTraits extends Trait<TResource>[] = Trait<TResource>[]
-> = {
-  [name in TTraits[number]["name"]]: Extract<TTraits[number], { name: name }>;
-};
-
-export const createTraitRecord = <
-  TResource extends Resource<TResource>,
-  const T extends Trait<TResource>[]
->(
-  traits: T
-): TraitRecord<TResource, T> =>
-  traits.reduce((result, trait) => {
-    result[trait.name] = trait;
-    return result;
-  }, {} as any);

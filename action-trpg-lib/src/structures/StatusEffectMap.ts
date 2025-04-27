@@ -1,6 +1,6 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
-import type { Resource } from "./Resource";
+import type { Resource } from "../Resource";
 import { createStatBlock, type StatBlock } from "./StatBlock";
 
 export const statusEffectNames = [

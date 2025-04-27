@@ -1,6 +1,6 @@
 import type { With } from "miniplex";
 import { type Entity } from "../../Entity";
-import type { Resource } from "../Resource";
+import type { Resource } from "../../Resource";
 import type { Engine } from "../../Engine";
 
 const sample = <T>(items: readonly T[], upperBound?: number): T => {

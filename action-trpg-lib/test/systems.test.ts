@@ -1,13 +1,13 @@
-import { expect, describe, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
+import { createEngine } from "../src/Engine";
+import {
+  createEntityFactory,
+  type EngineEntity,
+  type Entity,
+} from "../src/Entity";
+import { buffEffect, effect, type EngineResource } from "../src/Resource";
 import { createActionState } from "../src/structures/ActionState";
-import { buffEffect, effect } from "../src/structures/Effect";
-import type { Action } from "../src/structures/Action";
-import { createEntityFactory, type Entity } from "../src/Entity";
-import { createEngine, type Engine } from "../src/Engine";
-import { type EngineEntity } from "../src/Entity";
-import { type EngineResource } from "../src/structures/Resource";
 import { bindRootSystem } from "../src/systems";
-import type { Resource } from "../src/structures/Resource";
 
 // TODO buffs, then attacks, then movement
 // Actions must resolve in that order when happening in the same tick.

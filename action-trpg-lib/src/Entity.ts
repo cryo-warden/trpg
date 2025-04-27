@@ -9,7 +9,7 @@ import type {
   ResourceActionName,
   ResourceBaselineName,
   ResourceTraitName,
-} from "./structures/Resource";
+} from "./Resource";
 import type { Engine } from "./Engine";
 
 export type Entity<TResource extends Resource<TResource>> = {

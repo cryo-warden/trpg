@@ -1,8 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { action } from "../prototypeData";
+import { prototypeResource } from "../prototypeResource";
 import { createEngine } from "../src/Engine";
-import { type EngineEntity } from "../src/Entity";
-import { createEntityFactory } from "../src/Entity";
+import { createEntityFactory, type EngineEntity } from "../src/Entity";
 import { createActionState } from "../src/structures/ActionState";
 import { createMutualPaths, createRoom } from "../src/structures/Map";
 import { joinSystems } from "../src/System";
@@ -13,11 +12,7 @@ import { event } from "../src/systems/event";
 
 describe("contents system", () => {
   test("can correctly determine contents from location", () => {
-    const engine = createEngine({
-      actionRecord: action,
-      baselineRecord: {},
-      traitRecord: {},
-    });
+    const engine = createEngine(prototypeResource);
 
     const createEntity = createEntityFactory(engine, {
       name: "test entity",
