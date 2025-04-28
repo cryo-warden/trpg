@@ -1,7 +1,7 @@
 import { Context, createContext, ReactNode, useContext, useMemo } from "react";
 import { useEngine } from "../context/EngineContext";
 import { Token, useToken } from "../../structural/mutable";
-import { Entity, PlayerController } from "../entities";
+import { Entity, PlayerController } from "../trpg";
 
 export type ControllerContext = Context<{
   controllerId: string;

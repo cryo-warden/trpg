@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useControllerEntityToken } from "./ControllerContext";
 import { Token, useToken } from "../../structural/mutable";
-import { Entity } from "../entities";
+import { Entity } from "../trpg";
 
 export type TargetContext = Context<{
   targetToken: Token<Entity> | Token<null>;

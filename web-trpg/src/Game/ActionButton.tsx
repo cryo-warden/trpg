@@ -4,7 +4,7 @@ import { regenerateToken, Token } from "../structural/mutable";
 import "./ActionButton.css";
 import { useControllerEntityToken } from "./context/ControllerContext";
 import { useTarget } from "./context/TargetContext";
-import { ActionName, Entity } from "./entities";
+import { ActionName, Entity } from "./trpg";
 
 export const ActionButton = ({
   targetToken,

@@ -1,6 +1,6 @@
 import { createBaseline, createBaselineRecord } from "../src/Resource/Baseline";
 
-export const baseline = createBaselineRecord([
+export const baselineRecord = createBaselineRecord([
   createBaseline("human", {
     mhp: 5,
     mep: 5,

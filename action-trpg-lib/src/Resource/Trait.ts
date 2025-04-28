@@ -1,4 +1,4 @@
-import type { Resource } from ".";
+import type { Resource, ResourceTraitRecord } from ".";
 import { type StatBlock, createStatBlock } from "../structures/StatBlock";
 
 // May not always be the same as Baseline. Do not combine them.
@@ -27,7 +27,7 @@ export type TraitRecord<
 };
 
 export const createTraitRecord = <
-  TResource extends Resource<TResource>,
+  const TResource extends Resource<TResource>,
   const T extends Trait<TResource>[]
 >(
   traits: T
@@ -36,3 +36,6 @@ export const createTraitRecord = <
     result[trait.name] = trait;
     return result;
   }, {} as any);
+
+export type ResourceTraitName<TResource extends Resource<TResource>> = string &
+  keyof ResourceTraitRecord<TResource>;

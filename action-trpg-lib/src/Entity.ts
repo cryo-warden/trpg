@@ -1,16 +1,16 @@
 import type { With } from "miniplex";
-import type { ActionState } from "./structures/ActionState";
-import type { Controller } from "./structures/Controller";
-import type { Equippable } from "./structures/Equippable";
-import type { StatBlock } from "./structures/StatBlock";
-import type { EntityEvent } from "./structures/EntityEvent";
+import type { Engine } from "./Engine";
 import type {
   Resource,
   ResourceActionName,
   ResourceBaselineName,
   ResourceTraitName,
 } from "./Resource";
-import type { Engine } from "./Engine";
+import type { ActionState } from "./structures/ActionState";
+import type { Controller } from "./structures/Controller";
+import type { EntityEvent } from "./structures/EntityEvent";
+import type { Equippable } from "./structures/Equippable";
+import type { StatBlock } from "./structures/StatBlock";
 
 export type Entity<TResource extends Resource<TResource>> = {
   /** Display Name */
@@ -39,7 +39,7 @@ export type Entity<TResource extends Resource<TResource>> = {
   defense?: number;
   /** Critical Defense subtracted from critical damage */
   criticalDefense?: number;
-  /** The actions available to this entity */
+  /** The names of the actions available to this entity */
   actions?: ResourceActionName<TResource>[];
 
   /** The action this entity is currently performing */
@@ -68,9 +68,9 @@ export type Entity<TResource extends Resource<TResource>> = {
 
   /*** Stats ***/
 
-  /** Baseline for building an entity's changeable stats. */
+  /** Name of a baseline for building an entity's changeable stats. */
   baseline?: ResourceBaselineName<TResource>;
-  /** List of traits to alter an entity's changeable stats. */
+  /** List of names of traits to alter an entity's changeable stats. */
   traits?: ResourceTraitName<TResource>[];
   /** Traits stat cache. */
   traitsStatBlock?: StatBlock<TResource>;

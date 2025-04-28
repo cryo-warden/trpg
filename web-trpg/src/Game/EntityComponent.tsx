@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { Token } from "../structural/mutable";
 import { useEngine } from "./context/EngineContext";
-import { Entity } from "./entities";
+import { Entity } from "./trpg";
 
 export type EntityComponent<T extends Entity = Entity> = ({
   entity,

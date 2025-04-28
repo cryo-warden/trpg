@@ -1,6 +1,7 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
-import type { Resource, ResourceActionName } from "../Resource";
+import type { Resource } from "../Resource";
+import type { ResourceActionName } from "../Resource/Action";
 import type { StatBlock } from "./StatBlock";
 import { type StatusEffectMap } from "./StatusEffectMap";
 

@@ -1,3 +1,5 @@
+/*** An adapter for action-trpg-lib which creates concrete types using a fixed resource instance. */
+
 import {
   createEntityFactory,
   createMapEntities,

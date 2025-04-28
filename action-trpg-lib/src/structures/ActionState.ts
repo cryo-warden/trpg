@@ -1,6 +1,7 @@
 import type { Engine } from "../Engine";
 import type { Entity } from "../Entity";
-import type { Resource, ResourceActionName } from "../Resource";
+import type { Resource } from "../Resource";
+import type { ResourceActionName } from "../Resource/Action";
 
 export type ActionState<TResource extends Resource<TResource>> = {
   action: ResourceActionName<TResource>;

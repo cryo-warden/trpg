@@ -78,6 +78,8 @@ const createRootSystemTest = (periodMS = 1000) => {
       },
     },
     baselineRecord: {},
+    mapThemeRecord: {},
+    prefabEntityRecord: {},
     traitRecord: {},
   });
   type TestEngine = typeof engine;

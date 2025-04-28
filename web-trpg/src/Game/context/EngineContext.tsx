@@ -1,5 +1,5 @@
 import { Context, createContext, ReactNode, useContext, useMemo } from "react";
-import { createEngine, Engine } from "../entities";
+import { createEngine, Engine } from "../trpg";
 
 export type EngineContext = Context<{
   engine: Engine;

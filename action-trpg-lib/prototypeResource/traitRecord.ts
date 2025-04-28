@@ -1,6 +1,6 @@
 import { createTrait, createTraitRecord } from "../src/Resource/Trait";
 
-export const trait = createTraitRecord([
+export const traitRecord = createTraitRecord([
   createTrait("mobile", {
     actionSet: new Set(["move"]),
   }),

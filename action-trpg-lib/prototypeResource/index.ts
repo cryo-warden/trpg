@@ -1,10 +1,14 @@
-import type { Resource } from "../src/Resource";
-import { action } from "./action";
-import { baseline } from "./baseline";
-import { trait } from "./trait";
+import { type Resource } from "../src/Resource";
+import { actionRecord } from "./actionRecord";
+import { baselineRecord } from "./baselineRecord";
+import { mapThemeRecord } from "./mapThemeRecord";
+import { prefabEntityRecord } from "./prefabEntityRecord";
+import { traitRecord } from "./traitRecord";
 
 export const prototypeResource = {
-  actionRecord: action,
-  baselineRecord: baseline,
-  traitRecord: trait,
+  actionRecord,
+  baselineRecord,
+  mapThemeRecord,
+  prefabEntityRecord,
+  traitRecord,
 } as const satisfies Resource<any>;

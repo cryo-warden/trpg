@@ -16,7 +16,7 @@ import { useControllerEntityToken } from "./context/ControllerContext";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
 import { useEngine } from "./context/EngineContext";
-import { EntityEvent } from "./entities";
+import { EntityEvent } from "./trpg";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const engine = useEngine();

@@ -8,7 +8,7 @@ import { WithDynamicPanel } from "./context/DynamicPanelContext";
 import { WithEngine } from "./context/EngineContext";
 import { WithTarget } from "./context/TargetContext";
 import { DynamicPanel } from "./DynamicPanel";
-import { createEngine, createEntities } from "./entities";
+import { createEngine, createEntities } from "./trpg";
 import { EventsPanel } from "./EventsPanel";
 import "./index.css";
 import { SelfPanel } from "./SelfPanel";

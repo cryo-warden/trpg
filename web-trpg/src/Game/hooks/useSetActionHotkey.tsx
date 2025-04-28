@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { regenerateToken } from "../../structural/mutable";
 import { useControllerEntityToken } from "../context/ControllerContext";
-import { ActionName } from "../entities";
+import { ActionName } from "../trpg";
 
 export const useSetActionHotkey = (actionName: ActionName) => {
   const entityToken = useControllerEntityToken();

@@ -1,6 +1,6 @@
 import { buffEffect, createActionRecord, effect } from "../src/Resource";
 
-export const action = createActionRecord([
+export const actionRecord = createActionRecord([
   { name: "move", effectSequence: [effect.move], renderer: null },
   { name: "take", effectSequence: [effect.take], renderer: null },
   { name: "drop", effectSequence: [effect.drop], renderer: null },

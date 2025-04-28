@@ -3,7 +3,7 @@ import { EntityPanel } from "../../EntityPanel";
 import { useEngine } from "../../context/EngineContext";
 import "./index.css";
 import { useToken } from "../../../structural/mutable";
-import { Entity } from "../../entities";
+import { Entity } from "../../trpg";
 
 /** Temporary workaround to re-tokenize entity references taken from another entity. */
 const WrapEntityPanel = ({
