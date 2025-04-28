@@ -7,7 +7,11 @@ import type {
   ResourceTraitName,
 } from "./Resource";
 import type { ActionState } from "./structures/ActionState";
-import type { Controller } from "./structures/Controller";
+import type {
+  SequenceController,
+  PlayerController,
+  AwarenessController,
+} from "./structures/Controller";
 import type { EntityEvent } from "./structures/EntityEvent";
 import type { Equippable } from "./structures/Equippable";
 import type { StatBlock } from "./structures/StatBlock";
@@ -47,8 +51,12 @@ export type Entity<TResource extends Resource<TResource>> = {
 
   /** Allegiance to other entities */
   allegiance?: Entity<TResource>;
-  /** A Controller to assign actions */
-  controller?: Controller<TResource>;
+  /** Assigns actions from player input */
+  playerController?: PlayerController<TResource>;
+  /** Assigns actions in sequence */
+  sequenceController?: SequenceController;
+  /** Assigns actions based on an awareness state */
+  awarenessController?: AwarenessController<TResource>;
   /** Events applied to this entity */
   events?: EntityEvent<TResource>[];
   /** A recipient of entity events from the same location */

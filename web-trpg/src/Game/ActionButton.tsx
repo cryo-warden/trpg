@@ -17,12 +17,13 @@ export const ActionButton = ({
   const controllerEntityToken = useControllerEntityToken();
   const { targetToken: contextualTargetToken } = useTarget();
   const finalTargetToken = targetToken ?? contextualTargetToken;
-  const hotkey = controllerEntityToken.value?.controller.hotkeyMap[action];
+  const hotkey =
+    controllerEntityToken.value?.playerController.hotkeyMap[action];
   const queueAction = useCallback(() => {
     if (controllerEntityToken.value == null) {
       return;
     }
-    controllerEntityToken.value.controller.actionQueue.splice(0, 1, {
+    controllerEntityToken.value.playerController.actionQueue.splice(0, 1, {
       action,
       targets: finalTargetToken.value == null ? [] : [finalTargetToken.value],
     });
@@ -31,9 +32,10 @@ export const ActionButton = ({
 
   const isActive = controllerEntityToken.value?.actionState?.action === action;
 
-  const isQueued = controllerEntityToken.value?.controller.actionQueue.some(
-    (queuedAction) => queuedAction.action === action
-  );
+  const isQueued =
+    controllerEntityToken.value?.playerController.actionQueue.some(
+      (queuedAction) => queuedAction.action === action
+    );
 
   return (
     <Button

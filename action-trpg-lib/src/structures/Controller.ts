@@ -3,7 +3,6 @@ import type { Resource } from "../Resource";
 import type { ResourceActionName } from "../Resource/Action";
 
 export type PlayerController<TResource extends Resource<TResource>> = {
-  type: "player";
   id: string;
   actionQueue: {
     action: ResourceActionName<TResource>;
@@ -16,9 +15,7 @@ export type SequenceController = { type: "sequence"; sequenceIndex: number };
 
 export type AwarenessState = "idle" | "alert";
 
-export type AwarenessController = { type: "awareness"; state: AwarenessState };
-
-export type Controller<TResource extends Resource<TResource>> =
-  | PlayerController<TResource>
-  | SequenceController
-  | AwarenessController;
+export type AwarenessController<TResource extends Resource<TResource>> = {
+  type: "awareness";
+  state: AwarenessState;
+};

@@ -11,10 +11,11 @@ export type MapTheme<TResource extends Resource<TResource>> = {
 
 export const createMapTheme = <
   const TResource extends Resource<TResource>,
-  const TName extends string
+  const TName extends string,
+  const TResourceNames extends ResourcePrefabEntityName<TResource>[]
 >(
   name: TName,
-  decorationPrefabNames: ResourcePrefabEntityName<TResource>[]
+  decorationPrefabNames: TResourceNames
 ) =>
   ({
     name,

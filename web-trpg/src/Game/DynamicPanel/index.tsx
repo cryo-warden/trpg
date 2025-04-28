@@ -8,7 +8,7 @@ import { EntitiesDisplay } from "./EntitiesDisplay";
 import { Entity } from "../trpg";
 
 const weighEntity = (entity: Entity) =>
-  (entity.controller != null && !entity.unconscious ? 1 << 7 : 0) |
+  (entity.sequenceController != null && !entity.unconscious ? 1 << 7 : 0) |
   (entity.path != null ? 1 << 6 : 0) |
   (entity.mhp != null ? 1 << 5 : 0) |
   (entity.contents != null ? 1 << 4 : 0) |

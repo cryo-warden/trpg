@@ -1,7 +1,8 @@
+import { With } from "miniplex";
 import { Context, createContext, ReactNode, useContext, useMemo } from "react";
 import { useEngine } from "../context/EngineContext";
 import { Token, useToken } from "../../structural/mutable";
-import { Entity, PlayerController } from "../trpg";
+import { Entity } from "../trpg";
 
 export type ControllerContext = Context<{
   controllerId: string;
@@ -12,7 +13,7 @@ export const ControllerContext: ControllerContext = createContext({
 });
 
 export const useControllerEntityToken = ():
-  | Token<Entity & { controller: PlayerController }>
+  | Token<With<Entity, "playerController">>
   | Token<null> => {
   const engine = useEngine();
   useToken(engine);
@@ -21,12 +22,9 @@ export const useControllerEntityToken = ():
 
   const entityQuery = useMemo(
     () =>
-      engine.world.with("controller").where((entity) => {
-        return (
-          entity.controller.type === "player" &&
-          entity.controller.id === controllerId
-        );
-      }),
+      engine.world
+        .with("playerController")
+        .where((entity) => entity.playerController.id === controllerId),
     [engine, controllerId]
   );
 
@@ -36,8 +34,7 @@ export const useControllerEntityToken = ():
     return useToken(null);
   }
 
-  // TODO Remove this any cast by making playerController a distinct component.
-  return useToken(entity) as any;
+  return useToken(entity);
 };
 
 export const WithController = ({

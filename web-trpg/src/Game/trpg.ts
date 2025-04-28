@@ -66,7 +66,7 @@ export const createEntities = (engine: Engine) => {
     cdp: 0,
     ep: 5,
     mep: 5,
-    controller: { type: "sequence", sequenceIndex: 0 },
+    sequenceController: { type: "sequence", sequenceIndex: 0 },
     observable: [],
     criticalDamageThreshold: 4,
     status: {},
@@ -101,14 +101,13 @@ export const createEntities = (engine: Engine) => {
       baseline: "human",
     })
   );
-  const player = createHuman({
+  const { sequenceController: _, ...player } = createHuman({
     name: "Player",
     location: rooms[0],
     contents: [],
     traits: ["hero", "mobile", "collecting", "equipping"],
     equipment: [magicHat],
-    controller: {
-      type: "player",
+    playerController: {
       id: "me",
       actionQueue: [],
       hotkeyMap: {

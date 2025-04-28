@@ -16,7 +16,7 @@ const WrapEntityPanel = ({
   const entityToken = useToken(entity);
   return (
     <EntityPanel
-      hotkey={index <= 10 ? `${(index + 1) % 10}` : undefined}
+      hotkey={index < 10 ? `${(index + 1) % 10}` : undefined}
       className="entityPanel"
       entityToken={entityToken}
     />

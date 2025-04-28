@@ -55,7 +55,9 @@ export const EntityPanel = WithEntity<
               <ActionButton
                 key={action}
                 hotkey={
-                  controllerEntityToken.value?.controller.hotkeyMap[action]
+                  controllerEntityToken.value?.playerController.hotkeyMap[
+                    action
+                  ]
                 }
                 action={action}
                 targetToken={entityToken}

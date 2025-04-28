@@ -20,8 +20,11 @@ export const useSetActionHotkey = (actionName: ActionName) => {
     document.addEventListener(
       "keydown",
       (e) => {
-        if (isPointerInRef.current && entityToken.value?.controller != null) {
-          entityToken.value.controller.hotkeyMap[actionName] = e.key;
+        if (
+          isPointerInRef.current &&
+          entityToken.value?.sequenceController != null
+        ) {
+          entityToken.value.playerController.hotkeyMap[actionName] = e.key;
           regenerateToken(entityToken);
         }
       },

@@ -1,6 +1,6 @@
 import type { With } from "miniplex";
-import { type Entity } from "../../Entity";
-import type { Resource } from "../../Resource";
+import { mergeEntity, type Entity } from "../../Entity";
+import type { Resource, ResourceMapThemeName } from "../../Resource";
 import type { Engine } from "../../Engine";
 
 const sample = <T>(items: readonly T[], upperBound?: number): T => {
@@ -8,24 +8,8 @@ const sample = <T>(items: readonly T[], upperBound?: number): T => {
   return items[i];
 };
 
-// TODO Move themes to resource.themeRecord. Kind of the entire point of this painful exercise of adding the generic TResource type parameter to everything.
-export const themes = {
-  debug: {
-    decorationNames: [
-      "anvil",
-      "sprocket",
-      "gizmo",
-      "dealymabob",
-      "thingamajig",
-    ],
-  },
-  cave: { decorationNames: ["stalactite", "stalagmite"] },
-} as const;
-
-export type ThemeName = keyof typeof themes;
-
 export type MapSpec<TResource extends Resource<TResource>> = {
-  theme: ThemeName;
+  theme: ResourceMapThemeName<TResource>;
   mainPathRoomCount: number;
   roomCount: number;
   loopCount: number;
@@ -76,13 +60,20 @@ export type DecorationEntity<TResource extends Resource<TResource>> = With<
 >;
 
 export const createDecoration = <const TResource extends Resource<TResource>>(
-  _engine: Engine<TResource>,
+  engine: Engine<TResource>,
   location: Entity<TResource>,
   mapSpec: MapSpec<TResource>
-): DecorationEntity<TResource> => ({
-  name: sample(themes[mapSpec.theme].decorationNames),
-  location,
-});
+): DecorationEntity<TResource> =>
+  mergeEntity(
+    engine.resource.prefabEntityRecord[
+      sample(
+        engine.resource.mapThemeRecord[mapSpec.theme].decorationPrefabNames
+      )
+    ],
+    {
+      location,
+    }
+  );
 
 export const createMapEntities = <const TResource extends Resource<TResource>>(
   engine: Engine<TResource>,
