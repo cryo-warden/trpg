@@ -132,7 +132,7 @@ export type Entity<TResource extends Resource<TResource>> = {
   // /** The action this item takes if consumed. */
   // TODO consumable: Action;
   // /** A seed for deterministic pseudo-random behaviors such as room decorations and randomly-assigned special components. Not used for loot generation because loot shouldn't be predictable (outside of testing). */
-  // TODO seed: number;
+  // TODO seed: string;
   // /** Quality of items generated as loot when opened/defeated. */
   // TODO lootQuality: LootQuality;
 };

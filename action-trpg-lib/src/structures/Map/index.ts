@@ -2,13 +2,19 @@ import type { With } from "miniplex";
 import { mergeEntity, type Entity } from "../../Entity";
 import type { Resource, ResourceMapThemeName } from "../../Resource";
 import type { Engine } from "../../Engine";
+import Prando from "prando";
 
-const sample = <T>(items: readonly T[], upperBound?: number): T => {
-  const i = Math.floor(Math.random() * (upperBound ?? items.length));
+const sample = <T>(
+  rng: Prando,
+  items: readonly T[],
+  upperBound?: number
+): T => {
+  const i = rng.nextInt(0, (upperBound ?? items.length) - 1);
   return items[i];
 };
 
 export type MapSpec<TResource extends Resource<TResource>> = {
+  seed: string;
   theme: ResourceMapThemeName<TResource>;
   mainPathRoomCount: number;
   roomCount: number;
@@ -62,11 +68,13 @@ export type DecorationEntity<TResource extends Resource<TResource>> = With<
 export const createDecoration = <const TResource extends Resource<TResource>>(
   engine: Engine<TResource>,
   location: Entity<TResource>,
-  mapSpec: MapSpec<TResource>
+  mapSpec: MapSpec<TResource>,
+  rng: Prando
 ): DecorationEntity<TResource> =>
   mergeEntity(
     engine.resource.prefabEntityRecord[
       sample(
+        rng,
         engine.resource.mapThemeRecord[mapSpec.theme].decorationPrefabNames
       )
     ],
@@ -84,6 +92,7 @@ export const createMapEntities = <const TResource extends Resource<TResource>>(
   decorations: DecorationEntity<TResource>[];
   allEntities: Entity<TResource>[];
 } => {
+  const rng = new Prando(mapSpec.seed);
   // TODO Apply themes to room names, decorations, and spawners.
   const rooms: RoomEntity<TResource>[] = Array.from(
     { length: mapSpec.roomCount },
@@ -102,20 +111,21 @@ export const createMapEntities = <const TResource extends Resource<TResource>>(
     }
 
     if (i >= mapSpec.roomCount - mapSpec.loopCount) {
-      paths.push(...createMutualPaths(engine, room, sample(rooms, i)));
+      paths.push(...createMutualPaths(engine, room, sample(rng, rooms, i)));
     }
 
-    const decorationCount = Math.floor(
-      mapSpec.decorationRange.min + Math.random() * mapSpec.decorationRange.max
+    const decorationCount = rng.nextInt(
+      mapSpec.decorationRange.min,
+      mapSpec.decorationRange.max - 1
     );
     for (let i = 0; i < decorationCount; ++i) {
-      decorations.push(createDecoration(engine, room, mapSpec));
+      decorations.push(createDecoration(engine, room, mapSpec, rng));
     }
 
     if (i < mapSpec.mainPathRoomCount) {
       previousRoom = room;
     } else {
-      previousRoom = sample(rooms, i);
+      previousRoom = sample(rng, rooms, i);
     }
   }
 

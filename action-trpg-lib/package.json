@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@types/react": "^19.0.12",
-    "miniplex": "^2.0.0"
+    "miniplex": "^2.0.0",
+    "prando": "^6.0.1"
   }
 }

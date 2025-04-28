@@ -36,6 +36,7 @@ export const createEntities = (engine: Engine) => {
   const slimekind = createAllegiance({ name: "Slimekind" });
   const allegiances = [humanity, batkind, slimekind] satisfies Entity[];
   const mapEntities = createMapEntities(engine, {
+    seed: "debug map",
     theme: "debug",
     exits: [],
     roomCount: 20,
