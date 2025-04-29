@@ -2,16 +2,7 @@ import type { With } from "miniplex";
 import { mergeEntity, type Entity } from "../../Entity";
 import type { Resource, ResourceMapThemeName } from "../../Resource";
 import type { Engine } from "../../Engine";
-import Prando from "prando";
-
-const sample = <T>(
-  rng: Prando,
-  items: readonly T[],
-  upperBound?: number
-): T => {
-  const i = rng.nextInt(0, (upperBound ?? items.length) - 1);
-  return items[i];
-};
+import { RNG } from "../../math/rng";
 
 export type MapSpec<TResource extends Resource<TResource>> = {
   seed: string;
@@ -69,12 +60,11 @@ export const createDecoration = <const TResource extends Resource<TResource>>(
   engine: Engine<TResource>,
   location: Entity<TResource>,
   mapSpec: MapSpec<TResource>,
-  rng: Prando
+  rng: RNG
 ): DecorationEntity<TResource> =>
   mergeEntity(
     engine.resource.prefabEntityRecord[
-      sample(
-        rng,
+      rng.sample(
         engine.resource.mapThemeRecord[mapSpec.theme].decorationPrefabNames
       )
     ],
@@ -92,7 +82,7 @@ export const createMapEntities = <const TResource extends Resource<TResource>>(
   decorations: DecorationEntity<TResource>[];
   allEntities: Entity<TResource>[];
 } => {
-  const rng = new Prando(mapSpec.seed);
+  const rng = new RNG(mapSpec.seed);
   // TODO Apply themes to room names, decorations, and spawners.
   const rooms: RoomEntity<TResource>[] = Array.from(
     { length: mapSpec.roomCount },
@@ -111,7 +101,7 @@ export const createMapEntities = <const TResource extends Resource<TResource>>(
     }
 
     if (i >= mapSpec.roomCount - mapSpec.loopCount) {
-      paths.push(...createMutualPaths(engine, room, sample(rng, rooms, i)));
+      paths.push(...createMutualPaths(engine, room, rng.sample(rooms, 0, i)));
     }
 
     const decorationCount = rng.nextInt(
@@ -125,7 +115,7 @@ export const createMapEntities = <const TResource extends Resource<TResource>>(
     if (i < mapSpec.mainPathRoomCount) {
       previousRoom = room;
     } else {
-      previousRoom = sample(rng, rooms, i);
+      previousRoom = rng.sample(rooms, 0, i);
     }
   }
 
