@@ -6,7 +6,11 @@ export default createSystem((engine) => {
   return () => {
     for (const entity of entities) {
       if (entity.hp <= (entity.cdp ?? 0)) {
-        applyEvent(engine, entity, { type: "unconscious", source: entity });
+        applyEvent(engine, {
+          type: "unconscious",
+          source: entity, // TODO Track last-attack-attribution to fix this source.
+          target: entity,
+        });
       }
     }
   };

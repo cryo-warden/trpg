@@ -7,7 +7,7 @@ export default createSystem((engine) => {
     engine,
     "equip",
     (_equipEffect, entity, target) => {
-      applyEvent(engine, entity, {
+      applyEvent(engine, {
         type: "equip",
         source: entity,
         target,

@@ -6,7 +6,11 @@ export default createSystem((engine) => {
   return () => {
     for (const entity of entities) {
       if (entity.cdp >= entity.mhp) {
-        applyEvent(engine, entity, { type: "dead", source: entity });
+        applyEvent(engine, {
+          type: "dead",
+          source: entity,
+          target: entity,
+        });
       }
     }
   };

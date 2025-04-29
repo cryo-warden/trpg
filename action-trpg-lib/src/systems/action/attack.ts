@@ -7,7 +7,7 @@ export default createSystem((engine) => {
     engine,
     "attack",
     (effect, entity, target) => {
-      applyEvent(engine, target, {
+      applyEvent(engine, {
         type: "damage",
         damage: Math.max(
           0,
@@ -22,7 +22,7 @@ export default createSystem((engine) => {
       });
 
       if (effect.statusEffectMap != null) {
-        applyEvent(engine, target, {
+        applyEvent(engine, {
           type: "status",
           statusEffectMap: effect.statusEffectMap,
           source: entity,

@@ -1,12 +1,14 @@
 import { World as MiniplexWorld } from "miniplex";
 import type { Entity } from "./Entity";
 import type { Resource } from "./Resource";
+import type { EntityEvent } from "./structures/EntityEvent";
 
 export type Engine<TResource extends Resource<TResource>> = {
   world: MiniplexWorld<Entity<TResource>>;
   time: number;
   deltaTime: number;
   resource: TResource;
+  events: EntityEvent<TResource>[];
 };
 
 export const createEngine = <const TResource extends Resource<TResource>>(
@@ -16,6 +18,7 @@ export const createEngine = <const TResource extends Resource<TResource>>(
   deltaTime: 0,
   time: Date.now(),
   resource,
+  events: [],
 });
 
 export const updateEngine = (engine: Engine<any>) => {

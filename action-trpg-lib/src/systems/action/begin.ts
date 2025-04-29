@@ -9,11 +9,11 @@ export default createSystem((engine) => {
       const { actionState } = entity;
 
       if (actionState.effectSequenceIndex === 0) {
-        applyEvent(engine, entity, {
+        applyEvent(engine, {
           type: "action",
           action: actionState.action,
           source: entity,
-          target: actionState.targets[0],
+          target: actionState.targets[0] ?? entity,
         });
       }
     }

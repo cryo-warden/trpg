@@ -7,7 +7,7 @@ export default createSystem((engine) => {
     engine,
     "move",
     (_moveEffect, entity, target) => {
-      applyEvent(engine, target, {
+      applyEvent(engine, {
         type: "move",
         source: entity,
         target,

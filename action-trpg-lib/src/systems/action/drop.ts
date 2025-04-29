@@ -7,7 +7,7 @@ export default createSystem((engine) => {
     engine,
     "drop",
     (_dropEffect, entity, target) => {
-      applyEvent(engine, entity, {
+      applyEvent(engine, {
         type: "drop",
         source: entity,
         target,

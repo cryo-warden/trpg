@@ -22,6 +22,7 @@ export type EntityEvent<TResource extends Resource<TResource>> =
   | {
       type: "dead";
       source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "drop";
@@ -48,6 +49,7 @@ export type EntityEvent<TResource extends Resource<TResource>> =
       type: "stats";
       statBlock: StatBlock<TResource>;
       source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "status";
@@ -63,6 +65,7 @@ export type EntityEvent<TResource extends Resource<TResource>> =
   | {
       type: "unconscious";
       source: Entity<TResource>;
+      target: Entity<TResource>;
     }
   | {
       type: "unequip";
@@ -76,12 +79,17 @@ export type EngineEntityEvent<TEngine> = TEngine extends Engine<infer TResource>
 
 export const applyEvent = <const TResource extends Resource<TResource>>(
   engine: Engine<TResource>,
-  entity: Entity<TResource>,
   event: EntityEvent<TResource>
 ) => {
-  if (entity.events != null) {
-    entity.events.push(event);
-  } else {
-    engine.world.addComponent(entity, "events", [event]);
+  engine.events.push(event);
+
+  const { source, target } = event;
+
+  if (target.observable != null) {
+    target.observable.push(event);
+  }
+
+  if (source !== target && source.observable != null) {
+    source.observable.push(event);
   }
 };

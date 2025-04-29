@@ -21,9 +21,10 @@ export default createSystem((engine) => {
         mergeStatBlock(statBlock, entity.statusStatBlock);
       }
 
-      applyEvent(engine, entity, {
+      applyEvent(engine, {
         type: "stats",
         source: entity,
+        target: entity,
         statBlock,
       });
     }

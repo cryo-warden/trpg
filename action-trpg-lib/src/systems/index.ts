@@ -62,4 +62,5 @@ export const bindRootSystem = (actorPeriodMS: number) =>
     stats.status,
     stats.apply,
     event.resolve,
+    event.observation,
   ]);

@@ -9,7 +9,7 @@ export default createSystem((engine) => {
     ({ buff }, entity, target) => {
       switch (buff.type) {
         case "heal":
-          applyEvent(engine, entity, {
+          applyEvent(engine, {
             type: "heal",
             heal: buff.heal,
             source: entity,
@@ -17,7 +17,7 @@ export default createSystem((engine) => {
           });
           break;
         case "status":
-          applyEvent(engine, entity, {
+          applyEvent(engine, {
             type: "status",
             statusEffectMap: buff.statusEffectMap,
             source: entity,

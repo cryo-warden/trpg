@@ -7,7 +7,7 @@ export default createSystem((engine) => {
     engine,
     "take",
     (_takeEffect, entity, target) => {
-      applyEvent(engine, target, {
+      applyEvent(engine, {
         type: "take",
         source: entity,
         target,

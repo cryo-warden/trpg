@@ -51,15 +51,21 @@ export type Entity<TResource extends Resource<TResource>> = {
 
   /** Allegiance to other entities */
   allegiance?: Entity<TResource>;
+
+  /*** Control ***/
+
   /** Assigns actions from player input */
   playerController?: PlayerController<TResource>;
   /** Assigns actions in sequence */
   sequenceController?: SequenceController;
   /** Assigns actions based on an awareness state */
   awarenessController?: AwarenessController<TResource>;
-  /** Events applied to this entity */
-  events?: EntityEvent<TResource>[];
-  /** A recipient of entity events from the same location */
+
+  /*** Events ***/
+
+  /** Observable events related to this entity */
+  observable?: EntityEvent<TResource>[];
+  /** Events which this entity observes */
   observer?: EntityEvent<TResource>[];
 
   /*** Location and Contents ***/
@@ -137,6 +143,10 @@ export type Entity<TResource extends Resource<TResource>> = {
   // TODO lootQuality: LootQuality;
 };
 
+const setComponentNameSet = new Set<string>([
+  "observer",
+] satisfies (keyof Entity<any>)[]);
+
 const entityComponentNameSet = new Set<string>([
   "location",
   "allegiance",
@@ -158,6 +168,8 @@ export const cloneEntity = <
   return Object.entries(entity).reduce((newEntity, [name, component]) => {
     if (entityComponentNameSet.has(name)) {
       (newEntity as any)[name] = component;
+    } else if (setComponentNameSet.has(name)) {
+      (newEntity as any)[name] = new Set(component as any);
     } else {
       (newEntity as any)[name] = cloneComponent(component);
     }
@@ -192,6 +204,8 @@ export const mergeEntity = <
   return Object.entries(b).reduce((a, [name, component]) => {
     if (entityComponentNameSet.has(name)) {
       (a as any)[name] = component;
+    } else if (setComponentNameSet.has(name)) {
+      (a as any)[name] = new Set(component as any);
     } else {
       (a as any)[name] = cloneComponent(component);
     }

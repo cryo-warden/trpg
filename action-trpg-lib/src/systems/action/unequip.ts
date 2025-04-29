@@ -7,7 +7,7 @@ export default createSystem((engine) => {
     engine,
     "unequip",
     (_unequipEffect, entity, target) => {
-      applyEvent(engine, entity, {
+      applyEvent(engine, {
         type: "unequip",
         source: entity,
         target,
