@@ -40,18 +40,18 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     };
   }, [renderEvent, controllerEntityToken]);
 
-  const [events, setEvents] = useState<EntityEvent[]>([]);
+  const [eventSet, setEventSet] = useState(new Set<EntityEvent>());
   useEffect(() => {
-    setEvents((events) => {
-      if (controllerEntityToken.value?.observer == null) {
+    setEventSet((events) => {
+      if (
+        controllerEntityToken.value?.observer == null ||
+        controllerEntityToken.value.observer.length < 1
+      ) {
         return events;
       }
-      return [...events, ...(controllerEntityToken.value.observer ?? [])];
+      return new Set([...events, ...controllerEntityToken.value.observer]);
     });
-  }, [
-    // We count on the observer itself being replaced between game iterations.
-    controllerEntityToken.value?.observer,
-  ]);
+  }, [controllerEntityToken]);
 
   const setMode = useSetDynamicPanelMode();
   const { setTarget } = useTarget();
@@ -65,7 +65,7 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   return (
     <Panel {...props} ref={ref} onClick={clearSelection}>
       <Scroller bottomLock>
-        {events.map((event, i) => (
+        {Array.from(eventSet).map((event, i) => (
           <EventDisplay key={i} event={event} />
         ))}
       </Scroller>

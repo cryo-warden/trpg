@@ -5,6 +5,10 @@ import type { BaselineRecord } from "./Baseline";
 import type { MapThemeRecord } from "./MapTheme";
 import type { PrefabEntityRecord } from "./PrefabEntity";
 
+// TODO Get rid of all this "Resource" complication and just use entities to structure each type of data. This facilitates making live updates and will enable in-game content creation.
+// TODO For entities which must be looked up by name regularly, have a system place them into a name-lookup registry on the engine. Maybe make names optional to facilitate this.
+// TODO Replace name-based rendering with a more sophisticated rendering strategy. Given that rendering can't rely on knowing in advance everything that could appear in the game, maybe go ahead and allow language-specific entity-embedded text values to be rendered. It's the only way content can be created in-game. Clearly mark rendering values so that they can be translated more easily. Grammar rules may need to be configurable. Or maybe grammar can still be contained to a hard-coded layer. Don't worry about it for now.
+
 export type Resource<
   TResource extends Resource<
     TResource,

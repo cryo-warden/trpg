@@ -2,14 +2,12 @@
 
 import {
   createEntityFactory,
-  createMapEntities,
-  createMutualPaths,
-  createRoom,
   createStatBlock,
   EngineAction,
   EngineEntity,
   EngineEntityEvent,
   EngineResource,
+  MapEntity,
   prototypeResource,
   ResourceActionName,
   createEngine as unboundCreateEngine,
@@ -35,33 +33,25 @@ export const createEntities = (engine: Engine) => {
   const batkind = createAllegiance({ name: "Batkind" });
   const slimekind = createAllegiance({ name: "Slimekind" });
   const allegiances = [humanity, batkind, slimekind] satisfies Entity[];
-  const mapEntities = createMapEntities(engine, {
+  const debugMap: MapEntity<EngineResource<Engine>> = {
+    name: "debug map",
+    mapThemeName: "debug",
+    mapLayout: "path",
+    mapTotalRoomCount: 20,
+    mapMainPathRoomCount: 10,
+    mapLoopCount: 5,
+    mapMinDecorationCount: 1,
+    mapMaxDecorationCount: 5,
     seed: "debug map",
-    theme: "debug",
-    exits: [],
-    roomCount: 20,
-    mainPathRoomCount: 10,
-    loopCount: 5,
-    decorationRange: { min: 1, max: 5 },
-  });
-  const rooms = [
-    createRoom(engine, "Origin"),
-    createRoom(engine, "Second Room"),
-    ...mapEntities.rooms,
-  ] satisfies Entity[];
-  const paths = [
-    ...createMutualPaths(engine, rooms[0], rooms[1]),
-    ...createMutualPaths(engine, rooms[0], rooms[2]),
-    ...mapEntities.paths,
-  ] satisfies Entity[];
+  };
   const createItem = createEntityFactory(engine, {
     name: "item",
-    location: rooms[0],
+    locationMapName: "debug map",
     takeable: true,
   });
   const createActor = createEntityFactory(engine, {
     name: "Unknown",
-    location: rooms[0],
+    locationMapName: "debug map",
     hp: 5,
     mhp: 5,
     cdp: 0,
@@ -104,7 +94,7 @@ export const createEntities = (engine: Engine) => {
   );
   const { sequenceController: _, ...player } = createHuman({
     name: "Player",
-    location: rooms[0],
+    locationMapName: "debug map",
     contents: [],
     traits: ["hero", "mobile", "collecting", "equipping"],
     equipment: [magicHat],
@@ -142,15 +132,12 @@ export const createEntities = (engine: Engine) => {
   );
   const actors = [
     player,
-    ...Array.from({ length: 3 }, () => createBat({ location: rooms[1] })),
-    ...Array.from({ length: 4 }, () => createSlime({ location: rooms[1] })),
+    ...Array.from({ length: 3 }, () =>
+      createBat({ locationMapName: "debug map" })
+    ),
+    ...Array.from({ length: 4 }, () =>
+      createSlime({ locationMapName: "debug map" })
+    ),
   ] satisfies Entity[];
-  return [
-    ...allegiances,
-    ...rooms,
-    ...paths,
-    ...mapEntities.decorations,
-    ...items,
-    ...actors,
-  ] satisfies Entity[];
+  return [debugMap, ...allegiances, ...items, ...actors] satisfies Entity[];
 };

@@ -3,12 +3,17 @@ import { prototypeResource } from "../prototypeResource";
 import { createEngine } from "../src/Engine";
 import { createEntityFactory, type EngineEntity } from "../src/Entity";
 import { createActionState } from "../src/structures/ActionState";
-import { createMutualPaths, createRoom } from "../src/structures/Map";
+import {
+  createMutualPaths,
+  createRoom,
+  type MapEntity,
+} from "../src/structures/Map";
 import { joinSystems } from "../src/System";
 import advance from "../src/systems/action/advance";
 import move from "../src/systems/action/move";
 import contents from "../src/systems/contents";
 import { event } from "../src/systems/event";
+import type { EngineResource } from "../src/Resource";
 
 describe("contents system", () => {
   test("can correctly determine contents from location", () => {
@@ -18,11 +23,21 @@ describe("contents system", () => {
       name: "test entity",
     });
 
+    const map: MapEntity<EngineResource<typeof engine>> = {
+      name: "test map",
+      mapLayout: "path",
+      mapMinDecorationCount: 0,
+      mapMaxDecorationCount: 0,
+      mapThemeName: "test theme",
+      mapTotalRoomCount: 3,
+      seed: "test seed",
+    };
+
     type TestEntity = EngineEntity<typeof engine>;
     const rooms = [
-      createRoom(engine, "test room 1"),
-      createRoom(engine, "test room 2"),
-      createRoom(engine, "test room 3"),
+      createRoom(engine, "test room 1", map),
+      createRoom(engine, "test room 2", map),
+      createRoom(engine, "test room 3", map),
     ];
     const paths = [
       ...createMutualPaths(engine, rooms[0], rooms[1]),

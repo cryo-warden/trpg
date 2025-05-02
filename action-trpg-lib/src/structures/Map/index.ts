@@ -1,30 +1,33 @@
 import type { With } from "miniplex";
 import { mergeEntity, type Entity } from "../../Entity";
-import type { Resource, ResourceMapThemeName } from "../../Resource";
+import type { Resource } from "../../Resource";
 import type { Engine } from "../../Engine";
 import { RNG } from "../../math/rng";
 
-export type MapSpec<TResource extends Resource<TResource>> = {
-  seed: string;
-  theme: ResourceMapThemeName<TResource>;
-  mainPathRoomCount: number;
-  roomCount: number;
-  loopCount: number;
-  decorationRange: { min: number; max: number };
-  exits: Entity<TResource>[];
-};
+export type MapEntity<TResource extends Resource<TResource>> = With<
+  Entity<TResource>,
+  | "name"
+  | "mapThemeName"
+  | "mapLayout"
+  | "mapTotalRoomCount"
+  | "mapMinDecorationCount"
+  | "mapMaxDecorationCount"
+  | "seed"
+>;
 
 export type RoomEntity<TResource extends Resource<TResource>> = With<
   Entity<TResource>,
-  "name" | "contents"
+  "name" | "contents" | "locationMapName"
 >;
 
 export const createRoom = <const TResource extends Resource<TResource>>(
   _engine: Engine<TResource>,
-  name: string
+  name: string,
+  map: MapEntity<TResource>
 ): RoomEntity<TResource> => ({
   name,
   contents: [],
+  locationMapName: map.name,
 });
 
 export type PathEntity<TResource extends Resource<TResource>> = With<
@@ -59,13 +62,14 @@ export type DecorationEntity<TResource extends Resource<TResource>> = With<
 export const createDecoration = <const TResource extends Resource<TResource>>(
   engine: Engine<TResource>,
   location: Entity<TResource>,
-  mapSpec: MapSpec<TResource>,
+  mapSpec: MapEntity<TResource>,
   rng: RNG
 ): DecorationEntity<TResource> =>
   mergeEntity(
     engine.resource.prefabEntityRecord[
       rng.sample(
-        engine.resource.mapThemeRecord[mapSpec.theme].decorationPrefabNames
+        engine.resource.mapThemeRecord[mapSpec.mapThemeName]
+          .decorationPrefabNames
       )
     ],
     {
@@ -75,19 +79,20 @@ export const createDecoration = <const TResource extends Resource<TResource>>(
 
 export const createMapEntities = <const TResource extends Resource<TResource>>(
   engine: Engine<TResource>,
-  mapSpec: MapSpec<TResource>
+  mapSpec: MapEntity<TResource>
 ): {
   rooms: RoomEntity<TResource>[];
   paths: PathEntity<TResource>[];
   decorations: DecorationEntity<TResource>[];
   allEntities: Entity<TResource>[];
 } => {
+  // TODO check mapLayout
   const rng = new RNG(mapSpec.seed);
   // TODO Apply themes to room names, decorations, and spawners.
   const rooms: RoomEntity<TResource>[] = Array.from(
-    { length: mapSpec.roomCount },
+    { length: mapSpec.mapTotalRoomCount },
     (_, i) => {
-      return createRoom(engine, `Room ${i}`);
+      return createRoom(engine, `Room ${i}`, mapSpec);
     }
   );
   const paths: PathEntity<TResource>[] = [];
@@ -100,19 +105,25 @@ export const createMapEntities = <const TResource extends Resource<TResource>>(
       paths.push(...createMutualPaths(engine, previousRoom, room));
     }
 
-    if (i >= mapSpec.roomCount - mapSpec.loopCount) {
+    if (
+      mapSpec.mapLoopCount != null &&
+      i >= mapSpec.mapTotalRoomCount - mapSpec.mapLoopCount
+    ) {
       paths.push(...createMutualPaths(engine, room, rng.sample(rooms, 0, i)));
     }
 
     const decorationCount = rng.nextInt(
-      mapSpec.decorationRange.min,
-      mapSpec.decorationRange.max - 1
+      mapSpec.mapMinDecorationCount,
+      mapSpec.mapMaxDecorationCount - 1
     );
     for (let i = 0; i < decorationCount; ++i) {
       decorations.push(createDecoration(engine, room, mapSpec, rng));
     }
 
-    if (i < mapSpec.mainPathRoomCount) {
+    if (
+      mapSpec.mapMainPathRoomCount != null &&
+      i < mapSpec.mapMainPathRoomCount
+    ) {
       previousRoom = room;
     } else {
       previousRoom = rng.sample(rooms, 0, i);

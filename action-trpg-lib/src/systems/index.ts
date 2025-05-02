@@ -11,6 +11,8 @@ import ep from "./ep";
 import { event } from "./event";
 import healingTaker from "./healingTaker";
 import hp from "./hp";
+import locationMapName from "./locationMapName";
+import { player } from "./player";
 import { stats } from "./stats";
 import { statusEffect } from "./statusEffect";
 import unconscious from "./unconscious";
@@ -44,8 +46,11 @@ export const bindRootSystem = (actorPeriodMS: number) =>
         action.move,
         action.advance,
         event.resolve,
+        player.mapGeneration,
       ])
     ),
+    locationMapName,
+    player.entryLocation,
     damageToCriticalDamage,
     healingTaker,
     applyAccumulatedDamage,

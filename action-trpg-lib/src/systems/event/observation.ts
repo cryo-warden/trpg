@@ -19,25 +19,25 @@ export default createSystem((engine) => {
       entity.observer.push(...observable);
     }
 
-    const locationEventSetMap = new Map<Entity, Set<EntityEvent>>();
+    const locationObservationSetMap = new Map<Entity, Set<EntityEvent>>();
     for (const entity of locatedObservables) {
-      if (!locationEventSetMap.has(entity.location)) {
-        locationEventSetMap.set(entity.location, new Set());
+      if (!locationObservationSetMap.has(entity.location)) {
+        locationObservationSetMap.set(entity.location, new Set());
       }
       const { observable } = entity;
       entity.observable = [];
-      const eventSet = locationEventSetMap.get(entity.location)!;
-      for (const event of observable) {
-        eventSet.add(event);
+      const observationSet = locationObservationSetMap.get(entity.location)!;
+      for (const observation of observable) {
+        observationSet.add(observation);
       }
     }
 
     for (const entity of locatedObservers) {
-      const events = locationEventSetMap.get(entity.location);
-      if (events == null) {
+      const observations = locationObservationSetMap.get(entity.location);
+      if (observations == null) {
         continue;
       }
-      entity.observer.push(...events);
+      entity.observer.push(...observations);
     }
   };
 });

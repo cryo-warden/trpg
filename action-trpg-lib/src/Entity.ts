@@ -15,6 +15,7 @@ import type {
 import type { EntityEvent } from "./structures/EntityEvent";
 import type { Equippable } from "./structures/Equippable";
 import type { StatBlock } from "./structures/StatBlock";
+import type { RoomEntity } from "./structures/Map";
 
 export type Entity<TResource extends Resource<TResource>> = {
   /** Display Name */
@@ -63,22 +64,49 @@ export type Entity<TResource extends Resource<TResource>> = {
 
   /*** Events ***/
 
-  /** Observable events related to this entity */
+  /** Entity change events related to this entity */
   observable?: EntityEvent<TResource>[];
-  /** Events which this entity observes */
+  /** Entity change events which this entity observes */
   observer?: EntityEvent<TResource>[];
 
   /*** Location and Contents ***/
 
   /** Another Entity in which this one is located */
   location?: Entity<TResource>;
-  /** Entities located inside this one. */
+  /** The name of the map where this entity is currently located */
+  locationMapName?: string;
+  /** Entities located inside this one */
   contents?: Entity<TResource>[];
-  /** A clean flag to skip update of contents. */
+  /** A clean flag to skip update of contents */
   contentsCleanFlag?: true;
 
   /** A path to another location. */
   path?: { destination: Entity<TResource> };
+
+  /** Map Generation Settings */
+
+  /** The name of the map theme this entity uses to generate rooms */
+  mapThemeName?: string;
+  /** The layout style to generate the rooms for this map */
+  mapLayout?: "path" | "hub";
+  /** The number of rooms this entity generates to create a main path */
+  mapMainPathRoomCount?: number;
+  /** The total number of rooms this entity generates */
+  mapTotalRoomCount?: number;
+  /** The total number of room loops this entity generates */
+  mapLoopCount?: number;
+  /** The minimum number of decorations this entity generates per room */
+  mapMinDecorationCount?: number;
+  /** The maximum number of decorations this entity generates per room */
+  mapMaxDecorationCount?: number;
+  /** The name of the map to attach the main entrance of this one */
+  entrypointMapName?: string;
+  /** A number indicating the order in which this map should be attached
+   * if its entrypoint is a hub; missing an index indicates a random
+   * placement between any indexed maps */
+  entrypointHubIndex?: number;
+  /** List of room entities if the map is currently realized */
+  mapRealizedRoomEntities?: RoomEntity<TResource>[];
 
   /*** Stats ***/
 
@@ -137,8 +165,8 @@ export type Entity<TResource extends Resource<TResource>> = {
   equippable?: Equippable<TResource>;
   // /** The action this item takes if consumed. */
   // TODO consumable: Action;
-  // /** A seed for deterministic pseudo-random behaviors such as room decorations and randomly-assigned special components. Not used for loot generation because loot shouldn't be predictable (outside of testing). */
-  // TODO seed: string;
+  /** A seed for deterministic pseudo-random behaviors such as room decorations and randomly-assigned special components. Not used for loot generation because loot shouldn't be predictable (outside of testing). */
+  seed?: string;
   // /** Quality of items generated as loot when opened/defeated. */
   // TODO lootQuality: LootQuality;
 };
