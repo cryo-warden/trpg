@@ -1,106 +1,12 @@
 use std::cmp::{max, min};
 
 use action::ActionBuilder;
-use spacetimedb::{Identity, ReducerContext, Table, TimeDuration};
+use entity::hp_components;
+use spacetimedb::{ReducerContext, Table, TimeDuration};
 
 mod action;
 
-#[spacetimedb::table(name = entities, public)]
-#[derive(Debug, Clone)]
-pub struct Entity {
-    #[primary_key]
-    #[auto_inc]
-    id: u64,
-}
-
-pub struct EntityBuilder<'a> {
-    ctx: &'a ReducerContext,
-    entity_id: u64,
-}
-
-impl<'a> EntityBuilder<'a> {
-    pub fn new(ctx: &'a ReducerContext) -> Self {
-        let entity = ctx.db.entities().insert(Entity { id: 0 });
-        Self {
-            ctx,
-            entity_id: entity.id,
-        }
-    }
-
-    pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
-        Self { ctx, entity_id }
-    }
-
-    pub fn add_hp(self, hp: i32) -> Self {
-        self.ctx
-            .db
-            .hp_components()
-            .insert(HPComponent::new(self.entity_id, hp));
-        self
-    }
-}
-
-#[spacetimedb::table(name = hp_components, public)]
-#[derive(Debug, Clone)]
-pub struct HPComponent {
-    #[primary_key]
-    entity_id: u64,
-    hp: i32,
-    mhp: i32,
-    defense: i32,
-    accumulated_damage: i32,
-    accumulated_healing: i32,
-}
-
-impl HPComponent {
-    pub fn new(entity_id: u64, mhp: i32) -> Self {
-        Self {
-            entity_id: entity_id,
-            hp: mhp,
-            mhp,
-            defense: 0,
-            accumulated_damage: 0,
-            accumulated_healing: 0,
-        }
-    }
-
-    pub fn new_with_defense(entity_id: u64, mhp: i32, defense: i32) -> Self {
-        Self {
-            entity_id: entity_id,
-            hp: mhp,
-            mhp,
-            defense,
-            accumulated_damage: 0,
-            accumulated_healing: 0,
-        }
-    }
-}
-
-#[spacetimedb::table(name = player_controller_components, public)]
-#[derive(Debug, Clone)]
-pub struct PlayerControllerComponent {
-    #[primary_key]
-    entity_id: u64,
-    #[unique]
-    identity: Identity,
-}
-
-#[spacetimedb::table(name = action_state_components, public)]
-#[derive(Debug, Clone)]
-pub struct ActionStateComponent {
-    #[primary_key]
-    entity_id: u64,
-    action_id: u64,
-    sequence_index: i32,
-}
-
-#[spacetimedb::table(name = entity_targets, public)]
-#[derive(Debug, Clone)]
-pub struct EntityTarget {
-    #[primary_key]
-    entity_id: u64,
-    target_entity_id: u64,
-}
+mod entity;
 
 #[spacetimedb::reducer(init)]
 pub fn init(ctx: &ReducerContext) {
@@ -109,7 +15,7 @@ pub fn init(ctx: &ReducerContext) {
         scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(500000)),
     });
 
-    EntityBuilder::new(ctx).add_hp(10);
+    entity::EntityBuilder::new(ctx).add_hp(10);
 
     action::ActionBuilder::new(ctx)
         .set_name("bop")
@@ -175,8 +81,7 @@ pub struct SystemTimer {
     scheduled_at: spacetimedb::ScheduleAt,
 }
 
-#[spacetimedb::reducer]
-pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
+pub fn hp_system(ctx: &ReducerContext) {
     for mut hp in ctx.db.hp_components().iter() {
         hp.hp = max(
             0,
@@ -187,15 +92,13 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
         );
         hp.accumulated_healing = 0;
         hp.accumulated_damage = 0;
-        // ctx.db.hp_components().entity_id().update(hp);
-        let hp = ctx.db.hp_components().entity_id().update(hp);
-        log::debug!(
-            "updated entity {}, hp {}, mhp {}",
-            hp.entity_id,
-            hp.hp,
-            hp.mhp
-        );
+        ctx.db.hp_components().entity_id().update(hp);
     }
+}
+
+#[spacetimedb::reducer]
+pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
+    hp_system(ctx);
 
     Ok(())
 }
