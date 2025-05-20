@@ -1,6 +1,9 @@
 use std::cmp::{max, min};
 
+use action::ActionBuilder;
 use spacetimedb::{Identity, ReducerContext, Table, TimeDuration};
+
+mod action;
 
 #[spacetimedb::table(name = entities, public)]
 #[derive(Debug, Clone)]
@@ -8,6 +11,33 @@ pub struct Entity {
     #[primary_key]
     #[auto_inc]
     id: u64,
+}
+
+pub struct EntityBuilder<'a> {
+    ctx: &'a ReducerContext,
+    entity_id: u64,
+}
+
+impl<'a> EntityBuilder<'a> {
+    pub fn new(ctx: &'a ReducerContext) -> Self {
+        let entity = ctx.db.entities().insert(Entity { id: 0 });
+        Self {
+            ctx,
+            entity_id: entity.id,
+        }
+    }
+
+    pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
+        Self { ctx, entity_id }
+    }
+
+    pub fn add_hp(self, hp: i32) -> Self {
+        self.ctx
+            .db
+            .hp_components()
+            .insert(HPComponent::new(self.entity_id, hp));
+        self
+    }
 }
 
 #[spacetimedb::table(name = hp_components, public)]
@@ -23,12 +53,23 @@ pub struct HPComponent {
 }
 
 impl HPComponent {
-    fn new(entity_id: u64, mhp: i32) -> HPComponent {
-        HPComponent {
+    pub fn new(entity_id: u64, mhp: i32) -> Self {
+        Self {
             entity_id: entity_id,
             hp: mhp,
-            mhp: mhp,
+            mhp,
             defense: 0,
+            accumulated_damage: 0,
+            accumulated_healing: 0,
+        }
+    }
+
+    pub fn new_with_defense(entity_id: u64, mhp: i32, defense: i32) -> Self {
+        Self {
+            entity_id: entity_id,
+            hp: mhp,
+            mhp,
+            defense,
             accumulated_damage: 0,
             accumulated_healing: 0,
         }
@@ -44,16 +85,66 @@ pub struct PlayerControllerComponent {
     identity: Identity,
 }
 
+#[spacetimedb::table(name = action_state_components, public)]
+#[derive(Debug, Clone)]
+pub struct ActionStateComponent {
+    #[primary_key]
+    entity_id: u64,
+    action_id: u64,
+    sequence_index: i32,
+}
+
+#[spacetimedb::table(name = entity_targets, public)]
+#[derive(Debug, Clone)]
+pub struct EntityTarget {
+    #[primary_key]
+    entity_id: u64,
+    target_entity_id: u64,
+}
+
 #[spacetimedb::reducer(init)]
 pub fn init(ctx: &ReducerContext) {
     ctx.db.system_timers().insert(SystemTimer {
         scheduled_id: 0,
         scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(500000)),
     });
-    // TEMP
-    let e = ctx.db.entities().insert(Entity { id: 0 });
-    let hp = ctx.db.hp_components().insert(HPComponent::new(e.id, 10));
-    log::debug!("entity {}, hp {}, mhp {}", hp.entity_id, hp.hp, hp.mhp);
+
+    EntityBuilder::new(ctx).add_hp(10);
+
+    action::ActionBuilder::new(ctx)
+        .set_name("bop")
+        .add_rest()
+        .add_rest()
+        .add_attack(1)
+        .add_rest();
+
+    action::ActionBuilder::new(ctx)
+        .set_name("boppity_bop")
+        .add_rest()
+        .add_rest()
+        .add_attack(1)
+        .add_rest()
+        .add_attack(1)
+        .add_rest()
+        .add_rest();
+
+    let ab = ActionBuilder::from_id(ctx, 1);
+    let mut i = 0;
+    let mut oe = ab.effect(i);
+    while let Some(e) = oe {
+        log::debug!("action {} effect {} is {:?}", 1, i, e);
+        i += 1;
+        oe = ab.effect(i);
+    }
+
+    let ab = ActionBuilder::from_id(ctx, 2);
+    let mut i = 0;
+    let mut oe = ab.effect(i);
+    while let Some(e) = oe {
+        log::debug!("action {} effect {} is {:?}", 2, i, e);
+        i += 1;
+        oe = ab.effect(i);
+    }
 }
 
 #[spacetimedb::reducer(client_connected)]
