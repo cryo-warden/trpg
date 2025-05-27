@@ -1,25 +1,43 @@
-import { useRef } from "react";
+import { useCallback, useRef, useSyncExternalStore } from "react";
 import { WithEntity } from "../EntityComponent";
 import "./HPBar.css";
+import { useStdbConnection } from "../context/StdbContext";
 
-export const HPBar = WithEntity(({ entityToken }) => {
+export const HPBar = WithEntity(({ entity }) => {
+  const connection = useStdbConnection();
   const lastHPRatioRef = useRef(0);
   const wasHPRisingRef = useRef(true);
 
-  if (entityToken.value.hp == null || entityToken.value.mhp == null) {
+  const subscribe = useCallback(
+    (refresh: () => void) => {
+      connection.db.hpComponents.onInsert(refresh);
+      connection.db.hpComponents.onUpdate(refresh);
+      connection.db.hpComponents.onDelete(refresh);
+      return () => {
+        connection.db.hpComponents.removeOnInsert(refresh);
+        connection.db.hpComponents.removeOnUpdate(refresh);
+        connection.db.hpComponents.removeOnDelete(refresh);
+      };
+    },
+    [connection]
+  );
+
+  // WIP Lookup entity.
+  const hpComponent = useSyncExternalStore(subscribe, () =>
+    connection.db.hpComponents.entityId.find(entity)
+  );
+
+  if (hpComponent == null) {
     return null;
   }
 
-  const hpRatio =
-    Math.max(0, 100 * entityToken.value.hp) / entityToken.value.mhp;
+  const hpRatio = Math.max(0, 100 * hpComponent.hp) / hpComponent.mhp;
   const isHPRising =
     hpRatio === lastHPRatioRef.current
       ? wasHPRisingRef.current
       : hpRatio >= lastHPRatioRef.current;
   lastHPRatioRef.current = hpRatio;
   wasHPRisingRef.current = isHPRising;
-  const cdpRatio =
-    Math.max(0, 100 * (entityToken.value.cdp ?? 0)) / entityToken.value.mhp;
 
   return (
     <div className="HPBar">
@@ -37,13 +55,9 @@ export const HPBar = WithEntity(({ entityToken }) => {
           transitionDuration: isHPRising ? "1s" : "0.25s",
         }}
       ></div>
-      <div className="cdp" style={{ width: `${cdpRatio}%` }}></div>
       <div className="overlay">
         <div>
-          {(entityToken.value.cdp ?? 0) > 0 && `${entityToken.value.cdp} CDP`}
-        </div>
-        <div>
-          {entityToken.value.hp} / {entityToken.value.mhp} HP
+          {hpComponent.hp} / {hpComponent.mhp} HP
         </div>
       </div>
     </div>

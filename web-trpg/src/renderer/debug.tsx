@@ -1,22 +1,37 @@
 import type { ReactNode } from "react";
-import type { Engine } from "../Engine";
-import type { EngineEntity } from "../Entity";
-import type { AttackRenderer, Resource } from "../Resource";
-import type { EngineEntityEvent } from "../structures/EntityEvent";
 import "./debug.css";
 
-// TODO Fix React peer dependency.
-export const bindRenderer = <const TResource extends Resource<TResource>>({
-  engine,
-  React,
-}: {
-  engine: Engine<TResource>;
-  React: any;
-}) => {
-  React; // Make React count as a used parameter.
+export const actionWeightType = ["heavy", "neutral", "light"] as const;
 
-  type Entity = EngineEntity<typeof engine>;
-  type EntityEvent = EngineEntityEvent<typeof engine>;
+export type ActionWeightType = (typeof actionWeightType)[number];
+
+export const actionSpeedType = ["slow", "neutral", "fast"] as const;
+
+export type ActionSpeedType = (typeof actionSpeedType)[number];
+
+export const actionArmamentType = [
+  "blade",
+  "sword",
+  "club",
+  "staff",
+  "fist",
+  "claw",
+  "teeth",
+  "stick",
+  "spout",
+] as const;
+
+export type ActionArmamentType = (typeof actionArmamentType)[number];
+
+export type AttackRenderer = {
+  weightType: ActionWeightType;
+  speedType: ActionSpeedType;
+  armamentType: ActionArmamentType;
+};
+
+// TODO Fix React peer dependency.
+export const bindRenderer = () => {
+  type Entity = any; // WIP
 
   const getName = (
     viewpointEntity: Entity,

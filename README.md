@@ -4,5 +4,6 @@ This is a set of utilities for building standalone or client-server applications
 
 Key parts include:
 
-- action-trpg-lib: Library for game logic
-- web-trpg: Web client for controlling a game entity
+- server: SpacetimeDB server module containing game logic.
+  - ~~action-trpg-lib~~: Former library for game logic.
+- web-trpg: Web client for controlling a game entity.

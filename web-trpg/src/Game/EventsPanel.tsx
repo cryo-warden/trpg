@@ -1,7 +1,6 @@
 import "./index.css";
 
-import { renderer } from "action-trpg-lib";
-import React, {
+import {
   ComponentPropsWithoutRef,
   ReactNode,
   useCallback,
@@ -12,46 +11,45 @@ import React, {
 import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
-import { useControllerEntityToken } from "./context/ControllerContext";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
-import { useEngine } from "./context/EngineContext";
 import { EntityEvent } from "./trpg";
+import { renderer } from "../renderer";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
-  const engine = useEngine();
   const rendererName = "debug";
   const { renderEvent } = useMemo(
-    () => renderer[rendererName]({ engine, React }),
-    [engine, rendererName]
+    () => renderer[rendererName](),
+    [rendererName]
   );
-  const controllerEntityToken = useControllerEntityToken();
+  const controllerEntityToken = 1n; // WIP useControllerEntityToken();
 
   const EventDisplay = useMemo(() => {
-    if (controllerEntityToken.value == null) {
+    if (controllerEntityToken == null) {
       return () => null;
     }
     return ({ event }: { event: EntityEvent }): ReactNode => {
       // TODO Fix peer dependency.
       return useMemo(
-        () => renderEvent(controllerEntityToken.value, event),
+        () => renderEvent(controllerEntityToken, event),
         [event]
       ) as any;
     };
   }, [renderEvent, controllerEntityToken]);
 
-  const [eventSet, setEventSet] = useState(new Set<EntityEvent>());
-  useEffect(() => {
-    setEventSet((events) => {
-      if (
-        controllerEntityToken.value?.observer == null ||
-        controllerEntityToken.value.observer.length < 1
-      ) {
-        return events;
-      }
-      return new Set([...events, ...controllerEntityToken.value.observer]);
-    });
-  }, [controllerEntityToken]);
+  // WIP
+  const [eventSet, _setEventSet] = useState(new Set<EntityEvent>());
+  // useEffect(() => {
+  //   setEventSet((events) => {
+  //     if (
+  //       controllerEntityToken.value?.observer == null ||
+  //       controllerEntityToken.value.observer.length < 1
+  //     ) {
+  //       return events;
+  //     }
+  //     return new Set([...events, ...controllerEntityToken.value.observer]);
+  //   });
+  // }, [controllerEntityToken]);
 
   const setMode = useSetDynamicPanelMode();
   const { setTarget } = useTarget();

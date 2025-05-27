@@ -11,8 +11,7 @@
   background-color: #000;
 
   .smooth-hp,
-  .hp,
-  .cdp {
+  .hp {
     position: absolute;
     border: none;
     overflow: hidden;
@@ -37,14 +36,6 @@
     border-radius: 1em;
     top: 0;
     bottom: 0;
-  }
-
-  .cdp {
-    border-radius: 1em;
-    background-color: #000;
-    top: 30%;
-    bottom: 30%;
-    z-index: 20;
   }
 
   .overlay {

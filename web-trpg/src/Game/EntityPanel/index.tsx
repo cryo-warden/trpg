@@ -1,30 +1,33 @@
-import { recommendActions } from "action-trpg-lib";
 import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
-import { useControllerEntityToken } from "../context/ControllerContext";
-import { useEngine } from "../context/EngineContext";
+import { useStdbConnection } from "../context/StdbContext";
 import { useTarget } from "../context/TargetContext";
 import { WithEntity } from "../EntityComponent";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
 
+const recommendActions = (..._args: any[]) => {
+  // WIP
+  return [];
+};
+
 export const EntityPanel = WithEntity<
   { hotkey?: string; detailed?: boolean } & ComponentPropsWithoutRef<
     typeof Panel
   >
->(({ entityToken, hotkey, detailed = false, ...props }) => {
-  const engine = useEngine();
-  const controllerEntityToken = useControllerEntityToken();
-  const { targetToken: target, setTarget } = useTarget();
+>(({ entity, hotkey, detailed = false, ...props }) => {
+  const engine = useStdbConnection();
+  const controllerEntityToken = 1n; // WIP useControllerEntityToken();
+  const { target, setTarget } = useTarget();
   const recommendedActions =
-    controllerEntityToken.value &&
-    recommendActions(engine, controllerEntityToken.value, entityToken.value);
+    controllerEntityToken &&
+    recommendActions(engine, controllerEntityToken, entity);
   const targetThis = useCallback(() => {
-    setTarget(entityToken.value);
-  }, [entityToken, setTarget]);
+    setTarget(entity);
+  }, [entity, setTarget]);
 
   const panelRef = useHotkeyRef<HTMLDivElement>(hotkey);
 
@@ -35,32 +38,34 @@ export const EntityPanel = WithEntity<
       className={[
         props.className ?? "",
         "EntityPanel",
-        entityToken.value.allegiance == null || entityToken.value.unconscious
-          ? ""
-          : entityToken.value.allegiance !==
-            controllerEntityToken.value?.allegiance
-          ? "hostile"
-          : "friendly",
-        entityToken === target ? "targetted" : "",
+        // WIP
+        // entityToken.value.allegiance == null || entityToken.value.unconscious
+        //   ? ""
+        //   : entityToken.value.allegiance !==
+        //     controllerEntityToken.value?.allegiance
+        //   ? "hostile"
+        //   : "friendly",
+        entity === target ? "targetted" : "",
       ].join(" ")}
       onClick={targetThis}
     >
-      <div>{entityToken.value.name}</div>
-      <HPBar entityToken={entityToken} />
-      <EPBar entityToken={entityToken} />
+      <div>{"WIP entityToken.value.name"}</div>
+      <HPBar entity={entity} />
+      <EPBar entity={entity} />
       {detailed && (
         <>
           <div className="ActionBar">
-            {recommendedActions?.map((action) => (
+            {recommendedActions?.map((action: any) => (
               <ActionButton
                 key={action}
                 hotkey={
-                  controllerEntityToken.value?.playerController.hotkeyMap[
-                    action
-                  ]
+                  "WIP"
+                  // controllerEntityToken.value?.playerController.hotkeyMap[
+                  //   action
+                  // ]
                 }
                 action={action}
-                targetToken={entityToken}
+                target={entity}
               />
             ))}
           </div>
