@@ -1,8 +1,8 @@
 use std::cmp::max;
 
-use spacetimedb::{ReducerContext, SpacetimeType, Table};
+use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
 
-#[spacetimedb::table(name = actions, public)]
+#[table(name = actions, public)]
 #[derive(Debug, Clone)]
 pub struct Action {
     #[primary_key]
@@ -10,7 +10,7 @@ pub struct Action {
     id: u64,
 }
 
-#[spacetimedb::table(name = action_names, public)]
+#[table(name = action_names, public)]
 #[derive(Debug, Clone)]
 pub struct ActionName {
     #[primary_key]
@@ -26,7 +26,7 @@ pub enum ActionEffect {
     Heal(i32),
 }
 
-#[spacetimedb::table(
+#[table(
   name = action_steps,
   index(name = action_sequence, btree(columns = [action_id, sequence_index])),
   public
@@ -41,13 +41,13 @@ pub struct ActionStep {
     action_effect: ActionEffect,
 }
 
-pub struct ActionBuilder<'a> {
+pub struct ActionHandle<'a> {
     ctx: &'a ReducerContext,
     action_id: u64,
 }
 
 #[allow(dead_code)]
-impl<'a> ActionBuilder<'a> {
+impl<'a> ActionHandle<'a> {
     pub fn new(ctx: &'a ReducerContext) -> Self {
         let action = ctx.db.actions().insert(Action { id: 0 });
         Self {
