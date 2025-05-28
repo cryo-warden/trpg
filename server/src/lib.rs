@@ -2,7 +2,8 @@ use std::cmp::{max, min};
 
 use action::ActionHandle;
 use entity::{
-    action_state_component_targets, action_state_components, hp_components, EntityHandle,
+    action_state_component_targets, action_state_components, hp_components,
+    player_controller_components, EntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, observable_event_targets,
@@ -62,7 +63,21 @@ pub fn init(ctx: &ReducerContext) {
 }
 
 #[reducer(client_connected)]
-pub fn identity_connected(_ctx: &ReducerContext) {}
+pub fn identity_connected(ctx: &ReducerContext) {
+    match ctx
+        .db
+        .player_controller_components()
+        .identity()
+        .find(ctx.sender)
+    {
+        None => {
+            EntityHandle::new(ctx)
+                .add_hp(10)
+                .add_player_controller(ctx.sender);
+        }
+        Some(_) => {}
+    }
+}
 
 #[reducer(client_disconnected)]
 pub fn identity_disconnected(_ctx: &ReducerContext) {}

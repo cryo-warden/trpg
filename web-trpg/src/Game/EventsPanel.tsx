@@ -15,6 +15,7 @@ import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
 import { EntityEvent } from "./trpg";
 import { renderer } from "../renderer";
+import { usePlayerEntity } from "./context/StdbContext";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const rendererName = "debug";
@@ -22,20 +23,17 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     () => renderer[rendererName](),
     [rendererName]
   );
-  const controllerEntityToken = 1n; // WIP useControllerEntityToken();
+  const playerEntity = usePlayerEntity();
 
   const EventDisplay = useMemo(() => {
-    if (controllerEntityToken == null) {
+    if (playerEntity == null) {
       return () => null;
     }
     return ({ event }: { event: EntityEvent }): ReactNode => {
       // TODO Fix peer dependency.
-      return useMemo(
-        () => renderEvent(controllerEntityToken, event),
-        [event]
-      ) as any;
+      return useMemo(() => renderEvent(playerEntity, event), [event]) as any;
     };
-  }, [renderEvent, controllerEntityToken]);
+  }, [renderEvent, playerEntity]);
 
   // WIP
   const [eventSet, _setEventSet] = useState(new Set<EntityEvent>());

@@ -1,31 +1,12 @@
-import { useCallback, useRef, useSyncExternalStore } from "react";
-import { WithEntity } from "../EntityComponent";
+import { useRef } from "react";
 import "./HPBar.css";
-import { useStdbConnection } from "../context/StdbContext";
+import { useHpComponent } from "../context/StdbContext";
+import { EntityId } from "../trpg";
 
-export const HPBar = WithEntity(({ entity }) => {
-  const connection = useStdbConnection();
+export const HPBar = ({ entity }: { entity: EntityId }) => {
+  const hpComponent = useHpComponent(entity);
   const lastHPRatioRef = useRef(0);
   const wasHPRisingRef = useRef(true);
-
-  const subscribe = useCallback(
-    (refresh: () => void) => {
-      connection.db.hpComponents.onInsert(refresh);
-      connection.db.hpComponents.onUpdate(refresh);
-      connection.db.hpComponents.onDelete(refresh);
-      return () => {
-        connection.db.hpComponents.removeOnInsert(refresh);
-        connection.db.hpComponents.removeOnUpdate(refresh);
-        connection.db.hpComponents.removeOnDelete(refresh);
-      };
-    },
-    [connection]
-  );
-
-  // WIP Lookup entity.
-  const hpComponent = useSyncExternalStore(subscribe, () =>
-    connection.db.hpComponents.entityId.find(entity)
-  );
 
   if (hpComponent == null) {
     return null;
@@ -62,4 +43,4 @@ export const HPBar = WithEntity(({ entity }) => {
       </div>
     </div>
   );
-});
+};

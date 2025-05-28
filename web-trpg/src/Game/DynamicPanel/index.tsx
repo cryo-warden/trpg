@@ -5,6 +5,7 @@ import { EPBar } from "../EntityPanel/EPBar";
 import { HPBar } from "../EntityPanel/HPBar";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 import { EntityId } from "../trpg";
+import { usePlayerEntity } from "../context/StdbContext";
 
 // WIP
 const weighEntity = (entity: EntityId) => Number(entity);
@@ -17,7 +18,7 @@ const weighEntity = (entity: EntityId) => Number(entity);
 
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
-  const selfEntity = 1n; // WIP useControllerEntity();
+  const selfEntity = usePlayerEntity();
 
   if (mode === "stats") {
     if (selfEntity == null) {
@@ -26,7 +27,7 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
 
     return (
       <Panel {...props}>
-        <div>{"WIP selfEntity.name"}</div>
+        <div>{`WIP selfEntity.name ${selfEntity}`}</div>
         <HPBar entity={selfEntity} />
         <EPBar entity={selfEntity} />
         <div>Attack: {"WIP selfEntity.value.attack ?? 0"}</div>

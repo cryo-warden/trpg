@@ -3,6 +3,7 @@ import { Button } from "../structural/Button";
 import "./ActionButton.css";
 import { useTarget } from "./context/TargetContext";
 import { ActionName, EntityId } from "./trpg";
+import { usePlayerEntity } from "./context/StdbContext";
 
 export const ActionButton = ({
   target,
@@ -12,13 +13,13 @@ export const ActionButton = ({
   target?: EntityId;
   action: ActionName;
 } & ComponentPropsWithoutRef<typeof Button>) => {
-  const controllerEntityToken = 1; // WIP useControllerEntityToken();
+  const playerEntity = usePlayerEntity();
   const { target: contextualTargetToken } = useTarget();
   const finalTargetToken = target ?? contextualTargetToken;
   const hotkey = "WIP";
   // controllerEntityToken.value?.playerController.hotkeyMap[action];
   const queueAction = useCallback(() => {
-    if (controllerEntityToken == null) {
+    if (playerEntity == null) {
       return;
     }
     // WIP
@@ -27,7 +28,7 @@ export const ActionButton = ({
     //   targets: finalTargetToken.value == null ? [] : [finalTargetToken.value],
     // });
     // regenerateToken(controllerEntityToken);
-  }, [controllerEntityToken, finalTargetToken, action]);
+  }, [playerEntity, finalTargetToken, action]);
 
   const isActive = false; // WIP controllerEntityToken.value?.actionState?.action === action;
 

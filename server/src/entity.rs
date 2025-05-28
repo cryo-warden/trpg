@@ -85,6 +85,7 @@ impl<'a> EntityHandle<'a> {
             .entity_id()
             .find(self.entity_id);
         match optional_action_state {
+            None => {}
             Some(action_state) => {
                 self.ctx
                     .db
@@ -94,8 +95,18 @@ impl<'a> EntityHandle<'a> {
                         target_entity_id,
                     });
             }
-            _ => {}
         }
+        self
+    }
+
+    pub fn add_player_controller(self, identity: Identity) -> Self {
+        self.ctx
+            .db
+            .player_controller_components()
+            .insert(PlayerControllerComponent {
+                entity_id: self.entity_id,
+                identity,
+            });
         self
     }
 }

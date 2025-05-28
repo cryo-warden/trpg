@@ -2,29 +2,35 @@ import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
-import { useStdbConnection } from "../context/StdbContext";
+import { usePlayerEntity, useStdbConnection } from "../context/StdbContext";
 import { useTarget } from "../context/TargetContext";
-import { WithEntity } from "../EntityComponent";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
+import { EntityId } from "../trpg";
 
 const recommendActions = (..._args: any[]) => {
   // WIP
   return [];
 };
 
-export const EntityPanel = WithEntity<
-  { hotkey?: string; detailed?: boolean } & ComponentPropsWithoutRef<
-    typeof Panel
-  >
->(({ entity, hotkey, detailed = false, ...props }) => {
+export const EntityPanel = ({
+  entity,
+  hotkey,
+  detailed = false,
+  ...props
+}: {
+  entity: EntityId;
+  hotkey?: string;
+  detailed?: boolean;
+} & ComponentPropsWithoutRef<typeof Panel>) => {
   const engine = useStdbConnection();
-  const controllerEntityToken = 1n; // WIP useControllerEntityToken();
+  const playerEntity = usePlayerEntity();
   const { target, setTarget } = useTarget();
   const recommendedActions =
-    controllerEntityToken &&
-    recommendActions(engine, controllerEntityToken, entity);
+    playerEntity == null
+      ? null
+      : recommendActions(engine, playerEntity, entity);
   const targetThis = useCallback(() => {
     setTarget(entity);
   }, [entity, setTarget]);
@@ -49,7 +55,7 @@ export const EntityPanel = WithEntity<
       ].join(" ")}
       onClick={targetThis}
     >
-      <div>{"WIP entityToken.value.name"}</div>
+      <div>{`WIP entityToken.value.name ${entity}`}</div>
       <HPBar entity={entity} />
       <EPBar entity={entity} />
       {detailed && (
@@ -74,4 +80,4 @@ export const EntityPanel = WithEntity<
       {hotkey != null && <div className="hotkey">{hotkey.toUpperCase()}</div>}
     </Panel>
   );
-});
+};

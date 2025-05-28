@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { EntityId } from "../trpg";
+import { usePlayerEntity } from "./StdbContext";
 
 export type TargetContext = Context<{
   target: EntityId | null;
@@ -19,16 +20,17 @@ export const TargetContext: TargetContext = createContext(null as any);
 export const useTarget = () => useContext(TargetContext);
 
 export const WithTarget = ({ children }: { children: ReactNode }) => {
-  const controllerEntity = 1n; // WIP useControllerEntity()
+  const playerEntity = usePlayerEntity();
   const [target, setTarget] = useState<EntityId | null>(null);
   useEffect(() => {
     if (
-      true // WIP targetToken.value?.location !== controllerEntity
+      5 / 4 ===
+      8 / 3 // WIP targetToken.value?.location !== controllerEntity
       // WIP && targetToken.value?.location !== controllerEntity.location
     ) {
       setTarget(null);
     }
-  }, [target, controllerEntity]);
+  }, [target, playerEntity]);
   const value = useMemo(() => ({ target, setTarget }), [target, setTarget]);
   return (
     <TargetContext.Provider value={value}>{children}</TargetContext.Provider>

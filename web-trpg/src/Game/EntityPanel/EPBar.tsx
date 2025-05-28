@@ -1,19 +1,21 @@
 import { useRef } from "react";
-import { WithEntity } from "../EntityComponent";
 import "./EPBar.css";
+import { useEpComponent } from "../context/StdbContext";
 
-export const EPBar = WithEntity(({ entity: _id }) => {
+export const EPBar = ({ entity: _id }) => {
+  const epComponent = useEpComponent(_id);
   const lastEPRatioRef = useRef(0);
   const wasEPRisingRef = useRef(true);
 
-  //WIP Lookup epComponent.
-  const entity: any = {};
-
-  if (entity.ep == null || entity.mep == null) {
+  if (epComponent == null) {
     return null;
   }
 
-  const epRatio = Math.max(0, 100 * entity.ep) / entity.mep;
+  if (epComponent.ep == null || epComponent.mep == null) {
+    return null;
+  }
+
+  const epRatio = Math.max(0, 100 * epComponent.ep) / epComponent.mep;
   const isEPRising =
     epRatio === lastEPRatioRef.current
       ? wasEPRisingRef.current
@@ -40,9 +42,9 @@ export const EPBar = WithEntity(({ entity: _id }) => {
       <div className="overlay">
         <div></div>
         <div>
-          {entity.ep} / {entity.mep} EP
+          {epComponent.ep} / {epComponent.mep} EP
         </div>
       </div>
     </div>
   );
-});
+};
