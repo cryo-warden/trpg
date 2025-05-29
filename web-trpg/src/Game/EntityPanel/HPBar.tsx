@@ -37,6 +37,7 @@ export const HPBar = ({ entity }: { entity: EntityId }) => {
         }}
       ></div>
       <div className="overlay">
+        <div></div>
         <div>
           {hpComponent.hp} / {hpComponent.mhp} HP
         </div>

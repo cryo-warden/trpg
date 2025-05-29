@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use action::ActionHandle;
 use entity::{
     action_state_component_targets, action_state_components, hp_components,
-    player_controller_components, EntityHandle,
+    player_controller_components, Entity, EntityHandle, InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, observable_event_targets,
@@ -71,16 +71,27 @@ pub fn identity_connected(ctx: &ReducerContext) {
         .find(ctx.sender)
     {
         None => {
-            EntityHandle::new(ctx)
-                .add_hp(10)
-                .add_player_controller(ctx.sender);
+            match ctx
+                .db
+                .player_controller_components()
+                .identity()
+                .find(ctx.sender)
+            {
+                Some(player_controller_component) => {
+                    InactiveEntityHandle::from_id(ctx, player_controller_component.entity_id)
+                        .activate();
+                }
+                None => Entity::new_player(ctx),
+            }
         }
         Some(_) => {}
     }
 }
 
 #[reducer(client_disconnected)]
-pub fn identity_disconnected(_ctx: &ReducerContext) {}
+pub fn identity_disconnected(_ctx: &ReducerContext) {
+    // TODO Add a timer to deactivate player. Remove this timer in identity_connected.
+}
 
 #[reducer]
 pub fn damage(ctx: &ReducerContext, entity_id: u64, damage: i32) -> Result<(), String> {

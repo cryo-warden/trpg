@@ -29,25 +29,26 @@ export const useStdbIdentity = () => {
   return identity;
 };
 
-type Status = "connecting" | "connected";
+type ConnectionStatus = "connecting" | "connected" | "error";
 
 const queries = [
   "select * from entities",
+  "select * from location_components",
   "select * from hp_components",
+  "select * from ep_components",
   "select * from player_controller_components",
 ];
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
-  const [status, setStatus] = useState<Status>("connecting");
+  const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [connection, setConnection] = useState<DbConnection | null>(null);
   const [identity, setIdentity] = useState<Identity | null>(null);
 
-  // WIP Handle errors properly.
   useEffect(() => {
     DbConnection.builder()
       .withModuleName("trpg")
       .withToken(localStorage.getItem("auth_token") || "")
-      .withUri("ws://localhost:3000")
+      .withUri("ws://localhost:3000") // TODO Use process arg.
       .onConnect((connection, identity, token) => {
         localStorage.setItem("auth_token", token);
 
@@ -59,6 +60,12 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
 
         (window as any).dev = (window as any).dev || {};
         (window as any).dev.connection = connection;
+      })
+      .onConnectError((error) => {
+        setConnection(null);
+        setIdentity(null);
+        setStatus("error");
+        console.error(error);
       })
       .build();
   }, []);
@@ -75,33 +82,21 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
   return null;
 };
 
-export const useHpComponent = (entityId: EntityId) => {
-  const connection = useStdbConnection();
+type ComponentType<T extends keyof RemoteTables> = RemoteTables[T] extends {
+  entityId: infer ID;
+}
+  ? ID extends { find: infer F }
+    ? F extends (...args: any[]) => infer R
+      ? Exclude<R, undefined>
+      : never
+    : never
+  : never;
 
-  const subscribe = useCallback(
-    (refresh: () => void) => {
-      connection.db.hpComponents.onInsert(refresh);
-      connection.db.hpComponents.onUpdate(refresh);
-      connection.db.hpComponents.onDelete(refresh);
-      return () => {
-        connection.db.hpComponents.removeOnInsert(refresh);
-        connection.db.hpComponents.removeOnUpdate(refresh);
-        connection.db.hpComponents.removeOnDelete(refresh);
-      };
-    },
-    [connection]
-  );
-
-  const hpComponent = useSyncExternalStore(
-    subscribe,
-    () => connection.db.hpComponents.entityId.find(entityId) ?? null
-  );
-
-  return hpComponent;
-};
+export type A = ComponentType<"hpComponents">;
 
 export const useComponent =
-  (table: keyof RemoteTables) => (entityId: EntityId) => {
+  <T extends keyof RemoteTables>(table: T) =>
+  (entityId: EntityId | null): ComponentType<T> | null => {
     const connection = useStdbConnection();
 
     if ((connection.db[table] as any).entityId == null) {
@@ -128,12 +123,13 @@ export const useComponent =
       [connection]
     );
 
-    const hpComponent = useSyncExternalStore(
-      subscribe,
-      () => (connection.db[table] as any).entityId.find(entityId) ?? null
+    const component = useSyncExternalStore(subscribe, () =>
+      entityId == null
+        ? null
+        : (connection.db[table] as any).entityId.find(entityId) ?? null
     );
 
-    return hpComponent;
+    return component;
   };
 
 export const usePlayerControllerComponent = () => {
@@ -173,8 +169,17 @@ export const usePlayerEntity = (): EntityId | null => {
   return playerControllerComponent.entityId;
 };
 
-// WIP Implement actual EP component.
-export const useEpComponent = useComponent("hpComponents") as () => {
-  ep?: number;
-  mep?: number;
+export const useHpComponent = useComponent("hpComponents");
+
+export const useEpComponent = useComponent("epComponents");
+
+export const useLocationComponent = useComponent("locationComponents");
+
+export const useLocation = (entityId: EntityId | null) => {
+  const component = useLocationComponent(entityId);
+  if (component == null) {
+    return null;
+  }
+
+  return component.locationEntityId;
 };

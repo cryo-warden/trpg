@@ -5,11 +5,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "bun run stdb && vite",
+    "build": "bun run stdb && tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "predeploy": "bun run build",
+    "predeploy": "bun run stdb && bun run build",
     "deploy": "gh-pages -d ./dist",
     "stdb": "spacetime generate --lang typescript --out-dir ./src/stdb --project-path ../server"
   },

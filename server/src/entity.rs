@@ -10,9 +10,60 @@ pub struct Entity {
     pub id: u64,
 }
 
+impl Entity {
+    pub fn new_player(ctx: &ReducerContext) {
+        EntityHandle::new(ctx)
+            .add_location(1) // WIP Compute correct spawn location.
+            .add_hp(10)
+            .add_ep(10)
+            .add_player_controller(ctx.sender);
+    }
+}
+
+// TODO Make a separate type for active vs inactive EntityHandle.
+
+pub struct InactiveEntityHandle<'a> {
+    pub ctx: &'a ReducerContext,
+    pub entity_id: u64,
+}
+
+#[allow(dead_code)]
+impl<'a> InactiveEntityHandle<'a> {
+    pub fn new(ctx: &'a ReducerContext) -> Self {
+        let entity = ctx.db.inactive_entities().insert(Entity { id: 0 });
+        Self {
+            ctx,
+            entity_id: entity.id,
+        }
+    }
+
+    pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
+        Self { ctx, entity_id }
+    }
+
+    pub fn activate(self) -> EntityHandle<'a> {
+        // TODO Delete entity from inactive space with a builder::delete method.
+        let e = EntityHandle::new(self.ctx);
+        match self
+            .ctx
+            .db
+            .inactive_hp_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => {}
+            Some(mut hp) => {
+                hp.entity_id = e.entity_id;
+                self.ctx.db.hp_components().insert(hp);
+            }
+        };
+        // TODO Transfer all components similar to how hp is transfered above.
+        e
+    }
+}
+
 pub struct EntityHandle<'a> {
     pub ctx: &'a ReducerContext,
-    pub is_active: bool,
     pub entity_id: u64,
 }
 
@@ -22,46 +73,63 @@ impl<'a> EntityHandle<'a> {
         let entity = ctx.db.entities().insert(Entity { id: 0 });
         Self {
             ctx,
-            is_active: true,
-            entity_id: entity.id,
-        }
-    }
-
-    pub fn new_inactive(ctx: &'a ReducerContext) -> Self {
-        let entity = ctx.db.inactive_entities().insert(Entity { id: 0 });
-        Self {
-            ctx,
-            is_active: false,
             entity_id: entity.id,
         }
     }
 
     pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
-        Self {
-            ctx,
-            is_active: true,
-            entity_id,
-        }
+        Self { ctx, entity_id }
     }
 
-    pub fn deactivate(mut self) -> Self {
-        if !self.is_active {
-            return self;
-        }
-
-        self.is_active = false;
-        // TODO self.entity_id = id of the new inactive entity.
+    pub fn deactivate(self) -> InactiveEntityHandle<'a> {
         // TODO Delete entity from active space with a builder::delete method.
+        InactiveEntityHandle::new(self.ctx)
+    }
+
+    pub fn add_location(self, location_entity_id: u64) -> Self {
+        self.ctx.db.location_components().insert(LocationComponent {
+            entity_id: self.entity_id,
+            location_entity_id,
+        });
         self
     }
 
-    pub fn add_hp(self, hp: i32) -> Self {
-        let hp_component = HPComponent::new(self.entity_id, hp);
-        if self.is_active {
-            self.ctx.db.hp_components().insert(hp_component);
-        } else {
-            self.ctx.db.inactive_hp_components().insert(hp_component);
+    pub fn location(&self) -> u64 {
+        match self
+            .ctx
+            .db
+            .location_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => 0,
+            Some(location_component) => location_component.location_entity_id,
         }
+    }
+
+    pub fn contents(&self) -> impl Iterator<Item = u64> {
+        self.ctx
+            .db
+            .location_components()
+            .location_entity_id()
+            .filter(self.entity_id)
+            .map(|l| l.entity_id)
+    }
+
+    pub fn add_hp(self, hp: i32) -> Self {
+        self.ctx
+            .db
+            .hp_components()
+            .insert(HpComponent::new(self.entity_id, hp));
+        self
+    }
+
+    pub fn add_ep(self, ep: i32) -> Self {
+        self.ctx.db.ep_components().insert(EpComponent {
+            entity_id: self.entity_id,
+            mep: ep,
+            ep,
+        });
         self
     }
 
@@ -111,10 +179,19 @@ impl<'a> EntityHandle<'a> {
     }
 }
 
+#[table(name = location_components, public)]
+#[derive(Debug, Clone, Builder)]
+pub struct LocationComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    #[index(btree)]
+    pub location_entity_id: u64,
+}
+
 #[table(name = inactive_hp_components, public)]
 #[table(name = hp_components, public)]
 #[derive(Debug, Clone, Builder)]
-pub struct HPComponent {
+pub struct HpComponent {
     #[primary_key]
     pub entity_id: u64,
     pub hp: i32,
@@ -125,7 +202,7 @@ pub struct HPComponent {
 }
 
 #[allow(dead_code)]
-impl HPComponent {
+impl HpComponent {
     pub fn new(entity_id: u64, mhp: i32) -> Self {
         Self {
             entity_id: entity_id,
@@ -147,6 +224,16 @@ impl HPComponent {
             accumulated_healing: 0,
         }
     }
+}
+
+#[table(name = inactive_ep_components, public)]
+#[table(name = ep_components, public)]
+#[derive(Debug, Clone, Builder)]
+pub struct EpComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub ep: i32,
+    pub mep: i32,
 }
 
 #[table(name = inactive_player_controller_components, public)]
