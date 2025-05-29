@@ -2,8 +2,8 @@ use std::cmp::{max, min};
 
 use action::ActionHandle;
 use entity::{
-    action_state_component_targets, action_state_components, hp_components,
-    player_controller_components, Entity, EntityHandle, InactiveEntityHandle,
+    action_state_component_targets, action_state_components, hp_components, Entity, EntityHandle,
+    InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, observable_event_targets,
@@ -64,33 +64,34 @@ pub fn init(ctx: &ReducerContext) {
 
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) {
-    match ctx
-        .db
-        .player_controller_components()
-        .identity()
-        .find(ctx.sender)
-    {
-        None => {
-            match ctx
-                .db
-                .player_controller_components()
-                .identity()
-                .find(ctx.sender)
-            {
-                Some(player_controller_component) => {
-                    InactiveEntityHandle::from_id(ctx, player_controller_component.entity_id)
-                        .activate();
-                }
-                None => Entity::new_player(ctx),
-            }
+    match EntityHandle::from_player_identity(ctx) {
+        Some(_) => {
+            // TODO Remove logout timer.
         }
-        Some(_) => {}
+        None => match InactiveEntityHandle::from_player_identity(ctx) {
+            Some(h) => {
+                h.activate();
+            }
+            None => Entity::new_player(ctx),
+        },
     }
 }
 
 #[reducer(client_disconnected)]
 pub fn identity_disconnected(_ctx: &ReducerContext) {
     // TODO Add a timer to deactivate player. Remove this timer in identity_connected.
+}
+
+#[reducer]
+pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Result<(), String> {
+    match EntityHandle::from_player_identity(ctx) {
+        Some(p) => {
+            p.add_action_state(action_id)
+                .add_action_state_target(target_entity_id);
+            Ok(())
+        }
+        None => Err("Cannot find a player entity.".to_string()),
+    }
 }
 
 #[reducer]
@@ -162,18 +163,22 @@ pub fn hp_system(ctx: &ReducerContext) {
 pub fn action_system(ctx: &ReducerContext) {
     for mut action_state in ctx.db.action_state_components().iter() {
         let entity_id = action_state.entity_id;
-        let action_builder = ActionHandle::from_id(ctx, action_state.action_id);
+        let action_handle = ActionHandle::from_id(ctx, action_state.action_id);
 
-        let effect = action_builder.effect(action_state.sequence_index);
+        let effect = action_handle.effect(action_state.sequence_index);
         match effect {
             None => {}
             Some(effect) => {
-                ctx.db.late_events().insert(Event {
-                    id: 0,
-                    time: ctx.timestamp,
-                    owner_entity_id: entity_id,
-                    event_type: EventType::ActionEffect(effect),
-                });
+                Event::emit_late(
+                    ctx,
+                    entity_id,
+                    EventType::ActionEffect(effect),
+                    ctx.db
+                        .action_state_component_targets()
+                        .action_state_component_id()
+                        .filter(action_state.id)
+                        .map(|t| t.target_entity_id),
+                );
             }
         }
 
@@ -186,7 +191,7 @@ pub fn action_system(ctx: &ReducerContext) {
             .entity_id()
             .update(action_state);
 
-        let effect = action_builder.effect(new_sequence_index);
+        let effect = action_handle.effect(new_sequence_index);
         match effect {
             Some(_) => {}
             None => {

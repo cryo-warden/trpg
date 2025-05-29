@@ -41,6 +41,17 @@ impl<'a> InactiveEntityHandle<'a> {
         Self { ctx, entity_id }
     }
 
+    pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
+        ctx.db
+            .inactive_player_controller_components()
+            .identity()
+            .find(ctx.sender)
+            .map(|p| Self {
+                ctx,
+                entity_id: p.entity_id,
+            })
+    }
+
     pub fn activate(self) -> EntityHandle<'a> {
         // TODO Delete entity from inactive space with a builder::delete method.
         let e = EntityHandle::new(self.ctx);
@@ -79,6 +90,17 @@ impl<'a> EntityHandle<'a> {
 
     pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
         Self { ctx, entity_id }
+    }
+
+    pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
+        ctx.db
+            .player_controller_components()
+            .identity()
+            .find(ctx.sender)
+            .map(|p| Self {
+                ctx,
+                entity_id: p.entity_id,
+            })
     }
 
     pub fn deactivate(self) -> InactiveEntityHandle<'a> {

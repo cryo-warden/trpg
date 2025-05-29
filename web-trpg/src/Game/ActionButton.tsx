@@ -2,8 +2,8 @@ import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Button } from "../structural/Button";
 import "./ActionButton.css";
 import { useTarget } from "./context/TargetContext";
-import { ActionName, EntityId } from "./trpg";
-import { usePlayerEntity } from "./context/StdbContext";
+import { ActionId, EntityId } from "./trpg";
+import { usePlayerEntity, useStdbConnection } from "./context/StdbContext";
 
 export const ActionButton = ({
   target,
@@ -11,24 +11,21 @@ export const ActionButton = ({
   ...props
 }: {
   target?: EntityId;
-  action: ActionName;
+  action: ActionId;
 } & ComponentPropsWithoutRef<typeof Button>) => {
+  const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
-  const { target: contextualTargetToken } = useTarget();
-  const finalTargetToken = target ?? contextualTargetToken;
+  const { target: contextualTarget } = useTarget();
+  const finalTarget = target ?? contextualTarget;
   const hotkey = "WIP";
   // controllerEntityToken.value?.playerController.hotkeyMap[action];
   const queueAction = useCallback(() => {
-    if (playerEntity == null) {
+    if (playerEntity == null || finalTarget == null) {
       return;
     }
-    // WIP
-    // controllerEntityToken.value.playerController.actionQueue.splice(0, 1, {
-    //   action,
-    //   targets: finalTargetToken.value == null ? [] : [finalTargetToken.value],
-    // });
-    // regenerateToken(controllerEntityToken);
-  }, [playerEntity, finalTargetToken, action]);
+
+    connection.reducers.act(action, finalTarget);
+  }, [playerEntity, finalTarget, action]);
 
   const isActive = false; // WIP controllerEntityToken.value?.actionState?.action === action;
 

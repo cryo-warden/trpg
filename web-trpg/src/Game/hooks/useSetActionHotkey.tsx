@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef } from "react";
-import { regenerateToken } from "../../structural/mutable";
-import { useControllerEntityToken } from "../context/ControllerContext";
-import { ActionName } from "../trpg";
+import { usePlayerEntity } from "../context/StdbContext";
+import { ActionId } from "../trpg";
 
-export const useSetActionHotkey = (actionName: ActionName) => {
-  const entityToken = useControllerEntityToken();
+export const useSetActionHotkey = (_action: ActionId) => {
+  const entityToken = usePlayerEntity();
   const isPointerInRef = useRef(false);
 
   const setPointerIn = useCallback(() => {
@@ -17,19 +16,19 @@ export const useSetActionHotkey = (actionName: ActionName) => {
 
   useEffect(() => {
     const abortController = new AbortController();
-    document.addEventListener(
-      "keydown",
-      (e) => {
-        if (
-          isPointerInRef.current &&
-          entityToken.value?.sequenceController != null
-        ) {
-          entityToken.value.playerController.hotkeyMap[actionName] = e.key;
-          regenerateToken(entityToken);
-        }
-      },
-      abortController
-    );
+    // WIP Store player hotkeys.
+    // document.addEventListener(
+    //   "keydown",
+    //   (e) => {
+    //     if (
+    //       isPointerInRef.current &&
+    //       entityToken.value?.playerController != null
+    //     ) {
+    //       entityToken.value.playerController.hotkeyMap[action] = e.key;
+    //     }
+    //   },
+    //   abortController
+    // );
     return () => {
       abortController.abort();
     };

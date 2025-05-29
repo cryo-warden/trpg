@@ -1,4 +1,4 @@
-use spacetimedb::{table, ReducerContext, SpacetimeType, Timestamp};
+use spacetimedb::{table, ReducerContext, SpacetimeType, Table, Timestamp};
 
 use crate::{action::ActionEffect, entity::hp_components};
 
@@ -21,8 +21,50 @@ pub struct Event {
     pub event_type: EventType,
 }
 
+#[allow(dead_code)]
 impl Event {
+    pub fn emit_early(
+        ctx: &ReducerContext,
+        owner_entity_id: u64,
+        event_type: EventType,
+        target_entity_ids: impl Iterator<Item = u64>,
+    ) {
+        let e = ctx.db.early_events().insert(Event {
+            id: 0,
+            time: ctx.timestamp,
+            owner_entity_id,
+            event_type,
+        });
+        for target_entity_id in target_entity_ids {
+            ctx.db.early_event_targets().insert(EventTarget {
+                event_id: e.id,
+                target_entity_id,
+            });
+        }
+    }
+
+    pub fn emit_late(
+        ctx: &ReducerContext,
+        owner_entity_id: u64,
+        event_type: EventType,
+        target_entity_ids: impl Iterator<Item = u64>,
+    ) {
+        let e = ctx.db.late_events().insert(Event {
+            id: 0,
+            time: ctx.timestamp,
+            owner_entity_id,
+            event_type,
+        });
+        for target_entity_id in target_entity_ids {
+            ctx.db.late_event_targets().insert(EventTarget {
+                event_id: e.id,
+                target_entity_id,
+            });
+        }
+    }
+
     pub fn resolve(&self, ctx: &ReducerContext, target_entity_id: u64) {
+        log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
         match self.event_type {
             EventType::StartAction => {}
             EventType::ActionEffect(ref action_effect) => match action_effect {

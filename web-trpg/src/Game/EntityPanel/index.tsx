@@ -2,17 +2,17 @@ import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
-import { usePlayerEntity, useStdbConnection } from "../context/StdbContext";
+import { useAllActions } from "../context/StdbContext";
 import { useTarget } from "../context/TargetContext";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
 import { EntityId } from "../trpg";
 
-const recommendActions = (..._args: any[]) => {
-  // WIP
-  return [];
-};
+// const recommendActions = (..._args: any[]) => {
+//   // WIP
+//   return [];
+// };
 
 export const EntityPanel = ({
   entity,
@@ -24,13 +24,14 @@ export const EntityPanel = ({
   hotkey?: string;
   detailed?: boolean;
 } & ComponentPropsWithoutRef<typeof Panel>) => {
-  const engine = useStdbConnection();
-  const playerEntity = usePlayerEntity();
+  // const playerEntity = usePlayerEntity();
   const { target, setTarget } = useTarget();
-  const recommendedActions =
-    playerEntity == null
-      ? null
-      : recommendActions(engine, playerEntity, entity);
+  const actions = useAllActions();
+  // WIP Add allegiance component.
+  // const recommendedActions =
+  //   playerEntity == null
+  //     ? null
+  //     : recommendActions(engine, playerEntity, entity);
   const targetThis = useCallback(() => {
     setTarget(entity);
   }, [entity, setTarget]);
@@ -44,7 +45,7 @@ export const EntityPanel = ({
       className={[
         props.className ?? "",
         "EntityPanel",
-        // WIP
+        // WIP Add allegiance component.
         // entityToken.value.allegiance == null || entityToken.value.unconscious
         //   ? ""
         //   : entityToken.value.allegiance !==
@@ -61,16 +62,16 @@ export const EntityPanel = ({
       {detailed && (
         <>
           <div className="ActionBar">
-            {recommendedActions?.map((action: any) => (
+            {actions.map((action) => (
               <ActionButton
-                key={action}
+                key={action.id}
                 hotkey={
                   "WIP"
                   // controllerEntityToken.value?.playerController.hotkeyMap[
                   //   action
                   // ]
                 }
-                action={action}
+                action={action.id}
                 target={entity}
               />
             ))}

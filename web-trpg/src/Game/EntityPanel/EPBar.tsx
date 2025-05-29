@@ -1,9 +1,10 @@
 import { useRef } from "react";
 import "./EPBar.css";
 import { useEpComponent } from "../context/StdbContext";
+import { EntityId } from "../trpg";
 
-export const EPBar = ({ entity: _id }) => {
-  const epComponent = useEpComponent(_id);
+export const EPBar = ({ entity }: { entity: EntityId }) => {
+  const epComponent = useEpComponent(entity);
   const lastEPRatioRef = useRef(0);
   const wasEPRisingRef = useRef(true);
 

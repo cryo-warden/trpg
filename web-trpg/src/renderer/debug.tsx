@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 import "./debug.css";
+import { Event as StdbEvent } from "../stdb/event_type";
+
+export type Event = StdbEvent | any;
 
 export const actionWeightType = ["heavy", "neutral", "light"] as const;
 
@@ -214,11 +217,19 @@ export const bindRenderer = () => {
     return `${verb} a${adjective} ${objectName}`;
   };
 
+  // WIP Render the new event format.
   const renderAction = (
     viewpointEntity: Entity,
-    { source, target, action }: Extract<EntityEvent, { type: "action" }>
+    { source, target, action }: any | Extract<Event, { type: "action" }>
   ): ReactNode => {
-    const a = engine.resource.actionRecord[action];
+    const a = {
+      name: String(action),
+      renderer: {
+        armamentType: "fist",
+        speedType: "slow",
+        weightType: "heavy",
+      } satisfies AttackRenderer,
+    };
     return renderSentence({
       viewpointEntity,
       subject: source,
@@ -230,10 +241,7 @@ export const bindRenderer = () => {
     });
   };
 
-  const renderEvent = (
-    viewpointEntity: Entity,
-    event: EntityEvent
-  ): ReactNode => {
+  const renderEvent = (viewpointEntity: Entity, event: Event): ReactNode => {
     switch (event.type) {
       case "action":
         return renderAction(viewpointEntity, event);

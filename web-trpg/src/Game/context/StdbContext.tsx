@@ -32,6 +32,9 @@ export const useStdbIdentity = () => {
 type ConnectionStatus = "connecting" | "connected" | "error";
 
 const queries = [
+  "select * from actions",
+  "select * from action_steps",
+  "select * from action_names",
   "select * from entities",
   "select * from location_components",
   "select * from hp_components",
@@ -161,7 +164,6 @@ export const usePlayerControllerComponent = () => {
 
 export const usePlayerEntity = (): EntityId | null => {
   const playerControllerComponent = usePlayerControllerComponent();
-
   if (playerControllerComponent == null) {
     return null;
   }
@@ -182,4 +184,10 @@ export const useLocation = (entityId: EntityId | null) => {
   }
 
   return component.locationEntityId;
+};
+
+export const useAllActions = () => {
+  const connection = useStdbConnection();
+
+  return [...connection.db.actions.iter()];
 };

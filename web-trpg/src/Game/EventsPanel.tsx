@@ -4,7 +4,6 @@ import {
   ComponentPropsWithoutRef,
   ReactNode,
   useCallback,
-  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -13,9 +12,9 @@ import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { useTarget } from "./context/TargetContext";
-import { EntityEvent } from "./trpg";
 import { renderer } from "../renderer";
 import { usePlayerEntity } from "./context/StdbContext";
+import { Event } from "../stdb/event_type";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const rendererName = "debug";
@@ -29,14 +28,14 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     if (playerEntity == null) {
       return () => null;
     }
-    return ({ event }: { event: EntityEvent }): ReactNode => {
+    return ({ event }: { event: Event }): ReactNode => {
       // TODO Fix peer dependency.
       return useMemo(() => renderEvent(playerEntity, event), [event]) as any;
     };
   }, [renderEvent, playerEntity]);
 
   // WIP
-  const [eventSet, _setEventSet] = useState(new Set<EntityEvent>());
+  const [eventSet, _setEventSet] = useState(new Set<Event>());
   // useEffect(() => {
   //   setEventSet((events) => {
   //     if (

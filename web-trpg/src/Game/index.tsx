@@ -8,22 +8,18 @@ import "./index.css";
 import { SelfPanel } from "./SelfPanel";
 import { TargetPanel } from "./TargetPanel";
 
-export const Game = () => {
-  (window as any).dev = {};
-
-  return (
-    <WithStdb>
-      <WithDynamicPanel>
-        <WithTarget>
-          <div className="Game">
-            <EventsPanel className="events" />
-            <DynamicPanel className="dynamic" />
-            <SelfPanel className="self" />
-            <TargetPanel className="target" />
-            <Panel className="queue">Queue</Panel>
-          </div>
-        </WithTarget>
-      </WithDynamicPanel>
-    </WithStdb>
-  );
-};
+export const Game = () => (
+  <WithStdb>
+    <WithDynamicPanel>
+      <WithTarget>
+        <div className="Game">
+          <EventsPanel className="events" />
+          <DynamicPanel className="dynamic" />
+          <SelfPanel className="self" />
+          <TargetPanel className="target" />
+          <Panel className="queue">Queue</Panel>
+        </div>
+      </WithTarget>
+    </WithDynamicPanel>
+  </WithStdb>
+);

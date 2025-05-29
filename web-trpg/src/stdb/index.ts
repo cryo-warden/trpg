@@ -32,6 +32,8 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 // Import and reexport all reducer arg types
+import { Act } from "./act_reducer.ts";
+export { Act };
 import { Damage } from "./damage_reducer.ts";
 export { Damage };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
@@ -222,6 +224,10 @@ const REMOTE_MODULE = {
     },
   },
   reducers: {
+    act: {
+      reducerName: "act",
+      argsType: Act.getTypeScriptAlgebraicType(),
+    },
     damage: {
       reducerName: "damage",
       argsType: Damage.getTypeScriptAlgebraicType(),
@@ -265,6 +271,7 @@ const REMOTE_MODULE = {
 
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
+| { name: "Act", args: Act }
 | { name: "Damage", args: Damage }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
@@ -273,6 +280,22 @@ export type Reducer = never
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
+
+  act(actionId: bigint, targetEntityId: bigint) {
+    const __args = { actionId, targetEntityId };
+    let __writer = new BinaryWriter(1024);
+    Act.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("act", __argsBuffer, this.setCallReducerFlags.actFlags);
+  }
+
+  onAct(callback: (ctx: ReducerEventContext, actionId: bigint, targetEntityId: bigint) => void) {
+    this.connection.onReducer("act", callback);
+  }
+
+  removeOnAct(callback: (ctx: ReducerEventContext, actionId: bigint, targetEntityId: bigint) => void) {
+    this.connection.offReducer("act", callback);
+  }
 
   damage(entityId: bigint, damage: number) {
     const __args = { entityId, damage };
@@ -325,6 +348,11 @@ export class RemoteReducers {
 }
 
 export class SetReducerFlags {
+  actFlags: CallReducerFlags = 'FullUpdate';
+  act(flags: CallReducerFlags) {
+    this.actFlags = flags;
+  }
+
   damageFlags: CallReducerFlags = 'FullUpdate';
   damage(flags: CallReducerFlags) {
     this.damageFlags = flags;
