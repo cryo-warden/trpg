@@ -71,7 +71,7 @@ export const EntityPanel = ({
                   //   action
                   // ]
                 }
-                action={action.id}
+                actionId={action.id}
                 target={entity}
               />
             ))}

@@ -10,7 +10,7 @@ import {
 } from "react";
 import { DbConnection, RemoteTables } from "../../stdb";
 import { Identity } from "@clockworklabs/spacetimedb-sdk";
-import { EntityId } from "../trpg";
+import { ActionId, EntityId } from "../trpg";
 
 export type StdbContext = Context<{
   connection: DbConnection;
@@ -36,6 +36,8 @@ const queries = [
   "select * from action_steps",
   "select * from action_names",
   "select * from entities",
+  "select * from action_state_components",
+  "select * from queued_action_state_components",
   "select * from location_components",
   "select * from hp_components",
   "select * from ep_components",
@@ -177,6 +179,12 @@ export const useEpComponent = useComponent("epComponents");
 
 export const useLocationComponent = useComponent("locationComponents");
 
+export const useActionStateComponent = useComponent("actionStateComponents");
+
+export const useQueuedActionStateComponent = useComponent(
+  "queuedActionStateComponents"
+);
+
 export const useLocation = (entityId: EntityId | null) => {
   const component = useLocationComponent(entityId);
   if (component == null) {
@@ -190,4 +198,32 @@ export const useAllActions = () => {
   const connection = useStdbConnection();
 
   return [...connection.db.actions.iter()];
+};
+
+export const useActionName = (actionId: ActionId) => {
+  const connection = useStdbConnection();
+
+  const subscribe = useCallback(
+    (refresh: () => void) => {
+      connection.db.actionNames.onInsert(refresh);
+      connection.db.actionNames.onUpdate(refresh);
+      connection.db.actionNames.onDelete(refresh);
+      return () => {
+        connection.db.actionNames.removeOnInsert(refresh);
+        connection.db.actionNames.removeOnUpdate(refresh);
+        connection.db.actionNames.removeOnDelete(refresh);
+      };
+    },
+    [connection]
+  );
+
+  const actionName = useSyncExternalStore(
+    subscribe,
+    () => connection.db.actionNames.actionId.find(actionId) ?? null
+  );
+  if (actionName == null) {
+    return null;
+  }
+
+  return actionName.name;
 };

@@ -84,6 +84,10 @@ import { ObservableEventsTableHandle } from "./observable_events_table.ts";
 export { ObservableEventsTableHandle };
 import { PlayerControllerComponentsTableHandle } from "./player_controller_components_table.ts";
 export { PlayerControllerComponentsTableHandle };
+import { QueuedActionStateComponentTargetsTableHandle } from "./queued_action_state_component_targets_table.ts";
+export { QueuedActionStateComponentTargetsTableHandle };
+import { QueuedActionStateComponentsTableHandle } from "./queued_action_state_components_table.ts";
+export { QueuedActionStateComponentsTableHandle };
 import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
 
@@ -216,6 +220,15 @@ const REMOTE_MODULE = {
       tableName: "player_controller_components",
       rowType: PlayerControllerComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
+    },
+    queued_action_state_component_targets: {
+      tableName: "queued_action_state_component_targets",
+      rowType: ActionStateComponentTarget.getTypeScriptAlgebraicType(),
+    },
+    queued_action_state_components: {
+      tableName: "queued_action_state_components",
+      rowType: ActionStateComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
     },
     system_timers: {
       tableName: "system_timers",
@@ -446,6 +459,14 @@ export class RemoteTables {
 
   get playerControllerComponents(): PlayerControllerComponentsTableHandle {
     return new PlayerControllerComponentsTableHandle(this.connection.clientCache.getOrCreateTable<PlayerControllerComponent>(REMOTE_MODULE.tables.player_controller_components));
+  }
+
+  get queuedActionStateComponentTargets(): QueuedActionStateComponentTargetsTableHandle {
+    return new QueuedActionStateComponentTargetsTableHandle(this.connection.clientCache.getOrCreateTable<ActionStateComponentTarget>(REMOTE_MODULE.tables.queued_action_state_component_targets));
+  }
+
+  get queuedActionStateComponents(): QueuedActionStateComponentsTableHandle {
+    return new QueuedActionStateComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionStateComponent>(REMOTE_MODULE.tables.queued_action_state_components));
   }
 
   get systemTimers(): SystemTimersTableHandle {
