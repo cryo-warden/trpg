@@ -39,25 +39,16 @@ pub fn init(ctx: &ReducerContext) {
         .add_rest()
         .add_rest();
 
-    let ab = ActionHandle::from_id(ctx, 1);
-    let mut i = 0;
-    let mut oe = ab.effect(i);
-    while let Some(e) = oe {
-        log::debug!("action {} effect {} is {:?}", 1, i, e);
-        i += 1;
-        oe = ab.effect(i);
-    }
-
-    let ab = ActionHandle::from_id(ctx, 2);
-    let mut i = 0;
-    let mut oe = ab.effect(i);
-    while let Some(e) = oe {
-        log::debug!("action {} effect {} is {:?}", 2, i, e);
-        i += 1;
-        oe = ab.effect(i);
-    }
+    ActionHandle::new(ctx).set_name("quick_move").add_move();
 
     let room = EntityHandle::new(ctx);
+    let room2 = EntityHandle::new(ctx);
+    EntityHandle::new(ctx)
+        .add_location(room2.entity_id)
+        .add_path(room.entity_id);
+    EntityHandle::new(ctx)
+        .add_location(room.entity_id)
+        .add_path(room2.entity_id);
     for _ in 0..10 {
         EntityHandle::new(ctx)
             .add_hp(10)

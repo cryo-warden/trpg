@@ -1,6 +1,9 @@
 use spacetimedb::{table, ReducerContext, SpacetimeType, Table, Timestamp};
 
-use crate::{action::ActionEffect, entity::hp_components};
+use crate::{
+    action::ActionEffect,
+    entity::{hp_components, location_components, path_components},
+};
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum EventType {
@@ -69,6 +72,29 @@ impl Event {
             EventType::StartAction => {}
             EventType::ActionEffect(ref action_effect) => match action_effect {
                 ActionEffect::Rest => {}
+                ActionEffect::Move => {
+                    match ctx.db.path_components().entity_id().find(target_entity_id) {
+                        None => {}
+                        Some(path_component) => {
+                            match ctx
+                                .db
+                                .location_components()
+                                .entity_id()
+                                .find(self.owner_entity_id)
+                            {
+                                None => {}
+                                Some(mut location_component) => {
+                                    location_component.location_entity_id =
+                                        path_component.destination_entity_id;
+                                    ctx.db
+                                        .location_components()
+                                        .entity_id()
+                                        .update(location_component);
+                                }
+                            }
+                        }
+                    }
+                }
                 ActionEffect::Attack(damage) => {
                     let target_hp = ctx.db.hp_components().entity_id().find(target_entity_id);
                     match target_hp {

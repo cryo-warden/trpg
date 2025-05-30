@@ -18,7 +18,8 @@ impl Entity {
             .add_ep(10)
             .add_player_controller(ctx.sender)
             .set_hotkey(1, 'b')
-            .set_hotkey(2, 'v');
+            .set_hotkey(2, 'v')
+            .set_hotkey(3, 'm');
     }
 }
 
@@ -127,6 +128,14 @@ impl<'a> EntityHandle<'a> {
             None => 0,
             Some(location_component) => location_component.location_entity_id,
         }
+    }
+
+    pub fn add_path(self, destination_entity_id: u64) -> Self {
+        self.ctx.db.path_components().insert(PathComponent {
+            entity_id: self.entity_id,
+            destination_entity_id,
+        });
+        self
     }
 
     pub fn contents(&self) -> impl Iterator<Item = u64> {
@@ -321,6 +330,15 @@ pub struct LocationComponent {
     pub entity_id: u64,
     #[index(btree)]
     pub location_entity_id: u64,
+}
+
+#[table(name = path_components, public)]
+#[derive(Debug, Clone, Builder)]
+pub struct PathComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    #[index(btree)]
+    pub destination_entity_id: u64,
 }
 
 #[table(name = inactive_hp_components, public)]

@@ -22,6 +22,7 @@ pub struct ActionName {
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ActionEffect {
     Rest,
+    Move,
     Attack(i32),
     Heal(i32),
 }
@@ -100,6 +101,10 @@ impl<'a> ActionHandle<'a> {
 
     pub fn add_rest(self) -> Self {
         self.add_step(ActionEffect::Rest)
+    }
+
+    pub fn add_move(self) -> Self {
+        self.add_step(ActionEffect::Move)
     }
 
     pub fn add_attack(self, value: i32) -> Self {
