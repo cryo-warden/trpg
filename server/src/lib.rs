@@ -2,8 +2,8 @@ use std::cmp::{max, min};
 
 use action::ActionHandle;
 use entity::{
-    action_state_component_targets, action_state_components, hp_components, Entity, EntityHandle,
-    InactiveEntityHandle,
+    action_state_component_targets, action_state_components, hp_components,
+    queued_action_state_components, Entity, EntityHandle, InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, observable_event_targets,
@@ -57,9 +57,9 @@ pub fn init(ctx: &ReducerContext) {
         oe = ab.effect(i);
     }
 
-    let e1 = EntityHandle::new(ctx).add_hp(10).add_action_state(2);
+    let e1 = EntityHandle::new(ctx).add_hp(10).set_queued_action_state(2);
     let e2 = EntityHandle::new(ctx).add_hp(10);
-    e1.add_action_state_target(e2.entity_id);
+    e1.add_queued_action_state_target(e2.entity_id);
 }
 
 #[reducer(client_connected)]
@@ -86,8 +86,8 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
 pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
-            p.add_action_state(action_id)
-                .add_action_state_target(target_entity_id);
+            p.set_queued_action_state(action_id)
+                .add_queued_action_state_target(target_entity_id);
             Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
@@ -159,6 +159,15 @@ pub fn hp_system(ctx: &ReducerContext) {
     }
 }
 
+pub fn shift_queued_action_system(ctx: &ReducerContext) {
+    for q in ctx.db.queued_action_state_components().iter() {
+        let e = EntityHandle::from_id(ctx, q.entity_id);
+        if e.action_state_component().is_none() {
+            e.shift_queued_action_state();
+        }
+    }
+}
+
 // TODO Resolve buffs before attacks to reward perfect defense timing.
 pub fn action_system(ctx: &ReducerContext) {
     for mut action_state in ctx.db.action_state_components().iter() {
@@ -196,7 +205,6 @@ pub fn action_system(ctx: &ReducerContext) {
             Some(_) => {}
             None => {
                 // TODO Emit event for finished action.
-                log::debug!("entity {} finished action", entity_id);
                 ctx.db
                     .action_state_components()
                     .entity_id()
@@ -214,6 +222,7 @@ pub fn action_system(ctx: &ReducerContext) {
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
     observable_event_reset_system(ctx);
     action_system(ctx);
+    shift_queued_action_system(ctx);
     event_resolve_system(ctx);
     hp_system(ctx);
 
