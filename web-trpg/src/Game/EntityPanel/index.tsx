@@ -2,17 +2,12 @@ import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
-import { useAllActions } from "../context/StdbContext";
+import { useActionOptions } from "../context/StdbContext";
 import { useTarget } from "../context/TargetContext";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
 import { EntityId } from "../trpg";
-
-// const recommendActions = (..._args: any[]) => {
-//   // WIP
-//   return [];
-// };
 
 export const EntityPanel = ({
   entity,
@@ -24,14 +19,8 @@ export const EntityPanel = ({
   hotkey?: string;
   detailed?: boolean;
 } & ComponentPropsWithoutRef<typeof Panel>) => {
-  // const playerEntity = usePlayerEntity();
+  const actions = useActionOptions(entity);
   const { target, setTarget } = useTarget();
-  const actions = useAllActions();
-  // WIP Add allegiance component.
-  // const recommendedActions =
-  //   playerEntity == null
-  //     ? null
-  //     : recommendActions(engine, playerEntity, entity);
   const targetThis = useCallback(() => {
     setTarget(entity);
   }, [entity, setTarget]);
@@ -64,17 +53,7 @@ export const EntityPanel = ({
         <>
           <div className="ActionBar">
             {actions.map((action) => (
-              <ActionButton
-                key={action.id}
-                hotkey={
-                  "WIP"
-                  // controllerEntityToken.value?.playerController.hotkeyMap[
-                  //   action
-                  // ]
-                }
-                actionId={action.id}
-                target={entity}
-              />
+              <ActionButton key={action} actionId={action} target={entity} />
             ))}
           </div>
         </>

@@ -48,6 +48,8 @@ import { ActionHotkeyComponentsTableHandle } from "./action_hotkey_components_ta
 export { ActionHotkeyComponentsTableHandle };
 import { ActionNamesTableHandle } from "./action_names_table.ts";
 export { ActionNamesTableHandle };
+import { ActionOptionComponentsTableHandle } from "./action_option_components_table.ts";
+export { ActionOptionComponentsTableHandle };
 import { ActionStateComponentTargetsTableHandle } from "./action_state_component_targets_table.ts";
 export { ActionStateComponentTargetsTableHandle };
 import { ActionStateComponentsTableHandle } from "./action_state_components_table.ts";
@@ -84,6 +86,8 @@ import { ObservableEventTargetsTableHandle } from "./observable_event_targets_ta
 export { ObservableEventTargetsTableHandle };
 import { ObservableEventsTableHandle } from "./observable_events_table.ts";
 export { ObservableEventsTableHandle };
+import { PathComponentsTableHandle } from "./path_components_table.ts";
+export { PathComponentsTableHandle };
 import { PlayerControllerComponentsTableHandle } from "./player_controller_components_table.ts";
 export { PlayerControllerComponentsTableHandle };
 import { QueuedActionStateComponentTargetsTableHandle } from "./queued_action_state_component_targets_table.ts";
@@ -102,6 +106,8 @@ import { ActionHotkeyComponent } from "./action_hotkey_component_type.ts";
 export { ActionHotkeyComponent };
 import { ActionName } from "./action_name_type.ts";
 export { ActionName };
+import { ActionOptionComponent } from "./action_option_component_type.ts";
+export { ActionOptionComponent };
 import { ActionStateComponent } from "./action_state_component_type.ts";
 export { ActionStateComponent };
 import { ActionStateComponentTarget } from "./action_state_component_target_type.ts";
@@ -122,6 +128,8 @@ import { HpComponent } from "./hp_component_type.ts";
 export { HpComponent };
 import { LocationComponent } from "./location_component_type.ts";
 export { LocationComponent };
+import { PathComponent } from "./path_component_type.ts";
+export { PathComponent };
 import { PlayerControllerComponent } from "./player_controller_component_type.ts";
 export { PlayerControllerComponent };
 import { SystemTimer } from "./system_timer_type.ts";
@@ -137,6 +145,10 @@ const REMOTE_MODULE = {
       tableName: "action_names",
       rowType: ActionName.getTypeScriptAlgebraicType(),
       primaryKey: "actionId",
+    },
+    action_option_components: {
+      tableName: "action_option_components",
+      rowType: ActionOptionComponent.getTypeScriptAlgebraicType(),
     },
     action_state_component_targets: {
       tableName: "action_state_component_targets",
@@ -223,6 +235,11 @@ const REMOTE_MODULE = {
       tableName: "observable_events",
       rowType: Event.getTypeScriptAlgebraicType(),
       primaryKey: "id",
+    },
+    path_components: {
+      tableName: "path_components",
+      rowType: PathComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
     },
     player_controller_components: {
       tableName: "player_controller_components",
@@ -397,6 +414,10 @@ export class RemoteTables {
     return new ActionNamesTableHandle(this.connection.clientCache.getOrCreateTable<ActionName>(REMOTE_MODULE.tables.action_names));
   }
 
+  get actionOptionComponents(): ActionOptionComponentsTableHandle {
+    return new ActionOptionComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionOptionComponent>(REMOTE_MODULE.tables.action_option_components));
+  }
+
   get actionStateComponentTargets(): ActionStateComponentTargetsTableHandle {
     return new ActionStateComponentTargetsTableHandle(this.connection.clientCache.getOrCreateTable<ActionStateComponentTarget>(REMOTE_MODULE.tables.action_state_component_targets));
   }
@@ -467,6 +488,10 @@ export class RemoteTables {
 
   get observableEvents(): ObservableEventsTableHandle {
     return new ObservableEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.observable_events));
+  }
+
+  get pathComponents(): PathComponentsTableHandle {
+    return new PathComponentsTableHandle(this.connection.clientCache.getOrCreateTable<PathComponent>(REMOTE_MODULE.tables.path_components));
   }
 
   get playerControllerComponents(): PlayerControllerComponentsTableHandle {

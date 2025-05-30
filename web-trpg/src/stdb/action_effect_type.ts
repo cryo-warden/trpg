@@ -36,6 +36,7 @@ export namespace ActionEffect {
   // One type is generated per variant and will be used in the `value` field of
   // the tagged union.
   export type Rest = { tag: "Rest" };
+  export type Move = { tag: "Move" };
   export type Attack = { tag: "Attack", value: number };
   export type Heal = { tag: "Heal", value: number };
 
@@ -46,12 +47,14 @@ export namespace ActionEffect {
   // assert!(foo.value === 42);
   // ```
   export const Rest = { tag: "Rest" };
+  export const Move = { tag: "Move" };
   export const Attack = (value: number): ActionEffect => ({ tag: "Attack", value });
   export const Heal = (value: number): ActionEffect => ({ tag: "Heal", value });
 
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createSumType([
       new SumTypeVariant("Rest", AlgebraicType.createProductType([])),
+      new SumTypeVariant("Move", AlgebraicType.createProductType([])),
       new SumTypeVariant("Attack", AlgebraicType.createI32Type()),
       new SumTypeVariant("Heal", AlgebraicType.createI32Type()),
     ]);
@@ -68,7 +71,7 @@ export namespace ActionEffect {
 }
 
 // The tagged union or sum type for the algebraic type `ActionEffect`.
-export type ActionEffect = ActionEffect.Rest | ActionEffect.Attack | ActionEffect.Heal;
+export type ActionEffect = ActionEffect.Rest | ActionEffect.Move | ActionEffect.Attack | ActionEffect.Heal;
 
 export default ActionEffect;
 

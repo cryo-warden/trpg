@@ -38,6 +38,7 @@ const queries = [
   "select * from action_names",
   "select * from entities",
   "select * from action_hotkey_components",
+  "select * from action_option_components",
   "select * from action_state_components",
   "select * from queued_action_state_components",
   "select * from location_components",
@@ -294,4 +295,40 @@ export const useActionHotkey = (actionId: ActionId) => {
   );
 
   return actionHotkey;
+};
+
+export const useActionOptions = (targetEntityId: EntityId | null) => {
+  const connection = useStdbConnection();
+  const playerEntity = usePlayerEntity();
+
+  const subscribe = useCallback(
+    (refresh: () => void) => {
+      connection.db.actionOptionComponents.onInsert(refresh);
+      connection.db.actionOptionComponents.onDelete(refresh);
+      return () => {
+        connection.db.actionOptionComponents.removeOnInsert(refresh);
+        connection.db.actionOptionComponents.removeOnDelete(refresh);
+      };
+    },
+    [connection]
+  );
+
+  const actions = useMemo(
+    () =>
+      targetEntityId == null
+        ? []
+        : [...connection.db.actionOptionComponents.iter()]
+            .filter(
+              (actionOptionComponent) =>
+                actionOptionComponent.entityId === playerEntity &&
+                actionOptionComponent.targetEntityId === targetEntityId
+            )
+            .map((actionOptionComponent) => actionOptionComponent.actionId) ??
+          [],
+    [playerEntity, targetEntityId]
+  );
+
+  const actionsSync = useSyncExternalStore(subscribe, () => actions);
+
+  return actionsSync;
 };

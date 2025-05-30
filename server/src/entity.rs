@@ -138,6 +138,15 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
+    pub fn has_path(&self) -> bool {
+        self.ctx
+            .db
+            .path_components()
+            .entity_id()
+            .find(self.entity_id)
+            .is_some()
+    }
+
     pub fn contents(&self) -> impl Iterator<Item = u64> {
         self.ctx
             .db
@@ -432,4 +441,13 @@ pub struct ActionHotkeyComponent {
     pub entity_id: u64,
     pub action_id: u64,
     pub character_code: u32,
+}
+
+#[table(name = action_option_components, public)]
+#[derive(Debug, Clone)]
+pub struct ActionOptionComponent {
+    #[index(btree)]
+    pub entity_id: u64,
+    pub action_id: u64,
+    pub target_entity_id: u64,
 }

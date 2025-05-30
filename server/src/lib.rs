@@ -2,8 +2,9 @@ use std::cmp::{max, min};
 
 use action::ActionHandle;
 use entity::{
-    action_state_component_targets, action_state_components, hp_components,
-    queued_action_state_components, Entity, EntityHandle, InactiveEntityHandle,
+    action_option_components, action_state_component_targets, action_state_components,
+    hp_components, location_components, queued_action_state_components, ActionOptionComponent,
+    Entity, EntityHandle, InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, observable_event_targets,
@@ -212,6 +213,43 @@ pub fn action_system(ctx: &ReducerContext) {
     }
 }
 
+pub fn action_option_system(ctx: &ReducerContext) {
+    for action_option_component in ctx.db.action_option_components().iter() {
+        ctx.db
+            .action_option_components()
+            .delete(action_option_component);
+    }
+    for location_component in ctx.db.location_components().iter() {
+        let e = EntityHandle::from_id(ctx, location_component.entity_id);
+        for other_location_component in ctx
+            .db
+            .location_components()
+            .location_entity_id()
+            .filter(location_component.location_entity_id)
+        {
+            // TODO Add action_components to get the actions available to a given entity.
+            // TODO Validate action against target.
+            let t = EntityHandle::from_id(ctx, other_location_component.entity_id);
+            ctx.db
+                .action_option_components()
+                .insert(ActionOptionComponent {
+                    action_id: 1,
+                    entity_id: e.entity_id,
+                    target_entity_id: t.entity_id,
+                });
+            if t.has_path() {
+                ctx.db
+                    .action_option_components()
+                    .insert(ActionOptionComponent {
+                        action_id: 3,
+                        entity_id: e.entity_id,
+                        target_entity_id: t.entity_id,
+                    });
+            }
+        }
+    }
+}
+
 #[reducer]
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
     observable_event_reset_system(ctx);
@@ -219,6 +257,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     shift_queued_action_system(ctx);
     event_resolve_system(ctx);
     hp_system(ctx);
+    action_option_system(ctx);
 
     Ok(())
 }
