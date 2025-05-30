@@ -56,7 +56,7 @@ export const EntityPanel = ({
       ].join(" ")}
       onClick={targetThis}
     >
-      <div>{`WIP entityToken.value.name ${entity}`}</div>
+      <div>{/* WIP Add name */ `Entity ${entity}`}</div>
       <HPBar entity={entity} />
       <EPBar entity={entity} />
       {detailed && (

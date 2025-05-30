@@ -5,7 +5,12 @@ import { EPBar } from "../EntityPanel/EPBar";
 import { HPBar } from "../EntityPanel/HPBar";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 import { EntityId } from "../trpg";
-import { usePlayerEntity } from "../context/StdbContext";
+import {
+  useHpComponent,
+  useLocation,
+  useLocationEntities,
+  usePlayerEntity,
+} from "../context/StdbContext";
 
 // WIP
 const weighEntity = (entity: EntityId) => Number(entity);
@@ -18,42 +23,38 @@ const weighEntity = (entity: EntityId) => Number(entity);
 
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
-  const selfEntity = usePlayerEntity();
+  const playerEntity = usePlayerEntity();
+  const location = useLocation(playerEntity);
+  const locationEntities = useLocationEntities(location);
+  const playerContents = useLocationEntities(playerEntity);
+  const hpComponent = useHpComponent(playerEntity);
 
   if (mode === "stats") {
-    if (selfEntity == null) {
+    if (playerEntity == null) {
       return <Panel {...props} />;
     }
 
     return (
       <Panel {...props}>
-        <div>{`WIP selfEntity.name ${selfEntity}`}</div>
-        <HPBar entity={selfEntity} />
-        <EPBar entity={selfEntity} />
-        <div>Attack: {"WIP selfEntity.value.attack ?? 0"}</div>
-        <div>Defense: {"WIP selfEntity.value.defense ?? 0"}</div>
-        <div>
-          Critical Defense: {"WIP selfEntity.value.criticalDefense ?? 0"}
-        </div>
-        <div>
-          Critical Damage Threshold:{" "}
-          {"selfEntity.value.criticalDamageThreshold ?? 1"}
-        </div>
+        <div>{/* WIP Show name. */ `Entity ${playerEntity}`}</div>
+        <HPBar entity={playerEntity} />
+        <EPBar entity={playerEntity} />
+        <div>Attack: {/* WIP Add attack component. */ 0}</div>
+        <div>Defense: {hpComponent?.defense ?? 0}</div>
       </Panel>
     );
   }
 
-  // WIP
-  const entities: EntityId[] = [];
-  // mode === "location"
-  //   ? selfEntity.value?.location?.contents ?? []
-  //   : mode === "inventory"
-  //   ? selfEntity.value?.contents ?? []
-  //   : mode === "equipment"
-  //   ? selfEntity.value?.equipment ?? []
-  //   : [];
+  const entities: EntityId[] =
+    mode === "location"
+      ? locationEntities
+      : mode === "inventory"
+      ? playerContents
+      : mode === "equipment"
+      ? [] // WIP Add equipment
+      : [];
   const sortedEntities = entities
-    .filter((entity) => entity !== selfEntity)
+    .filter((entity) => entity !== playerEntity)
     .toSorted((a, b) => weighEntity(b) - weighEntity(a));
 
   // TODO Extend the token concept to also handle references between entities.

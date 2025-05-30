@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -192,6 +193,39 @@ export const useLocation = (entityId: EntityId | null) => {
   }
 
   return component.locationEntityId;
+};
+
+export const useLocationEntities = (locationEntityId: EntityId | null) => {
+  const connection = useStdbConnection();
+
+  const subscribe = useCallback(
+    (refresh: () => void) => {
+      connection.db.locationComponents.onInsert(refresh);
+      connection.db.locationComponents.onUpdate(refresh);
+      connection.db.locationComponents.onDelete(refresh);
+      return () => {
+        connection.db.locationComponents.removeOnInsert(refresh);
+        connection.db.locationComponents.removeOnUpdate(refresh);
+        connection.db.locationComponents.removeOnDelete(refresh);
+      };
+    },
+    [connection]
+  );
+
+  const entities = useMemo(
+    () =>
+      [...connection.db.locationComponents.iter()]
+        .filter(
+          (locationComponent) =>
+            locationComponent.locationEntityId === locationEntityId
+        )
+        .map((locationComponent) => locationComponent.entityId),
+    [connection, locationEntityId]
+  );
+
+  const entitiesSync = useSyncExternalStore(subscribe, () => entities);
+
+  return entitiesSync;
 };
 
 export const useAllActions = () => {

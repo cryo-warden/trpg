@@ -57,9 +57,12 @@ pub fn init(ctx: &ReducerContext) {
         oe = ab.effect(i);
     }
 
-    let e1 = EntityHandle::new(ctx).add_hp(10).set_queued_action_state(2);
-    let e2 = EntityHandle::new(ctx).add_hp(10);
-    e1.add_queued_action_state_target(e2.entity_id);
+    let room = EntityHandle::new(ctx);
+    for _ in 0..10 {
+        EntityHandle::new(ctx)
+            .add_hp(10)
+            .add_location(room.entity_id);
+    }
 }
 
 #[reducer(client_connected)]
