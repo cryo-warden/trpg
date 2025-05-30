@@ -19,8 +19,11 @@ impl Entity {
             .add_hp(10)
             .add_ep(10)
             .add_player_controller(ctx.sender)
+            .add_action(1)
             .set_hotkey(1, 'b')
+            .add_action(2)
             .set_hotkey(2, 'v')
+            .add_action(3)
             .set_hotkey(3, 'm');
     }
 }
@@ -156,6 +159,23 @@ impl<'a> EntityHandle<'a> {
             .location_entity_id()
             .filter(self.entity_id)
             .map(|l| l.entity_id)
+    }
+
+    pub fn add_action(self, action_id: u64) -> Self {
+        self.ctx.db.action_components().insert(ActionComponent {
+            entity_id: self.entity_id,
+            action_id,
+        });
+        self
+    }
+
+    pub fn actions(&self) -> impl Iterator<Item = u64> {
+        self.ctx
+            .db
+            .action_components()
+            .entity_id()
+            .filter(self.entity_id)
+            .map(|a| a.action_id)
     }
 
     pub fn add_hp(self, hp: i32) -> Self {
@@ -456,6 +476,14 @@ pub struct ActionStateComponentTarget {
     #[index(btree)]
     pub action_state_component_id: u64,
     pub target_entity_id: u64,
+}
+
+#[table(name = action_components, public)]
+#[derive(Debug, Clone)]
+pub struct ActionComponent {
+    #[index(btree)]
+    pub entity_id: u64,
+    pub action_id: u64,
 }
 
 #[table(

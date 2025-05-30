@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use action::{actions, ActionHandle, ActionType};
+use action::{ActionHandle, ActionType};
 use entity::{
     action_option_components, action_state_component_targets, action_state_components,
     hp_components, location_components, queued_action_state_components, ActionOptionComponent,
@@ -83,9 +83,13 @@ pub fn identity_disconnected(_ctx: &ReducerContext) {
 pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
-            p.set_queued_action_state(action_id)
-                .add_queued_action_state_target(target_entity_id);
-            Ok(())
+            if p.can_target_other(target_entity_id, action_id) {
+                p.set_queued_action_state(action_id)
+                    .add_queued_action_state_target(target_entity_id);
+                Ok(())
+            } else {
+                Err("Invalid target for the given action.".to_string())
+            }
         }
         None => Err("Cannot find a player entity.".to_string()),
     }
@@ -230,13 +234,12 @@ pub fn action_option_system(ctx: &ReducerContext) {
             .filter(location_component.location_entity_id)
         {
             let t = EntityHandle::from_id(ctx, other_location_component.entity_id);
-            // TODO Add action_components to get the actions available to a given entity.
-            for a in ctx.db.actions().iter() {
-                if e.can_target_other(t.entity_id, a.id) {
+            for action_id in e.actions() {
+                if e.can_target_other(t.entity_id, action_id) {
                     ctx.db
                         .action_option_components()
                         .insert(ActionOptionComponent {
-                            action_id: a.id,
+                            action_id,
                             entity_id: e.entity_id,
                             target_entity_id: t.entity_id,
                         });
