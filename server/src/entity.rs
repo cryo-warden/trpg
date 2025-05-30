@@ -16,11 +16,11 @@ impl Entity {
             .add_location(1) // WIP Compute correct spawn location.
             .add_hp(10)
             .add_ep(10)
-            .add_player_controller(ctx.sender);
+            .add_player_controller(ctx.sender)
+            .set_hotkey(1, 'b')
+            .set_hotkey(2, 'v');
     }
 }
-
-// TODO Make a separate type for active vs inactive EntityHandle.
 
 pub struct InactiveEntityHandle<'a> {
     pub ctx: &'a ReducerContext,
@@ -289,6 +289,29 @@ impl<'a> EntityHandle<'a> {
             });
         self
     }
+
+    pub fn set_hotkey(self, action_id: u64, character: char) -> Self {
+        let character_code = character as u32;
+        self.ctx
+            .db
+            .action_hotkey_components()
+            .entity_id_and_action_id()
+            .delete((self.entity_id, action_id));
+        self.ctx
+            .db
+            .action_hotkey_components()
+            .entity_id_and_character_code()
+            .delete((self.entity_id, character_code));
+        self.ctx
+            .db
+            .action_hotkey_components()
+            .insert(ActionHotkeyComponent {
+                entity_id: self.entity_id,
+                action_id,
+                character_code,
+            });
+        self
+    }
 }
 
 #[table(name = location_components, public)]
@@ -377,4 +400,18 @@ pub struct ActionStateComponentTarget {
     #[index(btree)]
     pub action_state_component_id: u64,
     pub target_entity_id: u64,
+}
+
+#[table(
+  name = action_hotkey_components,
+  public,
+  index(name=entity_id_and_action_id, btree(columns=[entity_id, action_id])),
+  index(name=entity_id_and_character_code, btree(columns=[entity_id, character_code]))
+)]
+#[derive(Debug, Clone)]
+pub struct ActionHotkeyComponent {
+    #[index(btree)]
+    pub entity_id: u64,
+    pub action_id: u64,
+    pub character_code: u32,
 }

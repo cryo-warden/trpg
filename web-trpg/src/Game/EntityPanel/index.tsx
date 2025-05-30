@@ -40,6 +40,7 @@ export const EntityPanel = ({
 
   return (
     <Panel
+      key={entity}
       {...props}
       ref={panelRef}
       className={[

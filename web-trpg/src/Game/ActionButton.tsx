@@ -4,6 +4,7 @@ import "./ActionButton.css";
 import { useTarget } from "./context/TargetContext";
 import { ActionId, EntityId } from "./trpg";
 import {
+  useActionHotkey,
   useActionName,
   useActionStateComponent,
   usePlayerEntity,
@@ -23,7 +24,7 @@ export const ActionButton = ({
   const playerEntity = usePlayerEntity();
   const { target: contextualTarget } = useTarget();
   const finalTarget = target ?? contextualTarget;
-  const hotkey = ""; // WIP controllerEntityToken.value?.playerController.hotkeyMap[action];
+  const hotkey = useActionHotkey(actionId);
   const queueAction = useCallback(() => {
     if (playerEntity == null || finalTarget == null) {
       return;

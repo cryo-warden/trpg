@@ -44,6 +44,8 @@ import { RunSystem } from "./run_system_reducer.ts";
 export { RunSystem };
 
 // Import and reexport all table handle types
+import { ActionHotkeyComponentsTableHandle } from "./action_hotkey_components_table.ts";
+export { ActionHotkeyComponentsTableHandle };
 import { ActionNamesTableHandle } from "./action_names_table.ts";
 export { ActionNamesTableHandle };
 import { ActionStateComponentTargetsTableHandle } from "./action_state_component_targets_table.ts";
@@ -96,6 +98,8 @@ import { Action } from "./action_type.ts";
 export { Action };
 import { ActionEffect } from "./action_effect_type.ts";
 export { ActionEffect };
+import { ActionHotkeyComponent } from "./action_hotkey_component_type.ts";
+export { ActionHotkeyComponent };
 import { ActionName } from "./action_name_type.ts";
 export { ActionName };
 import { ActionStateComponent } from "./action_state_component_type.ts";
@@ -125,6 +129,10 @@ export { SystemTimer };
 
 const REMOTE_MODULE = {
   tables: {
+    action_hotkey_components: {
+      tableName: "action_hotkey_components",
+      rowType: ActionHotkeyComponent.getTypeScriptAlgebraicType(),
+    },
     action_names: {
       tableName: "action_names",
       rowType: ActionName.getTypeScriptAlgebraicType(),
@@ -380,6 +388,10 @@ export class SetReducerFlags {
 
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
+
+  get actionHotkeyComponents(): ActionHotkeyComponentsTableHandle {
+    return new ActionHotkeyComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeyComponent>(REMOTE_MODULE.tables.action_hotkey_components));
+  }
 
   get actionNames(): ActionNamesTableHandle {
     return new ActionNamesTableHandle(this.connection.clientCache.getOrCreateTable<ActionName>(REMOTE_MODULE.tables.action_names));

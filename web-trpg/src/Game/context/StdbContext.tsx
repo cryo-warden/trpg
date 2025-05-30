@@ -37,6 +37,7 @@ const queries = [
   "select * from action_steps",
   "select * from action_names",
   "select * from entities",
+  "select * from action_hotkey_components",
   "select * from action_state_components",
   "select * from queued_action_state_components",
   "select * from location_components",
@@ -260,4 +261,37 @@ export const useActionName = (actionId: ActionId) => {
   }
 
   return actionName.name;
+};
+
+export const useActionHotkey = (actionId: ActionId) => {
+  const connection = useStdbConnection();
+  const playerEntity = usePlayerEntity();
+
+  const subscribe = useCallback(
+    (refresh: () => void) => {
+      connection.db.actionHotkeyComponents.onInsert(refresh);
+      connection.db.actionHotkeyComponents.onDelete(refresh);
+      return () => {
+        connection.db.actionHotkeyComponents.removeOnInsert(refresh);
+        connection.db.actionHotkeyComponents.removeOnDelete(refresh);
+      };
+    },
+    [connection]
+  );
+
+  const actionHotkey = useSyncExternalStore(
+    subscribe,
+    () =>
+      [...connection.db.actionHotkeyComponents.iter()]
+        .filter(
+          (actionHotkeyComponent) =>
+            actionHotkeyComponent.entityId === playerEntity &&
+            actionHotkeyComponent.actionId === actionId
+        )
+        .map((actionHotkeyComponent) =>
+          String.fromCharCode(actionHotkeyComponent.characterCode)
+        )[0] ?? null
+  );
+
+  return actionHotkey;
 };
