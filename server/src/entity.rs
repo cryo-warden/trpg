@@ -1,6 +1,8 @@
 use derive_builder::Builder;
 use spacetimedb::{table, Identity, ReducerContext, Table};
 
+use crate::action::{actions, ActionType};
+
 #[table(name = inactive_entities, public)]
 #[table(name = entities, public)]
 #[derive(Debug, Clone)]
@@ -330,6 +332,32 @@ impl<'a> EntityHandle<'a> {
             });
         self
     }
+
+    pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
+        match self.ctx.db.actions().id().find(action_id) {
+            None => false,
+            Some(a) => match a.action_type {
+                // WIP Also check allegiance.
+                ActionType::Attack => self
+                    .ctx
+                    .db
+                    .hp_components()
+                    .entity_id()
+                    .find(other_entity_id)
+                    .is_some(),
+                ActionType::Buff => true,      // WIP
+                ActionType::Equip => true,     // WIP
+                ActionType::Inventory => true, // WIP
+                ActionType::Move => self
+                    .ctx
+                    .db
+                    .path_components()
+                    .entity_id()
+                    .find(other_entity_id)
+                    .is_some(),
+            },
+        }
+    }
 }
 
 #[table(name = location_components, public)]
@@ -413,6 +441,7 @@ pub struct PlayerControllerComponent {
 #[derive(Debug, Clone, Builder)]
 pub struct ActionStateComponent {
     #[primary_key]
+    #[auto_inc]
     pub id: u64,
     #[unique]
     pub entity_id: u64,

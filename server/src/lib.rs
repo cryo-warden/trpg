@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use action::ActionHandle;
+use action::{actions, ActionHandle, ActionType};
 use entity::{
     action_option_components, action_state_component_targets, action_state_components,
     hp_components, location_components, queued_action_state_components, ActionOptionComponent,
@@ -23,14 +23,14 @@ pub fn init(ctx: &ReducerContext) {
         scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(500000)),
     });
 
-    ActionHandle::new(ctx)
+    ActionHandle::new(ctx, ActionType::Attack)
         .set_name("bop")
         .add_rest()
         .add_rest()
         .add_attack(1)
         .add_rest();
 
-    ActionHandle::new(ctx)
+    ActionHandle::new(ctx, ActionType::Attack)
         .set_name("boppity_bop")
         .add_rest()
         .add_rest()
@@ -40,7 +40,9 @@ pub fn init(ctx: &ReducerContext) {
         .add_rest()
         .add_rest();
 
-    ActionHandle::new(ctx).set_name("quick_move").add_move();
+    ActionHandle::new(ctx, ActionType::Move)
+        .set_name("quick_move")
+        .add_move();
 
     let room = EntityHandle::new(ctx);
     let room2 = EntityHandle::new(ctx);
@@ -227,24 +229,18 @@ pub fn action_option_system(ctx: &ReducerContext) {
             .location_entity_id()
             .filter(location_component.location_entity_id)
         {
-            // TODO Add action_components to get the actions available to a given entity.
-            // TODO Validate action against target.
             let t = EntityHandle::from_id(ctx, other_location_component.entity_id);
-            ctx.db
-                .action_option_components()
-                .insert(ActionOptionComponent {
-                    action_id: 1,
-                    entity_id: e.entity_id,
-                    target_entity_id: t.entity_id,
-                });
-            if t.has_path() {
-                ctx.db
-                    .action_option_components()
-                    .insert(ActionOptionComponent {
-                        action_id: 3,
-                        entity_id: e.entity_id,
-                        target_entity_id: t.entity_id,
-                    });
+            // TODO Add action_components to get the actions available to a given entity.
+            for a in ctx.db.actions().iter() {
+                if e.can_target_other(t.entity_id, a.id) {
+                    ctx.db
+                        .action_option_components()
+                        .insert(ActionOptionComponent {
+                            action_id: a.id,
+                            entity_id: e.entity_id,
+                            target_entity_id: t.entity_id,
+                        });
+                }
             }
         }
     }
@@ -254,9 +250,9 @@ pub fn action_option_system(ctx: &ReducerContext) {
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
     observable_event_reset_system(ctx);
     action_system(ctx);
-    shift_queued_action_system(ctx);
     event_resolve_system(ctx);
     hp_system(ctx);
+    shift_queued_action_system(ctx);
     action_option_system(ctx);
 
     Ok(())

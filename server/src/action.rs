@@ -2,12 +2,22 @@ use std::cmp::max;
 
 use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
 
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum ActionType {
+    Buff,
+    Attack,
+    Move,
+    Inventory,
+    Equip,
+}
+
 #[table(name = actions, public)]
 #[derive(Debug, Clone)]
 pub struct Action {
     #[primary_key]
     #[auto_inc]
-    id: u64,
+    pub id: u64,
+    pub action_type: ActionType,
 }
 
 #[table(name = action_names, public)]
@@ -49,8 +59,8 @@ pub struct ActionHandle<'a> {
 
 #[allow(dead_code)]
 impl<'a> ActionHandle<'a> {
-    pub fn new(ctx: &'a ReducerContext) -> Self {
-        let action = ctx.db.actions().insert(Action { id: 0 });
+    pub fn new(ctx: &'a ReducerContext, action_type: ActionType) -> Self {
+        let action = ctx.db.actions().insert(Action { id: 0, action_type });
         Self {
             ctx,
             action_id: action.id,
