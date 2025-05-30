@@ -30,25 +30,23 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { Action } from "./action_type";
-import { ActionType as __ActionType } from "./action_type_type";
-
+import { AllegianceComponent } from "./allegiance_component_type";
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `actions`.
+ * Table handle for the table `allegiance_components`.
  *
- * Obtain a handle from the [`actions`] property on [`RemoteTables`],
- * like `ctx.db.actions`.
+ * Obtain a handle from the [`allegianceComponents`] property on [`RemoteTables`],
+ * like `ctx.db.allegianceComponents`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.actions.on_insert(...)`.
+ * like `ctx.db.allegianceComponents.on_insert(...)`.
  */
-export class ActionsTableHandle {
-  tableCache: TableCache<Action>;
+export class AllegianceComponentsTableHandle {
+  tableCache: TableCache<AllegianceComponent>;
 
-  constructor(tableCache: TableCache<Action>) {
+  constructor(tableCache: TableCache<AllegianceComponent>) {
     this.tableCache = tableCache;
   }
 
@@ -56,53 +54,53 @@ export class ActionsTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<Action> {
+  iter(): Iterable<AllegianceComponent> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `id` unique index on the table `actions`,
+   * Access to the `entityId` unique index on the table `allegiance_components`,
    * which allows point queries on the field of the same name
-   * via the [`ActionsIdUnique.find`] method.
+   * via the [`AllegianceComponentsEntityIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.actions.id().find(...)`.
+   * like `ctx.db.allegianceComponents.entityId().find(...)`.
    *
-   * Get a handle on the `id` unique index on the table `actions`.
+   * Get a handle on the `entityId` unique index on the table `allegiance_components`.
    */
-  id = {
-    // Find the subscribed row whose `id` column value is equal to `col_val`,
+  entityId = {
+    // Find the subscribed row whose `entityId` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): Action | undefined => {
+    find: (col_val: bigint): AllegianceComponent | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.id, col_val)) {
+        if (deepEqual(row.entityId, col_val)) {
           return row;
         }
       }
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: Action) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: AllegianceComponent) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: Action) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: AllegianceComponent) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: Action) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: AllegianceComponent) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: Action) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: AllegianceComponent) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: Action, newRow: Action) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: AllegianceComponent, newRow: AllegianceComponent) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: Action, newRow: Action) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: AllegianceComponent, newRow: AllegianceComponent) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

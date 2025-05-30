@@ -36,15 +36,17 @@ const queries = [
   "select * from actions",
   "select * from action_steps",
   "select * from action_names",
+
   "select * from entities",
   "select * from action_hotkey_components",
   "select * from action_option_components",
   "select * from action_state_components",
-  "select * from queued_action_state_components",
-  "select * from location_components",
-  "select * from hp_components",
+  "select * from allegiance_components",
   "select * from ep_components",
+  "select * from hp_components",
+  "select * from location_components",
   "select * from player_controller_components",
+  "select * from queued_action_state_components",
 ];
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
@@ -176,11 +178,13 @@ export const usePlayerEntity = (): EntityId | null => {
   return playerControllerComponent.entityId;
 };
 
+export const useLocationComponent = useComponent("locationComponents");
+
+export const useAllegianceComponent = useComponent("allegianceComponents");
+
 export const useHpComponent = useComponent("hpComponents");
 
 export const useEpComponent = useComponent("epComponents");
-
-export const useLocationComponent = useComponent("locationComponents");
 
 export const useActionStateComponent = useComponent("actionStateComponents");
 
@@ -195,6 +199,15 @@ export const useLocation = (entityId: EntityId | null) => {
   }
 
   return component.locationEntityId;
+};
+
+export const useAllegiance = (entityId: EntityId | null) => {
+  const component = useAllegianceComponent(entityId);
+  if (component == null) {
+    return null;
+  }
+
+  return component.allegianceEntityId;
 };
 
 export const useLocationEntities = (locationEntityId: EntityId | null) => {

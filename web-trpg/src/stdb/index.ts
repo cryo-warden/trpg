@@ -44,6 +44,8 @@ import { RunSystem } from "./run_system_reducer.ts";
 export { RunSystem };
 
 // Import and reexport all table handle types
+import { ActionComponentsTableHandle } from "./action_components_table.ts";
+export { ActionComponentsTableHandle };
 import { ActionHotkeyComponentsTableHandle } from "./action_hotkey_components_table.ts";
 export { ActionHotkeyComponentsTableHandle };
 import { ActionNamesTableHandle } from "./action_names_table.ts";
@@ -58,6 +60,8 @@ import { ActionStepsTableHandle } from "./action_steps_table.ts";
 export { ActionStepsTableHandle };
 import { ActionsTableHandle } from "./actions_table.ts";
 export { ActionsTableHandle };
+import { AllegianceComponentsTableHandle } from "./allegiance_components_table.ts";
+export { AllegianceComponentsTableHandle };
 import { EarlyEventTargetsTableHandle } from "./early_event_targets_table.ts";
 export { EarlyEventTargetsTableHandle };
 import { EarlyEventsTableHandle } from "./early_events_table.ts";
@@ -100,6 +104,8 @@ export { SystemTimersTableHandle };
 // Import and reexport all types
 import { Action } from "./action_type.ts";
 export { Action };
+import { ActionComponent } from "./action_component_type.ts";
+export { ActionComponent };
 import { ActionEffect } from "./action_effect_type.ts";
 export { ActionEffect };
 import { ActionHotkeyComponent } from "./action_hotkey_component_type.ts";
@@ -114,6 +120,10 @@ import { ActionStateComponentTarget } from "./action_state_component_target_type
 export { ActionStateComponentTarget };
 import { ActionStep } from "./action_step_type.ts";
 export { ActionStep };
+import { ActionType } from "./action_type_type.ts";
+export { ActionType };
+import { AllegianceComponent } from "./allegiance_component_type.ts";
+export { AllegianceComponent };
 import { Entity } from "./entity_type.ts";
 export { Entity };
 import { EpComponent } from "./ep_component_type.ts";
@@ -137,6 +147,10 @@ export { SystemTimer };
 
 const REMOTE_MODULE = {
   tables: {
+    action_components: {
+      tableName: "action_components",
+      rowType: ActionComponent.getTypeScriptAlgebraicType(),
+    },
     action_hotkey_components: {
       tableName: "action_hotkey_components",
       rowType: ActionHotkeyComponent.getTypeScriptAlgebraicType(),
@@ -168,6 +182,11 @@ const REMOTE_MODULE = {
       tableName: "actions",
       rowType: Action.getTypeScriptAlgebraicType(),
       primaryKey: "id",
+    },
+    allegiance_components: {
+      tableName: "allegiance_components",
+      rowType: AllegianceComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
     },
     early_event_targets: {
       tableName: "early_event_targets",
@@ -406,6 +425,10 @@ export class SetReducerFlags {
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
 
+  get actionComponents(): ActionComponentsTableHandle {
+    return new ActionComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionComponent>(REMOTE_MODULE.tables.action_components));
+  }
+
   get actionHotkeyComponents(): ActionHotkeyComponentsTableHandle {
     return new ActionHotkeyComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeyComponent>(REMOTE_MODULE.tables.action_hotkey_components));
   }
@@ -432,6 +455,10 @@ export class RemoteTables {
 
   get actions(): ActionsTableHandle {
     return new ActionsTableHandle(this.connection.clientCache.getOrCreateTable<Action>(REMOTE_MODULE.tables.actions));
+  }
+
+  get allegianceComponents(): AllegianceComponentsTableHandle {
+    return new AllegianceComponentsTableHandle(this.connection.clientCache.getOrCreateTable<AllegianceComponent>(REMOTE_MODULE.tables.allegiance_components));
   }
 
   get earlyEventTargets(): EarlyEventTargetsTableHandle {

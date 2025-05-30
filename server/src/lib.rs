@@ -20,7 +20,7 @@ mod event;
 pub fn init(ctx: &ReducerContext) {
     ctx.db.system_timers().insert(SystemTimer {
         scheduled_id: 0,
-        scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(500000)),
+        scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
     });
 
     ActionHandle::new(ctx, ActionType::Attack)
@@ -44,6 +44,8 @@ pub fn init(ctx: &ReducerContext) {
         .set_name("quick_move")
         .add_move();
 
+    EntityHandle::new(ctx);
+    let allegiance2 = EntityHandle::new(ctx);
     let room = EntityHandle::new(ctx);
     let room2 = EntityHandle::new(ctx);
     EntityHandle::new(ctx)
@@ -52,8 +54,9 @@ pub fn init(ctx: &ReducerContext) {
     EntityHandle::new(ctx)
         .add_location(room.entity_id)
         .add_path(room2.entity_id);
-    for _ in 0..10 {
+    for _ in 0..5 {
         EntityHandle::new(ctx)
+            .set_allegiance(allegiance2.entity_id)
             .add_hp(10)
             .add_location(room.entity_id);
     }

@@ -15,7 +15,8 @@ pub struct Entity {
 impl Entity {
     pub fn new_player(ctx: &ReducerContext) {
         EntityHandle::new(ctx)
-            .add_location(1) // WIP Compute correct spawn location.
+            .set_allegiance(1) // WIP Compute correct allegiance via name lookup
+            .add_location(3) // WIP Compute correct spawn location.
             .add_hp(10)
             .add_ep(10)
             .add_player_controller(ctx.sender)
@@ -161,6 +162,40 @@ impl<'a> EntityHandle<'a> {
             .map(|l| l.entity_id)
     }
 
+    pub fn set_allegiance(self, allegiance_entity_id: u64) -> Self {
+        self.ctx
+            .db
+            .allegiance_components()
+            .insert(AllegianceComponent {
+                entity_id: self.entity_id,
+                allegiance_entity_id,
+            });
+        self
+    }
+
+    pub fn allegiance(&self) -> Option<u64> {
+        self.ctx
+            .db
+            .allegiance_components()
+            .entity_id()
+            .find(self.entity_id)
+            .map(|a| a.allegiance_entity_id)
+    }
+
+    pub fn is_ally(&self, other_entity_id: u64) -> bool {
+        if self.entity_id == other_entity_id {
+            return true;
+        }
+
+        match self.allegiance() {
+            None => false,
+            Some(a) => match EntityHandle::from_id(self.ctx, other_entity_id).allegiance() {
+                None => false,
+                Some(o) => a == o,
+            },
+        }
+    }
+
     pub fn add_action(self, action_id: u64) -> Self {
         self.ctx.db.action_components().insert(ActionComponent {
             entity_id: self.entity_id,
@@ -184,6 +219,15 @@ impl<'a> EntityHandle<'a> {
             .hp_components()
             .insert(HpComponent::new(self.entity_id, hp));
         self
+    }
+
+    pub fn has_hp(&self) -> bool {
+        self.ctx
+            .db
+            .hp_components()
+            .entity_id()
+            .find(self.entity_id)
+            .is_some()
     }
 
     pub fn add_ep(self, ep: i32) -> Self {
@@ -354,27 +398,15 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
+        let o = EntityHandle::from_id(self.ctx, other_entity_id);
         match self.ctx.db.actions().id().find(action_id) {
             None => false,
             Some(a) => match a.action_type {
-                // WIP Also check allegiance.
-                ActionType::Attack => self
-                    .ctx
-                    .db
-                    .hp_components()
-                    .entity_id()
-                    .find(other_entity_id)
-                    .is_some(),
-                ActionType::Buff => true,      // WIP
+                ActionType::Attack => o.has_hp() && !self.is_ally(other_entity_id),
+                ActionType::Buff => o.has_hp() && self.is_ally(other_entity_id),
                 ActionType::Equip => true,     // WIP
                 ActionType::Inventory => true, // WIP
-                ActionType::Move => self
-                    .ctx
-                    .db
-                    .path_components()
-                    .entity_id()
-                    .find(other_entity_id)
-                    .is_some(),
+                ActionType::Move => o.has_path(),
             },
         }
     }
@@ -396,6 +428,15 @@ pub struct PathComponent {
     pub entity_id: u64,
     #[index(btree)]
     pub destination_entity_id: u64,
+}
+
+#[table(name = allegiance_components, public)]
+#[derive(Debug, Clone)]
+pub struct AllegianceComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    #[index(btree)]
+    pub allegiance_entity_id: u64,
 }
 
 #[table(name = inactive_hp_components, public)]

@@ -2,7 +2,11 @@ import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
-import { useActionOptions } from "../context/StdbContext";
+import {
+  useActionOptions,
+  useAllegiance,
+  usePlayerEntity,
+} from "../context/StdbContext";
 import { useTarget } from "../context/TargetContext";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
@@ -19,6 +23,9 @@ export const EntityPanel = ({
   hotkey?: string;
   detailed?: boolean;
 } & ComponentPropsWithoutRef<typeof Panel>) => {
+  const playerEntity = usePlayerEntity();
+  const playerAllegiance = useAllegiance(playerEntity);
+  const allegiance = useAllegiance(entity);
   const actions = useActionOptions(entity);
   const { target, setTarget } = useTarget();
   const targetThis = useCallback(() => {
@@ -35,13 +42,11 @@ export const EntityPanel = ({
       className={[
         props.className ?? "",
         "EntityPanel",
-        // WIP Add allegiance component.
-        // entityToken.value.allegiance == null || entityToken.value.unconscious
-        //   ? ""
-        //   : entityToken.value.allegiance !==
-        //     controllerEntityToken.value?.allegiance
-        //   ? "hostile"
-        //   : "friendly",
+        allegiance == null
+          ? ""
+          : allegiance !== playerAllegiance
+          ? "hostile"
+          : "friendly",
         entity === target ? "targetted" : "",
       ].join(" ")}
       onClick={targetThis}
