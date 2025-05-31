@@ -3,8 +3,8 @@ use std::cmp::{max, min};
 use action::{ActionHandle, ActionType};
 use entity::{
     action_option_components, action_state_component_targets, action_state_components,
-    hp_components, location_components, queued_action_state_components, ActionOptionComponent,
-    Entity, EntityHandle, InactiveEntityHandle,
+    hp_components, location_components, queued_action_state_components, target_components,
+    ActionOptionComponent, Entity, EntityHandle, InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, observable_event_targets,
@@ -43,6 +43,13 @@ pub fn init(ctx: &ReducerContext) {
     ActionHandle::new(ctx, ActionType::Move)
         .set_name("quick_move")
         .add_move();
+
+    ActionHandle::new(ctx, ActionType::Buff)
+        .set_name("divine_heal")
+        .add_rest()
+        .add_rest()
+        .add_heal(100)
+        .add_rest();
 
     EntityHandle::new(ctx);
     let allegiance2 = EntityHandle::new(ctx);
@@ -93,6 +100,30 @@ pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Resul
             } else {
                 Err("Invalid target for the given action.".to_string())
             }
+        }
+        None => Err("Cannot find a player entity.".to_string()),
+    }
+}
+
+#[reducer]
+pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String> {
+    match EntityHandle::from_player_identity(ctx) {
+        Some(p) => {
+            p.set_target(target_entity_id);
+            // TODO Only update for the given player and target.
+            action_option_system(ctx);
+            Ok(())
+        }
+        None => Err("Cannot find a player entity.".to_string()),
+    }
+}
+
+#[reducer]
+pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
+    match EntityHandle::from_player_identity(ctx) {
+        Some(p) => {
+            p.delete_target();
+            Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
     }
@@ -222,6 +253,27 @@ pub fn action_system(ctx: &ReducerContext) {
     }
 }
 
+pub fn target_validation_system(ctx: &ReducerContext) {
+    for target_component in ctx.db.target_components().iter() {
+        let e = EntityHandle::from_id(ctx, target_component.entity_id);
+        let t = EntityHandle::from_id(ctx, target_component.target_entity_id);
+        let is_valid = match t.location() {
+            None => false,
+            Some(tl) => {
+                tl == e.entity_id
+                    || match e.location() {
+                        None => false,
+                        Some(el) => tl == el,
+                    }
+            }
+        };
+
+        if !is_valid {
+            e.delete_target();
+        }
+    }
+}
+
 pub fn action_option_system(ctx: &ReducerContext) {
     for action_option_component in ctx.db.action_option_components().iter() {
         ctx.db
@@ -230,13 +282,11 @@ pub fn action_option_system(ctx: &ReducerContext) {
     }
     for location_component in ctx.db.location_components().iter() {
         let e = EntityHandle::from_id(ctx, location_component.entity_id);
-        for other_location_component in ctx
-            .db
-            .location_components()
-            .location_entity_id()
-            .filter(location_component.location_entity_id)
-        {
-            let t = EntityHandle::from_id(ctx, other_location_component.entity_id);
+        for other_entity_id in match e.target() {
+            None => vec![e.entity_id],
+            Some(target) => vec![e.entity_id, target],
+        } {
+            let t = EntityHandle::from_id(ctx, other_entity_id);
             for action_id in e.actions() {
                 if e.can_target_other(t.entity_id, action_id) {
                     ctx.db
@@ -259,6 +309,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     event_resolve_system(ctx);
     hp_system(ctx);
     shift_queued_action_system(ctx);
+    target_validation_system(ctx);
     action_option_system(ctx);
 
     Ok(())

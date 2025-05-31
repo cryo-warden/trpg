@@ -25,7 +25,9 @@ impl Entity {
             .add_action(2)
             .set_hotkey(2, 'v')
             .add_action(3)
-            .set_hotkey(3, 'm');
+            .set_hotkey(3, 'm')
+            .add_action(4)
+            .set_hotkey(4, 'h');
     }
 }
 
@@ -115,6 +117,52 @@ impl<'a> EntityHandle<'a> {
         InactiveEntityHandle::new(self.ctx)
     }
 
+    pub fn set_target(self, target_entity_id: u64) -> Self {
+        match self
+            .ctx
+            .db
+            .target_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => {
+                self.ctx.db.target_components().insert(TargetComponent {
+                    entity_id: self.entity_id,
+                    target_entity_id,
+                });
+            }
+            Some(_) => {
+                self.ctx
+                    .db
+                    .target_components()
+                    .entity_id()
+                    .update(TargetComponent {
+                        entity_id: self.entity_id,
+                        target_entity_id,
+                    });
+            }
+        }
+        self
+    }
+
+    pub fn delete_target(self) -> Self {
+        self.ctx
+            .db
+            .target_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self
+    }
+
+    pub fn target(&self) -> Option<u64> {
+        self.ctx
+            .db
+            .target_components()
+            .entity_id()
+            .find(self.entity_id)
+            .map(|t| t.target_entity_id)
+    }
+
     pub fn add_location(self, location_entity_id: u64) -> Self {
         self.ctx.db.location_components().insert(LocationComponent {
             entity_id: self.entity_id,
@@ -123,17 +171,13 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn location(&self) -> u64 {
-        match self
-            .ctx
+    pub fn location(&self) -> Option<u64> {
+        self.ctx
             .db
             .location_components()
             .entity_id()
             .find(self.entity_id)
-        {
-            None => 0,
-            Some(location_component) => location_component.location_entity_id,
-        }
+            .map(|l| l.location_entity_id)
     }
 
     pub fn add_path(self, destination_entity_id: u64) -> Self {
@@ -495,6 +539,14 @@ pub struct PlayerControllerComponent {
     pub entity_id: u64,
     #[unique]
     pub identity: Identity,
+}
+
+#[table(name = target_components, public)]
+#[derive(Debug, Clone)]
+pub struct TargetComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub target_entity_id: u64,
 }
 
 #[table(name = queued_action_state_components, public)]

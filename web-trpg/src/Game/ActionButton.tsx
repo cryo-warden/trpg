@@ -1,7 +1,6 @@
 import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Button } from "../structural/Button";
 import "./ActionButton.css";
-import { useTarget } from "./context/TargetContext";
 import { ActionId, EntityId } from "./trpg";
 import {
   useActionHotkey,
@@ -10,6 +9,7 @@ import {
   usePlayerEntity,
   useQueuedActionStateComponent,
   useStdbConnection,
+  useTarget,
 } from "./context/StdbContext";
 
 export const ActionButton = ({
@@ -22,7 +22,7 @@ export const ActionButton = ({
 } & ComponentPropsWithoutRef<typeof Button>) => {
   const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
-  const { target: contextualTarget } = useTarget();
+  const contextualTarget = useTarget(playerEntity);
   const finalTarget = target ?? contextualTarget;
   const hotkey = useActionHotkey(actionId);
   const queueAction = useCallback(() => {

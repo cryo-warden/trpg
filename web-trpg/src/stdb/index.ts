@@ -36,12 +36,16 @@ import { Act } from "./act_reducer.ts";
 export { Act };
 import { Damage } from "./damage_reducer.ts";
 export { Damage };
+import { DeleteTarget } from "./delete_target_reducer.ts";
+export { DeleteTarget };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
 export { IdentityDisconnected };
 import { RunSystem } from "./run_system_reducer.ts";
 export { RunSystem };
+import { Target } from "./target_reducer.ts";
+export { Target };
 
 // Import and reexport all table handle types
 import { ActionComponentsTableHandle } from "./action_components_table.ts";
@@ -100,6 +104,8 @@ import { QueuedActionStateComponentsTableHandle } from "./queued_action_state_co
 export { QueuedActionStateComponentsTableHandle };
 import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
+import { TargetComponentsTableHandle } from "./target_components_table.ts";
+export { TargetComponentsTableHandle };
 
 // Import and reexport all types
 import { Action } from "./action_type.ts";
@@ -144,6 +150,8 @@ import { PlayerControllerComponent } from "./player_controller_component_type.ts
 export { PlayerControllerComponent };
 import { SystemTimer } from "./system_timer_type.ts";
 export { SystemTimer };
+import { TargetComponent } from "./target_component_type.ts";
+export { TargetComponent };
 
 const REMOTE_MODULE = {
   tables: {
@@ -279,6 +287,11 @@ const REMOTE_MODULE = {
       rowType: SystemTimer.getTypeScriptAlgebraicType(),
       primaryKey: "scheduledId",
     },
+    target_components: {
+      tableName: "target_components",
+      rowType: TargetComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
   },
   reducers: {
     act: {
@@ -288,6 +301,10 @@ const REMOTE_MODULE = {
     damage: {
       reducerName: "damage",
       argsType: Damage.getTypeScriptAlgebraicType(),
+    },
+    delete_target: {
+      reducerName: "delete_target",
+      argsType: DeleteTarget.getTypeScriptAlgebraicType(),
     },
     identity_connected: {
       reducerName: "identity_connected",
@@ -300,6 +317,10 @@ const REMOTE_MODULE = {
     run_system: {
       reducerName: "run_system",
       argsType: RunSystem.getTypeScriptAlgebraicType(),
+    },
+    target: {
+      reducerName: "target",
+      argsType: Target.getTypeScriptAlgebraicType(),
     },
   },
   // Constructors which are used by the DbConnectionImpl to
@@ -330,9 +351,11 @@ const REMOTE_MODULE = {
 export type Reducer = never
 | { name: "Act", args: Act }
 | { name: "Damage", args: Damage }
+| { name: "DeleteTarget", args: DeleteTarget }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
 | { name: "RunSystem", args: RunSystem }
+| { name: "Target", args: Target }
 ;
 
 export class RemoteReducers {
@@ -370,6 +393,18 @@ export class RemoteReducers {
     this.connection.offReducer("damage", callback);
   }
 
+  deleteTarget() {
+    this.connection.callReducer("delete_target", new Uint8Array(0), this.setCallReducerFlags.deleteTargetFlags);
+  }
+
+  onDeleteTarget(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("delete_target", callback);
+  }
+
+  removeOnDeleteTarget(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("delete_target", callback);
+  }
+
   onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("identity_connected", callback);
   }
@@ -402,6 +437,22 @@ export class RemoteReducers {
     this.connection.offReducer("run_system", callback);
   }
 
+  target(targetEntityId: bigint) {
+    const __args = { targetEntityId };
+    let __writer = new BinaryWriter(1024);
+    Target.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("target", __argsBuffer, this.setCallReducerFlags.targetFlags);
+  }
+
+  onTarget(callback: (ctx: ReducerEventContext, targetEntityId: bigint) => void) {
+    this.connection.onReducer("target", callback);
+  }
+
+  removeOnTarget(callback: (ctx: ReducerEventContext, targetEntityId: bigint) => void) {
+    this.connection.offReducer("target", callback);
+  }
+
 }
 
 export class SetReducerFlags {
@@ -415,9 +466,19 @@ export class SetReducerFlags {
     this.damageFlags = flags;
   }
 
+  deleteTargetFlags: CallReducerFlags = 'FullUpdate';
+  deleteTarget(flags: CallReducerFlags) {
+    this.deleteTargetFlags = flags;
+  }
+
   runSystemFlags: CallReducerFlags = 'FullUpdate';
   runSystem(flags: CallReducerFlags) {
     this.runSystemFlags = flags;
+  }
+
+  targetFlags: CallReducerFlags = 'FullUpdate';
+  target(flags: CallReducerFlags) {
+    this.targetFlags = flags;
   }
 
 }
@@ -535,6 +596,10 @@ export class RemoteTables {
 
   get systemTimers(): SystemTimersTableHandle {
     return new SystemTimersTableHandle(this.connection.clientCache.getOrCreateTable<SystemTimer>(REMOTE_MODULE.tables.system_timers));
+  }
+
+  get targetComponents(): TargetComponentsTableHandle {
+    return new TargetComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TargetComponent>(REMOTE_MODULE.tables.target_components));
   }
 }
 

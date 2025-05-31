@@ -47,6 +47,7 @@ const queries = [
   "select * from location_components",
   "select * from player_controller_components",
   "select * from queued_action_state_components",
+  "select * from target_components",
 ];
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
@@ -188,6 +189,17 @@ export const useEpComponent = useComponent("epComponents");
 
 export const useActionStateComponent = useComponent("actionStateComponents");
 
+export const useTargetComponent = useComponent("targetComponents");
+
+export const useTarget = (entityId: EntityId | null) => {
+  const component = useTargetComponent(entityId);
+  if (component == null) {
+    return null;
+  }
+
+  return component.targetEntityId;
+};
+
 export const useQueuedActionStateComponent = useComponent(
   "queuedActionStateComponents"
 );
@@ -311,37 +323,30 @@ export const useActionHotkey = (actionId: ActionId) => {
 };
 
 export const useActionOptions = (targetEntityId: EntityId | null) => {
+  const computeActionIds = () =>
+    [...connection.db.actionOptionComponents.iter()]
+      .filter(
+        (actionOptionComponent) =>
+          actionOptionComponent.entityId === playerEntity &&
+          actionOptionComponent.targetEntityId === targetEntityId
+      )
+      .map((actionOptionComponent) => actionOptionComponent.actionId);
+
   const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
+  const [actionOptions, setActionOptions] = useState(computeActionIds());
 
-  const subscribe = useCallback(
-    (refresh: () => void) => {
-      connection.db.actionOptionComponents.onInsert(refresh);
-      connection.db.actionOptionComponents.onDelete(refresh);
-      return () => {
-        connection.db.actionOptionComponents.removeOnInsert(refresh);
-        connection.db.actionOptionComponents.removeOnDelete(refresh);
-      };
-    },
-    [connection]
-  );
+  useEffect(() => {
+    const refresh = () => {
+      setActionOptions(computeActionIds());
+    };
+    connection.db.actionOptionComponents.onInsert(refresh);
+    connection.db.actionOptionComponents.onDelete(refresh);
+    return () => {
+      connection.db.actionOptionComponents.removeOnInsert(refresh);
+      connection.db.actionOptionComponents.removeOnDelete(refresh);
+    };
+  }, [connection, setActionOptions, playerEntity, targetEntityId]);
 
-  const actions = useMemo(
-    () =>
-      targetEntityId == null
-        ? []
-        : [...connection.db.actionOptionComponents.iter()]
-            .filter(
-              (actionOptionComponent) =>
-                actionOptionComponent.entityId === playerEntity &&
-                actionOptionComponent.targetEntityId === targetEntityId
-            )
-            .map((actionOptionComponent) => actionOptionComponent.actionId) ??
-          [],
-    [playerEntity, targetEntityId]
-  );
-
-  const actionsSync = useSyncExternalStore(subscribe, () => actions);
-
-  return actionsSync;
+  return actionOptions;
 };

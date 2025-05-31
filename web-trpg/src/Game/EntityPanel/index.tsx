@@ -6,8 +6,9 @@ import {
   useActionOptions,
   useAllegiance,
   usePlayerEntity,
+  useStdbConnection,
+  useTarget,
 } from "../context/StdbContext";
-import { useTarget } from "../context/TargetContext";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
@@ -23,16 +24,27 @@ export const EntityPanel = ({
   hotkey?: string;
   detailed?: boolean;
 } & ComponentPropsWithoutRef<typeof Panel>) => {
+  const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
   const playerAllegiance = useAllegiance(playerEntity);
   const allegiance = useAllegiance(entity);
-  const actions = useActionOptions(entity);
-  const { target, setTarget } = useTarget();
+  const target = useTarget(playerEntity);
   const targetThis = useCallback(() => {
-    setTarget(entity);
-  }, [entity, setTarget]);
+    connection.reducers.target(entity);
+  }, [entity, connection]);
 
   const panelRef = useHotkeyRef<HTMLDivElement>(hotkey);
+
+  const ActionBar = () => {
+    const actions = useActionOptions(entity);
+    return (
+      <div className="ActionBar">
+        {actions.map((action) => (
+          <ActionButton key={action} actionId={action} target={entity} />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <Panel
@@ -54,15 +66,7 @@ export const EntityPanel = ({
       <div>{/* WIP Add name */ `Entity ${entity}`}</div>
       <HPBar entity={entity} />
       <EPBar entity={entity} />
-      {detailed && (
-        <>
-          <div className="ActionBar">
-            {actions.map((action) => (
-              <ActionButton key={action} actionId={action} target={entity} />
-            ))}
-          </div>
-        </>
-      )}
+      {detailed && <ActionBar />}
       {hotkey != null && <div className="hotkey">{hotkey.toUpperCase()}</div>}
     </Panel>
   );
