@@ -1,14 +1,14 @@
 use std::cmp::{max, min};
 
-use action::{ActionHandle, ActionType};
+use action::{ActionEffect, ActionHandle, ActionType};
 use entity::{
     action_option_components, action_state_component_targets, action_state_components,
-    hp_components, location_components, queued_action_state_components, target_components,
-    ActionOptionComponent, Entity, EntityHandle, InactiveEntityHandle,
+    ep_components, hp_components, location_components, queued_action_state_components,
+    target_components, ActionOptionComponent, Entity, EntityHandle, InactiveEntityHandle,
 };
 use event::{
-    early_event_targets, early_events, late_event_targets, late_events, observable_event_targets,
-    observable_events, Event, EventType,
+    early_event_targets, early_events, late_event_targets, late_events, middle_event_targets,
+    middle_events, observable_event_targets, observable_events, Event, EventType,
 };
 use spacetimedb::{reducer, table, ReducerContext, Table, TimeDuration};
 
@@ -29,10 +29,7 @@ pub fn init(ctx: &ReducerContext) {
 
     ActionHandle::new(ctx, ActionType::Buff)
         .set_name("divine_heal")
-        .add_rest()
-        .add_rest()
-        .add_heal(100)
-        .add_rest();
+        .add_heal(100);
 
     ActionHandle::new(ctx, ActionType::Attack)
         .set_name("bop")
@@ -174,6 +171,14 @@ pub fn event_resolve_system(ctx: &ReducerContext) {
         ctx.db.early_events().id().delete(event.id);
     }
 
+    for event in ctx.db.middle_events().iter() {
+        for target in ctx.db.middle_event_targets().event_id().filter(event.id) {
+            event.resolve(ctx, target.target_entity_id);
+        }
+        ctx.db.middle_event_targets().event_id().delete(event.id);
+        ctx.db.middle_events().id().delete(event.id);
+    }
+
     for event in ctx.db.late_events().iter() {
         for target in ctx.db.late_event_targets().event_id().filter(event.id) {
             event.resolve(ctx, target.target_entity_id);
@@ -184,17 +189,25 @@ pub fn event_resolve_system(ctx: &ReducerContext) {
 }
 
 pub fn hp_system(ctx: &ReducerContext) {
-    for mut hp in ctx.db.hp_components().iter() {
-        hp.hp = max(
+    for mut hp_component in ctx.db.hp_components().iter() {
+        hp_component.hp = max(
             0,
             min(
-                hp.mhp,
-                hp.hp + hp.accumulated_healing - hp.accumulated_damage,
+                hp_component.mhp,
+                hp_component.hp + hp_component.accumulated_healing
+                    - hp_component.accumulated_damage,
             ),
         );
-        hp.accumulated_healing = 0;
-        hp.accumulated_damage = 0;
-        ctx.db.hp_components().entity_id().update(hp);
+        hp_component.accumulated_healing = 0;
+        hp_component.accumulated_damage = 0;
+        ctx.db.hp_components().entity_id().update(hp_component);
+    }
+}
+
+pub fn ep_system(ctx: &ReducerContext) {
+    for mut ep_component in ctx.db.ep_components().iter() {
+        ep_component.ep = max(0, min(ep_component.mep, ep_component.ep));
+        ctx.db.ep_components().entity_id().update(ep_component);
     }
 }
 
@@ -213,21 +226,26 @@ pub fn action_system(ctx: &ReducerContext) {
         let entity_id = action_state.entity_id;
         let action_handle = ActionHandle::from_id(ctx, action_state.action_id);
 
+        let target_ids = ctx
+            .db
+            .action_state_component_targets()
+            .action_state_component_id()
+            .filter(action_state.id)
+            .map(|t| t.target_entity_id);
         let effect = action_handle.effect(action_state.sequence_index);
         match effect {
             None => {}
-            Some(effect) => {
-                Event::emit_late(
-                    ctx,
-                    entity_id,
-                    EventType::ActionEffect(effect),
-                    ctx.db
-                        .action_state_component_targets()
-                        .action_state_component_id()
-                        .filter(action_state.id)
-                        .map(|t| t.target_entity_id),
-                );
-            }
+            Some(effect) => match effect {
+                ActionEffect::Buff(_) => {
+                    Event::emit_early(ctx, entity_id, EventType::ActionEffect(effect), target_ids);
+                }
+                ActionEffect::Attack(_) | ActionEffect::Heal(_) => {
+                    Event::emit_middle(ctx, entity_id, EventType::ActionEffect(effect), target_ids);
+                }
+                _ => {
+                    Event::emit_late(ctx, entity_id, EventType::ActionEffect(effect), target_ids);
+                }
+            },
         }
 
         action_state.sequence_index += 1;
@@ -312,6 +330,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     action_system(ctx);
     event_resolve_system(ctx);
     hp_system(ctx);
+    ep_system(ctx);
     shift_queued_action_system(ctx);
     target_validation_system(ctx);
     action_option_system(ctx);

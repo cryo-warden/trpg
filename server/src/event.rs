@@ -12,8 +12,9 @@ pub enum EventType {
 }
 
 #[table(name = observable_events, public)]
-#[table(name = early_events, public)]
-#[table(name = late_events, public)]
+#[table(name = early_events)]
+#[table(name = middle_events)]
+#[table(name = late_events)]
 #[derive(Debug, Clone)]
 pub struct Event {
     #[primary_key]
@@ -46,6 +47,26 @@ impl Event {
         }
     }
 
+    pub fn emit_middle(
+        ctx: &ReducerContext,
+        owner_entity_id: u64,
+        event_type: EventType,
+        target_entity_ids: impl Iterator<Item = u64>,
+    ) {
+        let e = ctx.db.middle_events().insert(Event {
+            id: 0,
+            time: ctx.timestamp,
+            owner_entity_id,
+            event_type,
+        });
+        for target_entity_id in target_entity_ids {
+            ctx.db.middle_event_targets().insert(EventTarget {
+                event_id: e.id,
+                target_entity_id,
+            });
+        }
+    }
+
     pub fn emit_late(
         ctx: &ReducerContext,
         owner_entity_id: u64,
@@ -71,6 +92,7 @@ impl Event {
         match self.event_type {
             EventType::StartAction => {}
             EventType::ActionEffect(ref action_effect) => match action_effect {
+                ActionEffect::Buff(_) => {} // WIP
                 ActionEffect::Rest => {}
                 ActionEffect::Move => {
                     match ctx.db.path_components().entity_id().find(target_entity_id) {
@@ -115,6 +137,10 @@ impl Event {
                         }
                     }
                 }
+                ActionEffect::Take => {}    // WIP
+                ActionEffect::Drop => {}    // WIP
+                ActionEffect::Equip => {}   // WIP
+                ActionEffect::Unequip => {} // WIP
             },
         }
     }
@@ -122,6 +148,7 @@ impl Event {
 
 #[table(name = observable_event_targets, public)]
 #[table(name = early_event_targets, public)]
+#[table(name = middle_event_targets, public)]
 #[table(name = late_event_targets, public)]
 #[derive(Debug, Clone)]
 pub struct EventTarget {

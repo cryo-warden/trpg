@@ -30,11 +30,21 @@ pub struct ActionName {
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
+pub enum Buff {
+    Guard(i32),
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
 pub enum ActionEffect {
-    Rest,
-    Move,
+    Buff(Buff),
     Attack(i32),
     Heal(i32),
+    Rest,
+    Move,
+    Take,
+    Drop,
+    Equip,
+    Unequip,
 }
 
 #[table(

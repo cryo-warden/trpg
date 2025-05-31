@@ -30,15 +30,22 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
+import { Buff as __Buff } from "./buff_type";
+
 // A namespace for generated variants and helper functions.
 export namespace ActionEffect {
   // These are the generated variant types for each variant of the tagged union.
   // One type is generated per variant and will be used in the `value` field of
   // the tagged union.
-  export type Rest = { tag: "Rest" };
-  export type Move = { tag: "Move" };
+  export type Buff = { tag: "Buff", value: __Buff };
   export type Attack = { tag: "Attack", value: number };
   export type Heal = { tag: "Heal", value: number };
+  export type Rest = { tag: "Rest" };
+  export type Move = { tag: "Move" };
+  export type Take = { tag: "Take" };
+  export type Drop = { tag: "Drop" };
+  export type Equip = { tag: "Equip" };
+  export type Unequip = { tag: "Unequip" };
 
   // Helper functions for constructing each variant of the tagged union.
   // ```
@@ -46,17 +53,27 @@ export namespace ActionEffect {
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  export const Rest = { tag: "Rest" };
-  export const Move = { tag: "Move" };
+  export const Buff = (value: __Buff): ActionEffect => ({ tag: "Buff", value });
   export const Attack = (value: number): ActionEffect => ({ tag: "Attack", value });
   export const Heal = (value: number): ActionEffect => ({ tag: "Heal", value });
+  export const Rest = { tag: "Rest" };
+  export const Move = { tag: "Move" };
+  export const Take = { tag: "Take" };
+  export const Drop = { tag: "Drop" };
+  export const Equip = { tag: "Equip" };
+  export const Unequip = { tag: "Unequip" };
 
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createSumType([
-      new SumTypeVariant("Rest", AlgebraicType.createProductType([])),
-      new SumTypeVariant("Move", AlgebraicType.createProductType([])),
+      new SumTypeVariant("Buff", __Buff.getTypeScriptAlgebraicType()),
       new SumTypeVariant("Attack", AlgebraicType.createI32Type()),
       new SumTypeVariant("Heal", AlgebraicType.createI32Type()),
+      new SumTypeVariant("Rest", AlgebraicType.createProductType([])),
+      new SumTypeVariant("Move", AlgebraicType.createProductType([])),
+      new SumTypeVariant("Take", AlgebraicType.createProductType([])),
+      new SumTypeVariant("Drop", AlgebraicType.createProductType([])),
+      new SumTypeVariant("Equip", AlgebraicType.createProductType([])),
+      new SumTypeVariant("Unequip", AlgebraicType.createProductType([])),
     ]);
   }
 
@@ -71,7 +88,7 @@ export namespace ActionEffect {
 }
 
 // The tagged union or sum type for the algebraic type `ActionEffect`.
-export type ActionEffect = ActionEffect.Rest | ActionEffect.Move | ActionEffect.Attack | ActionEffect.Heal;
+export type ActionEffect = ActionEffect.Buff | ActionEffect.Attack | ActionEffect.Heal | ActionEffect.Rest | ActionEffect.Move | ActionEffect.Take | ActionEffect.Drop | ActionEffect.Equip | ActionEffect.Unequip;
 
 export default ActionEffect;
 

@@ -90,6 +90,10 @@ import { LateEventsTableHandle } from "./late_events_table.ts";
 export { LateEventsTableHandle };
 import { LocationComponentsTableHandle } from "./location_components_table.ts";
 export { LocationComponentsTableHandle };
+import { MiddleEventTargetsTableHandle } from "./middle_event_targets_table.ts";
+export { MiddleEventTargetsTableHandle };
+import { MiddleEventsTableHandle } from "./middle_events_table.ts";
+export { MiddleEventsTableHandle };
 import { NameComponentsTableHandle } from "./name_components_table.ts";
 export { NameComponentsTableHandle };
 import { ObservableEventTargetsTableHandle } from "./observable_event_targets_table.ts";
@@ -132,6 +136,8 @@ import { ActionType } from "./action_type_type.ts";
 export { ActionType };
 import { AllegianceComponent } from "./allegiance_component_type.ts";
 export { AllegianceComponent };
+import { Buff } from "./buff_type.ts";
+export { Buff };
 import { Entity } from "./entity_type.ts";
 export { Entity };
 import { EpComponent } from "./ep_component_type.ts";
@@ -257,6 +263,15 @@ const REMOTE_MODULE = {
       tableName: "location_components",
       rowType: LocationComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
+    },
+    middle_event_targets: {
+      tableName: "middle_event_targets",
+      rowType: EventTarget.getTypeScriptAlgebraicType(),
+    },
+    middle_events: {
+      tableName: "middle_events",
+      rowType: Event.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
     },
     name_components: {
       tableName: "name_components",
@@ -577,6 +592,14 @@ export class RemoteTables {
 
   get locationComponents(): LocationComponentsTableHandle {
     return new LocationComponentsTableHandle(this.connection.clientCache.getOrCreateTable<LocationComponent>(REMOTE_MODULE.tables.location_components));
+  }
+
+  get middleEventTargets(): MiddleEventTargetsTableHandle {
+    return new MiddleEventTargetsTableHandle(this.connection.clientCache.getOrCreateTable<EventTarget>(REMOTE_MODULE.tables.middle_event_targets));
+  }
+
+  get middleEvents(): MiddleEventsTableHandle {
+    return new MiddleEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.middle_events));
   }
 
   get nameComponents(): NameComponentsTableHandle {
