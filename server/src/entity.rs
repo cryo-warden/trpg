@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table};
+use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
 
 use crate::action::{action_names, actions, ActionType};
 
@@ -347,6 +347,18 @@ impl<'a> EntityHandle<'a> {
         self.ctx
             .db
             .target_components()
+            .entity_id()
+            .delete(self.entity_id);
+
+        self.ctx
+            .db
+            .entity_prominences()
+            .entity_id()
+            .delete(self.entity_id);
+
+        self.ctx
+            .db
+            .entity_deactivation_timers()
             .entity_id()
             .delete(self.entity_id);
 
@@ -953,4 +965,12 @@ pub struct EntityProminence {
     #[primary_key]
     pub entity_id: u64,
     pub prominence: i32,
+}
+
+#[table(name = entity_deactivation_timers, public)]
+#[derive(Debug, Clone)]
+pub struct EntityDeactivationTimer {
+    #[primary_key]
+    pub entity_id: u64,
+    pub timestamp: Timestamp,
 }

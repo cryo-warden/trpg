@@ -72,6 +72,8 @@ import { EarlyEventsTableHandle } from "./early_events_table.ts";
 export { EarlyEventsTableHandle };
 import { EntitiesTableHandle } from "./entities_table.ts";
 export { EntitiesTableHandle };
+import { EntityDeactivationTimersTableHandle } from "./entity_deactivation_timers_table.ts";
+export { EntityDeactivationTimersTableHandle };
 import { EntityProminencesTableHandle } from "./entity_prominences_table.ts";
 export { EntityProminencesTableHandle };
 import { EpComponentsTableHandle } from "./ep_components_table.ts";
@@ -140,6 +142,8 @@ import { ComponentSet } from "./component_set_type.ts";
 export { ComponentSet };
 import { Entity } from "./entity_type.ts";
 export { Entity };
+import { EntityDeactivationTimer } from "./entity_deactivation_timer_type.ts";
+export { EntityDeactivationTimer };
 import { EntityProminence } from "./entity_prominence_type.ts";
 export { EntityProminence };
 import { EpComponent } from "./ep_component_type.ts";
@@ -225,6 +229,11 @@ const REMOTE_MODULE = {
       tableName: "entities",
       rowType: Entity.getTypeScriptAlgebraicType(),
       primaryKey: "id",
+    },
+    entity_deactivation_timers: {
+      tableName: "entity_deactivation_timers",
+      rowType: EntityDeactivationTimer.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
     },
     entity_prominences: {
       tableName: "entity_prominences",
@@ -556,6 +565,10 @@ export class RemoteTables {
 
   get entities(): EntitiesTableHandle {
     return new EntitiesTableHandle(this.connection.clientCache.getOrCreateTable<Entity>(REMOTE_MODULE.tables.entities));
+  }
+
+  get entityDeactivationTimers(): EntityDeactivationTimersTableHandle {
+    return new EntityDeactivationTimersTableHandle(this.connection.clientCache.getOrCreateTable<EntityDeactivationTimer>(REMOTE_MODULE.tables.entity_deactivation_timers));
   }
 
   get entityProminences(): EntityProminencesTableHandle {

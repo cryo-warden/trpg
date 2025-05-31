@@ -3,9 +3,9 @@ use std::cmp::{max, min};
 use action::{ActionEffect, ActionHandle, ActionType};
 use entity::{
     action_option_components, action_state_component_targets, action_state_components, entities,
-    entity_prominences, ep_components, hp_components, location_components,
-    queued_action_state_components, target_components, ActionOptionComponent, Entity, EntityHandle,
-    InactiveEntityHandle,
+    entity_deactivation_timers, entity_prominences, ep_components, hp_components,
+    location_components, queued_action_state_components, target_components, ActionOptionComponent,
+    Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, middle_event_targets,
@@ -70,8 +70,11 @@ pub fn init(ctx: &ReducerContext) {
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
-        Some(_) => {
-            // TODO Remove logout timer.
+        Some(e) => {
+            ctx.db
+                .entity_deactivation_timers()
+                .entity_id()
+                .delete(e.entity_id);
         }
         None => match InactiveEntityHandle::from_player_identity(ctx) {
             Some(h) => {
@@ -91,9 +94,28 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
     match EntityHandle::from_player_identity(ctx) {
         None => {}
         Some(e) => {
-            // TODO Add a timer to deactivate player. Remove this timer in identity_connected.
-            // Immediate disconnect can be cheesed, as everyone knows.
-            e.deactivate();
+            if ctx
+                .db
+                .entity_deactivation_timers()
+                .entity_id()
+                .find(e.entity_id)
+                .is_none()
+            {
+                match ctx
+                    .timestamp
+                    .checked_add(TimeDuration::from_micros(30000000))
+                {
+                    None => {}
+                    Some(timestamp) => {
+                        ctx.db
+                            .entity_deactivation_timers()
+                            .insert(EntityDeactivationTimer {
+                                entity_id: e.entity_id,
+                                timestamp,
+                            });
+                    }
+                }
+            }
         }
     }
 }
@@ -228,7 +250,6 @@ pub fn shift_queued_action_system(ctx: &ReducerContext) {
     }
 }
 
-// TODO Resolve buffs before attacks to reward perfect defense timing.
 pub fn action_system(ctx: &ReducerContext) {
     for mut action_state in ctx.db.action_state_components().iter() {
         let entity_id = action_state.entity_id;
@@ -341,6 +362,15 @@ pub fn entity_prominence_system(ctx: &ReducerContext) {
     }
 }
 
+pub fn entity_deactivation_system(ctx: &ReducerContext) {
+    for t in ctx.db.entity_deactivation_timers().iter() {
+        if t.timestamp.le(&ctx.timestamp) {
+            EntityHandle::from_id(ctx, t.entity_id).deactivate();
+            ctx.db.entity_deactivation_timers().delete(t);
+        }
+    }
+}
+
 #[reducer]
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
     observable_event_reset_system(ctx);
@@ -352,6 +382,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     target_validation_system(ctx);
     action_option_system(ctx);
     entity_prominence_system(ctx);
+    entity_deactivation_system(ctx);
 
     Ok(())
 }
