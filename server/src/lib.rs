@@ -2,9 +2,10 @@ use std::cmp::{max, min};
 
 use action::{ActionEffect, ActionHandle, ActionType};
 use entity::{
-    action_option_components, action_state_component_targets, action_state_components,
-    ep_components, hp_components, location_components, queued_action_state_components,
-    target_components, ActionOptionComponent, Entity, EntityHandle, InactiveEntityHandle,
+    action_option_components, action_state_component_targets, action_state_components, entities,
+    entity_prominences, ep_components, hp_components, location_components,
+    queued_action_state_components, target_components, ActionOptionComponent, Entity, EntityHandle,
+    InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, middle_event_targets,
@@ -331,6 +332,15 @@ pub fn action_option_system(ctx: &ReducerContext) {
     }
 }
 
+pub fn entity_prominence_system(ctx: &ReducerContext) {
+    for p in ctx.db.entity_prominences().iter() {
+        ctx.db.entity_prominences().delete(p);
+    }
+    for entity in ctx.db.entities().iter() {
+        EntityHandle::from_id(ctx, entity.id).generate_prominence();
+    }
+}
+
 #[reducer]
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
     observable_event_reset_system(ctx);
@@ -341,6 +351,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     shift_queued_action_system(ctx);
     target_validation_system(ctx);
     action_option_system(ctx);
+    entity_prominence_system(ctx);
 
     Ok(())
 }

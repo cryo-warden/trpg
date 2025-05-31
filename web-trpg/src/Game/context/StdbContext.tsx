@@ -47,6 +47,8 @@ const queries = [
   "select * from player_controller_components",
   "select * from queued_action_state_components",
   "select * from target_components",
+
+  "select * from entity_prominences",
 ];
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
@@ -157,7 +159,7 @@ export const usePlayerControllerComponent = () => {
         connection.db.playerControllerComponents.removeOnDelete(refresh);
       };
     },
-    [connection]
+    [connection, identity]
   );
 
   const playerControllerComponent = useSyncExternalStore(
@@ -231,7 +233,7 @@ export const useLocationEntities = (locationEntityId: EntityId | null) => {
       .map((locationComponent) => locationComponent.entityId);
 
   const connection = useStdbConnection();
-  const [entityIds, setEntityIds] = useState(computeEntityIds());
+  const [entityIds, setEntityIds] = useState(computeEntityIds);
 
   useEffect(() => {
     const refresh = () => {
@@ -324,7 +326,7 @@ export const useActionOptions = (targetEntityId: EntityId | null) => {
 
   const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
-  const [actionOptions, setActionOptions] = useState(computeActionIds());
+  const [actionOptions, setActionOptions] = useState(computeActionIds);
 
   useEffect(() => {
     const refresh = () => {
@@ -340,4 +342,29 @@ export const useActionOptions = (targetEntityId: EntityId | null) => {
   }, [connection, setActionOptions, playerEntity, targetEntityId]);
 
   return actionOptions;
+};
+
+export const useEntityProminences = (entityIds: EntityId[]) => {
+  const computeEntityProminences = () =>
+    [...connection.db.entityProminences.iter()].filter((ep) =>
+      entityIds.includes(ep.entityId)
+    );
+
+  const connection = useStdbConnection();
+  const [result, setResult] = useState(computeEntityProminences);
+
+  useEffect(() => {
+    const refresh = () => {
+      setResult(computeEntityProminences());
+    };
+    refresh();
+    connection.db.entityProminences.onInsert(refresh);
+    connection.db.entityProminences.onDelete(refresh);
+    return () => {
+      connection.db.entityProminences.removeOnInsert(refresh);
+      connection.db.entityProminences.removeOnDelete(refresh);
+    };
+  }, [connection, setResult, entityIds]);
+
+  return result;
 };

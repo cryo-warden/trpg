@@ -210,6 +210,48 @@ impl<'a> EntityHandle<'a> {
             })
     }
 
+    pub fn generate_prominence(self) -> Self {
+        let mut prominence = 0;
+        if self
+            .ctx
+            .db
+            .path_components()
+            .entity_id()
+            .find(self.entity_id)
+            .is_some()
+        {
+            prominence |= 1 << 8;
+        }
+        // TODO Add other controller types.
+        if self
+            .ctx
+            .db
+            .player_controller_components()
+            .entity_id()
+            .find(self.entity_id)
+            .is_some()
+        {
+            prominence |= 1 << 7;
+        }
+        if self
+            .ctx
+            .db
+            .hp_components()
+            .entity_id()
+            .find(self.entity_id)
+            .is_some()
+        {
+            prominence |= 1 << 6;
+        }
+
+        self.ctx.db.entity_prominences().insert(EntityProminence {
+            entity_id: self.entity_id,
+            prominence,
+        });
+
+        self
+    }
+
     pub fn delete(self) {
         self.ctx
             .db
@@ -903,4 +945,12 @@ pub struct ActionOptionComponent {
     pub entity_id: u64,
     pub action_id: u64,
     pub target_entity_id: u64,
+}
+
+#[table(name = entity_prominences, public)]
+#[derive(Debug, Clone)]
+pub struct EntityProminence {
+    #[primary_key]
+    pub entity_id: u64,
+    pub prominence: i32,
 }

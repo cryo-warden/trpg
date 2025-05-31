@@ -72,6 +72,8 @@ import { EarlyEventsTableHandle } from "./early_events_table.ts";
 export { EarlyEventsTableHandle };
 import { EntitiesTableHandle } from "./entities_table.ts";
 export { EntitiesTableHandle };
+import { EntityProminencesTableHandle } from "./entity_prominences_table.ts";
+export { EntityProminencesTableHandle };
 import { EpComponentsTableHandle } from "./ep_components_table.ts";
 export { EpComponentsTableHandle };
 import { HpComponentsTableHandle } from "./hp_components_table.ts";
@@ -138,6 +140,8 @@ import { ComponentSet } from "./component_set_type.ts";
 export { ComponentSet };
 import { Entity } from "./entity_type.ts";
 export { Entity };
+import { EntityProminence } from "./entity_prominence_type.ts";
+export { EntityProminence };
 import { EpComponent } from "./ep_component_type.ts";
 export { EpComponent };
 import { Event } from "./event_type.ts";
@@ -221,6 +225,11 @@ const REMOTE_MODULE = {
       tableName: "entities",
       rowType: Entity.getTypeScriptAlgebraicType(),
       primaryKey: "id",
+    },
+    entity_prominences: {
+      tableName: "entity_prominences",
+      rowType: EntityProminence.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
     },
     ep_components: {
       tableName: "ep_components",
@@ -547,6 +556,10 @@ export class RemoteTables {
 
   get entities(): EntitiesTableHandle {
     return new EntitiesTableHandle(this.connection.clientCache.getOrCreateTable<Entity>(REMOTE_MODULE.tables.entities));
+  }
+
+  get entityProminences(): EntityProminencesTableHandle {
+    return new EntityProminencesTableHandle(this.connection.clientCache.getOrCreateTable<EntityProminence>(REMOTE_MODULE.tables.entity_prominences));
   }
 
   get epComponents(): EpComponentsTableHandle {

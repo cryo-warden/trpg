@@ -6,20 +6,12 @@ import { HPBar } from "../EntityPanel/HPBar";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 import { EntityId } from "../trpg";
 import {
+  useEntityProminences,
   useHpComponent,
   useLocation,
   useLocationEntities,
   usePlayerEntity,
 } from "../context/StdbContext";
-
-// WIP
-const weighEntity = (entity: EntityId) => Number(entity);
-// (entity.sequenceController != null && !entity.unconscious ? 1 << 7 : 0) |
-// (entity.path != null ? 1 << 6 : 0) |
-// (entity.mhp != null ? 1 << 5 : 0) |
-// (entity.contents != null ? 1 << 4 : 0) |
-// (entity.equippable != null ? 1 << 3 : 0) |
-// (entity.takeable != null ? 1 << 2 : 0);
 
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
@@ -28,6 +20,19 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const locationEntities = useLocationEntities(location);
   const playerContents = useLocationEntities(playerEntity);
   const hpComponent = useHpComponent(playerEntity);
+  const entities: EntityId[] =
+    mode === "location"
+      ? locationEntities
+      : mode === "inventory"
+      ? playerContents
+      : mode === "equipment"
+      ? [] // WIP Add equipment
+      : [];
+  const entityProminences = useEntityProminences(entities);
+  const sortedEntities = entityProminences
+    .filter((ep) => ep.entityId !== playerEntity)
+    .toSorted((a, b) => b.prominence - a.prominence)
+    .map((ep) => ep.entityId);
 
   if (mode === "stats") {
     if (playerEntity == null) {
@@ -44,18 +49,6 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
       </Panel>
     );
   }
-
-  const entities: EntityId[] =
-    mode === "location"
-      ? locationEntities
-      : mode === "inventory"
-      ? playerContents
-      : mode === "equipment"
-      ? [] // WIP Add equipment
-      : [];
-  const sortedEntities = entities
-    .filter((entity) => entity !== playerEntity)
-    .toSorted((a, b) => weighEntity(b) - weighEntity(a));
 
   // TODO Extend the token concept to also handle references between entities.
   return (
