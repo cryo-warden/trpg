@@ -5,7 +5,6 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -223,42 +222,33 @@ export const useAllegiance = (entityId: EntityId | null) => {
 };
 
 export const useLocationEntities = (locationEntityId: EntityId | null) => {
+  const computeEntityIds = () =>
+    [...connection.db.locationComponents.iter()]
+      .filter(
+        (locationComponent) =>
+          locationComponent.locationEntityId === locationEntityId
+      )
+      .map((locationComponent) => locationComponent.entityId);
+
   const connection = useStdbConnection();
+  const [entityIds, setEntityIds] = useState(computeEntityIds());
 
-  const subscribe = useCallback(
-    (refresh: () => void) => {
-      connection.db.locationComponents.onInsert(refresh);
-      connection.db.locationComponents.onUpdate(refresh);
-      connection.db.locationComponents.onDelete(refresh);
-      return () => {
-        connection.db.locationComponents.removeOnInsert(refresh);
-        connection.db.locationComponents.removeOnUpdate(refresh);
-        connection.db.locationComponents.removeOnDelete(refresh);
-      };
-    },
-    [connection]
-  );
+  useEffect(() => {
+    const refresh = () => {
+      setEntityIds(computeEntityIds());
+    };
+    refresh();
+    connection.db.locationComponents.onInsert(refresh);
+    connection.db.locationComponents.onUpdate(refresh);
+    connection.db.locationComponents.onDelete(refresh);
+    return () => {
+      connection.db.locationComponents.removeOnInsert(refresh);
+      connection.db.locationComponents.removeOnUpdate(refresh);
+      connection.db.locationComponents.removeOnDelete(refresh);
+    };
+  }, [connection, setEntityIds, locationEntityId]);
 
-  const entities = useMemo(
-    () =>
-      [...connection.db.locationComponents.iter()]
-        .filter(
-          (locationComponent) =>
-            locationComponent.locationEntityId === locationEntityId
-        )
-        .map((locationComponent) => locationComponent.entityId),
-    [connection, locationEntityId]
-  );
-
-  const entitiesSync = useSyncExternalStore(subscribe, () => entities);
-
-  return entitiesSync;
-};
-
-export const useAllActions = () => {
-  const connection = useStdbConnection();
-
-  return [...connection.db.actions.iter()];
+  return entityIds;
 };
 
 export const useActionName = (actionId: ActionId) => {
@@ -340,6 +330,7 @@ export const useActionOptions = (targetEntityId: EntityId | null) => {
     const refresh = () => {
       setActionOptions(computeActionIds());
     };
+    refresh();
     connection.db.actionOptionComponents.onInsert(refresh);
     connection.db.actionOptionComponents.onDelete(refresh);
     return () => {
