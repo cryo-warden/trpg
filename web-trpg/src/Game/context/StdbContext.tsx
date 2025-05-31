@@ -2,11 +2,9 @@ import {
   Context,
   createContext,
   ReactNode,
-  useCallback,
   useContext,
   useEffect,
   useState,
-  useSyncExternalStore,
 } from "react";
 import { DbConnection, RemoteTables } from "../../stdb";
 import { Identity } from "@clockworklabs/spacetimedb-sdk";
@@ -94,81 +92,99 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
   return null;
 };
 
-type ComponentType<T extends keyof RemoteTables> = RemoteTables[T] extends {
-  entityId: infer ID;
+type RowType<T extends keyof RemoteTables> = RemoteTables[T] extends {
+  iter: () => Iterable<infer R>;
 }
-  ? ID extends { find: infer F }
-    ? F extends (...args: any[]) => infer R
-      ? Exclude<R, undefined>
-      : never
-    : never
+  ? R
   : never;
 
-export type A = ComponentType<"hpComponents">;
+// In React hook deps, treat any empty array as the same empty array.
+const emptyGuard: any = [];
+const guardEmpty = <T,>(value: T): T => {
+  if (Array.isArray(value) && value.length <= 0) {
+    return emptyGuard;
+  }
+  return value;
+};
+
+export const useTableData = <
+  T extends keyof RemoteTables,
+  F extends (table: RemoteTables[T]) => any
+>(
+  tableName: T,
+  compute: F,
+  deps: any[]
+): ReturnType<F> => {
+  const connection = useStdbConnection();
+  const [result, setResult] = useState(() => compute(connection.db[tableName]));
+
+  useEffect(() => {
+    const refresh = () => {
+      setResult(compute(connection.db[tableName]));
+    };
+    refresh();
+    connection.db[tableName].onInsert(refresh);
+    connection.db[tableName].onDelete(refresh);
+    if ("onUpdate" in connection.db[tableName]) {
+      connection.db[tableName].onUpdate(refresh);
+    }
+    return () => {
+      connection.db[tableName].removeOnInsert(refresh);
+      connection.db[tableName].removeOnDelete(refresh);
+      if ("removeOnUpdate" in connection.db[tableName]) {
+        connection.db[tableName].removeOnUpdate(refresh);
+      }
+    };
+  }, [connection, setResult, ...deps.map(guardEmpty)]);
+
+  return result;
+};
+
+export const useTable = <T extends keyof RemoteTables>(tableName: T) => {
+  return useTableData(
+    tableName,
+    (table): RowType<T>[] => [...table.iter()],
+    []
+  );
+};
+
+export const useTableSet = <T extends keyof RemoteTables>(tableName: T) => {
+  return useTableData(
+    tableName,
+    (table): Set<RowType<T>> => new Set(...table.iter()),
+    []
+  );
+};
 
 export const useComponent =
-  <T extends keyof RemoteTables>(table: T) =>
-  (entityId: EntityId | null): ComponentType<T> | null => {
-    const connection = useStdbConnection();
-
-    if ((connection.db[table] as any).entityId == null) {
-      throw new Error(
-        `Table "${table}" used with useComponent does not have an entityId unique index.`
-      );
-    }
-
-    const subscribe = useCallback(
-      (refresh: () => void) => {
-        connection.db[table].onInsert(refresh);
-        if ("onUpdate" in connection.db[table]) {
-          (connection.db[table].onUpdate as any)(refresh);
+  <T extends keyof RemoteTables>(tableName: T) =>
+  (entityId: EntityId | null): RowType<T> | null => {
+    return useTableData(
+      tableName,
+      (table): RowType<T> | null => {
+        if (!("entityId" in table)) {
+          throw new Error(
+            `Table "${tableName}" used with useComponent does not have an entityId unique index.`
+          );
         }
-        connection.db[table].onDelete(refresh);
-        return () => {
-          connection.db[table].removeOnInsert(refresh);
-          if ("removeOnUpdate" in connection.db[table]) {
-            (connection.db[table].removeOnUpdate as any)(refresh);
-          }
-          connection.db[table].removeOnDelete(refresh);
-        };
+
+        if (entityId == null) {
+          return null;
+        }
+
+        return (table.entityId.find(entityId) as any) ?? null;
       },
-      [connection]
+      [entityId]
     );
-
-    const component = useSyncExternalStore(subscribe, () =>
-      entityId == null
-        ? null
-        : (connection.db[table] as any).entityId.find(entityId) ?? null
-    );
-
-    return component;
   };
 
 export const usePlayerControllerComponent = () => {
-  const connection = useStdbConnection();
   const identity = useStdbIdentity();
-
-  const subscribe = useCallback(
-    (refresh: () => void) => {
-      connection.db.playerControllerComponents.onInsert(refresh);
-      connection.db.playerControllerComponents.onUpdate(refresh);
-      connection.db.playerControllerComponents.onDelete(refresh);
-      return () => {
-        connection.db.playerControllerComponents.removeOnInsert(refresh);
-        connection.db.playerControllerComponents.removeOnUpdate(refresh);
-        connection.db.playerControllerComponents.removeOnDelete(refresh);
-      };
-    },
-    [connection, identity]
+  return useTableData(
+    "playerControllerComponents",
+    (table) => table.identity.find(identity) ?? null,
+    [identity]
   );
-
-  const playerControllerComponent = useSyncExternalStore(
-    subscribe,
-    () =>
-      connection.db.playerControllerComponents.identity.find(identity) ?? null
-  );
-
-  return playerControllerComponent;
 };
 
 export const usePlayerEntity = (): EntityId | null => {
@@ -224,83 +240,34 @@ export const useAllegiance = (entityId: EntityId | null) => {
 };
 
 export const useLocationEntities = (locationEntityId: EntityId | null) => {
-  const computeEntityIds = () =>
-    [...connection.db.locationComponents.iter()]
-      .filter(
-        (locationComponent) =>
-          locationComponent.locationEntityId === locationEntityId
-      )
-      .map((locationComponent) => locationComponent.entityId);
-
-  const connection = useStdbConnection();
-  const [entityIds, setEntityIds] = useState(computeEntityIds);
-
-  useEffect(() => {
-    const refresh = () => {
-      setEntityIds(computeEntityIds());
-    };
-    refresh();
-    connection.db.locationComponents.onInsert(refresh);
-    connection.db.locationComponents.onUpdate(refresh);
-    connection.db.locationComponents.onDelete(refresh);
-    return () => {
-      connection.db.locationComponents.removeOnInsert(refresh);
-      connection.db.locationComponents.removeOnUpdate(refresh);
-      connection.db.locationComponents.removeOnDelete(refresh);
-    };
-  }, [connection, setEntityIds, locationEntityId]);
-
-  return entityIds;
+  return useTableData(
+    "locationComponents",
+    (table) =>
+      [...table.iter()]
+        .filter(
+          (locationComponent) =>
+            locationComponent.locationEntityId === locationEntityId
+        )
+        .map((locationComponent) => locationComponent.entityId),
+    [locationEntityId]
+  );
 };
 
 export const useActionName = (actionId: ActionId) => {
-  const connection = useStdbConnection();
-
-  const subscribe = useCallback(
-    (refresh: () => void) => {
-      connection.db.actionNames.onInsert(refresh);
-      connection.db.actionNames.onUpdate(refresh);
-      connection.db.actionNames.onDelete(refresh);
-      return () => {
-        connection.db.actionNames.removeOnInsert(refresh);
-        connection.db.actionNames.removeOnUpdate(refresh);
-        connection.db.actionNames.removeOnDelete(refresh);
-      };
-    },
-    [connection]
+  return useTableData(
+    "actionNames",
+    (table) => table.actionId.find(actionId)?.name ?? null,
+    [actionId]
   );
-
-  const actionName = useSyncExternalStore(
-    subscribe,
-    () => connection.db.actionNames.actionId.find(actionId) ?? null
-  );
-  if (actionName == null) {
-    return null;
-  }
-
-  return actionName.name;
 };
 
 export const useActionHotkey = (actionId: ActionId) => {
-  const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
 
-  const subscribe = useCallback(
-    (refresh: () => void) => {
-      connection.db.actionHotkeyComponents.onInsert(refresh);
-      connection.db.actionHotkeyComponents.onDelete(refresh);
-      return () => {
-        connection.db.actionHotkeyComponents.removeOnInsert(refresh);
-        connection.db.actionHotkeyComponents.removeOnDelete(refresh);
-      };
-    },
-    [connection]
-  );
-
-  const actionHotkey = useSyncExternalStore(
-    subscribe,
-    () =>
-      [...connection.db.actionHotkeyComponents.iter()]
+  return useTableData(
+    "actionHotkeyComponents",
+    (table) =>
+      [...table.iter()]
         .filter(
           (actionHotkeyComponent) =>
             actionHotkeyComponent.entityId === playerEntity &&
@@ -308,63 +275,37 @@ export const useActionHotkey = (actionId: ActionId) => {
         )
         .map((actionHotkeyComponent) =>
           String.fromCharCode(actionHotkeyComponent.characterCode)
-        )[0] ?? null
+        )[0] ?? null,
+    [playerEntity, actionId]
   );
-
-  return actionHotkey;
 };
 
 export const useActionOptions = (targetEntityId: EntityId | null) => {
-  const computeActionIds = () =>
-    [...connection.db.actionOptionComponents.iter()]
-      .filter(
-        (actionOptionComponent) =>
-          actionOptionComponent.entityId === playerEntity &&
-          actionOptionComponent.targetEntityId === targetEntityId
-      )
-      .map((actionOptionComponent) => actionOptionComponent.actionId);
-
-  const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
-  const [actionOptions, setActionOptions] = useState(computeActionIds);
 
-  useEffect(() => {
-    const refresh = () => {
-      setActionOptions(computeActionIds());
-    };
-    refresh();
-    connection.db.actionOptionComponents.onInsert(refresh);
-    connection.db.actionOptionComponents.onDelete(refresh);
-    return () => {
-      connection.db.actionOptionComponents.removeOnInsert(refresh);
-      connection.db.actionOptionComponents.removeOnDelete(refresh);
-    };
-  }, [connection, setActionOptions, playerEntity, targetEntityId]);
-
-  return actionOptions;
+  return useTableData(
+    "actionOptionComponents",
+    (table) =>
+      [...table.iter()]
+        .filter(
+          (actionOptionComponent) =>
+            actionOptionComponent.entityId === playerEntity &&
+            actionOptionComponent.targetEntityId === targetEntityId
+        )
+        .map((actionOptionComponent) => actionOptionComponent.actionId),
+    [targetEntityId, playerEntity]
+  );
 };
 
 export const useEntityProminences = (entityIds: EntityId[]) => {
-  const computeEntityProminences = () =>
-    [...connection.db.entityProminences.iter()].filter((ep) =>
-      entityIds.includes(ep.entityId)
-    );
-
-  const connection = useStdbConnection();
-  const [result, setResult] = useState(computeEntityProminences);
-
-  useEffect(() => {
-    const refresh = () => {
-      setResult(computeEntityProminences());
-    };
-    refresh();
-    connection.db.entityProminences.onInsert(refresh);
-    connection.db.entityProminences.onDelete(refresh);
-    return () => {
-      connection.db.entityProminences.removeOnInsert(refresh);
-      connection.db.entityProminences.removeOnDelete(refresh);
-    };
-  }, [connection, setResult, entityIds]);
-
-  return result;
+  return useTableData(
+    "entityProminences",
+    (table) => {
+      const m = new Map([...table.iter()].map((ep) => [ep.entityId, ep]));
+      return entityIds.map((id) => {
+        return m.get(id) ?? { entityId: id, prominence: -Infinity };
+      });
+    },
+    [entityIds]
+  );
 };
