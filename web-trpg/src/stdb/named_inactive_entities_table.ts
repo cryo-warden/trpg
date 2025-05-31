@@ -30,23 +30,25 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { EpComponent } from "./ep_component_type";
+import { NamedInactiveEntity } from "./named_inactive_entity_type";
+import { ComponentSet as __ComponentSet } from "./component_set_type";
+
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `inactive_ep_components`.
+ * Table handle for the table `named_inactive_entities`.
  *
- * Obtain a handle from the [`inactiveEpComponents`] property on [`RemoteTables`],
- * like `ctx.db.inactiveEpComponents`.
+ * Obtain a handle from the [`namedInactiveEntities`] property on [`RemoteTables`],
+ * like `ctx.db.namedInactiveEntities`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.inactiveEpComponents.on_insert(...)`.
+ * like `ctx.db.namedInactiveEntities.on_insert(...)`.
  */
-export class InactiveEpComponentsTableHandle {
-  tableCache: TableCache<EpComponent>;
+export class NamedInactiveEntitiesTableHandle {
+  tableCache: TableCache<NamedInactiveEntity>;
 
-  constructor(tableCache: TableCache<EpComponent>) {
+  constructor(tableCache: TableCache<NamedInactiveEntity>) {
     this.tableCache = tableCache;
   }
 
@@ -54,53 +56,53 @@ export class InactiveEpComponentsTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<EpComponent> {
+  iter(): Iterable<NamedInactiveEntity> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `entityId` unique index on the table `inactive_ep_components`,
+   * Access to the `prefabName` unique index on the table `named_inactive_entities`,
    * which allows point queries on the field of the same name
-   * via the [`InactiveEpComponentsEntityIdUnique.find`] method.
+   * via the [`NamedInactiveEntitiesPrefabNameUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.inactiveEpComponents.entityId().find(...)`.
+   * like `ctx.db.namedInactiveEntities.prefabName().find(...)`.
    *
-   * Get a handle on the `entityId` unique index on the table `inactive_ep_components`.
+   * Get a handle on the `prefabName` unique index on the table `named_inactive_entities`.
    */
-  entityId = {
-    // Find the subscribed row whose `entityId` column value is equal to `col_val`,
+  prefabName = {
+    // Find the subscribed row whose `prefabName` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): EpComponent | undefined => {
+    find: (col_val: string): NamedInactiveEntity | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.entityId, col_val)) {
+        if (deepEqual(row.prefabName, col_val)) {
           return row;
         }
       }
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: EpComponent) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: NamedInactiveEntity) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: EpComponent) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: NamedInactiveEntity) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: EpComponent) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: NamedInactiveEntity) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: EpComponent) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: NamedInactiveEntity) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: EpComponent, newRow: EpComponent) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: NamedInactiveEntity, newRow: NamedInactiveEntity) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: EpComponent, newRow: EpComponent) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: NamedInactiveEntity, newRow: NamedInactiveEntity) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

@@ -30,23 +30,25 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { Entity } from "./entity_type";
+import { IdentityInactiveEntity } from "./identity_inactive_entity_type";
+import { ComponentSet as __ComponentSet } from "./component_set_type";
+
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `inactive_entities`.
+ * Table handle for the table `identity_inactive_entities`.
  *
- * Obtain a handle from the [`inactiveEntities`] property on [`RemoteTables`],
- * like `ctx.db.inactiveEntities`.
+ * Obtain a handle from the [`identityInactiveEntities`] property on [`RemoteTables`],
+ * like `ctx.db.identityInactiveEntities`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.inactiveEntities.on_insert(...)`.
+ * like `ctx.db.identityInactiveEntities.on_insert(...)`.
  */
-export class InactiveEntitiesTableHandle {
-  tableCache: TableCache<Entity>;
+export class IdentityInactiveEntitiesTableHandle {
+  tableCache: TableCache<IdentityInactiveEntity>;
 
-  constructor(tableCache: TableCache<Entity>) {
+  constructor(tableCache: TableCache<IdentityInactiveEntity>) {
     this.tableCache = tableCache;
   }
 
@@ -54,53 +56,45 @@ export class InactiveEntitiesTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<Entity> {
+  iter(): Iterable<IdentityInactiveEntity> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `id` unique index on the table `inactive_entities`,
+   * Access to the `identity` unique index on the table `identity_inactive_entities`,
    * which allows point queries on the field of the same name
-   * via the [`InactiveEntitiesIdUnique.find`] method.
+   * via the [`IdentityInactiveEntitiesIdentityUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.inactiveEntities.id().find(...)`.
+   * like `ctx.db.identityInactiveEntities.identity().find(...)`.
    *
-   * Get a handle on the `id` unique index on the table `inactive_entities`.
+   * Get a handle on the `identity` unique index on the table `identity_inactive_entities`.
    */
-  id = {
-    // Find the subscribed row whose `id` column value is equal to `col_val`,
+  identity = {
+    // Find the subscribed row whose `identity` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): Entity | undefined => {
+    find: (col_val: Identity): IdentityInactiveEntity | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.id, col_val)) {
+        if (deepEqual(row.identity, col_val)) {
           return row;
         }
       }
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: Entity) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: IdentityInactiveEntity) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: Entity) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: IdentityInactiveEntity) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: Entity) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: IdentityInactiveEntity) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: Entity) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: IdentityInactiveEntity) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
-
-  // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: Entity, newRow: Entity) => void) => {
-    return this.tableCache.onUpdate(cb);
-  }
-
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: Entity, newRow: Entity) => void) => {
-    return this.tableCache.removeOnUpdate(cb);
-  }}
+}

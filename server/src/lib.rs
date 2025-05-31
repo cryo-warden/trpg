@@ -86,8 +86,15 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer(client_disconnected)]
-pub fn identity_disconnected(_ctx: &ReducerContext) {
-    // TODO Add a timer to deactivate player. Remove this timer in identity_connected.
+pub fn identity_disconnected(ctx: &ReducerContext) {
+    match EntityHandle::from_player_identity(ctx) {
+        None => {}
+        Some(e) => {
+            // TODO Add a timer to deactivate player. Remove this timer in identity_connected.
+            // Immediate disconnect can be cheesed, as everyone knows.
+            e.deactivate();
+        }
+    }
 }
 
 #[reducer]

@@ -76,14 +76,8 @@ import { EpComponentsTableHandle } from "./ep_components_table.ts";
 export { EpComponentsTableHandle };
 import { HpComponentsTableHandle } from "./hp_components_table.ts";
 export { HpComponentsTableHandle };
-import { InactiveEntitiesTableHandle } from "./inactive_entities_table.ts";
-export { InactiveEntitiesTableHandle };
-import { InactiveEpComponentsTableHandle } from "./inactive_ep_components_table.ts";
-export { InactiveEpComponentsTableHandle };
-import { InactiveHpComponentsTableHandle } from "./inactive_hp_components_table.ts";
-export { InactiveHpComponentsTableHandle };
-import { InactivePlayerControllerComponentsTableHandle } from "./inactive_player_controller_components_table.ts";
-export { InactivePlayerControllerComponentsTableHandle };
+import { IdentityInactiveEntitiesTableHandle } from "./identity_inactive_entities_table.ts";
+export { IdentityInactiveEntitiesTableHandle };
 import { LateEventTargetsTableHandle } from "./late_event_targets_table.ts";
 export { LateEventTargetsTableHandle };
 import { LateEventsTableHandle } from "./late_events_table.ts";
@@ -96,6 +90,8 @@ import { MiddleEventsTableHandle } from "./middle_events_table.ts";
 export { MiddleEventsTableHandle };
 import { NameComponentsTableHandle } from "./name_components_table.ts";
 export { NameComponentsTableHandle };
+import { NamedInactiveEntitiesTableHandle } from "./named_inactive_entities_table.ts";
+export { NamedInactiveEntitiesTableHandle };
 import { ObservableEventTargetsTableHandle } from "./observable_event_targets_table.ts";
 export { ObservableEventTargetsTableHandle };
 import { ObservableEventsTableHandle } from "./observable_events_table.ts";
@@ -138,6 +134,8 @@ import { AllegianceComponent } from "./allegiance_component_type.ts";
 export { AllegianceComponent };
 import { Buff } from "./buff_type.ts";
 export { Buff };
+import { ComponentSet } from "./component_set_type.ts";
+export { ComponentSet };
 import { Entity } from "./entity_type.ts";
 export { Entity };
 import { EpComponent } from "./ep_component_type.ts";
@@ -150,10 +148,14 @@ import { EventType } from "./event_type_type.ts";
 export { EventType };
 import { HpComponent } from "./hp_component_type.ts";
 export { HpComponent };
+import { IdentityInactiveEntity } from "./identity_inactive_entity_type.ts";
+export { IdentityInactiveEntity };
 import { LocationComponent } from "./location_component_type.ts";
 export { LocationComponent };
 import { NameComponent } from "./name_component_type.ts";
 export { NameComponent };
+import { NamedInactiveEntity } from "./named_inactive_entity_type.ts";
+export { NamedInactiveEntity };
 import { PathComponent } from "./path_component_type.ts";
 export { PathComponent };
 import { PlayerControllerComponent } from "./player_controller_component_type.ts";
@@ -230,25 +232,9 @@ const REMOTE_MODULE = {
       rowType: HpComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
-    inactive_entities: {
-      tableName: "inactive_entities",
-      rowType: Entity.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
-    },
-    inactive_ep_components: {
-      tableName: "inactive_ep_components",
-      rowType: EpComponent.getTypeScriptAlgebraicType(),
-      primaryKey: "entityId",
-    },
-    inactive_hp_components: {
-      tableName: "inactive_hp_components",
-      rowType: HpComponent.getTypeScriptAlgebraicType(),
-      primaryKey: "entityId",
-    },
-    inactive_player_controller_components: {
-      tableName: "inactive_player_controller_components",
-      rowType: PlayerControllerComponent.getTypeScriptAlgebraicType(),
-      primaryKey: "entityId",
+    identity_inactive_entities: {
+      tableName: "identity_inactive_entities",
+      rowType: IdentityInactiveEntity.getTypeScriptAlgebraicType(),
     },
     late_event_targets: {
       tableName: "late_event_targets",
@@ -277,6 +263,11 @@ const REMOTE_MODULE = {
       tableName: "name_components",
       rowType: NameComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
+    },
+    named_inactive_entities: {
+      tableName: "named_inactive_entities",
+      rowType: NamedInactiveEntity.getTypeScriptAlgebraicType(),
+      primaryKey: "prefabName",
     },
     observable_event_targets: {
       tableName: "observable_event_targets",
@@ -566,20 +557,8 @@ export class RemoteTables {
     return new HpComponentsTableHandle(this.connection.clientCache.getOrCreateTable<HpComponent>(REMOTE_MODULE.tables.hp_components));
   }
 
-  get inactiveEntities(): InactiveEntitiesTableHandle {
-    return new InactiveEntitiesTableHandle(this.connection.clientCache.getOrCreateTable<Entity>(REMOTE_MODULE.tables.inactive_entities));
-  }
-
-  get inactiveEpComponents(): InactiveEpComponentsTableHandle {
-    return new InactiveEpComponentsTableHandle(this.connection.clientCache.getOrCreateTable<EpComponent>(REMOTE_MODULE.tables.inactive_ep_components));
-  }
-
-  get inactiveHpComponents(): InactiveHpComponentsTableHandle {
-    return new InactiveHpComponentsTableHandle(this.connection.clientCache.getOrCreateTable<HpComponent>(REMOTE_MODULE.tables.inactive_hp_components));
-  }
-
-  get inactivePlayerControllerComponents(): InactivePlayerControllerComponentsTableHandle {
-    return new InactivePlayerControllerComponentsTableHandle(this.connection.clientCache.getOrCreateTable<PlayerControllerComponent>(REMOTE_MODULE.tables.inactive_player_controller_components));
+  get identityInactiveEntities(): IdentityInactiveEntitiesTableHandle {
+    return new IdentityInactiveEntitiesTableHandle(this.connection.clientCache.getOrCreateTable<IdentityInactiveEntity>(REMOTE_MODULE.tables.identity_inactive_entities));
   }
 
   get lateEventTargets(): LateEventTargetsTableHandle {
@@ -604,6 +583,10 @@ export class RemoteTables {
 
   get nameComponents(): NameComponentsTableHandle {
     return new NameComponentsTableHandle(this.connection.clientCache.getOrCreateTable<NameComponent>(REMOTE_MODULE.tables.name_components));
+  }
+
+  get namedInactiveEntities(): NamedInactiveEntitiesTableHandle {
+    return new NamedInactiveEntitiesTableHandle(this.connection.clientCache.getOrCreateTable<NamedInactiveEntity>(REMOTE_MODULE.tables.named_inactive_entities));
   }
 
   get observableEventTargets(): ObservableEventTargetsTableHandle {

@@ -1,9 +1,34 @@
 use derive_builder::Builder;
-use spacetimedb::{table, Identity, ReducerContext, Table};
+use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table};
 
 use crate::action::{action_names, actions, ActionType};
 
-#[table(name = inactive_entities, public)]
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct ComponentSet {
+    pub hp_component: Option<HpComponent>,
+    pub ep_component: Option<EpComponent>,
+    pub action_components: Vec<ActionComponent>,
+    pub action_hotkey_components: Vec<ActionHotkeyComponent>,
+    pub allegiance_component: Option<AllegianceComponent>,
+    pub player_controller_component: Option<PlayerControllerComponent>,
+}
+
+#[table(name = named_inactive_entities)]
+#[derive(Debug, Clone)]
+pub struct NamedInactiveEntity {
+    #[primary_key]
+    pub prefab_name: String,
+    pub component_set: ComponentSet,
+}
+
+#[table(name = identity_inactive_entities)]
+#[derive(Debug, Clone)]
+pub struct IdentityInactiveEntity {
+    #[unique]
+    pub identity: Identity,
+    pub component_set: ComponentSet,
+}
+
 #[table(name = entities, public)]
 #[derive(Debug, Clone)]
 pub struct Entity {
@@ -43,51 +68,103 @@ impl Entity {
 
 pub struct InactiveEntityHandle<'a> {
     pub ctx: &'a ReducerContext,
-    pub entity_id: u64,
+    pub name: Option<String>,
+    pub identity: Option<Identity>,
+    pub component_set: ComponentSet,
 }
 
 #[allow(dead_code)]
 impl<'a> InactiveEntityHandle<'a> {
-    pub fn new(ctx: &'a ReducerContext) -> Self {
-        let entity = ctx.db.inactive_entities().insert(Entity { id: 0 });
-        Self {
-            ctx,
-            entity_id: entity.id,
-        }
-    }
-
-    pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
-        Self { ctx, entity_id }
+    pub fn from_prefab_name(ctx: &'a ReducerContext, prefab_name: &str) -> Option<Self> {
+        ctx.db
+            .named_inactive_entities()
+            .prefab_name()
+            .find(prefab_name.to_string())
+            .map(|i| Self {
+                ctx,
+                name: Some(prefab_name.to_string()),
+                identity: None,
+                component_set: i.component_set,
+            })
     }
 
     pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
         ctx.db
-            .inactive_player_controller_components()
+            .identity_inactive_entities()
             .identity()
             .find(ctx.sender)
-            .map(|p| Self {
+            .map(|i| Self {
                 ctx,
-                entity_id: p.entity_id,
+                name: None,
+                identity: Some(ctx.sender),
+                component_set: i.component_set,
             })
     }
 
     pub fn activate(self) -> EntityHandle<'a> {
-        // TODO Delete entity from inactive space with a builder::delete method.
         let e = EntityHandle::new(self.ctx);
-        match self
-            .ctx
-            .db
-            .inactive_hp_components()
-            .entity_id()
-            .find(self.entity_id)
-        {
+        for mut c in self.component_set.action_components {
+            c.entity_id = e.entity_id;
+            self.ctx.db.action_components().insert(c);
+        }
+        for mut c in self.component_set.action_hotkey_components {
+            c.entity_id = e.entity_id;
+            self.ctx.db.action_hotkey_components().insert(c);
+        }
+        match self.component_set.allegiance_component {
             None => {}
-            Some(mut hp) => {
-                hp.entity_id = e.entity_id;
-                self.ctx.db.hp_components().insert(hp);
+            Some(mut c) => {
+                c.entity_id = e.entity_id;
+                self.ctx.db.allegiance_components().insert(c);
             }
-        };
-        // TODO Transfer all components similar to how hp is transfered above.
+        }
+        match self.component_set.ep_component {
+            None => {}
+            Some(mut c) => {
+                c.entity_id = e.entity_id;
+                self.ctx.db.ep_components().insert(c);
+            }
+        }
+        match self.component_set.hp_component {
+            None => {}
+            Some(mut c) => {
+                c.entity_id = e.entity_id;
+                self.ctx.db.hp_components().insert(c);
+            }
+        }
+        match self.component_set.player_controller_component {
+            None => {}
+            Some(mut c) => {
+                c.entity_id = e.entity_id;
+                self.ctx.db.player_controller_components().insert(c);
+            }
+        }
+
+        match self.name {
+            Some(prefab_name) => {
+                self.ctx
+                    .db
+                    .named_inactive_entities()
+                    .prefab_name()
+                    .delete(prefab_name);
+            }
+            None => match self.identity {
+                Some(identity) => {
+                    self.ctx
+                        .db
+                        .identity_inactive_entities()
+                        .identity()
+                        .delete(identity);
+
+                    return match EntityHandle::from_name(self.ctx, "room1") {
+                        Some(l) => e.add_location(l.entity_id),
+                        None => e,
+                    };
+                }
+                None => {}
+            },
+        }
+
         e
     }
 }
@@ -133,17 +210,185 @@ impl<'a> EntityHandle<'a> {
             })
     }
 
+    pub fn delete(self) {
+        self.ctx
+            .db
+            .action_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .action_hotkey_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .action_option_components()
+            .entity_id()
+            .delete(self.entity_id);
+
+        match self
+            .ctx
+            .db
+            .action_state_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            Some(a) => {
+                self.ctx
+                    .db
+                    .action_state_component_targets()
+                    .action_state_component_id()
+                    .delete(a.id);
+                self.ctx.db.action_state_components().id().delete(a.id);
+            }
+            None => {}
+        }
+
+        match self
+            .ctx
+            .db
+            .queued_action_state_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            Some(a) => {
+                self.ctx
+                    .db
+                    .queued_action_state_component_targets()
+                    .action_state_component_id()
+                    .delete(a.id);
+                self.ctx
+                    .db
+                    .queued_action_state_components()
+                    .id()
+                    .delete(a.id);
+            }
+            None => {}
+        }
+
+        self.ctx
+            .db
+            .allegiance_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .ep_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .hp_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .location_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .name_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .path_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .player_controller_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .target_components()
+            .entity_id()
+            .delete(self.entity_id);
+
+        self.ctx.db.entities().id().delete(self.entity_id);
+    }
+
+    pub fn deactivate(self) {
+        let component_set = ComponentSet {
+            action_components: self
+                .ctx
+                .db
+                .action_components()
+                .entity_id()
+                .filter(self.entity_id)
+                .collect(),
+            action_hotkey_components: self
+                .ctx
+                .db
+                .action_hotkey_components()
+                .entity_id()
+                .filter(self.entity_id)
+                .collect(),
+            allegiance_component: self
+                .ctx
+                .db
+                .allegiance_components()
+                .entity_id()
+                .find(self.entity_id),
+            hp_component: self.ctx.db.hp_components().entity_id().find(self.entity_id),
+            ep_component: self.ctx.db.ep_components().entity_id().find(self.entity_id),
+            player_controller_component: self
+                .ctx
+                .db
+                .player_controller_components()
+                .entity_id()
+                .find(self.entity_id),
+        };
+        match self
+            .ctx
+            .db
+            .player_controller_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            Some(p) => {
+                self.ctx
+                    .db
+                    .identity_inactive_entities()
+                    .insert(IdentityInactiveEntity {
+                        identity: p.identity,
+                        component_set,
+                    });
+            }
+            None => {
+                match self
+                    .ctx
+                    .db
+                    .name_components()
+                    .entity_id()
+                    .find(self.entity_id)
+                {
+                    Some(n) => {
+                        self.ctx
+                            .db
+                            .named_inactive_entities()
+                            .insert(NamedInactiveEntity {
+                                prefab_name: n.name,
+                                component_set,
+                            });
+                    }
+                    None => {}
+                }
+            }
+        }
+
+        self.delete();
+    }
+
     pub fn set_name(self, name: &str) -> Self {
         self.ctx.db.name_components().insert(NameComponent {
             entity_id: self.entity_id,
             name: name.to_string(),
         });
         self
-    }
-
-    pub fn deactivate(self) -> InactiveEntityHandle<'a> {
-        // TODO Delete entity from active space with a builder::delete method.
-        InactiveEntityHandle::new(self.ctx)
     }
 
     pub fn set_target(self, target_entity_id: u64) -> Self {
@@ -544,7 +789,6 @@ pub struct AllegianceComponent {
     pub allegiance_entity_id: u64,
 }
 
-#[table(name = inactive_hp_components, public)]
 #[table(name = hp_components, public)]
 #[derive(Debug, Clone, Builder)]
 pub struct HpComponent {
@@ -582,7 +826,6 @@ impl HpComponent {
     }
 }
 
-#[table(name = inactive_ep_components, public)]
 #[table(name = ep_components, public)]
 #[derive(Debug, Clone, Builder)]
 pub struct EpComponent {
@@ -592,7 +835,6 @@ pub struct EpComponent {
     pub mep: i32,
 }
 
-#[table(name = inactive_player_controller_components, public)]
 #[table(name = player_controller_components, public)]
 #[derive(Debug, Clone, Builder)]
 pub struct PlayerControllerComponent {
