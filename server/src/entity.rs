@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 use spacetimedb::{table, Identity, ReducerContext, Table};
 
-use crate::action::{actions, ActionType};
+use crate::action::{action_names, actions, ActionType};
 
 #[table(name = inactive_entities, public)]
 #[table(name = entities, public)]
@@ -13,21 +13,31 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn new_player(ctx: &ReducerContext) {
+    pub fn new_player(ctx: &ReducerContext) -> Result<(), String> {
         EntityHandle::new(ctx)
-            .set_allegiance(1) // WIP Compute correct allegiance via name lookup
-            .add_location(3) // WIP Compute correct spawn location.
+            .set_allegiance(
+                EntityHandle::from_name(ctx, "allegiance1")
+                    .ok_or("Cannot find starting allegiance.")?
+                    .entity_id,
+            )
+            .add_location(
+                EntityHandle::from_name(ctx, "room1")
+                    .ok_or("Cannot find starting room.")?
+                    .entity_id,
+            )
             .add_hp(10)
             .add_ep(10)
             .add_player_controller(ctx.sender)
-            .add_action(1)
-            .set_hotkey(1, 'b')
-            .add_action(2)
-            .set_hotkey(2, 'v')
-            .add_action(3)
-            .set_hotkey(3, 'm')
-            .add_action(4)
-            .set_hotkey(4, 'h');
+            .add_action("bop")
+            .set_hotkey("bop", 'b')
+            .add_action("boppity_bop")
+            .set_hotkey("boppity_bop", 'v')
+            .add_action("quick_move")
+            .set_hotkey("quick_move", 'm')
+            .add_action("divine_heal")
+            .set_hotkey("divine_heal", 'h');
+
+        Ok(())
     }
 }
 
@@ -110,6 +120,25 @@ impl<'a> EntityHandle<'a> {
                 ctx,
                 entity_id: p.entity_id,
             })
+    }
+
+    pub fn from_name(ctx: &'a ReducerContext, name: &str) -> Option<Self> {
+        ctx.db
+            .name_components()
+            .name()
+            .find(name.to_string())
+            .map(|n| Self {
+                ctx,
+                entity_id: n.entity_id,
+            })
+    }
+
+    pub fn set_name(self, name: &str) -> Self {
+        self.ctx.db.name_components().insert(NameComponent {
+            entity_id: self.entity_id,
+            name: name.to_string(),
+        });
+        self
     }
 
     pub fn deactivate(self) -> InactiveEntityHandle<'a> {
@@ -240,11 +269,22 @@ impl<'a> EntityHandle<'a> {
         }
     }
 
-    pub fn add_action(self, action_id: u64) -> Self {
-        self.ctx.db.action_components().insert(ActionComponent {
-            entity_id: self.entity_id,
-            action_id,
-        });
+    pub fn add_action(self, action_name: &str) -> Self {
+        match self
+            .ctx
+            .db
+            .action_names()
+            .name()
+            .find(action_name.to_string())
+        {
+            None => {}
+            Some(action_name) => {
+                self.ctx.db.action_components().insert(ActionComponent {
+                    entity_id: self.entity_id,
+                    action_id: action_name.action_id,
+                });
+            }
+        };
         self
     }
 
@@ -418,7 +458,19 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn set_hotkey(self, action_id: u64, character: char) -> Self {
+    pub fn set_hotkey(self, action_name: &str, character: char) -> Self {
+        let action_id = match self
+            .ctx
+            .db
+            .action_names()
+            .name()
+            .find(action_name.to_string())
+        {
+            None => {
+                return self;
+            }
+            Some(action_name) => action_name.action_id,
+        };
         let character_code = character as u32;
         self.ctx
             .db
@@ -454,6 +506,15 @@ impl<'a> EntityHandle<'a> {
             },
         }
     }
+}
+
+#[table(name = name_components, public)]
+#[derive(Debug, Clone)]
+pub struct NameComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    #[unique]
+    pub name: String,
 }
 
 #[table(name = location_components, public)]

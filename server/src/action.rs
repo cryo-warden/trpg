@@ -24,9 +24,9 @@ pub struct Action {
 #[derive(Debug, Clone)]
 pub struct ActionName {
     #[primary_key]
-    action_id: u64,
+    pub action_id: u64,
     #[unique]
-    name: String,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

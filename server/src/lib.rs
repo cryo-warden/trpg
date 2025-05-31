@@ -23,6 +23,17 @@ pub fn init(ctx: &ReducerContext) {
         scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
     });
 
+    ActionHandle::new(ctx, ActionType::Move)
+        .set_name("quick_move")
+        .add_move();
+
+    ActionHandle::new(ctx, ActionType::Buff)
+        .set_name("divine_heal")
+        .add_rest()
+        .add_rest()
+        .add_heal(100)
+        .add_rest();
+
     ActionHandle::new(ctx, ActionType::Attack)
         .set_name("bop")
         .add_rest()
@@ -40,21 +51,10 @@ pub fn init(ctx: &ReducerContext) {
         .add_rest()
         .add_rest();
 
-    ActionHandle::new(ctx, ActionType::Move)
-        .set_name("quick_move")
-        .add_move();
-
-    ActionHandle::new(ctx, ActionType::Buff)
-        .set_name("divine_heal")
-        .add_rest()
-        .add_rest()
-        .add_heal(100)
-        .add_rest();
-
-    EntityHandle::new(ctx);
-    let allegiance2 = EntityHandle::new(ctx);
-    let room = EntityHandle::new(ctx);
-    let room2 = EntityHandle::new(ctx);
+    EntityHandle::new(ctx).set_name("allegiance1");
+    let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
+    let room = EntityHandle::new(ctx).set_name("room1");
+    let room2 = EntityHandle::new(ctx).set_name("room2");
     EntityHandle::new(ctx)
         .add_location(room2.entity_id)
         .add_path(room.entity_id);
@@ -70,7 +70,7 @@ pub fn init(ctx: &ReducerContext) {
 }
 
 #[reducer(client_connected)]
-pub fn identity_connected(ctx: &ReducerContext) {
+pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(_) => {
             // TODO Remove logout timer.
@@ -79,9 +79,13 @@ pub fn identity_connected(ctx: &ReducerContext) {
             Some(h) => {
                 h.activate();
             }
-            None => Entity::new_player(ctx),
+            None => {
+                Entity::new_player(ctx)?;
+            }
         },
     }
+
+    Ok(())
 }
 
 #[reducer(client_disconnected)]

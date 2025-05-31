@@ -90,6 +90,8 @@ import { LateEventsTableHandle } from "./late_events_table.ts";
 export { LateEventsTableHandle };
 import { LocationComponentsTableHandle } from "./location_components_table.ts";
 export { LocationComponentsTableHandle };
+import { NameComponentsTableHandle } from "./name_components_table.ts";
+export { NameComponentsTableHandle };
 import { ObservableEventTargetsTableHandle } from "./observable_event_targets_table.ts";
 export { ObservableEventTargetsTableHandle };
 import { ObservableEventsTableHandle } from "./observable_events_table.ts";
@@ -144,6 +146,8 @@ import { HpComponent } from "./hp_component_type.ts";
 export { HpComponent };
 import { LocationComponent } from "./location_component_type.ts";
 export { LocationComponent };
+import { NameComponent } from "./name_component_type.ts";
+export { NameComponent };
 import { PathComponent } from "./path_component_type.ts";
 export { PathComponent };
 import { PlayerControllerComponent } from "./player_controller_component_type.ts";
@@ -252,6 +256,11 @@ const REMOTE_MODULE = {
     location_components: {
       tableName: "location_components",
       rowType: LocationComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
+    name_components: {
+      tableName: "name_components",
+      rowType: NameComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
     observable_event_targets: {
@@ -568,6 +577,10 @@ export class RemoteTables {
 
   get locationComponents(): LocationComponentsTableHandle {
     return new LocationComponentsTableHandle(this.connection.clientCache.getOrCreateTable<LocationComponent>(REMOTE_MODULE.tables.location_components));
+  }
+
+  get nameComponents(): NameComponentsTableHandle {
+    return new NameComponentsTableHandle(this.connection.clientCache.getOrCreateTable<NameComponent>(REMOTE_MODULE.tables.name_components));
   }
 
   get observableEventTargets(): ObservableEventTargetsTableHandle {
