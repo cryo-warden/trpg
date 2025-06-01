@@ -635,12 +635,24 @@ impl<'a> EntityHandle<'a> {
     pub fn add_trait(self, name: &str) -> Self {
         match self.ctx.db.traits().name().find(name.to_string()) {
             None => {}
-            Some(t) => {
-                self.ctx.db.trait_components().insert(TraitComponent {
-                    entity_id: self.entity_id,
-                    trait_id: t.id,
-                });
-            }
+            Some(t) => match self
+                .ctx
+                .db
+                .traits_components()
+                .entity_id()
+                .find(self.entity_id)
+            {
+                None => {
+                    self.ctx.db.traits_components().insert(TraitsComponent {
+                        entity_id: self.entity_id,
+                        trait_ids: vec![t.id],
+                    });
+                }
+                Some(mut c) => {
+                    c.trait_ids.push(t.id);
+                    self.ctx.db.traits_components().entity_id().update(c);
+                }
+            },
         }
         self
     }
@@ -1009,12 +1021,12 @@ pub struct BaselineComponent {
     pub baseline_id: u64,
 }
 
-#[table(name = trait_components, public)]
+#[table(name = traits_components, public)]
 #[derive(Debug, Clone)]
-pub struct TraitComponent {
-    #[index(btree)]
+pub struct TraitsComponent {
+    #[primary_key]
     pub entity_id: u64,
-    pub trait_id: u64,
+    pub trait_ids: Vec<u64>,
 }
 
 #[table(name = hp_components, public)]

@@ -30,15 +30,15 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type TraitComponent = {
+export type TraitsComponent = {
   entityId: bigint,
-  traitId: bigint,
+  traitIds: bigint[],
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace TraitComponent {
+export namespace TraitsComponent {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -46,16 +46,16 @@ export namespace TraitComponent {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("traitId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("traitIds", AlgebraicType.createArrayType(AlgebraicType.createU64Type())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: TraitComponent): void {
-    TraitComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: TraitsComponent): void {
+    TraitsComponent.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): TraitComponent {
-    return TraitComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): TraitsComponent {
+    return TraitsComponent.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

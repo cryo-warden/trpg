@@ -5,7 +5,7 @@ use entity::{
     action_options_components, action_state_component_targets, action_state_components,
     baseline_components, entities, entity_deactivation_timers, entity_prominences, ep_components,
     hp_components, location_components, queued_action_state_components, target_components,
-    trait_components, Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
+    traits_components, Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, middle_event_targets,
@@ -387,22 +387,18 @@ pub fn entity_deactivation_system(ctx: &ReducerContext) {
 
 pub fn entity_stats_system(ctx: &ReducerContext) {
     for b in ctx.db.baseline_components().iter() {
-        match ctx.db.baselines().id().find(b.baseline_id) {
-            None => {}
-            Some(baseline) => {
-                let mut stat_block = baseline.stat_block;
+        if let Some(baseline) = ctx.db.baselines().id().find(b.baseline_id) {
+            let mut stat_block = baseline.stat_block;
 
-                for t in ctx.db.trait_components().entity_id().filter(b.entity_id) {
-                    match ctx.db.traits().id().find(t.trait_id) {
-                        None => {}
-                        Some(t) => {
-                            stat_block.add(t.stat_block);
-                        }
+            if let Some(c) = ctx.db.traits_components().entity_id().find(b.entity_id) {
+                for id in c.trait_ids {
+                    if let Some(t) = ctx.db.traits().id().find(id) {
+                        stat_block.add(t.stat_block);
                     }
                 }
-
-                EntityHandle::from_id(ctx, b.entity_id).apply_stat_block(stat_block);
             }
+
+            EntityHandle::from_id(ctx, b.entity_id).apply_stat_block(stat_block);
         }
     }
 }

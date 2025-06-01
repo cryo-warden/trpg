@@ -116,10 +116,10 @@ import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
 import { TargetComponentsTableHandle } from "./target_components_table.ts";
 export { TargetComponentsTableHandle };
-import { TraitComponentsTableHandle } from "./trait_components_table.ts";
-export { TraitComponentsTableHandle };
 import { TraitsTableHandle } from "./traits_table.ts";
 export { TraitsTableHandle };
+import { TraitsComponentsTableHandle } from "./traits_components_table.ts";
+export { TraitsComponentsTableHandle };
 
 // Import and reexport all types
 import { Action } from "./action_type.ts";
@@ -192,8 +192,8 @@ import { TargetComponent } from "./target_component_type.ts";
 export { TargetComponent };
 import { Trait } from "./trait_type.ts";
 export { Trait };
-import { TraitComponent } from "./trait_component_type.ts";
-export { TraitComponent };
+import { TraitsComponent } from "./traits_component_type.ts";
+export { TraitsComponent };
 
 const REMOTE_MODULE = {
   tables: {
@@ -360,14 +360,15 @@ const REMOTE_MODULE = {
       rowType: TargetComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
-    trait_components: {
-      tableName: "trait_components",
-      rowType: TraitComponent.getTypeScriptAlgebraicType(),
-    },
     traits: {
       tableName: "traits",
       rowType: Trait.getTypeScriptAlgebraicType(),
       primaryKey: "id",
+    },
+    traits_components: {
+      tableName: "traits_components",
+      rowType: TraitsComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
     },
   },
   reducers: {
@@ -699,12 +700,12 @@ export class RemoteTables {
     return new TargetComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TargetComponent>(REMOTE_MODULE.tables.target_components));
   }
 
-  get traitComponents(): TraitComponentsTableHandle {
-    return new TraitComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TraitComponent>(REMOTE_MODULE.tables.trait_components));
-  }
-
   get traits(): TraitsTableHandle {
     return new TraitsTableHandle(this.connection.clientCache.getOrCreateTable<Trait>(REMOTE_MODULE.tables.traits));
+  }
+
+  get traitsComponents(): TraitsComponentsTableHandle {
+    return new TraitsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TraitsComponent>(REMOTE_MODULE.tables.traits_components));
   }
 }
 
