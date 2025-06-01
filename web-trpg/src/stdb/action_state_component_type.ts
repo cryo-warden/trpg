@@ -31,8 +31,8 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 export type ActionStateComponent = {
-  id: bigint,
   entityId: bigint,
+  targetEntityId: bigint,
   actionId: bigint,
   sequenceIndex: number,
 };
@@ -47,8 +47,8 @@ export namespace ActionStateComponent {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("id", AlgebraicType.createU64Type()),
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
       new ProductTypeElement("sequenceIndex", AlgebraicType.createI32Type()),
     ]);

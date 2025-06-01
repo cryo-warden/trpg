@@ -30,32 +30,32 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type ActionStateComponentTarget = {
-  actionStateComponentId: bigint,
-  targetEntityId: bigint,
+export type AttackComponent = {
+  entityId: bigint,
+  attack: number,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace ActionStateComponentTarget {
+export namespace AttackComponent {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("actionStateComponentId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("attack", AlgebraicType.createI32Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: ActionStateComponentTarget): void {
-    ActionStateComponentTarget.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: AttackComponent): void {
+    AttackComponent.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): ActionStateComponentTarget {
-    return ActionStateComponentTarget.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): AttackComponent {
+    return AttackComponent.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

@@ -1,5 +1,3 @@
-use std::cmp::max;
-
 use spacetimedb::{table, ReducerContext, SpacetimeType, Table, Timestamp};
 
 use crate::{
@@ -25,6 +23,7 @@ pub struct Event {
     pub time: Timestamp,
     pub owner_entity_id: u64,
     pub event_type: EventType,
+    pub target_entity_id: u64,
 }
 
 #[allow(dead_code)]
@@ -33,63 +32,49 @@ impl Event {
         ctx: &ReducerContext,
         owner_entity_id: u64,
         event_type: EventType,
-        target_entity_ids: impl Iterator<Item = u64>,
+        target_entity_id: u64,
     ) {
-        let e = ctx.db.early_events().insert(Event {
+        ctx.db.early_events().insert(Event {
             id: 0,
             time: ctx.timestamp,
             owner_entity_id,
             event_type,
+            target_entity_id,
         });
-        for target_entity_id in target_entity_ids {
-            ctx.db.early_event_targets().insert(EventTarget {
-                event_id: e.id,
-                target_entity_id,
-            });
-        }
     }
 
     pub fn emit_middle(
         ctx: &ReducerContext,
         owner_entity_id: u64,
         event_type: EventType,
-        target_entity_ids: impl Iterator<Item = u64>,
+        target_entity_id: u64,
     ) {
-        let e = ctx.db.middle_events().insert(Event {
+        ctx.db.middle_events().insert(Event {
             id: 0,
             time: ctx.timestamp,
             owner_entity_id,
             event_type,
+            target_entity_id,
         });
-        for target_entity_id in target_entity_ids {
-            ctx.db.middle_event_targets().insert(EventTarget {
-                event_id: e.id,
-                target_entity_id,
-            });
-        }
     }
 
     pub fn emit_late(
         ctx: &ReducerContext,
         owner_entity_id: u64,
         event_type: EventType,
-        target_entity_ids: impl Iterator<Item = u64>,
+        target_entity_id: u64,
     ) {
-        let e = ctx.db.late_events().insert(Event {
+        ctx.db.late_events().insert(Event {
             id: 0,
             time: ctx.timestamp,
             owner_entity_id,
             event_type,
+            target_entity_id,
         });
-        for target_entity_id in target_entity_ids {
-            ctx.db.late_event_targets().insert(EventTarget {
-                event_id: e.id,
-                target_entity_id,
-            });
-        }
     }
 
-    pub fn resolve(&self, ctx: &ReducerContext, target_entity_id: u64) {
+    pub fn resolve(&self, ctx: &ReducerContext) {
+        let target_entity_id = self.target_entity_id;
         log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
         match self.event_type {
             EventType::StartAction => {}
@@ -124,7 +109,7 @@ impl Event {
                     match target_hp {
                         None => {}
                         Some(mut target_hp) => {
-                            target_hp.accumulated_damage += max(0, damage - target_hp.defense);
+                            target_hp.accumulated_damage += damage;
                             ctx.db.hp_components().entity_id().update(target_hp);
                         }
                     }
@@ -146,15 +131,4 @@ impl Event {
             },
         }
     }
-}
-
-#[table(name = observable_event_targets, public)]
-#[table(name = early_event_targets, public)]
-#[table(name = middle_event_targets, public)]
-#[table(name = late_event_targets, public)]
-#[derive(Debug, Clone)]
-pub struct EventTarget {
-    #[index(btree)]
-    pub event_id: u64,
-    pub target_entity_id: u64,
 }

@@ -4,6 +4,7 @@ use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
 #[derive(Debug, Clone, SpacetimeType, Builder, Default)]
 #[builder(default)]
 pub struct StatBlock {
+    pub attack: i32,
     pub mhp: i32,
     pub defense: i32,
     pub mep: i32,
@@ -12,6 +13,7 @@ pub struct StatBlock {
 #[allow(dead_code)]
 impl StatBlock {
     pub fn add(&mut self, other: StatBlock) {
+        self.attack += other.attack;
         self.mhp += other.mhp;
         self.defense += other.defense;
         self.mep += other.mep;

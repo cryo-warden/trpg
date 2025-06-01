@@ -1,4 +1,3 @@
-use derive_builder::Builder;
 use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
 
 use crate::{
@@ -277,45 +276,16 @@ impl<'a> EntityHandle<'a> {
             .entity_id()
             .delete(self.entity_id);
 
-        match self
-            .ctx
+        self.ctx
             .db
             .action_state_components()
             .entity_id()
-            .find(self.entity_id)
-        {
-            Some(a) => {
-                self.ctx
-                    .db
-                    .action_state_component_targets()
-                    .action_state_component_id()
-                    .delete(a.id);
-                self.ctx.db.action_state_components().id().delete(a.id);
-            }
-            None => {}
-        }
-
-        match self
-            .ctx
+            .delete(self.entity_id);
+        self.ctx
             .db
             .queued_action_state_components()
             .entity_id()
-            .find(self.entity_id)
-        {
-            Some(a) => {
-                self.ctx
-                    .db
-                    .queued_action_state_component_targets()
-                    .action_state_component_id()
-                    .delete(a.id);
-                self.ctx
-                    .db
-                    .queued_action_state_components()
-                    .id()
-                    .delete(a.id);
-            }
-            None => {}
-        }
+            .delete(self.entity_id);
 
         self.ctx
             .db
@@ -658,17 +628,32 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
-        let mut e = self;
-        if stat_block.mhp != 0 {
-            e = e.set_mhp(stat_block.mhp);
+        self.set_attack(stat_block.attack)
+            .set_mhp(stat_block.mhp)
+            .set_mep(stat_block.mep)
+            .set_defense(stat_block.defense)
+    }
+
+    pub fn set_attack(self, attack: i32) -> Self {
+        match self
+            .ctx
+            .db
+            .attack_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => {
+                self.ctx.db.attack_components().insert(AttackComponent {
+                    entity_id: self.entity_id,
+                    attack,
+                });
+            }
+            Some(mut c) => {
+                c.attack = attack;
+                self.ctx.db.attack_components().entity_id().update(c);
+            }
         }
-        if stat_block.mep != 0 {
-            e = e.set_mep(stat_block.mep);
-        }
-        if stat_block.defense != 0 {
-            e = e.set_defense(stat_block.defense);
-        }
-        e
+        self
     }
 
     pub fn set_mhp(self, mhp: i32) -> Self {
@@ -777,86 +762,44 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn set_queued_action_state(self, action_id: u64) -> Self {
-        let queued_action_state = self
-            .ctx
+    pub fn set_queued_action_state(self, action_id: u64, target_entity_id: u64) -> Self {
+        self.ctx
             .db
             .queued_action_state_components()
             .entity_id()
-            .find(self.entity_id);
-        if let Some(queued_action_state) = queued_action_state {
-            self.ctx
-                .db
-                .queued_action_state_component_targets()
-                .action_state_component_id()
-                .delete(queued_action_state.id);
-            self.ctx
-                .db
-                .queued_action_state_components()
-                .id()
-                .delete(queued_action_state.id);
-        }
+            .delete(self.entity_id);
         self.ctx
             .db
             .queued_action_state_components()
             .insert(ActionStateComponent {
-                id: 0,
                 action_id,
                 entity_id: self.entity_id,
                 sequence_index: 0,
+                target_entity_id,
             });
-        self
-    }
-    pub fn add_queued_action_state_target(self, target_entity_id: u64) -> Self {
-        match self
-            .ctx
-            .db
-            .queued_action_state_components()
-            .entity_id()
-            .find(self.entity_id)
-        {
-            None => {}
-            Some(action_state) => {
-                self.ctx.db.queued_action_state_component_targets().insert(
-                    ActionStateComponentTarget {
-                        action_state_component_id: action_state.id,
-                        target_entity_id,
-                    },
-                );
-            }
-        }
         self
     }
 
     pub fn shift_queued_action_state(self) -> Self {
-        match self
+        if let Some(queued_action_state) = self
             .ctx
             .db
             .queued_action_state_components()
             .entity_id()
             .find(self.entity_id)
         {
-            None => self,
-            Some(queued_action_state) => {
-                self.ctx
-                    .db
-                    .queued_action_state_components()
-                    .id()
-                    .delete(queued_action_state.id);
-                let target_entity_ids = self
-                    .ctx
-                    .db
-                    .queued_action_state_component_targets()
-                    .action_state_component_id()
-                    .filter(queued_action_state.id)
-                    .map(|t| t.target_entity_id);
-                let mut s = self.add_action_state(queued_action_state.action_id);
-                for target_entity_id in target_entity_ids {
-                    s = s.add_action_state_target(target_entity_id);
-                }
-                s
-            }
+            self.ctx
+                .db
+                .queued_action_state_components()
+                .entity_id()
+                .delete(self.entity_id);
+            self.ctx
+                .db
+                .action_state_components()
+                .insert(queued_action_state);
         }
+
+        self
     }
 
     pub fn action_state_component(&self) -> Option<ActionStateComponent> {
@@ -865,40 +808,6 @@ impl<'a> EntityHandle<'a> {
             .action_state_components()
             .entity_id()
             .find(self.entity_id)
-    }
-
-    fn add_action_state(self, action_id: u64) -> Self {
-        self.ctx
-            .db
-            .action_state_components()
-            .insert(ActionStateComponent {
-                action_id,
-                entity_id: self.entity_id,
-                id: 0,
-                sequence_index: 0,
-            });
-        self
-    }
-    fn add_action_state_target(self, target_entity_id: u64) -> Self {
-        let optional_action_state = self
-            .ctx
-            .db
-            .action_state_components()
-            .entity_id()
-            .find(self.entity_id);
-        match optional_action_state {
-            None => {}
-            Some(action_state) => {
-                self.ctx
-                    .db
-                    .action_state_component_targets()
-                    .insert(ActionStateComponentTarget {
-                        action_state_component_id: action_state.id,
-                        target_entity_id,
-                    });
-            }
-        }
-        self
     }
 
     pub fn add_player_controller(self, identity: Identity) -> Self {
@@ -987,7 +896,7 @@ pub struct NameComponent {
 }
 
 #[table(name = location_components, public)]
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone)]
 pub struct LocationComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -996,7 +905,7 @@ pub struct LocationComponent {
 }
 
 #[table(name = path_components, public)]
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone)]
 pub struct PathComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -1029,8 +938,16 @@ pub struct TraitsComponent {
     pub trait_ids: Vec<u64>,
 }
 
+#[table(name = attack_components, public)]
+#[derive(Debug, Clone)]
+pub struct AttackComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub attack: i32,
+}
+
 #[table(name = hp_components, public)]
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone)]
 pub struct HpComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -1041,33 +958,8 @@ pub struct HpComponent {
     pub accumulated_healing: i32,
 }
 
-#[allow(dead_code)]
-impl HpComponent {
-    pub fn new(entity_id: u64, mhp: i32) -> Self {
-        Self {
-            entity_id: entity_id,
-            hp: mhp,
-            mhp,
-            defense: 0,
-            accumulated_damage: 0,
-            accumulated_healing: 0,
-        }
-    }
-
-    pub fn new_with_defense(entity_id: u64, mhp: i32, defense: i32) -> Self {
-        Self {
-            entity_id: entity_id,
-            hp: mhp,
-            mhp,
-            defense,
-            accumulated_damage: 0,
-            accumulated_healing: 0,
-        }
-    }
-}
-
 #[table(name = ep_components, public)]
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone)]
 pub struct EpComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -1076,7 +968,7 @@ pub struct EpComponent {
 }
 
 #[table(name = player_controller_components, public)]
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone)]
 pub struct PlayerControllerComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -1094,24 +986,13 @@ pub struct TargetComponent {
 
 #[table(name = queued_action_state_components, public)]
 #[table(name = action_state_components, public)]
-#[derive(Debug, Clone, Builder)]
+#[derive(Debug, Clone)]
 pub struct ActionStateComponent {
     #[primary_key]
-    #[auto_inc]
-    pub id: u64,
-    #[unique]
     pub entity_id: u64,
+    pub target_entity_id: u64,
     pub action_id: u64,
     pub sequence_index: i32,
-}
-
-#[table(name = queued_action_state_component_targets, public)]
-#[table(name = action_state_component_targets, public)]
-#[derive(Debug, Clone)]
-pub struct ActionStateComponentTarget {
-    #[index(btree)]
-    pub action_state_component_id: u64,
-    pub target_entity_id: u64,
 }
 
 #[table(name = actions_components, public)]

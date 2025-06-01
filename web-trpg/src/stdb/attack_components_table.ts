@@ -30,23 +30,23 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { ActionStateComponent } from "./action_state_component_type";
+import { AttackComponent } from "./attack_component_type";
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `action_state_components`.
+ * Table handle for the table `attack_components`.
  *
- * Obtain a handle from the [`actionStateComponents`] property on [`RemoteTables`],
- * like `ctx.db.actionStateComponents`.
+ * Obtain a handle from the [`attackComponents`] property on [`RemoteTables`],
+ * like `ctx.db.attackComponents`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.actionStateComponents.on_insert(...)`.
+ * like `ctx.db.attackComponents.on_insert(...)`.
  */
-export class ActionStateComponentsTableHandle {
-  tableCache: TableCache<ActionStateComponent>;
+export class AttackComponentsTableHandle {
+  tableCache: TableCache<AttackComponent>;
 
-  constructor(tableCache: TableCache<ActionStateComponent>) {
+  constructor(tableCache: TableCache<AttackComponent>) {
     this.tableCache = tableCache;
   }
 
@@ -54,24 +54,24 @@ export class ActionStateComponentsTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<ActionStateComponent> {
+  iter(): Iterable<AttackComponent> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `entityId` unique index on the table `action_state_components`,
+   * Access to the `entityId` unique index on the table `attack_components`,
    * which allows point queries on the field of the same name
-   * via the [`ActionStateComponentsEntityIdUnique.find`] method.
+   * via the [`AttackComponentsEntityIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.actionStateComponents.entityId().find(...)`.
+   * like `ctx.db.attackComponents.entityId().find(...)`.
    *
-   * Get a handle on the `entityId` unique index on the table `action_state_components`.
+   * Get a handle on the `entityId` unique index on the table `attack_components`.
    */
   entityId = {
     // Find the subscribed row whose `entityId` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): ActionStateComponent | undefined => {
+    find: (col_val: bigint): AttackComponent | undefined => {
       for (let row of this.tableCache.iter()) {
         if (deepEqual(row.entityId, col_val)) {
           return row;
@@ -80,27 +80,27 @@ export class ActionStateComponentsTableHandle {
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: ActionStateComponent) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: AttackComponent) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: ActionStateComponent) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: AttackComponent) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: ActionStateComponent) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: AttackComponent) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: ActionStateComponent) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: AttackComponent) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: ActionStateComponent, newRow: ActionStateComponent) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: AttackComponent, newRow: AttackComponent) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: ActionStateComponent, newRow: ActionStateComponent) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: AttackComponent, newRow: AttackComponent) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

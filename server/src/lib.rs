@@ -2,15 +2,12 @@ use std::cmp::{max, min};
 
 use action::{ActionEffect, ActionHandle, ActionType};
 use entity::{
-    action_options_components, action_state_component_targets, action_state_components,
-    baseline_components, entities, entity_deactivation_timers, entity_prominences, ep_components,
-    hp_components, location_components, queued_action_state_components, target_components,
-    traits_components, Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
+    action_options_components, action_state_components, attack_components, baseline_components,
+    entities, entity_deactivation_timers, entity_prominences, ep_components, hp_components,
+    location_components, queued_action_state_components, target_components, traits_components,
+    Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
 };
-use event::{
-    early_event_targets, early_events, late_event_targets, late_events, middle_event_targets,
-    middle_events, observable_event_targets, observable_events, Event, EventType,
-};
+use event::{early_events, late_events, middle_events, observable_events, Event, EventType};
 use spacetimedb::{reducer, table, ReducerContext, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlockBuilder, StatBlockContext};
 
@@ -30,12 +27,16 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         .insert_baseline("human", StatBlockBuilder::default().mhp(5).mep(5))
         .insert_baseline(
             "slime",
-            StatBlockBuilder::default().defense(-1).mhp(3).mep(2),
+            StatBlockBuilder::default()
+                .attack(-1)
+                .defense(-1)
+                .mhp(3)
+                .mep(2),
         )
-        .insert_trait("tiny", StatBlockBuilder::default().mhp(-2))
+        .insert_trait("tiny", &StatBlockBuilder::default().attack(-1).mhp(-2))
         .insert_trait("small", StatBlockBuilder::default().mhp(-1))
         .insert_trait("big", StatBlockBuilder::default().mhp(2))
-        .insert_trait("huge", StatBlockBuilder::default().mhp(5));
+        .insert_trait("huge", StatBlockBuilder::default().attack(1).mhp(5));
 
     ActionHandle::new(ctx, ActionType::Move)
         .set_name("quick_move")
@@ -140,8 +141,7 @@ pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Resul
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
             if p.can_target_other(target_entity_id, action_id) {
-                p.set_queued_action_state(action_id)
-                    .add_queued_action_state_target(target_entity_id);
+                p.set_queued_action_state(action_id, target_entity_id);
                 Ok(())
             } else {
                 Err("Invalid target for the given action.".to_string())
@@ -199,36 +199,23 @@ pub struct SystemTimer {
 
 pub fn observable_event_reset_system(ctx: &ReducerContext) {
     for event in ctx.db.observable_events().iter() {
-        ctx.db
-            .observable_event_targets()
-            .event_id()
-            .delete(event.id);
         ctx.db.observable_events().id().delete(event.id);
     }
 }
 
 pub fn event_resolve_system(ctx: &ReducerContext) {
     for event in ctx.db.early_events().iter() {
-        for target in ctx.db.early_event_targets().event_id().filter(event.id) {
-            event.resolve(ctx, target.target_entity_id);
-        }
-        ctx.db.early_event_targets().event_id().delete(event.id);
+        event.resolve(ctx);
         ctx.db.early_events().id().delete(event.id);
     }
 
     for event in ctx.db.middle_events().iter() {
-        for target in ctx.db.middle_event_targets().event_id().filter(event.id) {
-            event.resolve(ctx, target.target_entity_id);
-        }
-        ctx.db.middle_event_targets().event_id().delete(event.id);
+        event.resolve(ctx);
         ctx.db.middle_events().id().delete(event.id);
     }
 
     for event in ctx.db.late_events().iter() {
-        for target in ctx.db.late_event_targets().event_id().filter(event.id) {
-            event.resolve(ctx, target.target_entity_id);
-        }
-        ctx.db.late_event_targets().event_id().delete(event.id);
+        event.resolve(ctx);
         ctx.db.late_events().id().delete(event.id);
     }
 }
@@ -270,31 +257,63 @@ pub fn action_system(ctx: &ReducerContext) {
         let entity_id = action_state.entity_id;
         let action_handle = ActionHandle::from_id(ctx, action_state.action_id);
 
-        let target_ids = ctx
-            .db
-            .action_state_component_targets()
-            .action_state_component_id()
-            .filter(action_state.id)
-            .map(|t| t.target_entity_id);
         let effect = action_handle.effect(action_state.sequence_index);
-        match effect {
-            None => {}
-            Some(effect) => match effect {
+        if let Some(ref effect) = effect {
+            match effect {
                 ActionEffect::Buff(_) => {
-                    Event::emit_early(ctx, entity_id, EventType::ActionEffect(effect), target_ids);
+                    Event::emit_early(
+                        ctx,
+                        entity_id,
+                        EventType::ActionEffect(effect.to_owned()),
+                        action_state.target_entity_id,
+                    );
                 }
-                ActionEffect::Attack(_) | ActionEffect::Heal(_) => {
-                    Event::emit_middle(ctx, entity_id, EventType::ActionEffect(effect), target_ids);
+                ActionEffect::Attack(damage) => {
+                    let attack = ctx
+                        .db
+                        .attack_components()
+                        .entity_id()
+                        .find(entity_id)
+                        .map(|c| c.attack)
+                        .unwrap_or(0);
+                    let target_defense = ctx
+                        .db
+                        .hp_components()
+                        .entity_id()
+                        .find(action_state.target_entity_id)
+                        .map(|c| c.defense)
+                        .unwrap_or(0);
+                    Event::emit_middle(
+                        ctx,
+                        entity_id,
+                        EventType::ActionEffect(ActionEffect::Attack(max(
+                            0,
+                            damage + attack - target_defense,
+                        ))),
+                        action_state.target_entity_id,
+                    );
+                }
+                ActionEffect::Heal(_) => {
+                    Event::emit_middle(
+                        ctx,
+                        entity_id,
+                        EventType::ActionEffect(effect.to_owned()),
+                        action_state.target_entity_id,
+                    );
                 }
                 _ => {
-                    Event::emit_late(ctx, entity_id, EventType::ActionEffect(effect), target_ids);
+                    Event::emit_late(
+                        ctx,
+                        entity_id,
+                        EventType::ActionEffect(effect.to_owned()),
+                        action_state.target_entity_id,
+                    );
                 }
-            },
+            }
         }
 
         action_state.sequence_index += 1;
         let new_sequence_index = action_state.sequence_index;
-        let action_state_component_id = action_state.id;
 
         ctx.db
             .action_state_components()
@@ -302,19 +321,12 @@ pub fn action_system(ctx: &ReducerContext) {
             .update(action_state);
 
         let effect = action_handle.effect(new_sequence_index);
-        match effect {
-            Some(_) => {}
-            None => {
-                // TODO Emit event for finished action.
-                ctx.db
-                    .action_state_components()
-                    .entity_id()
-                    .delete(entity_id);
-                ctx.db
-                    .action_state_component_targets()
-                    .action_state_component_id()
-                    .delete(action_state_component_id);
-            }
+        if effect.is_none() {
+            // TODO Emit event for finished action.
+            ctx.db
+                .action_state_components()
+                .entity_id()
+                .delete(entity_id);
         }
     }
 }

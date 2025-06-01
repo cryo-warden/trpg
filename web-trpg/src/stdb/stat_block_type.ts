@@ -31,6 +31,7 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 export type StatBlock = {
+  attack: number,
   mhp: number,
   defense: number,
   mep: number,
@@ -46,6 +47,7 @@ export namespace StatBlock {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("attack", AlgebraicType.createI32Type()),
       new ProductTypeElement("mhp", AlgebraicType.createI32Type()),
       new ProductTypeElement("defense", AlgebraicType.createI32Type()),
       new ProductTypeElement("mep", AlgebraicType.createI32Type()),

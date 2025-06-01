@@ -37,6 +37,7 @@ export type Event = {
   time: Timestamp,
   ownerEntityId: bigint,
   eventType: __EventType,
+  targetEntityId: bigint,
 };
 
 /**
@@ -53,6 +54,7 @@ export namespace Event {
       new ProductTypeElement("time", AlgebraicType.createTimestampType()),
       new ProductTypeElement("ownerEntityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("eventType", __EventType.getTypeScriptAlgebraicType()),
+      new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
     ]);
   }
 

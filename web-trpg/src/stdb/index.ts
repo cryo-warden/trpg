@@ -54,8 +54,6 @@ import { ActionNamesTableHandle } from "./action_names_table.ts";
 export { ActionNamesTableHandle };
 import { ActionOptionsComponentsTableHandle } from "./action_options_components_table.ts";
 export { ActionOptionsComponentsTableHandle };
-import { ActionStateComponentTargetsTableHandle } from "./action_state_component_targets_table.ts";
-export { ActionStateComponentTargetsTableHandle };
 import { ActionStateComponentsTableHandle } from "./action_state_components_table.ts";
 export { ActionStateComponentsTableHandle };
 import { ActionStepsTableHandle } from "./action_steps_table.ts";
@@ -66,12 +64,12 @@ import { ActionsComponentsTableHandle } from "./actions_components_table.ts";
 export { ActionsComponentsTableHandle };
 import { AllegianceComponentsTableHandle } from "./allegiance_components_table.ts";
 export { AllegianceComponentsTableHandle };
+import { AttackComponentsTableHandle } from "./attack_components_table.ts";
+export { AttackComponentsTableHandle };
 import { BaselineComponentsTableHandle } from "./baseline_components_table.ts";
 export { BaselineComponentsTableHandle };
 import { BaselinesTableHandle } from "./baselines_table.ts";
 export { BaselinesTableHandle };
-import { EarlyEventTargetsTableHandle } from "./early_event_targets_table.ts";
-export { EarlyEventTargetsTableHandle };
 import { EarlyEventsTableHandle } from "./early_events_table.ts";
 export { EarlyEventsTableHandle };
 import { EntitiesTableHandle } from "./entities_table.ts";
@@ -86,30 +84,22 @@ import { HpComponentsTableHandle } from "./hp_components_table.ts";
 export { HpComponentsTableHandle };
 import { IdentityInactiveEntitiesTableHandle } from "./identity_inactive_entities_table.ts";
 export { IdentityInactiveEntitiesTableHandle };
-import { LateEventTargetsTableHandle } from "./late_event_targets_table.ts";
-export { LateEventTargetsTableHandle };
 import { LateEventsTableHandle } from "./late_events_table.ts";
 export { LateEventsTableHandle };
 import { LocationComponentsTableHandle } from "./location_components_table.ts";
 export { LocationComponentsTableHandle };
-import { MiddleEventTargetsTableHandle } from "./middle_event_targets_table.ts";
-export { MiddleEventTargetsTableHandle };
 import { MiddleEventsTableHandle } from "./middle_events_table.ts";
 export { MiddleEventsTableHandle };
 import { NameComponentsTableHandle } from "./name_components_table.ts";
 export { NameComponentsTableHandle };
 import { NamedInactiveEntitiesTableHandle } from "./named_inactive_entities_table.ts";
 export { NamedInactiveEntitiesTableHandle };
-import { ObservableEventTargetsTableHandle } from "./observable_event_targets_table.ts";
-export { ObservableEventTargetsTableHandle };
 import { ObservableEventsTableHandle } from "./observable_events_table.ts";
 export { ObservableEventsTableHandle };
 import { PathComponentsTableHandle } from "./path_components_table.ts";
 export { PathComponentsTableHandle };
 import { PlayerControllerComponentsTableHandle } from "./player_controller_components_table.ts";
 export { PlayerControllerComponentsTableHandle };
-import { QueuedActionStateComponentTargetsTableHandle } from "./queued_action_state_component_targets_table.ts";
-export { QueuedActionStateComponentTargetsTableHandle };
 import { QueuedActionStateComponentsTableHandle } from "./queued_action_state_components_table.ts";
 export { QueuedActionStateComponentsTableHandle };
 import { SystemTimersTableHandle } from "./system_timers_table.ts";
@@ -138,8 +128,6 @@ import { ActionOptionsComponent } from "./action_options_component_type.ts";
 export { ActionOptionsComponent };
 import { ActionStateComponent } from "./action_state_component_type.ts";
 export { ActionStateComponent };
-import { ActionStateComponentTarget } from "./action_state_component_target_type.ts";
-export { ActionStateComponentTarget };
 import { ActionStep } from "./action_step_type.ts";
 export { ActionStep };
 import { ActionType } from "./action_type_type.ts";
@@ -148,6 +136,8 @@ import { ActionsComponent } from "./actions_component_type.ts";
 export { ActionsComponent };
 import { AllegianceComponent } from "./allegiance_component_type.ts";
 export { AllegianceComponent };
+import { AttackComponent } from "./attack_component_type.ts";
+export { AttackComponent };
 import { Baseline } from "./baseline_type.ts";
 export { Baseline };
 import { BaselineComponent } from "./baseline_component_type.ts";
@@ -166,8 +156,6 @@ import { EpComponent } from "./ep_component_type.ts";
 export { EpComponent };
 import { Event } from "./event_type.ts";
 export { Event };
-import { EventTarget } from "./event_target_type.ts";
-export { EventTarget };
 import { EventType } from "./event_type_type.ts";
 export { EventType };
 import { HpComponent } from "./hp_component_type.ts";
@@ -212,14 +200,10 @@ const REMOTE_MODULE = {
       rowType: ActionOptionsComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
-    action_state_component_targets: {
-      tableName: "action_state_component_targets",
-      rowType: ActionStateComponentTarget.getTypeScriptAlgebraicType(),
-    },
     action_state_components: {
       tableName: "action_state_components",
       rowType: ActionStateComponent.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
+      primaryKey: "entityId",
     },
     action_steps: {
       tableName: "action_steps",
@@ -241,6 +225,11 @@ const REMOTE_MODULE = {
       rowType: AllegianceComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
+    attack_components: {
+      tableName: "attack_components",
+      rowType: AttackComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
     baseline_components: {
       tableName: "baseline_components",
       rowType: BaselineComponent.getTypeScriptAlgebraicType(),
@@ -250,10 +239,6 @@ const REMOTE_MODULE = {
       tableName: "baselines",
       rowType: Baseline.getTypeScriptAlgebraicType(),
       primaryKey: "id",
-    },
-    early_event_targets: {
-      tableName: "early_event_targets",
-      rowType: EventTarget.getTypeScriptAlgebraicType(),
     },
     early_events: {
       tableName: "early_events",
@@ -289,10 +274,6 @@ const REMOTE_MODULE = {
       tableName: "identity_inactive_entities",
       rowType: IdentityInactiveEntity.getTypeScriptAlgebraicType(),
     },
-    late_event_targets: {
-      tableName: "late_event_targets",
-      rowType: EventTarget.getTypeScriptAlgebraicType(),
-    },
     late_events: {
       tableName: "late_events",
       rowType: Event.getTypeScriptAlgebraicType(),
@@ -302,10 +283,6 @@ const REMOTE_MODULE = {
       tableName: "location_components",
       rowType: LocationComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
-    },
-    middle_event_targets: {
-      tableName: "middle_event_targets",
-      rowType: EventTarget.getTypeScriptAlgebraicType(),
     },
     middle_events: {
       tableName: "middle_events",
@@ -322,10 +299,6 @@ const REMOTE_MODULE = {
       rowType: NamedInactiveEntity.getTypeScriptAlgebraicType(),
       primaryKey: "prefabName",
     },
-    observable_event_targets: {
-      tableName: "observable_event_targets",
-      rowType: EventTarget.getTypeScriptAlgebraicType(),
-    },
     observable_events: {
       tableName: "observable_events",
       rowType: Event.getTypeScriptAlgebraicType(),
@@ -341,14 +314,10 @@ const REMOTE_MODULE = {
       rowType: PlayerControllerComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
-    queued_action_state_component_targets: {
-      tableName: "queued_action_state_component_targets",
-      rowType: ActionStateComponentTarget.getTypeScriptAlgebraicType(),
-    },
     queued_action_state_components: {
       tableName: "queued_action_state_components",
       rowType: ActionStateComponent.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
+      primaryKey: "entityId",
     },
     system_timers: {
       tableName: "system_timers",
@@ -576,10 +545,6 @@ export class RemoteTables {
     return new ActionOptionsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionOptionsComponent>(REMOTE_MODULE.tables.action_options_components));
   }
 
-  get actionStateComponentTargets(): ActionStateComponentTargetsTableHandle {
-    return new ActionStateComponentTargetsTableHandle(this.connection.clientCache.getOrCreateTable<ActionStateComponentTarget>(REMOTE_MODULE.tables.action_state_component_targets));
-  }
-
   get actionStateComponents(): ActionStateComponentsTableHandle {
     return new ActionStateComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionStateComponent>(REMOTE_MODULE.tables.action_state_components));
   }
@@ -600,16 +565,16 @@ export class RemoteTables {
     return new AllegianceComponentsTableHandle(this.connection.clientCache.getOrCreateTable<AllegianceComponent>(REMOTE_MODULE.tables.allegiance_components));
   }
 
+  get attackComponents(): AttackComponentsTableHandle {
+    return new AttackComponentsTableHandle(this.connection.clientCache.getOrCreateTable<AttackComponent>(REMOTE_MODULE.tables.attack_components));
+  }
+
   get baselineComponents(): BaselineComponentsTableHandle {
     return new BaselineComponentsTableHandle(this.connection.clientCache.getOrCreateTable<BaselineComponent>(REMOTE_MODULE.tables.baseline_components));
   }
 
   get baselines(): BaselinesTableHandle {
     return new BaselinesTableHandle(this.connection.clientCache.getOrCreateTable<Baseline>(REMOTE_MODULE.tables.baselines));
-  }
-
-  get earlyEventTargets(): EarlyEventTargetsTableHandle {
-    return new EarlyEventTargetsTableHandle(this.connection.clientCache.getOrCreateTable<EventTarget>(REMOTE_MODULE.tables.early_event_targets));
   }
 
   get earlyEvents(): EarlyEventsTableHandle {
@@ -640,20 +605,12 @@ export class RemoteTables {
     return new IdentityInactiveEntitiesTableHandle(this.connection.clientCache.getOrCreateTable<IdentityInactiveEntity>(REMOTE_MODULE.tables.identity_inactive_entities));
   }
 
-  get lateEventTargets(): LateEventTargetsTableHandle {
-    return new LateEventTargetsTableHandle(this.connection.clientCache.getOrCreateTable<EventTarget>(REMOTE_MODULE.tables.late_event_targets));
-  }
-
   get lateEvents(): LateEventsTableHandle {
     return new LateEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.late_events));
   }
 
   get locationComponents(): LocationComponentsTableHandle {
     return new LocationComponentsTableHandle(this.connection.clientCache.getOrCreateTable<LocationComponent>(REMOTE_MODULE.tables.location_components));
-  }
-
-  get middleEventTargets(): MiddleEventTargetsTableHandle {
-    return new MiddleEventTargetsTableHandle(this.connection.clientCache.getOrCreateTable<EventTarget>(REMOTE_MODULE.tables.middle_event_targets));
   }
 
   get middleEvents(): MiddleEventsTableHandle {
@@ -668,10 +625,6 @@ export class RemoteTables {
     return new NamedInactiveEntitiesTableHandle(this.connection.clientCache.getOrCreateTable<NamedInactiveEntity>(REMOTE_MODULE.tables.named_inactive_entities));
   }
 
-  get observableEventTargets(): ObservableEventTargetsTableHandle {
-    return new ObservableEventTargetsTableHandle(this.connection.clientCache.getOrCreateTable<EventTarget>(REMOTE_MODULE.tables.observable_event_targets));
-  }
-
   get observableEvents(): ObservableEventsTableHandle {
     return new ObservableEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.observable_events));
   }
@@ -682,10 +635,6 @@ export class RemoteTables {
 
   get playerControllerComponents(): PlayerControllerComponentsTableHandle {
     return new PlayerControllerComponentsTableHandle(this.connection.clientCache.getOrCreateTable<PlayerControllerComponent>(REMOTE_MODULE.tables.player_controller_components));
-  }
-
-  get queuedActionStateComponentTargets(): QueuedActionStateComponentTargetsTableHandle {
-    return new QueuedActionStateComponentTargetsTableHandle(this.connection.clientCache.getOrCreateTable<ActionStateComponentTarget>(REMOTE_MODULE.tables.queued_action_state_component_targets));
   }
 
   get queuedActionStateComponents(): QueuedActionStateComponentsTableHandle {
