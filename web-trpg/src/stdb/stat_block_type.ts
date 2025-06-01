@@ -35,6 +35,8 @@ export type StatBlock = {
   mhp: number,
   defense: number,
   mep: number,
+  additiveActionIds: bigint[],
+  subtractiveActionIds: bigint[],
 };
 
 /**
@@ -51,6 +53,8 @@ export namespace StatBlock {
       new ProductTypeElement("mhp", AlgebraicType.createI32Type()),
       new ProductTypeElement("defense", AlgebraicType.createI32Type()),
       new ProductTypeElement("mep", AlgebraicType.createI32Type()),
+      new ProductTypeElement("additiveActionIds", AlgebraicType.createArrayType(AlgebraicType.createU64Type())),
+      new ProductTypeElement("subtractiveActionIds", AlgebraicType.createArrayType(AlgebraicType.createU64Type())),
     ]);
   }
 

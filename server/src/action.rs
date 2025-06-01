@@ -29,6 +29,18 @@ pub struct ActionName {
     pub name: String,
 }
 
+#[allow(dead_code)]
+impl ActionName {
+    pub fn get_id(ctx: &ReducerContext, name: &str) -> u64 {
+        ctx.db
+            .action_names()
+            .name()
+            .find(name.to_string())
+            .map(|a| a.action_id)
+            .unwrap_or(0)
+    }
+}
+
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum Buff {
     Guard(i32),

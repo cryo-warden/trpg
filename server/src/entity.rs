@@ -42,6 +42,7 @@ pub struct Entity {
 impl Entity {
     pub fn new_player(ctx: &ReducerContext) -> Result<(), String> {
         EntityHandle::new(ctx)
+            .add_player_controller(ctx.sender)
             .set_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
                     .ok_or("Cannot find starting allegiance.")?
@@ -53,14 +54,11 @@ impl Entity {
                     .entity_id,
             )
             .set_baseline("human")
-            .add_player_controller(ctx.sender)
-            .add_action("bop")
+            .add_trait("admin")
+            .add_trait("mobile")
             .set_hotkey("bop", 'b')
-            .add_action("boppity_bop")
             .set_hotkey("boppity_bop", 'v')
-            .add_action("quick_move")
             .set_hotkey("quick_move", 'm')
-            .add_action("divine_heal")
             .set_hotkey("divine_heal", 'h');
 
         Ok(())
@@ -579,6 +577,28 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
+    pub fn set_actions(self, action_ids: Vec<u64>) -> Self {
+        match self
+            .ctx
+            .db
+            .actions_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => {
+                self.ctx.db.actions_components().insert(ActionsComponent {
+                    entity_id: self.entity_id,
+                    action_ids,
+                });
+            }
+            Some(mut c) => {
+                c.action_ids = action_ids;
+                self.ctx.db.actions_components().entity_id().update(c);
+            }
+        }
+        self
+    }
+
     pub fn actions(&self) -> Vec<u64> {
         self.ctx
             .db
@@ -628,10 +648,13 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
+        let mut action_ids = stat_block.additive_action_ids.clone();
+        action_ids.retain(|id| !stat_block.subtractive_action_ids.contains(id));
         self.set_attack(stat_block.attack)
             .set_mhp(stat_block.mhp)
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
+            .set_actions(action_ids)
     }
 
     pub fn set_attack(self, attack: i32) -> Self {

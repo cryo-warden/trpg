@@ -8,6 +8,8 @@ pub struct StatBlock {
     pub mhp: i32,
     pub defense: i32,
     pub mep: i32,
+    pub additive_action_ids: Vec<u64>,
+    pub subtractive_action_ids: Vec<u64>,
 }
 
 #[allow(dead_code)]
@@ -17,6 +19,13 @@ impl StatBlock {
         self.mhp += other.mhp;
         self.defense += other.defense;
         self.mep += other.mep;
+        if other.additive_action_ids.len() > 0 {
+            self.additive_action_ids.extend(&other.additive_action_ids);
+        }
+        if other.subtractive_action_ids.len() > 0 {
+            self.subtractive_action_ids
+                .extend(&other.subtractive_action_ids);
+        }
     }
 }
 

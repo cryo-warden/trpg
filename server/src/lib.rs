@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use action::{ActionEffect, ActionHandle, ActionType};
+use action::{ActionEffect, ActionHandle, ActionName, ActionType};
 use entity::{
     action_options_components, action_state_components, attack_components, baseline_components,
     entities, entity_deactivation_timers, entity_prominences, ep_components, hp_components,
@@ -18,26 +18,6 @@ mod stat_block;
 
 #[reducer(init)]
 pub fn init(ctx: &ReducerContext) -> Result<(), String> {
-    ctx.db.system_timers().insert(SystemTimer {
-        scheduled_id: 0,
-        scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
-    });
-
-    StatBlockContext::new(ctx)
-        .insert_baseline("human", StatBlockBuilder::default().mhp(5).mep(5))
-        .insert_baseline(
-            "slime",
-            StatBlockBuilder::default()
-                .attack(-1)
-                .defense(-1)
-                .mhp(3)
-                .mep(2),
-        )
-        .insert_trait("tiny", &StatBlockBuilder::default().attack(-1).mhp(-2))
-        .insert_trait("small", StatBlockBuilder::default().mhp(-1))
-        .insert_trait("big", StatBlockBuilder::default().mhp(2))
-        .insert_trait("huge", StatBlockBuilder::default().attack(1).mhp(5));
-
     ActionHandle::new(ctx, ActionType::Move)
         .set_name("quick_move")
         .add_move();
@@ -45,6 +25,13 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     ActionHandle::new(ctx, ActionType::Buff)
         .set_name("divine_heal")
         .add_heal(100);
+
+    ActionHandle::new(ctx, ActionType::Move)
+        .set_name("move")
+        .add_rest()
+        .add_rest()
+        .add_move()
+        .add_rest();
 
     ActionHandle::new(ctx, ActionType::Attack)
         .set_name("bop")
@@ -63,6 +50,32 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         .add_rest()
         .add_rest();
 
+    StatBlockContext::new(ctx)
+        .insert_baseline("human", StatBlockBuilder::default().mhp(5).mep(5))
+        .insert_baseline(
+            "slime",
+            StatBlockBuilder::default()
+                .attack(-1)
+                .defense(-1)
+                .mhp(3)
+                .mep(2),
+        )
+        .insert_trait(
+            "admin",
+            &StatBlockBuilder::default().additive_action_ids(vec![
+                ActionName::get_id(ctx, "quick_move"),
+                ActionName::get_id(ctx, "divine_heal"),
+            ]),
+        )
+        .insert_trait(
+            "mobile",
+            &StatBlockBuilder::default().additive_action_ids(vec![ActionName::get_id(ctx, "move")]),
+        )
+        .insert_trait("tiny", &StatBlockBuilder::default().attack(-1).mhp(-2))
+        .insert_trait("small", StatBlockBuilder::default().mhp(-1))
+        .insert_trait("big", StatBlockBuilder::default().mhp(2))
+        .insert_trait("huge", StatBlockBuilder::default().attack(1).mhp(5));
+
     EntityHandle::new(ctx).set_name("allegiance1");
     let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
     let room = EntityHandle::new(ctx).set_name("room1");
@@ -79,6 +92,11 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
             .set_baseline("slime")
             .add_location(room.entity_id);
     }
+
+    ctx.db.system_timers().insert(SystemTimer {
+        scheduled_id: 0,
+        scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
+    });
 
     Ok(())
 }
