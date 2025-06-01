@@ -2,27 +2,41 @@ use std::cmp::{max, min};
 
 use action::{ActionEffect, ActionHandle, ActionType};
 use entity::{
-    action_option_components, action_state_component_targets, action_state_components, entities,
-    entity_deactivation_timers, entity_prominences, ep_components, hp_components,
-    location_components, queued_action_state_components, target_components, ActionOptionComponent,
-    Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
+    action_option_components, action_state_component_targets, action_state_components,
+    baseline_components, entities, entity_deactivation_timers, entity_prominences, ep_components,
+    hp_components, location_components, queued_action_state_components, target_components,
+    trait_components, ActionOptionComponent, Entity, EntityDeactivationTimer, EntityHandle,
+    InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, middle_event_targets,
     middle_events, observable_event_targets, observable_events, Event, EventType,
 };
 use spacetimedb::{reducer, table, ReducerContext, Table, TimeDuration};
+use stat_block::{baselines, traits, StatBlockBuilder, StatBlockContext};
 
 mod action;
 mod entity;
 mod event;
+mod stat_block;
 
 #[reducer(init)]
-pub fn init(ctx: &ReducerContext) {
+pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     ctx.db.system_timers().insert(SystemTimer {
         scheduled_id: 0,
         scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
     });
+
+    StatBlockContext::new(ctx)
+        .insert_baseline("human", StatBlockBuilder::default().mhp(5).mep(5))
+        .insert_baseline(
+            "slime",
+            StatBlockBuilder::default().defense(-1).mhp(3).mep(2),
+        )
+        .insert_trait("tiny", StatBlockBuilder::default().mhp(-2))
+        .insert_trait("small", StatBlockBuilder::default().mhp(-1))
+        .insert_trait("big", StatBlockBuilder::default().mhp(2))
+        .insert_trait("huge", StatBlockBuilder::default().mhp(5));
 
     ActionHandle::new(ctx, ActionType::Move)
         .set_name("quick_move")
@@ -62,9 +76,11 @@ pub fn init(ctx: &ReducerContext) {
     for _ in 0..5 {
         EntityHandle::new(ctx)
             .set_allegiance(allegiance2.entity_id)
-            .add_hp(10)
+            .set_baseline("slime")
             .add_location(room.entity_id);
     }
+
+    Ok(())
 }
 
 #[reducer(client_connected)]
@@ -371,6 +387,28 @@ pub fn entity_deactivation_system(ctx: &ReducerContext) {
     }
 }
 
+pub fn entity_stats_system(ctx: &ReducerContext) {
+    for b in ctx.db.baseline_components().iter() {
+        match ctx.db.baselines().id().find(b.baseline_id) {
+            None => {}
+            Some(baseline) => {
+                let mut stat_block = baseline.stat_block;
+
+                for t in ctx.db.trait_components().entity_id().filter(b.entity_id) {
+                    match ctx.db.traits().id().find(t.trait_id) {
+                        None => {}
+                        Some(t) => {
+                            stat_block.add(t.stat_block);
+                        }
+                    }
+                }
+
+                EntityHandle::from_id(ctx, b.entity_id).apply_stat_block(stat_block);
+            }
+        }
+    }
+}
+
 #[reducer]
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
     observable_event_reset_system(ctx);
@@ -383,6 +421,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     action_option_system(ctx);
     entity_prominence_system(ctx);
     entity_deactivation_system(ctx);
+    entity_stats_system(ctx);
 
     Ok(())
 }

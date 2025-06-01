@@ -1,7 +1,10 @@
 use derive_builder::Builder;
 use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
 
-use crate::action::{action_names, actions, ActionType};
+use crate::{
+    action::{action_names, actions, ActionType},
+    stat_block::{baselines, traits, StatBlock},
+};
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ComponentSet {
@@ -50,8 +53,7 @@ impl Entity {
                     .ok_or("Cannot find starting room.")?
                     .entity_id,
             )
-            .add_hp(10)
-            .add_ep(10)
+            .set_baseline("human")
             .add_player_controller(ctx.sender)
             .add_action("bop")
             .set_hotkey("bop", 'b')
@@ -596,11 +598,83 @@ impl<'a> EntityHandle<'a> {
             .map(|a| a.action_id)
     }
 
-    pub fn add_hp(self, hp: i32) -> Self {
-        self.ctx
-            .db
-            .hp_components()
-            .insert(HpComponent::new(self.entity_id, hp));
+    pub fn set_baseline(self, name: &str) -> Self {
+        match self.ctx.db.baselines().name().find(name.to_string()) {
+            None => {}
+            Some(baseline) => {
+                self.ctx.db.baseline_components().insert(BaselineComponent {
+                    entity_id: self.entity_id,
+                    baseline_id: baseline.id,
+                });
+            }
+        }
+        self
+    }
+
+    pub fn add_trait(self, name: &str) -> Self {
+        match self.ctx.db.traits().name().find(name.to_string()) {
+            None => {}
+            Some(t) => {
+                self.ctx.db.trait_components().insert(TraitComponent {
+                    entity_id: self.entity_id,
+                    trait_id: t.id,
+                });
+            }
+        }
+        self
+    }
+
+    pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
+        let mut e = self;
+        if stat_block.mhp != 0 {
+            e = e.set_mhp(stat_block.mhp);
+        }
+        if stat_block.mep != 0 {
+            e = e.set_mep(stat_block.mep);
+        }
+        if stat_block.defense != 0 {
+            e = e.set_defense(stat_block.defense);
+        }
+        e
+    }
+
+    pub fn set_mhp(self, mhp: i32) -> Self {
+        match self.ctx.db.hp_components().entity_id().find(self.entity_id) {
+            None => {
+                self.ctx.db.hp_components().insert(HpComponent {
+                    entity_id: self.entity_id,
+                    mhp,
+                    hp: mhp,
+                    defense: 0,
+                    accumulated_damage: 0,
+                    accumulated_healing: 0,
+                });
+            }
+            Some(mut hp_component) => {
+                hp_component.mhp = mhp;
+                self.ctx.db.hp_components().entity_id().update(hp_component);
+            }
+        }
+        self
+    }
+
+    pub fn set_defense(self, defense: i32) -> Self {
+        match self.ctx.db.hp_components().entity_id().find(self.entity_id) {
+            None => {
+                self.ctx.db.hp_components().insert(HpComponent {
+                    entity_id: self.entity_id,
+                    mhp: 0,
+                    hp: 0,
+                    defense,
+                    accumulated_damage: 0,
+                    accumulated_healing: 0,
+                });
+            }
+            Some(mut hp_component) => {
+                hp_component.defense = defense;
+                self.ctx.db.hp_components().entity_id().update(hp_component);
+            }
+        }
         self
     }
 
@@ -613,11 +687,24 @@ impl<'a> EntityHandle<'a> {
             .is_some()
     }
 
-    pub fn add_ep(self, ep: i32) -> Self {
+    pub fn set_mep(self, mep: i32) -> Self {
+        match self.ctx.db.ep_components().entity_id().find(self.entity_id) {
+            None => {
+                self.ctx.db.ep_components().insert(EpComponent {
+                    entity_id: self.entity_id,
+                    mep,
+                    ep: mep,
+                });
+            }
+            Some(mut ep_component) => {
+                ep_component.mep = mep;
+                self.ctx.db.ep_components().entity_id().update(ep_component);
+            }
+        }
         self.ctx.db.ep_components().insert(EpComponent {
             entity_id: self.entity_id,
-            mep: ep,
-            ep,
+            mep,
+            ep: mep,
         });
         self
     }
@@ -645,9 +732,9 @@ impl<'a> EntityHandle<'a> {
             .db
             .queued_action_state_components()
             .insert(ActionStateComponent {
+                id: 0,
                 action_id,
                 entity_id: self.entity_id,
-                id: 0,
                 sequence_index: 0,
             });
         self
@@ -841,6 +928,22 @@ pub struct AllegianceComponent {
     pub entity_id: u64,
     #[index(btree)]
     pub allegiance_entity_id: u64,
+}
+
+#[table(name = baseline_components, public)]
+#[derive(Debug, Clone)]
+pub struct BaselineComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub baseline_id: u64,
+}
+
+#[table(name = trait_components, public)]
+#[derive(Debug, Clone)]
+pub struct TraitComponent {
+    #[index(btree)]
+    pub entity_id: u64,
+    pub trait_id: u64,
 }
 
 #[table(name = hp_components, public)]
