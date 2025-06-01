@@ -1,17 +1,19 @@
 use std::cmp::{max, min};
 
 use action::{ActionEffect, ActionHandle, ActionName, ActionType};
-use entity::{
+use component::{
     action_options_components, action_state_components, attack_components, baseline_components,
-    entities, entity_deactivation_timers, entity_prominences, ep_components, hp_components,
-    location_components, queued_action_state_components, target_components, traits_components,
-    Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
+    entity_deactivation_timer_components, entity_prominence_components, ep_components,
+    hp_components, location_components, queued_action_state_components, target_components,
+    traits_components, EntityDeactivationTimerComponent,
 };
+use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, Event, EventType};
-use spacetimedb::{reducer, table, ReducerContext, Table, TimeDuration};
+use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlockBuilder, StatBlockContext};
 
 mod action;
+mod component;
 mod entity;
 mod event;
 mod stat_block;
@@ -95,7 +97,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
     ctx.db.system_timers().insert(SystemTimer {
         scheduled_id: 0,
-        scheduled_at: spacetimedb::ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
+        scheduled_at: ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
     });
 
     Ok(())
@@ -106,16 +108,23 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(e) => {
             ctx.db
-                .entity_deactivation_timers()
+                .entity_deactivation_timer_components()
                 .entity_id()
                 .delete(e.entity_id);
+            log::debug!(
+                "Reconnected {} to {} and removed deactivation timer.",
+                ctx.sender,
+                e.entity_id
+            );
         }
         None => match InactiveEntityHandle::from_player_identity(ctx) {
             Some(h) => {
-                h.activate();
+                let e = h.activate();
+                log::debug!("Reactivated {} to {}.", ctx.sender, e.entity_id);
             }
             None => {
-                Entity::new_player(ctx)?;
+                let e = Entity::new_player(ctx)?;
+                log::debug!("Connected {} to new player {}.", ctx.sender, e.entity_id);
             }
         },
     }
@@ -126,11 +135,13 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer(client_disconnected)]
 pub fn identity_disconnected(ctx: &ReducerContext) {
     match EntityHandle::from_player_identity(ctx) {
-        None => {}
+        None => {
+            log::debug!("Disconnected {} but cannot find any player.", ctx.sender);
+        }
         Some(e) => {
             if ctx
                 .db
-                .entity_deactivation_timers()
+                .entity_deactivation_timer_components()
                 .entity_id()
                 .find(e.entity_id)
                 .is_none()
@@ -141,12 +152,17 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
                 {
                     None => {}
                     Some(timestamp) => {
-                        ctx.db
-                            .entity_deactivation_timers()
-                            .insert(EntityDeactivationTimer {
+                        ctx.db.entity_deactivation_timer_components().insert(
+                            EntityDeactivationTimerComponent {
                                 entity_id: e.entity_id,
                                 timestamp,
-                            });
+                            },
+                        );
+                        log::debug!(
+                            "Disconnected {} from player {} and set deactivation timer.",
+                            ctx.sender,
+                            e.entity_id
+                        );
                     }
                 }
             }
@@ -398,8 +414,8 @@ pub fn action_option_system(ctx: &ReducerContext) {
 }
 
 pub fn entity_prominence_system(ctx: &ReducerContext) {
-    for p in ctx.db.entity_prominences().iter() {
-        ctx.db.entity_prominences().delete(p);
+    for p in ctx.db.entity_prominence_components().iter() {
+        ctx.db.entity_prominence_components().delete(p);
     }
     for entity in ctx.db.entities().iter() {
         EntityHandle::from_id(ctx, entity.id).generate_prominence();
@@ -407,10 +423,10 @@ pub fn entity_prominence_system(ctx: &ReducerContext) {
 }
 
 pub fn entity_deactivation_system(ctx: &ReducerContext) {
-    for t in ctx.db.entity_deactivation_timers().iter() {
+    for t in ctx.db.entity_deactivation_timer_components().iter() {
         if t.timestamp.le(&ctx.timestamp) {
             EntityHandle::from_id(ctx, t.entity_id).deactivate();
-            ctx.db.entity_deactivation_timers().delete(t);
+            ctx.db.entity_deactivation_timer_components().delete(t);
         }
     }
 }

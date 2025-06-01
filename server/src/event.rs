@@ -2,7 +2,7 @@ use spacetimedb::{table, ReducerContext, SpacetimeType, Table, Timestamp};
 
 use crate::{
     action::ActionEffect,
-    entity::{hp_components, location_components, path_components},
+    component::{hp_components, location_components, path_components},
 };
 
 #[derive(Debug, Clone, SpacetimeType)]

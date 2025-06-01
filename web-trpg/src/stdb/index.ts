@@ -74,10 +74,10 @@ import { EarlyEventsTableHandle } from "./early_events_table.ts";
 export { EarlyEventsTableHandle };
 import { EntitiesTableHandle } from "./entities_table.ts";
 export { EntitiesTableHandle };
-import { EntityDeactivationTimersTableHandle } from "./entity_deactivation_timers_table.ts";
-export { EntityDeactivationTimersTableHandle };
-import { EntityProminencesTableHandle } from "./entity_prominences_table.ts";
-export { EntityProminencesTableHandle };
+import { EntityDeactivationTimerComponentsTableHandle } from "./entity_deactivation_timer_components_table.ts";
+export { EntityDeactivationTimerComponentsTableHandle };
+import { EntityProminenceComponentsTableHandle } from "./entity_prominence_components_table.ts";
+export { EntityProminenceComponentsTableHandle };
 import { EpComponentsTableHandle } from "./ep_components_table.ts";
 export { EpComponentsTableHandle };
 import { HpComponentsTableHandle } from "./hp_components_table.ts";
@@ -148,10 +148,10 @@ import { ComponentSet } from "./component_set_type.ts";
 export { ComponentSet };
 import { Entity } from "./entity_type.ts";
 export { Entity };
-import { EntityDeactivationTimer } from "./entity_deactivation_timer_type.ts";
-export { EntityDeactivationTimer };
-import { EntityProminence } from "./entity_prominence_type.ts";
-export { EntityProminence };
+import { EntityDeactivationTimerComponent } from "./entity_deactivation_timer_component_type.ts";
+export { EntityDeactivationTimerComponent };
+import { EntityProminenceComponent } from "./entity_prominence_component_type.ts";
+export { EntityProminenceComponent };
 import { EpComponent } from "./ep_component_type.ts";
 export { EpComponent };
 import { Event } from "./event_type.ts";
@@ -250,14 +250,14 @@ const REMOTE_MODULE = {
       rowType: Entity.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
-    entity_deactivation_timers: {
-      tableName: "entity_deactivation_timers",
-      rowType: EntityDeactivationTimer.getTypeScriptAlgebraicType(),
+    entity_deactivation_timer_components: {
+      tableName: "entity_deactivation_timer_components",
+      rowType: EntityDeactivationTimerComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
-    entity_prominences: {
-      tableName: "entity_prominences",
-      rowType: EntityProminence.getTypeScriptAlgebraicType(),
+    entity_prominence_components: {
+      tableName: "entity_prominence_components",
+      rowType: EntityProminenceComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
     ep_components: {
@@ -585,12 +585,12 @@ export class RemoteTables {
     return new EntitiesTableHandle(this.connection.clientCache.getOrCreateTable<Entity>(REMOTE_MODULE.tables.entities));
   }
 
-  get entityDeactivationTimers(): EntityDeactivationTimersTableHandle {
-    return new EntityDeactivationTimersTableHandle(this.connection.clientCache.getOrCreateTable<EntityDeactivationTimer>(REMOTE_MODULE.tables.entity_deactivation_timers));
+  get entityDeactivationTimerComponents(): EntityDeactivationTimerComponentsTableHandle {
+    return new EntityDeactivationTimerComponentsTableHandle(this.connection.clientCache.getOrCreateTable<EntityDeactivationTimerComponent>(REMOTE_MODULE.tables.entity_deactivation_timer_components));
   }
 
-  get entityProminences(): EntityProminencesTableHandle {
-    return new EntityProminencesTableHandle(this.connection.clientCache.getOrCreateTable<EntityProminence>(REMOTE_MODULE.tables.entity_prominences));
+  get entityProminenceComponents(): EntityProminenceComponentsTableHandle {
+    return new EntityProminenceComponentsTableHandle(this.connection.clientCache.getOrCreateTable<EntityProminenceComponent>(REMOTE_MODULE.tables.entity_prominence_components));
   }
 
   get epComponents(): EpComponentsTableHandle {

@@ -1,7 +1,19 @@
-use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table, Timestamp};
+use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table};
 
 use crate::{
     action::{action_names, actions, ActionType},
+    component::{
+        action_hotkeys_components, action_options_components, action_state_components,
+        actions_components, allegiance_components, attack_components, baseline_components,
+        entity_deactivation_timer_components, entity_prominence_components, ep_components,
+        hp_components, location_components, name_components, path_components,
+        player_controller_components, queued_action_state_components, target_components,
+        traits_components, ActionHotkey, ActionHotkeysComponent, ActionOption,
+        ActionOptionsComponent, ActionStateComponent, ActionsComponent, AllegianceComponent,
+        AttackComponent, BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent,
+        LocationComponent, NameComponent, PathComponent, PlayerControllerComponent,
+        TargetComponent, TraitsComponent,
+    },
     stat_block::{baselines, traits, StatBlock},
 };
 
@@ -40,8 +52,8 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn new_player(ctx: &ReducerContext) -> Result<(), String> {
-        EntityHandle::new(ctx)
+    pub fn new_player(ctx: &ReducerContext) -> Result<EntityHandle, String> {
+        Ok(EntityHandle::new(ctx)
             .add_player_controller(ctx.sender)
             .set_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
@@ -59,9 +71,7 @@ impl Entity {
             .set_hotkey("bop", 'b')
             .set_hotkey("boppity_bop", 'v')
             .set_hotkey("quick_move", 'm')
-            .set_hotkey("divine_heal", 'h');
-
-        Ok(())
+            .set_hotkey("divine_heal", 'h'))
     }
 }
 
@@ -249,10 +259,13 @@ impl<'a> EntityHandle<'a> {
             prominence |= 1 << 6;
         }
 
-        self.ctx.db.entity_prominences().insert(EntityProminence {
-            entity_id: self.entity_id,
-            prominence,
-        });
+        self.ctx
+            .db
+            .entity_prominence_components()
+            .insert(EntityProminenceComponent {
+                entity_id: self.entity_id,
+                prominence,
+            });
 
         self
     }
@@ -328,17 +341,18 @@ impl<'a> EntityHandle<'a> {
 
         self.ctx
             .db
-            .entity_prominences()
+            .entity_prominence_components()
             .entity_id()
             .delete(self.entity_id);
 
         self.ctx
             .db
-            .entity_deactivation_timers()
+            .entity_deactivation_timer_components()
             .entity_id()
             .delete(self.entity_id);
 
         self.ctx.db.entities().id().delete(self.entity_id);
+        log::debug!("Deleted entity {}.", self.entity_id);
     }
 
     pub fn deactivate(self) {
@@ -907,165 +921,4 @@ impl<'a> EntityHandle<'a> {
             },
         }
     }
-}
-
-#[table(name = name_components, public)]
-#[derive(Debug, Clone)]
-pub struct NameComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[unique]
-    pub name: String,
-}
-
-#[table(name = location_components, public)]
-#[derive(Debug, Clone)]
-pub struct LocationComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[index(btree)]
-    pub location_entity_id: u64,
-}
-
-#[table(name = path_components, public)]
-#[derive(Debug, Clone)]
-pub struct PathComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[index(btree)]
-    pub destination_entity_id: u64,
-}
-
-#[table(name = allegiance_components, public)]
-#[derive(Debug, Clone)]
-pub struct AllegianceComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[index(btree)]
-    pub allegiance_entity_id: u64,
-}
-
-#[table(name = baseline_components, public)]
-#[derive(Debug, Clone)]
-pub struct BaselineComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub baseline_id: u64,
-}
-
-#[table(name = traits_components, public)]
-#[derive(Debug, Clone)]
-pub struct TraitsComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub trait_ids: Vec<u64>,
-}
-
-#[table(name = attack_components, public)]
-#[derive(Debug, Clone)]
-pub struct AttackComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub attack: i32,
-}
-
-#[table(name = hp_components, public)]
-#[derive(Debug, Clone)]
-pub struct HpComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub hp: i32,
-    pub mhp: i32,
-    pub defense: i32,
-    pub accumulated_damage: i32,
-    pub accumulated_healing: i32,
-}
-
-#[table(name = ep_components, public)]
-#[derive(Debug, Clone)]
-pub struct EpComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub ep: i32,
-    pub mep: i32,
-}
-
-#[table(name = player_controller_components, public)]
-#[derive(Debug, Clone)]
-pub struct PlayerControllerComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[unique]
-    pub identity: Identity,
-}
-
-#[table(name = target_components, public)]
-#[derive(Debug, Clone)]
-pub struct TargetComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub target_entity_id: u64,
-}
-
-#[table(name = queued_action_state_components, public)]
-#[table(name = action_state_components, public)]
-#[derive(Debug, Clone)]
-pub struct ActionStateComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub target_entity_id: u64,
-    pub action_id: u64,
-    pub sequence_index: i32,
-}
-
-#[table(name = actions_components, public)]
-#[derive(Debug, Clone)]
-pub struct ActionsComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub action_ids: Vec<u64>,
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct ActionHotkey {
-    pub action_id: u64,
-    pub character_code: u32,
-}
-
-#[table(name = action_hotkeys_components, public)]
-#[derive(Debug, Clone)]
-pub struct ActionHotkeysComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub action_hotkeys: Vec<ActionHotkey>,
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct ActionOption {
-    pub action_id: u64,
-    pub target_entity_id: u64,
-}
-
-#[table(name = action_options_components, public)]
-#[derive(Debug, Clone)]
-pub struct ActionOptionsComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub action_options: Vec<ActionOption>,
-}
-
-#[table(name = entity_prominences, public)]
-#[derive(Debug, Clone)]
-pub struct EntityProminence {
-    #[primary_key]
-    pub entity_id: u64,
-    pub prominence: i32,
-}
-
-#[table(name = entity_deactivation_timers, public)]
-#[derive(Debug, Clone)]
-pub struct EntityDeactivationTimer {
-    #[primary_key]
-    pub entity_id: u64,
-    pub timestamp: Timestamp,
 }

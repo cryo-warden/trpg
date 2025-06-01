@@ -47,8 +47,7 @@ const queries = [
   "select * from player_controller_components",
   "select * from queued_action_state_components",
   "select * from target_components",
-
-  "select * from entity_prominences",
+  "select * from entity_prominence_components",
 ];
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
@@ -302,7 +301,7 @@ export const useActionOptions = (
 
 export const useEntityProminences = (entityIds: EntityId[]) => {
   return useTableData(
-    "entityProminences",
+    "entityProminenceComponents",
     (table) => {
       const m = new Map([...table.iter()].map((ep) => [ep.entityId, ep]));
       return entityIds.map((id) => {

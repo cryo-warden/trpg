@@ -30,7 +30,7 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type EntityDeactivationTimer = {
+export type EntityDeactivationTimerComponent = {
   entityId: bigint,
   timestamp: Timestamp,
 };
@@ -38,7 +38,7 @@ export type EntityDeactivationTimer = {
 /**
  * A namespace for generated helper functions.
  */
-export namespace EntityDeactivationTimer {
+export namespace EntityDeactivationTimerComponent {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -50,12 +50,12 @@ export namespace EntityDeactivationTimer {
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: EntityDeactivationTimer): void {
-    EntityDeactivationTimer.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: EntityDeactivationTimerComponent): void {
+    EntityDeactivationTimerComponent.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): EntityDeactivationTimer {
-    return EntityDeactivationTimer.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): EntityDeactivationTimerComponent {
+    return EntityDeactivationTimerComponent.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

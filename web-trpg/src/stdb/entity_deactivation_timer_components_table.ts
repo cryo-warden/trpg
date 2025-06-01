@@ -30,23 +30,23 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { EntityDeactivationTimer } from "./entity_deactivation_timer_type";
+import { EntityDeactivationTimerComponent } from "./entity_deactivation_timer_component_type";
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `entity_deactivation_timers`.
+ * Table handle for the table `entity_deactivation_timer_components`.
  *
- * Obtain a handle from the [`entityDeactivationTimers`] property on [`RemoteTables`],
- * like `ctx.db.entityDeactivationTimers`.
+ * Obtain a handle from the [`entityDeactivationTimerComponents`] property on [`RemoteTables`],
+ * like `ctx.db.entityDeactivationTimerComponents`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.entityDeactivationTimers.on_insert(...)`.
+ * like `ctx.db.entityDeactivationTimerComponents.on_insert(...)`.
  */
-export class EntityDeactivationTimersTableHandle {
-  tableCache: TableCache<EntityDeactivationTimer>;
+export class EntityDeactivationTimerComponentsTableHandle {
+  tableCache: TableCache<EntityDeactivationTimerComponent>;
 
-  constructor(tableCache: TableCache<EntityDeactivationTimer>) {
+  constructor(tableCache: TableCache<EntityDeactivationTimerComponent>) {
     this.tableCache = tableCache;
   }
 
@@ -54,24 +54,24 @@ export class EntityDeactivationTimersTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<EntityDeactivationTimer> {
+  iter(): Iterable<EntityDeactivationTimerComponent> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `entityId` unique index on the table `entity_deactivation_timers`,
+   * Access to the `entityId` unique index on the table `entity_deactivation_timer_components`,
    * which allows point queries on the field of the same name
-   * via the [`EntityDeactivationTimersEntityIdUnique.find`] method.
+   * via the [`EntityDeactivationTimerComponentsEntityIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.entityDeactivationTimers.entityId().find(...)`.
+   * like `ctx.db.entityDeactivationTimerComponents.entityId().find(...)`.
    *
-   * Get a handle on the `entityId` unique index on the table `entity_deactivation_timers`.
+   * Get a handle on the `entityId` unique index on the table `entity_deactivation_timer_components`.
    */
   entityId = {
     // Find the subscribed row whose `entityId` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): EntityDeactivationTimer | undefined => {
+    find: (col_val: bigint): EntityDeactivationTimerComponent | undefined => {
       for (let row of this.tableCache.iter()) {
         if (deepEqual(row.entityId, col_val)) {
           return row;
@@ -80,27 +80,27 @@ export class EntityDeactivationTimersTableHandle {
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: EntityDeactivationTimer) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: EntityDeactivationTimerComponent) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: EntityDeactivationTimer) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: EntityDeactivationTimerComponent) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: EntityDeactivationTimer) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: EntityDeactivationTimerComponent) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: EntityDeactivationTimer) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: EntityDeactivationTimerComponent) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: EntityDeactivationTimer, newRow: EntityDeactivationTimer) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: EntityDeactivationTimerComponent, newRow: EntityDeactivationTimerComponent) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: EntityDeactivationTimer, newRow: EntityDeactivationTimer) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: EntityDeactivationTimerComponent, newRow: EntityDeactivationTimerComponent) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

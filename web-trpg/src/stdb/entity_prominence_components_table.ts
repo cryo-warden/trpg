@@ -30,23 +30,23 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { EntityProminence } from "./entity_prominence_type";
+import { EntityProminenceComponent } from "./entity_prominence_component_type";
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `entity_prominences`.
+ * Table handle for the table `entity_prominence_components`.
  *
- * Obtain a handle from the [`entityProminences`] property on [`RemoteTables`],
- * like `ctx.db.entityProminences`.
+ * Obtain a handle from the [`entityProminenceComponents`] property on [`RemoteTables`],
+ * like `ctx.db.entityProminenceComponents`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.entityProminences.on_insert(...)`.
+ * like `ctx.db.entityProminenceComponents.on_insert(...)`.
  */
-export class EntityProminencesTableHandle {
-  tableCache: TableCache<EntityProminence>;
+export class EntityProminenceComponentsTableHandle {
+  tableCache: TableCache<EntityProminenceComponent>;
 
-  constructor(tableCache: TableCache<EntityProminence>) {
+  constructor(tableCache: TableCache<EntityProminenceComponent>) {
     this.tableCache = tableCache;
   }
 
@@ -54,24 +54,24 @@ export class EntityProminencesTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<EntityProminence> {
+  iter(): Iterable<EntityProminenceComponent> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `entityId` unique index on the table `entity_prominences`,
+   * Access to the `entityId` unique index on the table `entity_prominence_components`,
    * which allows point queries on the field of the same name
-   * via the [`EntityProminencesEntityIdUnique.find`] method.
+   * via the [`EntityProminenceComponentsEntityIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.entityProminences.entityId().find(...)`.
+   * like `ctx.db.entityProminenceComponents.entityId().find(...)`.
    *
-   * Get a handle on the `entityId` unique index on the table `entity_prominences`.
+   * Get a handle on the `entityId` unique index on the table `entity_prominence_components`.
    */
   entityId = {
     // Find the subscribed row whose `entityId` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): EntityProminence | undefined => {
+    find: (col_val: bigint): EntityProminenceComponent | undefined => {
       for (let row of this.tableCache.iter()) {
         if (deepEqual(row.entityId, col_val)) {
           return row;
@@ -80,27 +80,27 @@ export class EntityProminencesTableHandle {
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: EntityProminence) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: EntityProminenceComponent) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: EntityProminence) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: EntityProminenceComponent) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: EntityProminence) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: EntityProminenceComponent) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: EntityProminence) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: EntityProminenceComponent) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: EntityProminence, newRow: EntityProminence) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: EntityProminenceComponent, newRow: EntityProminenceComponent) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: EntityProminence, newRow: EntityProminence) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: EntityProminenceComponent, newRow: EntityProminenceComponent) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}
