@@ -4,8 +4,9 @@ use action::{ActionEffect, ActionHandle, ActionName, ActionType};
 use component::{
     action_options_components, action_state_components, attack_components, baseline_components,
     entity_deactivation_timer_components, entity_prominence_components, ep_components,
-    hp_components, location_components, queued_action_state_components, target_components,
-    traits_components, EntityDeactivationTimerComponent,
+    hp_components, location_components, queued_action_state_components, realized_map_components,
+    target_components, traits_components, EntityDeactivationTimerComponent, MapComponent,
+    MapLayout,
 };
 use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, Event, EventType};
@@ -78,10 +79,23 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         .insert_trait("big", StatBlockBuilder::default().mhp(2))
         .insert_trait("huge", StatBlockBuilder::default().attack(1).mhp(5));
 
+    // TODO Move map logic to EntityHandle.
+    // TODO Realize and unrealize maps.
+    let map = EntityHandle::new(ctx);
+    let map_component = ctx.db.realized_map_components().insert(MapComponent {
+        entity_id: map.entity_id,
+        loop_count: 0, // TODO Add loops.
+        main_room_count: 10,
+        map_layout: MapLayout::Path,
+        map_theme_id: 0, // TODO Add map_themes table.
+        total_room_count: 10,
+    });
+    let map_result = map_component.generate(ctx);
+
     EntityHandle::new(ctx).set_name("allegiance1");
     let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
-    let room = EntityHandle::new(ctx).set_name("room1");
-    let room2 = EntityHandle::new(ctx).set_name("room2");
+    let room = EntityHandle::from_id(ctx, map_result.room_ids[0]).set_name("room1");
+    let room2 = EntityHandle::from_id(ctx, map_result.room_ids[1]).set_name("room2");
     EntityHandle::new(ctx)
         .add_location(room2.entity_id)
         .add_path(room.entity_id);

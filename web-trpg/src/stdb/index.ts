@@ -88,6 +88,8 @@ import { LateEventsTableHandle } from "./late_events_table.ts";
 export { LateEventsTableHandle };
 import { LocationComponentsTableHandle } from "./location_components_table.ts";
 export { LocationComponentsTableHandle };
+import { LocationMapComponentsTableHandle } from "./location_map_components_table.ts";
+export { LocationMapComponentsTableHandle };
 import { MiddleEventsTableHandle } from "./middle_events_table.ts";
 export { MiddleEventsTableHandle };
 import { NameComponentsTableHandle } from "./name_components_table.ts";
@@ -102,6 +104,8 @@ import { PlayerControllerComponentsTableHandle } from "./player_controller_compo
 export { PlayerControllerComponentsTableHandle };
 import { QueuedActionStateComponentsTableHandle } from "./queued_action_state_components_table.ts";
 export { QueuedActionStateComponentsTableHandle };
+import { RealizedMapComponentsTableHandle } from "./realized_map_components_table.ts";
+export { RealizedMapComponentsTableHandle };
 import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
 import { TargetComponentsTableHandle } from "./target_components_table.ts";
@@ -110,6 +114,8 @@ import { TraitsTableHandle } from "./traits_table.ts";
 export { TraitsTableHandle };
 import { TraitsComponentsTableHandle } from "./traits_components_table.ts";
 export { TraitsComponentsTableHandle };
+import { UnrealizedMapComponentsTableHandle } from "./unrealized_map_components_table.ts";
+export { UnrealizedMapComponentsTableHandle };
 
 // Import and reexport all types
 import { Action } from "./action_type.ts";
@@ -164,6 +170,12 @@ import { IdentityInactiveEntity } from "./identity_inactive_entity_type.ts";
 export { IdentityInactiveEntity };
 import { LocationComponent } from "./location_component_type.ts";
 export { LocationComponent };
+import { LocationMapComponent } from "./location_map_component_type.ts";
+export { LocationMapComponent };
+import { MapComponent } from "./map_component_type.ts";
+export { MapComponent };
+import { MapLayout } from "./map_layout_type.ts";
+export { MapLayout };
 import { NameComponent } from "./name_component_type.ts";
 export { NameComponent };
 import { NamedInactiveEntity } from "./named_inactive_entity_type.ts";
@@ -284,6 +296,11 @@ const REMOTE_MODULE = {
       rowType: LocationComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
+    location_map_components: {
+      tableName: "location_map_components",
+      rowType: LocationMapComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
     middle_events: {
       tableName: "middle_events",
       rowType: Event.getTypeScriptAlgebraicType(),
@@ -319,6 +336,11 @@ const REMOTE_MODULE = {
       rowType: ActionStateComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
+    realized_map_components: {
+      tableName: "realized_map_components",
+      rowType: MapComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
     system_timers: {
       tableName: "system_timers",
       rowType: SystemTimer.getTypeScriptAlgebraicType(),
@@ -337,6 +359,11 @@ const REMOTE_MODULE = {
     traits_components: {
       tableName: "traits_components",
       rowType: TraitsComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
+    unrealized_map_components: {
+      tableName: "unrealized_map_components",
+      rowType: MapComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
   },
@@ -613,6 +640,10 @@ export class RemoteTables {
     return new LocationComponentsTableHandle(this.connection.clientCache.getOrCreateTable<LocationComponent>(REMOTE_MODULE.tables.location_components));
   }
 
+  get locationMapComponents(): LocationMapComponentsTableHandle {
+    return new LocationMapComponentsTableHandle(this.connection.clientCache.getOrCreateTable<LocationMapComponent>(REMOTE_MODULE.tables.location_map_components));
+  }
+
   get middleEvents(): MiddleEventsTableHandle {
     return new MiddleEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.middle_events));
   }
@@ -641,6 +672,10 @@ export class RemoteTables {
     return new QueuedActionStateComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionStateComponent>(REMOTE_MODULE.tables.queued_action_state_components));
   }
 
+  get realizedMapComponents(): RealizedMapComponentsTableHandle {
+    return new RealizedMapComponentsTableHandle(this.connection.clientCache.getOrCreateTable<MapComponent>(REMOTE_MODULE.tables.realized_map_components));
+  }
+
   get systemTimers(): SystemTimersTableHandle {
     return new SystemTimersTableHandle(this.connection.clientCache.getOrCreateTable<SystemTimer>(REMOTE_MODULE.tables.system_timers));
   }
@@ -655,6 +690,10 @@ export class RemoteTables {
 
   get traitsComponents(): TraitsComponentsTableHandle {
     return new TraitsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TraitsComponent>(REMOTE_MODULE.tables.traits_components));
+  }
+
+  get unrealizedMapComponents(): UnrealizedMapComponentsTableHandle {
+    return new UnrealizedMapComponentsTableHandle(this.connection.clientCache.getOrCreateTable<MapComponent>(REMOTE_MODULE.tables.unrealized_map_components));
   }
 }
 

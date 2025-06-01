@@ -1,8 +1,11 @@
 use spacetimedb::table;
+use spacetimedb::ReducerContext;
 use spacetimedb::SpacetimeType;
 use spacetimedb::Timestamp;
 
 use spacetimedb::Identity;
+
+use crate::entity::EntityHandle;
 
 #[table(name = name_components, public)]
 #[derive(Debug, Clone)]
@@ -163,4 +166,57 @@ pub struct EntityDeactivationTimerComponent {
     #[primary_key]
     pub entity_id: u64,
     pub timestamp: Timestamp,
+}
+
+#[table(name = location_map_components, public)]
+#[derive(Debug, Clone)]
+pub struct LocationMapComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub map_entity_id: u64,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum MapLayout {
+    Path,
+    Hub,
+}
+
+#[table(name = realized_map_components, public)]
+#[table(name = unrealized_map_components, public)]
+#[derive(Debug, Clone)]
+pub struct MapComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub map_theme_id: u64,
+    pub map_layout: MapLayout,
+    pub total_room_count: u16,
+    pub main_room_count: u16,
+    pub loop_count: u16,
+}
+
+pub struct MapGenerationResult {
+    pub room_ids: Vec<u64>,
+}
+
+impl MapComponent {
+    pub fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
+        let room_handles: Vec<EntityHandle> = (0..self.main_room_count)
+            .map(|_| EntityHandle::new(ctx)) // TODO Mark rooms with a LocationMapComponent, then add a system to inherit that from contents.
+            .collect();
+        for i in 0..(room_handles.len() - 1) {
+            let a = &room_handles[i];
+            let b = &room_handles[i + 1];
+            EntityHandle::new(ctx)
+                .add_location(a.entity_id)
+                .add_path(b.entity_id);
+            EntityHandle::new(ctx)
+                .add_location(b.entity_id)
+                .add_path(a.entity_id);
+        }
+
+        MapGenerationResult {
+            room_ids: room_handles.iter().map(|h| h.entity_id).collect(),
+        }
+    }
 }
