@@ -30,8 +30,8 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { ActionComponent as __ActionComponent } from "./action_component_type";
-import { ActionHotkeyComponent as __ActionHotkeyComponent } from "./action_hotkey_component_type";
+import { ActionHotkeysComponent as __ActionHotkeysComponent } from "./action_hotkeys_component_type";
+import { ActionsComponent as __ActionsComponent } from "./actions_component_type";
 import { AllegianceComponent as __AllegianceComponent } from "./allegiance_component_type";
 import { EpComponent as __EpComponent } from "./ep_component_type";
 import { HpComponent as __HpComponent } from "./hp_component_type";
@@ -40,8 +40,8 @@ import { PlayerControllerComponent as __PlayerControllerComponent } from "./play
 export type ComponentSet = {
   hpComponent: __HpComponent | undefined,
   epComponent: __EpComponent | undefined,
-  actionComponents: __ActionComponent[],
-  actionHotkeyComponents: __ActionHotkeyComponent[],
+  actionsComponent: __ActionsComponent | undefined,
+  actionHotkeysComponent: __ActionHotkeysComponent | undefined,
   allegianceComponent: __AllegianceComponent | undefined,
   playerControllerComponent: __PlayerControllerComponent | undefined,
 };
@@ -58,8 +58,8 @@ export namespace ComponentSet {
     return AlgebraicType.createProductType([
       new ProductTypeElement("hpComponent", AlgebraicType.createOptionType(__HpComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("epComponent", AlgebraicType.createOptionType(__EpComponent.getTypeScriptAlgebraicType())),
-      new ProductTypeElement("actionComponents", AlgebraicType.createArrayType(__ActionComponent.getTypeScriptAlgebraicType())),
-      new ProductTypeElement("actionHotkeyComponents", AlgebraicType.createArrayType(__ActionHotkeyComponent.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("actionsComponent", AlgebraicType.createOptionType(__ActionsComponent.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("actionHotkeysComponent", AlgebraicType.createOptionType(__ActionHotkeysComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("allegianceComponent", AlgebraicType.createOptionType(__AllegianceComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("playerControllerComponent", AlgebraicType.createOptionType(__PlayerControllerComponent.getTypeScriptAlgebraicType())),
     ]);

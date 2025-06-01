@@ -48,14 +48,12 @@ import { Target } from "./target_reducer.ts";
 export { Target };
 
 // Import and reexport all table handle types
-import { ActionComponentsTableHandle } from "./action_components_table.ts";
-export { ActionComponentsTableHandle };
-import { ActionHotkeyComponentsTableHandle } from "./action_hotkey_components_table.ts";
-export { ActionHotkeyComponentsTableHandle };
+import { ActionHotkeysComponentsTableHandle } from "./action_hotkeys_components_table.ts";
+export { ActionHotkeysComponentsTableHandle };
 import { ActionNamesTableHandle } from "./action_names_table.ts";
 export { ActionNamesTableHandle };
-import { ActionOptionComponentsTableHandle } from "./action_option_components_table.ts";
-export { ActionOptionComponentsTableHandle };
+import { ActionOptionsComponentsTableHandle } from "./action_options_components_table.ts";
+export { ActionOptionsComponentsTableHandle };
 import { ActionStateComponentTargetsTableHandle } from "./action_state_component_targets_table.ts";
 export { ActionStateComponentTargetsTableHandle };
 import { ActionStateComponentsTableHandle } from "./action_state_components_table.ts";
@@ -64,8 +62,14 @@ import { ActionStepsTableHandle } from "./action_steps_table.ts";
 export { ActionStepsTableHandle };
 import { ActionsTableHandle } from "./actions_table.ts";
 export { ActionsTableHandle };
+import { ActionsComponentsTableHandle } from "./actions_components_table.ts";
+export { ActionsComponentsTableHandle };
 import { AllegianceComponentsTableHandle } from "./allegiance_components_table.ts";
 export { AllegianceComponentsTableHandle };
+import { BaselineComponentsTableHandle } from "./baseline_components_table.ts";
+export { BaselineComponentsTableHandle };
+import { BaselinesTableHandle } from "./baselines_table.ts";
+export { BaselinesTableHandle };
 import { EarlyEventTargetsTableHandle } from "./early_event_targets_table.ts";
 export { EarlyEventTargetsTableHandle };
 import { EarlyEventsTableHandle } from "./early_events_table.ts";
@@ -112,20 +116,26 @@ import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
 import { TargetComponentsTableHandle } from "./target_components_table.ts";
 export { TargetComponentsTableHandle };
+import { TraitComponentsTableHandle } from "./trait_components_table.ts";
+export { TraitComponentsTableHandle };
+import { TraitsTableHandle } from "./traits_table.ts";
+export { TraitsTableHandle };
 
 // Import and reexport all types
 import { Action } from "./action_type.ts";
 export { Action };
-import { ActionComponent } from "./action_component_type.ts";
-export { ActionComponent };
 import { ActionEffect } from "./action_effect_type.ts";
 export { ActionEffect };
-import { ActionHotkeyComponent } from "./action_hotkey_component_type.ts";
-export { ActionHotkeyComponent };
+import { ActionHotkey } from "./action_hotkey_type.ts";
+export { ActionHotkey };
+import { ActionHotkeysComponent } from "./action_hotkeys_component_type.ts";
+export { ActionHotkeysComponent };
 import { ActionName } from "./action_name_type.ts";
 export { ActionName };
-import { ActionOptionComponent } from "./action_option_component_type.ts";
-export { ActionOptionComponent };
+import { ActionOption } from "./action_option_type.ts";
+export { ActionOption };
+import { ActionOptionsComponent } from "./action_options_component_type.ts";
+export { ActionOptionsComponent };
 import { ActionStateComponent } from "./action_state_component_type.ts";
 export { ActionStateComponent };
 import { ActionStateComponentTarget } from "./action_state_component_target_type.ts";
@@ -134,8 +144,14 @@ import { ActionStep } from "./action_step_type.ts";
 export { ActionStep };
 import { ActionType } from "./action_type_type.ts";
 export { ActionType };
+import { ActionsComponent } from "./actions_component_type.ts";
+export { ActionsComponent };
 import { AllegianceComponent } from "./allegiance_component_type.ts";
 export { AllegianceComponent };
+import { Baseline } from "./baseline_type.ts";
+export { Baseline };
+import { BaselineComponent } from "./baseline_component_type.ts";
+export { BaselineComponent };
 import { Buff } from "./buff_type.ts";
 export { Buff };
 import { ComponentSet } from "./component_set_type.ts";
@@ -168,29 +184,33 @@ import { PathComponent } from "./path_component_type.ts";
 export { PathComponent };
 import { PlayerControllerComponent } from "./player_controller_component_type.ts";
 export { PlayerControllerComponent };
+import { StatBlock } from "./stat_block_type.ts";
+export { StatBlock };
 import { SystemTimer } from "./system_timer_type.ts";
 export { SystemTimer };
 import { TargetComponent } from "./target_component_type.ts";
 export { TargetComponent };
+import { Trait } from "./trait_type.ts";
+export { Trait };
+import { TraitComponent } from "./trait_component_type.ts";
+export { TraitComponent };
 
 const REMOTE_MODULE = {
   tables: {
-    action_components: {
-      tableName: "action_components",
-      rowType: ActionComponent.getTypeScriptAlgebraicType(),
-    },
-    action_hotkey_components: {
-      tableName: "action_hotkey_components",
-      rowType: ActionHotkeyComponent.getTypeScriptAlgebraicType(),
+    action_hotkeys_components: {
+      tableName: "action_hotkeys_components",
+      rowType: ActionHotkeysComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
     },
     action_names: {
       tableName: "action_names",
       rowType: ActionName.getTypeScriptAlgebraicType(),
       primaryKey: "actionId",
     },
-    action_option_components: {
-      tableName: "action_option_components",
-      rowType: ActionOptionComponent.getTypeScriptAlgebraicType(),
+    action_options_components: {
+      tableName: "action_options_components",
+      rowType: ActionOptionsComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
     },
     action_state_component_targets: {
       tableName: "action_state_component_targets",
@@ -211,10 +231,25 @@ const REMOTE_MODULE = {
       rowType: Action.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
+    actions_components: {
+      tableName: "actions_components",
+      rowType: ActionsComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
     allegiance_components: {
       tableName: "allegiance_components",
       rowType: AllegianceComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
+    },
+    baseline_components: {
+      tableName: "baseline_components",
+      rowType: BaselineComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
+    baselines: {
+      tableName: "baselines",
+      rowType: Baseline.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
     },
     early_event_targets: {
       tableName: "early_event_targets",
@@ -324,6 +359,15 @@ const REMOTE_MODULE = {
       tableName: "target_components",
       rowType: TargetComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
+    },
+    trait_components: {
+      tableName: "trait_components",
+      rowType: TraitComponent.getTypeScriptAlgebraicType(),
+    },
+    traits: {
+      tableName: "traits",
+      rowType: Trait.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
     },
   },
   reducers: {
@@ -519,20 +563,16 @@ export class SetReducerFlags {
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
 
-  get actionComponents(): ActionComponentsTableHandle {
-    return new ActionComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionComponent>(REMOTE_MODULE.tables.action_components));
-  }
-
-  get actionHotkeyComponents(): ActionHotkeyComponentsTableHandle {
-    return new ActionHotkeyComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeyComponent>(REMOTE_MODULE.tables.action_hotkey_components));
+  get actionHotkeysComponents(): ActionHotkeysComponentsTableHandle {
+    return new ActionHotkeysComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeysComponent>(REMOTE_MODULE.tables.action_hotkeys_components));
   }
 
   get actionNames(): ActionNamesTableHandle {
     return new ActionNamesTableHandle(this.connection.clientCache.getOrCreateTable<ActionName>(REMOTE_MODULE.tables.action_names));
   }
 
-  get actionOptionComponents(): ActionOptionComponentsTableHandle {
-    return new ActionOptionComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionOptionComponent>(REMOTE_MODULE.tables.action_option_components));
+  get actionOptionsComponents(): ActionOptionsComponentsTableHandle {
+    return new ActionOptionsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionOptionsComponent>(REMOTE_MODULE.tables.action_options_components));
   }
 
   get actionStateComponentTargets(): ActionStateComponentTargetsTableHandle {
@@ -551,8 +591,20 @@ export class RemoteTables {
     return new ActionsTableHandle(this.connection.clientCache.getOrCreateTable<Action>(REMOTE_MODULE.tables.actions));
   }
 
+  get actionsComponents(): ActionsComponentsTableHandle {
+    return new ActionsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionsComponent>(REMOTE_MODULE.tables.actions_components));
+  }
+
   get allegianceComponents(): AllegianceComponentsTableHandle {
     return new AllegianceComponentsTableHandle(this.connection.clientCache.getOrCreateTable<AllegianceComponent>(REMOTE_MODULE.tables.allegiance_components));
+  }
+
+  get baselineComponents(): BaselineComponentsTableHandle {
+    return new BaselineComponentsTableHandle(this.connection.clientCache.getOrCreateTable<BaselineComponent>(REMOTE_MODULE.tables.baseline_components));
+  }
+
+  get baselines(): BaselinesTableHandle {
+    return new BaselinesTableHandle(this.connection.clientCache.getOrCreateTable<Baseline>(REMOTE_MODULE.tables.baselines));
   }
 
   get earlyEventTargets(): EarlyEventTargetsTableHandle {
@@ -645,6 +697,14 @@ export class RemoteTables {
 
   get targetComponents(): TargetComponentsTableHandle {
     return new TargetComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TargetComponent>(REMOTE_MODULE.tables.target_components));
+  }
+
+  get traitComponents(): TraitComponentsTableHandle {
+    return new TraitComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TraitComponent>(REMOTE_MODULE.tables.trait_components));
+  }
+
+  get traits(): TraitsTableHandle {
+    return new TraitsTableHandle(this.connection.clientCache.getOrCreateTable<Trait>(REMOTE_MODULE.tables.traits));
   }
 }
 

@@ -2,11 +2,10 @@ use std::cmp::{max, min};
 
 use action::{ActionEffect, ActionHandle, ActionType};
 use entity::{
-    action_option_components, action_state_component_targets, action_state_components,
+    action_options_components, action_state_component_targets, action_state_components,
     baseline_components, entities, entity_deactivation_timers, entity_prominences, ep_components,
     hp_components, location_components, queued_action_state_components, target_components,
-    trait_components, ActionOptionComponent, Entity, EntityDeactivationTimer, EntityHandle,
-    InactiveEntityHandle,
+    trait_components, Entity, EntityDeactivationTimer, EntityHandle, InactiveEntityHandle,
 };
 use event::{
     early_event_targets, early_events, late_event_targets, late_events, middle_event_targets,
@@ -342,27 +341,26 @@ pub fn target_validation_system(ctx: &ReducerContext) {
 }
 
 pub fn action_option_system(ctx: &ReducerContext) {
-    for action_option_component in ctx.db.action_option_components().iter() {
+    for action_option_component in ctx.db.action_options_components().iter() {
         ctx.db
-            .action_option_components()
+            .action_options_components()
             .delete(action_option_component);
     }
     for location_component in ctx.db.location_components().iter() {
-        let e = EntityHandle::from_id(ctx, location_component.entity_id);
+        let mut e = EntityHandle::from_id(ctx, location_component.entity_id);
         for other_entity_id in match e.target() {
             None => vec![e.entity_id],
-            Some(target) => vec![e.entity_id, target],
+            Some(target) => {
+                if e.entity_id == target {
+                    vec![e.entity_id]
+                } else {
+                    vec![e.entity_id, target]
+                }
+            }
         } {
-            let t = EntityHandle::from_id(ctx, other_entity_id);
             for action_id in e.actions() {
-                if e.can_target_other(t.entity_id, action_id) {
-                    ctx.db
-                        .action_option_components()
-                        .insert(ActionOptionComponent {
-                            action_id,
-                            entity_id: e.entity_id,
-                            target_entity_id: t.entity_id,
-                        });
+                if e.can_target_other(other_entity_id, action_id) {
+                    e = e.add_action_option(action_id, other_entity_id);
                 }
             }
         }

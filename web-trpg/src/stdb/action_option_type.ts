@@ -30,32 +30,32 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type ActionComponent = {
-  entityId: bigint,
+export type ActionOption = {
   actionId: bigint,
+  targetEntityId: bigint,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace ActionComponent {
+export namespace ActionOption {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: ActionComponent): void {
-    ActionComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ActionOption): void {
+    ActionOption.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): ActionComponent {
-    return ActionComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ActionOption {
+    return ActionOption.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

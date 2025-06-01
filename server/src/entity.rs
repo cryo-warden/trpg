@@ -10,8 +10,8 @@ use crate::{
 pub struct ComponentSet {
     pub hp_component: Option<HpComponent>,
     pub ep_component: Option<EpComponent>,
-    pub action_components: Vec<ActionComponent>,
-    pub action_hotkey_components: Vec<ActionHotkeyComponent>,
+    pub actions_component: Option<ActionsComponent>,
+    pub action_hotkeys_component: Option<ActionHotkeysComponent>,
     pub allegiance_component: Option<AllegianceComponent>,
     pub player_controller_component: Option<PlayerControllerComponent>,
 }
@@ -105,13 +105,19 @@ impl<'a> InactiveEntityHandle<'a> {
 
     pub fn activate(self) -> EntityHandle<'a> {
         let e = EntityHandle::new(self.ctx);
-        for mut c in self.component_set.action_components {
-            c.entity_id = e.entity_id;
-            self.ctx.db.action_components().insert(c);
+        match self.component_set.actions_component {
+            None => {}
+            Some(mut c) => {
+                c.entity_id = e.entity_id;
+                self.ctx.db.actions_components().insert(c);
+            }
         }
-        for mut c in self.component_set.action_hotkey_components {
-            c.entity_id = e.entity_id;
-            self.ctx.db.action_hotkey_components().insert(c);
+        match self.component_set.action_hotkeys_component {
+            None => {}
+            Some(mut c) => {
+                c.entity_id = e.entity_id;
+                self.ctx.db.action_hotkeys_components().insert(c);
+            }
         }
         match self.component_set.allegiance_component {
             None => {}
@@ -257,17 +263,17 @@ impl<'a> EntityHandle<'a> {
     pub fn delete(self) {
         self.ctx
             .db
-            .action_components()
+            .actions_components()
             .entity_id()
             .delete(self.entity_id);
         self.ctx
             .db
-            .action_hotkey_components()
+            .action_hotkeys_components()
             .entity_id()
             .delete(self.entity_id);
         self.ctx
             .db
-            .action_option_components()
+            .action_options_components()
             .entity_id()
             .delete(self.entity_id);
 
@@ -369,20 +375,18 @@ impl<'a> EntityHandle<'a> {
 
     pub fn deactivate(self) {
         let component_set = ComponentSet {
-            action_components: self
+            actions_component: self
                 .ctx
                 .db
-                .action_components()
+                .actions_components()
                 .entity_id()
-                .filter(self.entity_id)
-                .collect(),
-            action_hotkey_components: self
+                .find(self.entity_id),
+            action_hotkeys_component: self
                 .ctx
                 .db
-                .action_hotkey_components()
+                .action_hotkeys_components()
                 .entity_id()
-                .filter(self.entity_id)
-                .collect(),
+                .find(self.entity_id),
             allegiance_component: self
                 .ctx
                 .db
@@ -578,24 +582,41 @@ impl<'a> EntityHandle<'a> {
             .name()
             .find(action_name.to_string())
         {
-            None => {}
+            None => {
+                log::debug!("Cannot find action \"{}\" to add.", action_name);
+            }
             Some(action_name) => {
-                self.ctx.db.action_components().insert(ActionComponent {
-                    entity_id: self.entity_id,
-                    action_id: action_name.action_id,
-                });
+                match self
+                    .ctx
+                    .db
+                    .actions_components()
+                    .entity_id()
+                    .find(self.entity_id)
+                {
+                    None => {
+                        self.ctx.db.actions_components().insert(ActionsComponent {
+                            entity_id: self.entity_id,
+                            action_ids: vec![action_name.action_id],
+                        });
+                    }
+                    Some(mut a) => {
+                        a.action_ids.push(action_name.action_id);
+                        self.ctx.db.actions_components().entity_id().update(a);
+                    }
+                }
             }
         };
         self
     }
 
-    pub fn actions(&self) -> impl Iterator<Item = u64> {
+    pub fn actions(&self) -> Vec<u64> {
         self.ctx
             .db
-            .action_components()
+            .actions_components()
             .entity_id()
-            .filter(self.entity_id)
-            .map(|a| a.action_id)
+            .find(self.entity_id)
+            .map(|a| a.action_ids)
+            .unwrap_or(vec![])
     }
 
     pub fn set_baseline(self, name: &str) -> Self {
@@ -706,6 +727,41 @@ impl<'a> EntityHandle<'a> {
             mep,
             ep: mep,
         });
+        self
+    }
+
+    pub fn add_action_option(self, action_id: u64, target_entity_id: u64) -> Self {
+        match self
+            .ctx
+            .db
+            .action_options_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => {
+                self.ctx
+                    .db
+                    .action_options_components()
+                    .insert(ActionOptionsComponent {
+                        entity_id: self.entity_id,
+                        action_options: vec![ActionOption {
+                            action_id,
+                            target_entity_id,
+                        }],
+                    });
+            }
+            Some(mut a) => {
+                a.action_options.push(ActionOption {
+                    action_id,
+                    target_entity_id,
+                });
+                self.ctx
+                    .db
+                    .action_options_components()
+                    .entity_id()
+                    .update(a);
+            }
+        };
         self
     }
 
@@ -858,24 +914,39 @@ impl<'a> EntityHandle<'a> {
             Some(action_name) => action_name.action_id,
         };
         let character_code = character as u32;
-        self.ctx
+        match self
+            .ctx
             .db
-            .action_hotkey_components()
-            .entity_id_and_action_id()
-            .delete((self.entity_id, action_id));
-        self.ctx
-            .db
-            .action_hotkey_components()
-            .entity_id_and_character_code()
-            .delete((self.entity_id, character_code));
-        self.ctx
-            .db
-            .action_hotkey_components()
-            .insert(ActionHotkeyComponent {
-                entity_id: self.entity_id,
-                action_id,
-                character_code,
-            });
+            .action_hotkeys_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => {
+                self.ctx
+                    .db
+                    .action_hotkeys_components()
+                    .insert(ActionHotkeysComponent {
+                        entity_id: self.entity_id,
+                        action_hotkeys: vec![ActionHotkey {
+                            action_id,
+                            character_code,
+                        }],
+                    });
+            }
+            Some(mut a) => {
+                a.action_hotkeys
+                    .retain(|h| h.action_id != action_id && h.character_code != character_code);
+                a.action_hotkeys.push(ActionHotkey {
+                    action_id,
+                    character_code,
+                });
+                self.ctx
+                    .db
+                    .action_hotkeys_components()
+                    .entity_id()
+                    .update(a);
+            }
+        }
         self
     }
 
@@ -1031,35 +1102,40 @@ pub struct ActionStateComponentTarget {
     pub target_entity_id: u64,
 }
 
-#[table(name = action_components, public)]
+#[table(name = actions_components, public)]
 #[derive(Debug, Clone)]
-pub struct ActionComponent {
-    #[index(btree)]
+pub struct ActionsComponent {
+    #[primary_key]
     pub entity_id: u64,
-    pub action_id: u64,
+    pub action_ids: Vec<u64>,
 }
 
-#[table(
-  name = action_hotkey_components,
-  public,
-  index(name=entity_id_and_action_id, btree(columns=[entity_id, action_id])),
-  index(name=entity_id_and_character_code, btree(columns=[entity_id, character_code]))
-)]
-#[derive(Debug, Clone)]
-pub struct ActionHotkeyComponent {
-    #[index(btree)]
-    pub entity_id: u64,
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct ActionHotkey {
     pub action_id: u64,
     pub character_code: u32,
 }
 
-#[table(name = action_option_components, public)]
+#[table(name = action_hotkeys_components, public)]
 #[derive(Debug, Clone)]
-pub struct ActionOptionComponent {
-    #[index(btree)]
+pub struct ActionHotkeysComponent {
+    #[primary_key]
     pub entity_id: u64,
+    pub action_hotkeys: Vec<ActionHotkey>,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct ActionOption {
     pub action_id: u64,
     pub target_entity_id: u64,
+}
+
+#[table(name = action_options_components, public)]
+#[derive(Debug, Clone)]
+pub struct ActionOptionsComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub action_options: Vec<ActionOption>,
 }
 
 #[table(name = entity_prominences, public)]

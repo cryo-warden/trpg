@@ -30,16 +30,17 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type ActionOptionComponent = {
+import { ActionHotkey as __ActionHotkey } from "./action_hotkey_type";
+
+export type ActionHotkeysComponent = {
   entityId: bigint,
-  actionId: bigint,
-  targetEntityId: bigint,
+  actionHotkeys: __ActionHotkey[],
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace ActionOptionComponent {
+export namespace ActionHotkeysComponent {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -47,17 +48,16 @@ export namespace ActionOptionComponent {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("actionHotkeys", AlgebraicType.createArrayType(__ActionHotkey.getTypeScriptAlgebraicType())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: ActionOptionComponent): void {
-    ActionOptionComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ActionHotkeysComponent): void {
+    ActionHotkeysComponent.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): ActionOptionComponent {
-    return ActionOptionComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ActionHotkeysComponent {
+    return ActionHotkeysComponent.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

@@ -4,6 +4,7 @@ import {
   ReactNode,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import { DbConnection, RemoteTables } from "../../stdb";
@@ -35,8 +36,9 @@ const queries = [
   "select * from action_names",
 
   "select * from entities",
-  "select * from action_hotkey_components",
-  "select * from action_option_components",
+  "select * from action_hotkeys_components",
+  "select * from action_options_components",
+  "select * from actions_components",
   "select * from action_state_components",
   "select * from allegiance_components",
   "select * from ep_components",
@@ -261,39 +263,40 @@ export const useActionName = (actionId: ActionId) => {
   );
 };
 
+const useActionHotkeysComponent = useComponent("actionHotkeysComponents");
+
 export const useActionHotkey = (actionId: ActionId) => {
   const playerEntity = usePlayerEntity();
+  const actionHotkeysComponent = useActionHotkeysComponent(playerEntity);
+  if (actionHotkeysComponent == null) {
+    return void 0;
+  }
 
-  return useTableData(
-    "actionHotkeyComponents",
-    (table) =>
-      [...table.iter()]
-        .filter(
-          (actionHotkeyComponent) =>
-            actionHotkeyComponent.entityId === playerEntity &&
-            actionHotkeyComponent.actionId === actionId
-        )
-        .map((actionHotkeyComponent) =>
-          String.fromCharCode(actionHotkeyComponent.characterCode)
-        )[0] ?? null,
-    [playerEntity, actionId]
+  const actionHotkey = actionHotkeysComponent.actionHotkeys.find(
+    (actionHotkey) => actionHotkey.actionId === actionId
   );
+  if (actionHotkey == null) {
+    return void 0;
+  }
+
+  return String.fromCharCode(actionHotkey.characterCode);
 };
 
-export const useActionOptions = (targetEntityId: EntityId | null) => {
-  const playerEntity = usePlayerEntity();
+const useActionOptionsComponent = useComponent("actionOptionsComponents");
 
-  return useTableData(
-    "actionOptionComponents",
-    (table) =>
-      [...table.iter()]
+export const useActionOptions = (
+  targetEntityId: EntityId | null
+): ActionId[] => {
+  const playerEntity = usePlayerEntity();
+  const actionOptionsComponent = useActionOptionsComponent(playerEntity);
+  return useMemo(
+    () =>
+      actionOptionsComponent?.actionOptions
         .filter(
-          (actionOptionComponent) =>
-            actionOptionComponent.entityId === playerEntity &&
-            actionOptionComponent.targetEntityId === targetEntityId
+          (actionOption) => actionOption.targetEntityId === targetEntityId
         )
-        .map((actionOptionComponent) => actionOptionComponent.actionId),
-    [targetEntityId, playerEntity]
+        .map((actionOption) => actionOption.actionId) ?? [],
+    [actionOptionsComponent, targetEntityId]
   );
 };
 

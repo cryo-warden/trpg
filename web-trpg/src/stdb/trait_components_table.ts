@@ -30,23 +30,23 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { ActionOptionComponent } from "./action_option_component_type";
+import { TraitComponent } from "./trait_component_type";
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `action_option_components`.
+ * Table handle for the table `trait_components`.
  *
- * Obtain a handle from the [`actionOptionComponents`] property on [`RemoteTables`],
- * like `ctx.db.actionOptionComponents`.
+ * Obtain a handle from the [`traitComponents`] property on [`RemoteTables`],
+ * like `ctx.db.traitComponents`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.actionOptionComponents.on_insert(...)`.
+ * like `ctx.db.traitComponents.on_insert(...)`.
  */
-export class ActionOptionComponentsTableHandle {
-  tableCache: TableCache<ActionOptionComponent>;
+export class TraitComponentsTableHandle {
+  tableCache: TableCache<TraitComponent>;
 
-  constructor(tableCache: TableCache<ActionOptionComponent>) {
+  constructor(tableCache: TableCache<TraitComponent>) {
     this.tableCache = tableCache;
   }
 
@@ -54,23 +54,23 @@ export class ActionOptionComponentsTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<ActionOptionComponent> {
+  iter(): Iterable<TraitComponent> {
     return this.tableCache.iter();
   }
 
-  onInsert = (cb: (ctx: EventContext, row: ActionOptionComponent) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: TraitComponent) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: ActionOptionComponent) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: TraitComponent) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: ActionOptionComponent) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: TraitComponent) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: ActionOptionComponent) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: TraitComponent) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 }
