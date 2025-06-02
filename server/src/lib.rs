@@ -81,7 +81,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
     // TODO Move map logic to EntityHandle.
     // TODO Realize and unrealize maps.
-    let map = EntityHandle::new(ctx);
+    let map = EntityHandle::new(ctx).set_rng_seed(0);
     let map_component = ctx.db.realized_map_components().insert(MapComponent {
         entity_id: map.entity_id,
         loop_count: 0, // TODO Add loops.

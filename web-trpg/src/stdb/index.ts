@@ -106,6 +106,8 @@ import { QueuedActionStateComponentsTableHandle } from "./queued_action_state_co
 export { QueuedActionStateComponentsTableHandle };
 import { RealizedMapComponentsTableHandle } from "./realized_map_components_table.ts";
 export { RealizedMapComponentsTableHandle };
+import { RngSeedComponentsTableHandle } from "./rng_seed_components_table.ts";
+export { RngSeedComponentsTableHandle };
 import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
 import { TargetComponentsTableHandle } from "./target_components_table.ts";
@@ -184,6 +186,8 @@ import { PathComponent } from "./path_component_type.ts";
 export { PathComponent };
 import { PlayerControllerComponent } from "./player_controller_component_type.ts";
 export { PlayerControllerComponent };
+import { RngSeedComponent } from "./rng_seed_component_type.ts";
+export { RngSeedComponent };
 import { StatBlock } from "./stat_block_type.ts";
 export { StatBlock };
 import { SystemTimer } from "./system_timer_type.ts";
@@ -339,6 +343,11 @@ const REMOTE_MODULE = {
     realized_map_components: {
       tableName: "realized_map_components",
       rowType: MapComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
+    rng_seed_components: {
+      tableName: "rng_seed_components",
+      rowType: RngSeedComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
     system_timers: {
@@ -674,6 +683,10 @@ export class RemoteTables {
 
   get realizedMapComponents(): RealizedMapComponentsTableHandle {
     return new RealizedMapComponentsTableHandle(this.connection.clientCache.getOrCreateTable<MapComponent>(REMOTE_MODULE.tables.realized_map_components));
+  }
+
+  get rngSeedComponents(): RngSeedComponentsTableHandle {
+    return new RngSeedComponentsTableHandle(this.connection.clientCache.getOrCreateTable<RngSeedComponent>(REMOTE_MODULE.tables.rng_seed_components));
   }
 
   get systemTimers(): SystemTimersTableHandle {

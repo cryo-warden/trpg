@@ -1,10 +1,9 @@
-use seeded_random::Seed;
+use spacetimedb::rand::RngCore;
 use spacetimedb::table;
+use spacetimedb::Identity;
 use spacetimedb::ReducerContext;
 use spacetimedb::SpacetimeType;
 use spacetimedb::Timestamp;
-
-use spacetimedb::Identity;
 
 use crate::entity::EntityHandle;
 
@@ -169,6 +168,14 @@ pub struct EntityDeactivationTimerComponent {
     pub timestamp: Timestamp,
 }
 
+#[table(name = rng_seed_components, public)]
+#[derive(Debug, Clone)]
+pub struct RngSeedComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub rng_seed: u64,
+}
+
 #[table(name = location_map_components, public)]
 #[derive(Debug, Clone)]
 pub struct LocationMapComponent {
@@ -202,7 +209,8 @@ pub struct MapGenerationResult {
 
 impl MapComponent {
     pub fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
-        let rng = seeded_random::Random::from_seed(Seed::unsafe_new(1));
+        let e = EntityHandle::from_id(ctx, self.entity_id);
+        let mut rng = e.get_rng();
         let total_room_count = self.extra_room_count + self.main_room_count;
         let room_handles: Vec<EntityHandle> = (0..total_room_count)
             .map(|_| EntityHandle::new(ctx).set_location_map(self.entity_id))
@@ -219,9 +227,9 @@ impl MapComponent {
                 .add_path(a.entity_id);
         }
 
-        for i in (self.main_room_count as usize)..(total_room_count as usize) {
-            let a = &room_handles[i];
-            let b = &room_handles[rng.range(0, i as u32) as usize];
+        for i in (self.main_room_count as u32)..(total_room_count as u32) {
+            let a = &room_handles[i as usize];
+            let b = &room_handles[(rng.next_u32() % i) as usize];
             EntityHandle::new(ctx)
                 .add_location(a.entity_id)
                 .add_path(b.entity_id);

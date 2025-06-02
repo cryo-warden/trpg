@@ -12,4 +12,3 @@ crate-type = ["cdylib"]
 spacetimedb = "1.1.2"
 log = "0.4"
 derive_builder = "0.20.2"
-seeded-random = "0.6.0"

@@ -1,4 +1,7 @@
-use spacetimedb::{table, Identity, ReducerContext, SpacetimeType, Table};
+use spacetimedb::{
+    rand::{rngs::StdRng, RngCore, SeedableRng},
+    table, Identity, ReducerContext, SpacetimeType, Table,
+};
 
 use crate::{
     action::{action_names, actions, ActionType},
@@ -8,11 +11,12 @@ use crate::{
         entity_deactivation_timer_components, entity_prominence_components, ep_components,
         hp_components, location_components, location_map_components, name_components,
         path_components, player_controller_components, queued_action_state_components,
-        target_components, traits_components, ActionHotkey, ActionHotkeysComponent, ActionOption,
-        ActionOptionsComponent, ActionStateComponent, ActionsComponent, AllegianceComponent,
-        AttackComponent, BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent,
-        LocationComponent, LocationMapComponent, NameComponent, PathComponent,
-        PlayerControllerComponent, TargetComponent, TraitsComponent,
+        rng_seed_components, target_components, traits_components, ActionHotkey,
+        ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
+        ActionsComponent, AllegianceComponent, AttackComponent, BaselineComponent,
+        EntityProminenceComponent, EpComponent, HpComponent, LocationComponent,
+        LocationMapComponent, NameComponent, PathComponent, PlayerControllerComponent,
+        RngSeedComponent, TargetComponent, TraitsComponent,
     },
     stat_block::{baselines, traits, StatBlock},
 };
@@ -519,6 +523,45 @@ impl<'a> EntityHandle<'a> {
             }
         }
         self
+    }
+
+    pub fn set_rng_seed(self, rng_seed: u64) -> Self {
+        match self
+            .ctx
+            .db
+            .rng_seed_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            Some(mut c) => {
+                c.rng_seed = rng_seed;
+                self.ctx.db.rng_seed_components().entity_id().update(c);
+            }
+            None => {
+                self.ctx.db.rng_seed_components().insert(RngSeedComponent {
+                    entity_id: self.entity_id,
+                    rng_seed,
+                });
+            }
+        }
+        self
+    }
+
+    pub fn get_rng(&self) -> StdRng {
+        let c = match self
+            .ctx
+            .db
+            .rng_seed_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            Some(s) => s,
+            None => self.ctx.db.rng_seed_components().insert(RngSeedComponent {
+                entity_id: self.entity_id,
+                rng_seed: self.ctx.rng().next_u64(),
+            }),
+        };
+        StdRng::seed_from_u64(c.rng_seed)
     }
 
     pub fn add_path(self, destination_entity_id: u64) -> Self {
