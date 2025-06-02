@@ -88,20 +88,13 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         main_room_count: 10,
         map_layout: MapLayout::Path,
         map_theme_id: 0, // TODO Add map_themes table.
-        total_room_count: 10,
+        extra_room_count: 10,
     });
     let map_result = map_component.generate(ctx);
 
     EntityHandle::new(ctx).set_name("allegiance1");
     let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
     let room = EntityHandle::from_id(ctx, map_result.room_ids[0]).set_name("room1");
-    let room2 = EntityHandle::from_id(ctx, map_result.room_ids[1]).set_name("room2");
-    EntityHandle::new(ctx)
-        .add_location(room2.entity_id)
-        .add_path(room.entity_id);
-    EntityHandle::new(ctx)
-        .add_location(room.entity_id)
-        .add_path(room2.entity_id);
     for _ in 0..5 {
         EntityHandle::new(ctx)
             .set_allegiance(allegiance2.entity_id)

@@ -36,7 +36,7 @@ export type MapComponent = {
   entityId: bigint,
   mapThemeId: bigint,
   mapLayout: __MapLayout,
-  totalRoomCount: number,
+  extraRoomCount: number,
   mainRoomCount: number,
   loopCount: number,
 };
@@ -54,9 +54,9 @@ export namespace MapComponent {
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("mapThemeId", AlgebraicType.createU64Type()),
       new ProductTypeElement("mapLayout", __MapLayout.getTypeScriptAlgebraicType()),
-      new ProductTypeElement("totalRoomCount", AlgebraicType.createU16Type()),
-      new ProductTypeElement("mainRoomCount", AlgebraicType.createU16Type()),
-      new ProductTypeElement("loopCount", AlgebraicType.createU16Type()),
+      new ProductTypeElement("extraRoomCount", AlgebraicType.createU8Type()),
+      new ProductTypeElement("mainRoomCount", AlgebraicType.createU8Type()),
+      new ProductTypeElement("loopCount", AlgebraicType.createU8Type()),
     ]);
   }
 

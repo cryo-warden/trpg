@@ -6,13 +6,13 @@ use crate::{
         action_hotkeys_components, action_options_components, action_state_components,
         actions_components, allegiance_components, attack_components, baseline_components,
         entity_deactivation_timer_components, entity_prominence_components, ep_components,
-        hp_components, location_components, name_components, path_components,
-        player_controller_components, queued_action_state_components, target_components,
-        traits_components, ActionHotkey, ActionHotkeysComponent, ActionOption,
+        hp_components, location_components, location_map_components, name_components,
+        path_components, player_controller_components, queued_action_state_components,
+        target_components, traits_components, ActionHotkey, ActionHotkeysComponent, ActionOption,
         ActionOptionsComponent, ActionStateComponent, ActionsComponent, AllegianceComponent,
         AttackComponent, BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent,
-        LocationComponent, NameComponent, PathComponent, PlayerControllerComponent,
-        TargetComponent, TraitsComponent,
+        LocationComponent, LocationMapComponent, NameComponent, PathComponent,
+        PlayerControllerComponent, TargetComponent, TraitsComponent,
     },
     stat_block::{baselines, traits, StatBlock},
 };
@@ -494,6 +494,31 @@ impl<'a> EntityHandle<'a> {
             .entity_id()
             .find(self.entity_id)
             .map(|l| l.location_entity_id)
+    }
+
+    pub fn set_location_map(self, map_entity_id: u64) -> Self {
+        match self
+            .ctx
+            .db
+            .location_map_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            None => {
+                self.ctx
+                    .db
+                    .location_map_components()
+                    .insert(LocationMapComponent {
+                        entity_id: self.entity_id,
+                        map_entity_id,
+                    });
+            }
+            Some(mut c) => {
+                c.map_entity_id = map_entity_id;
+                self.ctx.db.location_map_components().entity_id().update(c);
+            }
+        }
+        self
     }
 
     pub fn add_path(self, destination_entity_id: u64) -> Self {

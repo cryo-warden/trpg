@@ -1,3 +1,4 @@
+use seeded_random::Seed;
 use spacetimedb::table;
 use spacetimedb::ReducerContext;
 use spacetimedb::SpacetimeType;
@@ -190,9 +191,9 @@ pub struct MapComponent {
     pub entity_id: u64,
     pub map_theme_id: u64,
     pub map_layout: MapLayout,
-    pub total_room_count: u16,
-    pub main_room_count: u16,
-    pub loop_count: u16,
+    pub extra_room_count: u8,
+    pub main_room_count: u8,
+    pub loop_count: u8,
 }
 
 pub struct MapGenerationResult {
@@ -201,12 +202,26 @@ pub struct MapGenerationResult {
 
 impl MapComponent {
     pub fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
-        let room_handles: Vec<EntityHandle> = (0..self.main_room_count)
-            .map(|_| EntityHandle::new(ctx)) // TODO Mark rooms with a LocationMapComponent, then add a system to inherit that from contents.
+        let rng = seeded_random::Random::from_seed(Seed::unsafe_new(1));
+        let total_room_count = self.extra_room_count + self.main_room_count;
+        let room_handles: Vec<EntityHandle> = (0..total_room_count)
+            .map(|_| EntityHandle::new(ctx).set_location_map(self.entity_id))
             .collect();
-        for i in 0..(room_handles.len() - 1) {
+
+        for i in 0..(self.main_room_count as usize - 1) {
             let a = &room_handles[i];
             let b = &room_handles[i + 1];
+            EntityHandle::new(ctx)
+                .add_location(a.entity_id)
+                .add_path(b.entity_id);
+            EntityHandle::new(ctx)
+                .add_location(b.entity_id)
+                .add_path(a.entity_id);
+        }
+
+        for i in (self.main_room_count as usize)..(total_room_count as usize) {
+            let a = &room_handles[i];
+            let b = &room_handles[rng.range(0, i as u32) as usize];
             EntityHandle::new(ctx)
                 .add_location(a.entity_id)
                 .add_path(b.entity_id);
