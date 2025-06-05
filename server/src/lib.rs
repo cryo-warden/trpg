@@ -4,12 +4,12 @@ use action::{ActionEffect, ActionHandle, ActionName, ActionType};
 use component::{
     action_options_components, action_state_components, attack_components, baseline_components,
     entity_deactivation_timer_components, entity_prominence_components, ep_components,
-    hp_components, location_components, queued_action_state_components, realized_map_components,
-    target_components, traits_components, EntityDeactivationTimerComponent, MapComponent,
-    MapLayout,
+    hp_components, location_components, observer_components, player_controller_components,
+    queued_action_state_components, realized_map_components, target_components, traits_components,
+    EntityDeactivationTimerComponent, MapComponent, MapLayout, ObserverComponent,
 };
 use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
-use event::{early_events, late_events, middle_events, observable_events, Event, EventType};
+use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlockBuilder, StatBlockContext};
 
@@ -73,6 +73,13 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         .insert_trait(
             "mobile",
             &StatBlockBuilder::default().additive_action_ids(vec![ActionName::get_id(ctx, "move")]),
+        )
+        .insert_trait(
+            "bopper",
+            &StatBlockBuilder::default().additive_action_ids(vec![
+                ActionName::get_id(ctx, "bop"),
+                ActionName::get_id(ctx, "boppity_bop"),
+            ]),
         )
         .insert_trait("tiny", &StatBlockBuilder::default().attack(-1).mhp(-2))
         .insert_trait("small", StatBlockBuilder::default().mhp(-1))
@@ -217,6 +224,21 @@ pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
+pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
+    if let Some(p) = ctx
+        .db
+        .player_controller_components()
+        .identity()
+        .find(ctx.sender)
+    {
+        ctx.db.observer_components().entity_id().delete(p.entity_id);
+        Ok(())
+    } else {
+        Err("Cannot consume observer events without a player controller component.".to_string())
+    }
+}
+
+#[reducer]
 pub fn damage(ctx: &ReducerContext, entity_id: u64, damage: i32) -> Result<(), String> {
     let mut hp = ctx
         .db
@@ -238,9 +260,34 @@ pub struct SystemTimer {
     scheduled_at: spacetimedb::ScheduleAt,
 }
 
-pub fn observable_event_reset_system(ctx: &ReducerContext) {
-    for event in ctx.db.observable_events().iter() {
-        ctx.db.observable_events().id().delete(event.id);
+pub fn observation_system(ctx: &ReducerContext) {
+    for o in ctx.db.observable_events().iter() {
+        if let Some(l) = ctx
+            .db
+            .location_components()
+            .entity_id()
+            .find(o.target_entity_id)
+        {
+            for l in ctx
+                .db
+                .location_components()
+                .location_entity_id()
+                .filter(l.location_entity_id)
+            {
+                if ctx
+                    .db
+                    .player_controller_components()
+                    .entity_id()
+                    .find(l.entity_id)
+                    .is_some()
+                {
+                    ctx.db.observer_components().insert(ObserverComponent {
+                        entity_id: l.entity_id,
+                        observable_event_id: o.id,
+                    });
+                }
+            }
+        }
     }
 }
 
@@ -302,7 +349,7 @@ pub fn action_system(ctx: &ReducerContext) {
         if let Some(ref effect) = effect {
             match effect {
                 ActionEffect::Buff(_) => {
-                    Event::emit_early(
+                    EntityEvent::emit_early(
                         ctx,
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
@@ -324,7 +371,7 @@ pub fn action_system(ctx: &ReducerContext) {
                         .find(action_state.target_entity_id)
                         .map(|c| c.defense)
                         .unwrap_or(0);
-                    Event::emit_middle(
+                    EntityEvent::emit_middle(
                         ctx,
                         entity_id,
                         EventType::ActionEffect(ActionEffect::Attack(max(
@@ -335,7 +382,7 @@ pub fn action_system(ctx: &ReducerContext) {
                     );
                 }
                 ActionEffect::Heal(_) => {
-                    Event::emit_middle(
+                    EntityEvent::emit_middle(
                         ctx,
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
@@ -343,7 +390,7 @@ pub fn action_system(ctx: &ReducerContext) {
                     );
                 }
                 _ => {
-                    Event::emit_late(
+                    EntityEvent::emit_late(
                         ctx,
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
@@ -458,7 +505,6 @@ pub fn entity_stats_system(ctx: &ReducerContext) {
 
 #[reducer]
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
-    observable_event_reset_system(ctx);
     action_system(ctx);
     event_resolve_system(ctx);
     hp_system(ctx);
@@ -469,6 +515,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     entity_prominence_system(ctx);
     entity_deactivation_system(ctx);
     entity_stats_system(ctx);
+    observation_system(ctx);
 
     Ok(())
 }

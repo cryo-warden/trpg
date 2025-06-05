@@ -4,6 +4,7 @@ import {
   ComponentPropsWithoutRef,
   ReactNode,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -16,12 +17,13 @@ import {
   useAllegianceComponents,
   useBaselineComponents,
   useBaselines,
+  useObserverComponentsEvents,
   usePlayerEntity,
   useStdbConnection,
   useTraits,
   useTraitsComponents,
 } from "./context/StdbContext";
-import { Event } from "../stdb/event_type";
+import { EntityEvent } from "../stdb";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const connection = useStdbConnection();
@@ -48,25 +50,23 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     if (playerEntity == null) {
       return () => null;
     }
-    return ({ event }: { event: Event }): ReactNode => {
-      // TODO Fix peer dependency.
-      return useMemo(() => renderEvent(playerEntity, event), [event]) as any;
+    return ({ event }: { event: EntityEvent }): ReactNode => {
+      return useMemo(() => renderEvent(playerEntity, event), [event]);
     };
   }, [renderEvent, playerEntity]);
 
-  // WIP
-  const [eventSet, _setEventSet] = useState(new Set<Event>());
-  // useEffect(() => {
-  //   setEventSet((events) => {
-  //     if (
-  //       controllerEntityToken.value?.observer == null ||
-  //       controllerEntityToken.value.observer.length < 1
-  //     ) {
-  //       return events;
-  //     }
-  //     return new Set([...events, ...controllerEntityToken.value.observer]);
-  //   });
-  // }, [controllerEntityToken]);
+  const [eventSet, setEventSet] = useState(new Set<EntityEvent>());
+
+  const events = useObserverComponentsEvents(playerEntity);
+
+  useEffect(() => {
+    setEventSet((oldEvents) => {
+      if (events.length < 1) {
+        return oldEvents;
+      }
+      return new Set([...oldEvents, ...events]);
+    });
+  }, [events]);
 
   const setMode = useSetDynamicPanelMode();
   const clearSelection = useCallback(() => {

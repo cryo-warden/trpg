@@ -72,6 +72,7 @@ impl Entity {
             .set_baseline("human")
             .add_trait("admin")
             .add_trait("mobile")
+            .add_trait("bopper")
             .set_hotkey("bop", 'b')
             .set_hotkey("boppity_bop", 'v')
             .set_hotkey("quick_move", 'm')

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import "./debug.css";
-import { Event as StdbEvent } from "../stdb/event_type";
+import { EntityEvent } from "../stdb";
 import {
   AllegianceComponent,
   Baseline,
@@ -9,8 +9,6 @@ import {
   TraitsComponent,
 } from "../stdb";
 import { EntityId } from "../Game/trpg";
-
-export type Event = StdbEvent;
 
 export const actionWeightType = ["heavy", "neutral", "light"] as const;
 
@@ -290,7 +288,7 @@ export const bindRenderer = ({
   // WIP Render the new event format.
   const renderAction = (
     viewpointEntity: EntityId,
-    { source, target, action }: any | Extract<Event, { type: "action" }>
+    { source, target, action }: any | Extract<EntityEvent, { type: "action" }>
   ): ReactNode => {
     const a = {
       // WIP
@@ -312,12 +310,17 @@ export const bindRenderer = ({
     });
   };
 
-  const renderEvent = (viewpointEntity: EntityId, event: Event): ReactNode => {
+  const renderEvent = (
+    viewpointEntity: EntityId,
+    event: EntityEvent
+  ): ReactNode => {
     switch (event.eventType.tag) {
       case "StartAction":
         return renderAction(viewpointEntity, event);
       case "ActionEffect":
         switch (event.eventType.value.tag) {
+          case "Rest":
+            return null;
           case "Attack":
             return renderSentence({
               viewpointEntity,
@@ -405,7 +408,7 @@ export const bindRenderer = ({
         }
     }
 
-    return <div>Unknown event type: "{(event as any).type}".</div>;
+    return <div>Unknown event type: "{event.eventType.tag}".</div>;
   };
 
   return { renderEvent };

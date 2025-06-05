@@ -243,3 +243,12 @@ impl MapComponent {
         }
     }
 }
+
+#[table(name = observer_components, public)]
+#[derive(Debug, Clone)]
+pub struct ObserverComponent {
+    #[index(btree)]
+    pub entity_id: u64,
+    #[index(btree)]
+    pub observable_event_id: u64,
+}

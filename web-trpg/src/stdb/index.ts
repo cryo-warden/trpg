@@ -34,6 +34,8 @@ import {
 // Import and reexport all reducer arg types
 import { Act } from "./act_reducer.ts";
 export { Act };
+import { ConsumeObserverComponents } from "./consume_observer_components_reducer.ts";
+export { ConsumeObserverComponents };
 import { Damage } from "./damage_reducer.ts";
 export { Damage };
 import { DeleteTarget } from "./delete_target_reducer.ts";
@@ -98,6 +100,8 @@ import { NamedInactiveEntitiesTableHandle } from "./named_inactive_entities_tabl
 export { NamedInactiveEntitiesTableHandle };
 import { ObservableEventsTableHandle } from "./observable_events_table.ts";
 export { ObservableEventsTableHandle };
+import { ObserverComponentsTableHandle } from "./observer_components_table.ts";
+export { ObserverComponentsTableHandle };
 import { PathComponentsTableHandle } from "./path_components_table.ts";
 export { PathComponentsTableHandle };
 import { PlayerControllerComponentsTableHandle } from "./player_controller_components_table.ts";
@@ -158,12 +162,12 @@ import { Entity } from "./entity_type.ts";
 export { Entity };
 import { EntityDeactivationTimerComponent } from "./entity_deactivation_timer_component_type.ts";
 export { EntityDeactivationTimerComponent };
+import { EntityEvent } from "./entity_event_type.ts";
+export { EntityEvent };
 import { EntityProminenceComponent } from "./entity_prominence_component_type.ts";
 export { EntityProminenceComponent };
 import { EpComponent } from "./ep_component_type.ts";
 export { EpComponent };
-import { Event } from "./event_type.ts";
-export { Event };
 import { EventType } from "./event_type_type.ts";
 export { EventType };
 import { HpComponent } from "./hp_component_type.ts";
@@ -182,6 +186,8 @@ import { NameComponent } from "./name_component_type.ts";
 export { NameComponent };
 import { NamedInactiveEntity } from "./named_inactive_entity_type.ts";
 export { NamedInactiveEntity };
+import { ObserverComponent } from "./observer_component_type.ts";
+export { ObserverComponent };
 import { PathComponent } from "./path_component_type.ts";
 export { PathComponent };
 import { PlayerControllerComponent } from "./player_controller_component_type.ts";
@@ -258,7 +264,7 @@ const REMOTE_MODULE = {
     },
     early_events: {
       tableName: "early_events",
-      rowType: Event.getTypeScriptAlgebraicType(),
+      rowType: EntityEvent.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
     entities: {
@@ -292,7 +298,7 @@ const REMOTE_MODULE = {
     },
     late_events: {
       tableName: "late_events",
-      rowType: Event.getTypeScriptAlgebraicType(),
+      rowType: EntityEvent.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
     location_components: {
@@ -307,7 +313,7 @@ const REMOTE_MODULE = {
     },
     middle_events: {
       tableName: "middle_events",
-      rowType: Event.getTypeScriptAlgebraicType(),
+      rowType: EntityEvent.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
     name_components: {
@@ -322,8 +328,12 @@ const REMOTE_MODULE = {
     },
     observable_events: {
       tableName: "observable_events",
-      rowType: Event.getTypeScriptAlgebraicType(),
+      rowType: EntityEvent.getTypeScriptAlgebraicType(),
       primaryKey: "id",
+    },
+    observer_components: {
+      tableName: "observer_components",
+      rowType: ObserverComponent.getTypeScriptAlgebraicType(),
     },
     path_components: {
       tableName: "path_components",
@@ -381,6 +391,10 @@ const REMOTE_MODULE = {
       reducerName: "act",
       argsType: Act.getTypeScriptAlgebraicType(),
     },
+    consume_observer_components: {
+      reducerName: "consume_observer_components",
+      argsType: ConsumeObserverComponents.getTypeScriptAlgebraicType(),
+    },
     damage: {
       reducerName: "damage",
       argsType: Damage.getTypeScriptAlgebraicType(),
@@ -433,6 +447,7 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "Act", args: Act }
+| { name: "ConsumeObserverComponents", args: ConsumeObserverComponents }
 | { name: "Damage", args: Damage }
 | { name: "DeleteTarget", args: DeleteTarget }
 | { name: "IdentityConnected", args: IdentityConnected }
@@ -458,6 +473,18 @@ export class RemoteReducers {
 
   removeOnAct(callback: (ctx: ReducerEventContext, actionId: bigint, targetEntityId: bigint) => void) {
     this.connection.offReducer("act", callback);
+  }
+
+  consumeObserverComponents() {
+    this.connection.callReducer("consume_observer_components", new Uint8Array(0), this.setCallReducerFlags.consumeObserverComponentsFlags);
+  }
+
+  onConsumeObserverComponents(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("consume_observer_components", callback);
+  }
+
+  removeOnConsumeObserverComponents(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("consume_observer_components", callback);
   }
 
   damage(entityId: bigint, damage: number) {
@@ -544,6 +571,11 @@ export class SetReducerFlags {
     this.actFlags = flags;
   }
 
+  consumeObserverComponentsFlags: CallReducerFlags = 'FullUpdate';
+  consumeObserverComponents(flags: CallReducerFlags) {
+    this.consumeObserverComponentsFlags = flags;
+  }
+
   damageFlags: CallReducerFlags = 'FullUpdate';
   damage(flags: CallReducerFlags) {
     this.damageFlags = flags;
@@ -614,7 +646,7 @@ export class RemoteTables {
   }
 
   get earlyEvents(): EarlyEventsTableHandle {
-    return new EarlyEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.early_events));
+    return new EarlyEventsTableHandle(this.connection.clientCache.getOrCreateTable<EntityEvent>(REMOTE_MODULE.tables.early_events));
   }
 
   get entities(): EntitiesTableHandle {
@@ -642,7 +674,7 @@ export class RemoteTables {
   }
 
   get lateEvents(): LateEventsTableHandle {
-    return new LateEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.late_events));
+    return new LateEventsTableHandle(this.connection.clientCache.getOrCreateTable<EntityEvent>(REMOTE_MODULE.tables.late_events));
   }
 
   get locationComponents(): LocationComponentsTableHandle {
@@ -654,7 +686,7 @@ export class RemoteTables {
   }
 
   get middleEvents(): MiddleEventsTableHandle {
-    return new MiddleEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.middle_events));
+    return new MiddleEventsTableHandle(this.connection.clientCache.getOrCreateTable<EntityEvent>(REMOTE_MODULE.tables.middle_events));
   }
 
   get nameComponents(): NameComponentsTableHandle {
@@ -666,7 +698,11 @@ export class RemoteTables {
   }
 
   get observableEvents(): ObservableEventsTableHandle {
-    return new ObservableEventsTableHandle(this.connection.clientCache.getOrCreateTable<Event>(REMOTE_MODULE.tables.observable_events));
+    return new ObservableEventsTableHandle(this.connection.clientCache.getOrCreateTable<EntityEvent>(REMOTE_MODULE.tables.observable_events));
+  }
+
+  get observerComponents(): ObserverComponentsTableHandle {
+    return new ObserverComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ObserverComponent>(REMOTE_MODULE.tables.observer_components));
   }
 
   get pathComponents(): PathComponentsTableHandle {

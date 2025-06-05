@@ -16,7 +16,7 @@ pub enum EventType {
 #[table(name = middle_events)]
 #[table(name = late_events)]
 #[derive(Debug, Clone)]
-pub struct Event {
+pub struct EntityEvent {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
@@ -27,14 +27,14 @@ pub struct Event {
 }
 
 #[allow(dead_code)]
-impl Event {
+impl EntityEvent {
     pub fn emit_early(
         ctx: &ReducerContext,
         owner_entity_id: u64,
         event_type: EventType,
         target_entity_id: u64,
     ) {
-        ctx.db.early_events().insert(Event {
+        ctx.db.early_events().insert(EntityEvent {
             id: 0,
             time: ctx.timestamp,
             owner_entity_id,
@@ -49,7 +49,7 @@ impl Event {
         event_type: EventType,
         target_entity_id: u64,
     ) {
-        ctx.db.middle_events().insert(Event {
+        ctx.db.middle_events().insert(EntityEvent {
             id: 0,
             time: ctx.timestamp,
             owner_entity_id,
@@ -64,7 +64,7 @@ impl Event {
         event_type: EventType,
         target_entity_id: u64,
     ) {
-        ctx.db.late_events().insert(Event {
+        ctx.db.late_events().insert(EntityEvent {
             id: 0,
             time: ctx.timestamp,
             owner_entity_id,
@@ -130,5 +130,9 @@ impl Event {
                 ActionEffect::Unequip => {} // WIP
             },
         }
+
+        let mut observable_event = self.to_owned();
+        observable_event.id = 0;
+        ctx.db.observable_events().insert(observable_event);
     }
 }

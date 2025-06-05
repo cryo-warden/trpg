@@ -30,42 +30,29 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { EventType as __EventType } from "./event_type_type";
 
-export type Event = {
-  id: bigint,
-  time: Timestamp,
-  ownerEntityId: bigint,
-  eventType: __EventType,
-  targetEntityId: bigint,
-};
+export type ConsumeObserverComponents = {};
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace Event {
+export namespace ConsumeObserverComponents {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("time", AlgebraicType.createTimestampType()),
-      new ProductTypeElement("ownerEntityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("eventType", __EventType.getTypeScriptAlgebraicType()),
-      new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: Event): void {
-    Event.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ConsumeObserverComponents): void {
+    ConsumeObserverComponents.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): Event {
-    return Event.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ConsumeObserverComponents {
+    return ConsumeObserverComponents.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

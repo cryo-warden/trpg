@@ -7,9 +7,11 @@ import {
   useMemo,
   useState,
 } from "react";
-import { DbConnection, RemoteTables } from "../../stdb";
+import { DbConnection, EntityEvent, RemoteTables } from "../../stdb";
 import { Identity } from "@clockworklabs/spacetimedb-sdk";
+import { ActionId, EntityId, EventId } from "../trpg";
 import { ActionId, EntityId } from "../trpg";
+
 
 export type StdbContext = Context<{
   connection: DbConnection;
@@ -28,8 +30,6 @@ export const useStdbIdentity = () => {
   return identity;
 };
 
-type ConnectionStatus = "connecting" | "connected" | "error";
-
 const queries = [
   // Action Queries
   "select * from actions",
@@ -39,6 +39,7 @@ const queries = [
   // Rendering Queries
   "select * from baselines",
   "select * from traits",
+  "select * from observable_events",
 
   // Component Queries
   "select * from entities",
@@ -56,7 +57,10 @@ const queries = [
   "select * from entity_prominence_components",
   "select * from baseline_components",
   "select * from traits_components",
+  "select * from observer_components",
 ];
+
+type ConnectionStatus = "connecting" | "connected" | "error";
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
@@ -101,19 +105,6 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
   return null;
 };
 
-type RowType<T extends keyof RemoteTables> = RemoteTables[T] extends {
-  iter: () => Iterable<infer R>;
-}
-  ? R
-  : never;
-
-export type Id = Extract<
-  RemoteTables[keyof RemoteTables],
-  { id: any }
->["id"]["find"] extends (id: infer ID) => any
-  ? ID
-  : never;
-
 // In React hook deps, treat any empty array as the same empty array.
 const emptyGuard: any = [];
 const guardEmpty = <T,>(value: T): T => {
@@ -156,12 +147,18 @@ const useTableData = <
   return result;
 };
 
+type RowType<T extends keyof RemoteTables> = RemoteTables[T] extends {
+  iter: () => Iterable<infer R>;
+}
+  ? R
+  : never;
+
 const useTable =
   <T extends keyof RemoteTables>(tableName: T) =>
   () => {
     return useTableData(
       tableName,
-      (table): RowType<T>[] => [...table.iter()],
+      (table): RowType<T>[] => [...table.iter()] as any,
       []
     );
   };
@@ -187,6 +184,13 @@ const useComponent =
       [entityId]
     );
   };
+
+export type Id = Extract<
+  RemoteTables[keyof RemoteTables],
+  { id: any }
+>["id"]["find"] extends (id: infer ID) => any
+  ? ID
+  : never;
 
 const useRow =
   <T extends keyof RemoteTables>(tableName: T) =>
@@ -215,6 +219,8 @@ export const useBaselines = useTable("baselines");
 
 export const useTrait = useRow("traits");
 export const useTraits = useTable("traits");
+
+export const useObservableEvents = useTable("observableEvents");
 
 export const usePlayerControllerComponent = () => {
   const identity = useStdbIdentity();
@@ -356,3 +362,37 @@ export const useEntityProminences = (entityIds: EntityId[]) => {
 export const useBaselineComponents = useTable("baselineComponents");
 export const useTraitsComponents = useTable("traitsComponents");
 export const useAllegianceComponents = useTable("allegianceComponents");
+
+export const useObserverComponentsObservableEventIds = (
+  entityId: EntityId | null
+): EventId[] => {
+  return useTableData(
+    "observerComponents",
+    (table) =>
+      entityId == null
+        ? []
+        : [...table.iter()]
+            .filter((c) => c.entityId === entityId)
+            .map((c) => c.observableEventId),
+    [entityId]
+  );
+};
+
+export const useObserverComponentsEvents = (
+  entityId: EntityId | null
+): EntityEvent[] => {
+  const eventIds = useObserverComponentsObservableEventIds(entityId);
+  const observableEvents = useObservableEvents();
+  const idToObservableEvent = useMemo(
+    () => new Map(observableEvents.map((e) => [e.id, e])),
+    [observableEvents]
+  );
+  const events = useMemo(
+    () =>
+      eventIds
+        .map((id) => idToObservableEvent.get(id))
+        .filter((e) => e != null),
+    [eventIds, idToObservableEvent]
+  );
+  return events;
+};
