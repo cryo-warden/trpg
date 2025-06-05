@@ -1,6 +1,7 @@
 use std::cmp::{max, min};
 
-use action::{ActionEffect, ActionHandle, ActionName, ActionType};
+use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
+use appearance::AppearanceFeatureContext;
 use component::{
     action_options_components, action_state_components, attack_components, baseline_components,
     entity_deactivation_timer_components, entity_prominence_components, ep_components,
@@ -14,6 +15,7 @@ use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuratio
 use stat_block::{baselines, traits, StatBlockBuilder, StatBlockContext};
 
 mod action;
+mod appearance;
 mod component;
 mod entity;
 mod event;
@@ -21,29 +23,42 @@ mod stat_block;
 
 #[reducer(init)]
 pub fn init(ctx: &ReducerContext) -> Result<(), String> {
-    ActionHandle::new(ctx, ActionType::Move)
+    let af_ctx = AppearanceFeatureContext::new(ctx)
+        .insert_noun("path", 10000)
+        .insert_noun("room", 10000)
+        .insert_noun("human", -100)
+        .insert_noun("slime", 100)
+        .insert_adjective("tiny", 1000)
+        .insert_adjective("small", 900)
+        .insert_adjective("big", 900)
+        .insert_adjective("huge", 1000);
+
+    let a_ctx = ActionContext::new(ctx);
+
+    a_ctx
+        .new_handle(ActionType::Move)
         .set_name("quick_move")
         .add_move();
-
-    ActionHandle::new(ctx, ActionType::Buff)
+    a_ctx
+        .new_handle(ActionType::Buff)
         .set_name("divine_heal")
-        .add_heal(100);
-
-    ActionHandle::new(ctx, ActionType::Move)
+        .add_heal(500);
+    a_ctx
+        .new_handle(ActionType::Move)
         .set_name("move")
         .add_rest()
         .add_rest()
         .add_move()
         .add_rest();
-
-    ActionHandle::new(ctx, ActionType::Attack)
+    a_ctx
+        .new_handle(ActionType::Attack)
         .set_name("bop")
         .add_rest()
         .add_rest()
         .add_attack(1)
         .add_rest();
-
-    ActionHandle::new(ctx, ActionType::Attack)
+    a_ctx
+        .new_handle(ActionType::Attack)
         .set_name("boppity_bop")
         .add_rest()
         .add_rest()
@@ -54,10 +69,17 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         .add_rest();
 
     StatBlockContext::new(ctx)
-        .insert_baseline("human", StatBlockBuilder::default().mhp(5).mep(5))
+        .insert_baseline(
+            "human",
+            &StatBlockBuilder::default()
+                .appearance_feature_ids(af_ctx.by_texts(&["human"]))
+                .mhp(5)
+                .mep(5),
+        )
         .insert_baseline(
             "slime",
-            StatBlockBuilder::default()
+            &StatBlockBuilder::default()
+                .appearance_feature_ids(af_ctx.by_texts(&["slime"]))
                 .attack(-1)
                 .defense(-1)
                 .mhp(3)
@@ -65,26 +87,44 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         )
         .insert_trait(
             "admin",
-            &StatBlockBuilder::default().additive_action_ids(vec![
-                ActionName::get_id(ctx, "quick_move"),
-                ActionName::get_id(ctx, "divine_heal"),
-            ]),
+            &StatBlockBuilder::default()
+                .additive_action_ids(a_ctx.by_names(&["quick_move", "divine_heal"])),
         )
         .insert_trait(
             "mobile",
-            &StatBlockBuilder::default().additive_action_ids(vec![ActionName::get_id(ctx, "move")]),
+            &StatBlockBuilder::default().additive_action_ids(a_ctx.by_names(&["move"])),
         )
         .insert_trait(
             "bopper",
-            &StatBlockBuilder::default().additive_action_ids(vec![
-                ActionName::get_id(ctx, "bop"),
-                ActionName::get_id(ctx, "boppity_bop"),
-            ]),
+            &StatBlockBuilder::default()
+                .additive_action_ids(a_ctx.by_names(&["bop", "boppity_bop"])),
         )
-        .insert_trait("tiny", &StatBlockBuilder::default().attack(-1).mhp(-2))
-        .insert_trait("small", StatBlockBuilder::default().mhp(-1))
-        .insert_trait("big", StatBlockBuilder::default().mhp(2))
-        .insert_trait("huge", StatBlockBuilder::default().attack(1).mhp(5));
+        .insert_trait(
+            "tiny",
+            &StatBlockBuilder::default()
+                .appearance_feature_ids(af_ctx.by_texts(&["tiny"]))
+                .attack(-1)
+                .mhp(-2),
+        )
+        .insert_trait(
+            "small",
+            StatBlockBuilder::default()
+                .appearance_feature_ids(af_ctx.by_texts(&["small"]))
+                .mhp(-1),
+        )
+        .insert_trait(
+            "big",
+            StatBlockBuilder::default()
+                .appearance_feature_ids(af_ctx.by_texts(&["big"]))
+                .mhp(2),
+        )
+        .insert_trait(
+            "huge",
+            StatBlockBuilder::default()
+                .appearance_feature_ids(af_ctx.by_texts(&["huge"]))
+                .attack(1)
+                .mhp(5),
+        );
 
     // TODO Move map logic to EntityHandle.
     // TODO Realize and unrealize maps.

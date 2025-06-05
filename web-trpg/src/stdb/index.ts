@@ -66,6 +66,10 @@ import { ActionsComponentsTableHandle } from "./actions_components_table.ts";
 export { ActionsComponentsTableHandle };
 import { AllegianceComponentsTableHandle } from "./allegiance_components_table.ts";
 export { AllegianceComponentsTableHandle };
+import { AppearanceFeaturesTableHandle } from "./appearance_features_table.ts";
+export { AppearanceFeaturesTableHandle };
+import { AppearanceFeaturesComponentsTableHandle } from "./appearance_features_components_table.ts";
+export { AppearanceFeaturesComponentsTableHandle };
 import { AttackComponentsTableHandle } from "./attack_components_table.ts";
 export { AttackComponentsTableHandle };
 import { BaselineComponentsTableHandle } from "./baseline_components_table.ts";
@@ -74,6 +78,8 @@ import { BaselinesTableHandle } from "./baselines_table.ts";
 export { BaselinesTableHandle };
 import { EarlyEventsTableHandle } from "./early_events_table.ts";
 export { EarlyEventsTableHandle };
+import { EnAppearanceFeaturesTableHandle } from "./en_appearance_features_table.ts";
+export { EnAppearanceFeaturesTableHandle };
 import { EntitiesTableHandle } from "./entities_table.ts";
 export { EntitiesTableHandle };
 import { EntityDeactivationTimerComponentsTableHandle } from "./entity_deactivation_timer_components_table.ts";
@@ -148,6 +154,12 @@ import { ActionsComponent } from "./actions_component_type.ts";
 export { ActionsComponent };
 import { AllegianceComponent } from "./allegiance_component_type.ts";
 export { AllegianceComponent };
+import { AppearanceFeature } from "./appearance_feature_type.ts";
+export { AppearanceFeature };
+import { AppearanceFeatureType } from "./appearance_feature_type_type.ts";
+export { AppearanceFeatureType };
+import { AppearanceFeaturesComponent } from "./appearance_features_component_type.ts";
+export { AppearanceFeaturesComponent };
 import { AttackComponent } from "./attack_component_type.ts";
 export { AttackComponent };
 import { Baseline } from "./baseline_type.ts";
@@ -247,6 +259,16 @@ const REMOTE_MODULE = {
       rowType: AllegianceComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
+    appearance_features: {
+      tableName: "appearance_features",
+      rowType: AppearanceFeature.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
+    appearance_features_components: {
+      tableName: "appearance_features_components",
+      rowType: AppearanceFeaturesComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
     attack_components: {
       tableName: "attack_components",
       rowType: AttackComponent.getTypeScriptAlgebraicType(),
@@ -265,6 +287,11 @@ const REMOTE_MODULE = {
     early_events: {
       tableName: "early_events",
       rowType: EntityEvent.getTypeScriptAlgebraicType(),
+      primaryKey: "id",
+    },
+    en_appearance_features: {
+      tableName: "en_appearance_features",
+      rowType: AppearanceFeature.getTypeScriptAlgebraicType(),
       primaryKey: "id",
     },
     entities: {
@@ -633,6 +660,14 @@ export class RemoteTables {
     return new AllegianceComponentsTableHandle(this.connection.clientCache.getOrCreateTable<AllegianceComponent>(REMOTE_MODULE.tables.allegiance_components));
   }
 
+  get appearanceFeatures(): AppearanceFeaturesTableHandle {
+    return new AppearanceFeaturesTableHandle(this.connection.clientCache.getOrCreateTable<AppearanceFeature>(REMOTE_MODULE.tables.appearance_features));
+  }
+
+  get appearanceFeaturesComponents(): AppearanceFeaturesComponentsTableHandle {
+    return new AppearanceFeaturesComponentsTableHandle(this.connection.clientCache.getOrCreateTable<AppearanceFeaturesComponent>(REMOTE_MODULE.tables.appearance_features_components));
+  }
+
   get attackComponents(): AttackComponentsTableHandle {
     return new AttackComponentsTableHandle(this.connection.clientCache.getOrCreateTable<AttackComponent>(REMOTE_MODULE.tables.attack_components));
   }
@@ -647,6 +682,10 @@ export class RemoteTables {
 
   get earlyEvents(): EarlyEventsTableHandle {
     return new EarlyEventsTableHandle(this.connection.clientCache.getOrCreateTable<EntityEvent>(REMOTE_MODULE.tables.early_events));
+  }
+
+  get enAppearanceFeatures(): EnAppearanceFeaturesTableHandle {
+    return new EnAppearanceFeaturesTableHandle(this.connection.clientCache.getOrCreateTable<AppearanceFeature>(REMOTE_MODULE.tables.en_appearance_features));
   }
 
   get entities(): EntitiesTableHandle {

@@ -30,42 +30,32 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type StatBlock = {
-  attack: number,
-  mhp: number,
-  defense: number,
-  mep: number,
-  additiveActionIds: bigint[],
-  subtractiveActionIds: bigint[],
+export type AppearanceFeaturesComponent = {
+  entityId: bigint,
   appearanceFeatureIds: bigint[],
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace StatBlock {
+export namespace AppearanceFeaturesComponent {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("attack", AlgebraicType.createI32Type()),
-      new ProductTypeElement("mhp", AlgebraicType.createI32Type()),
-      new ProductTypeElement("defense", AlgebraicType.createI32Type()),
-      new ProductTypeElement("mep", AlgebraicType.createI32Type()),
-      new ProductTypeElement("additiveActionIds", AlgebraicType.createArrayType(AlgebraicType.createU64Type())),
-      new ProductTypeElement("subtractiveActionIds", AlgebraicType.createArrayType(AlgebraicType.createU64Type())),
+      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("appearanceFeatureIds", AlgebraicType.createArrayType(AlgebraicType.createU64Type())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: StatBlock): void {
-    StatBlock.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: AppearanceFeaturesComponent): void {
+    AppearanceFeaturesComponent.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): StatBlock {
-    return StatBlock.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): AppearanceFeaturesComponent {
+    return AppearanceFeaturesComponent.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

@@ -15,34 +15,33 @@ import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { renderer } from "../renderer";
 import {
   useAllegianceComponents,
-  useBaselineComponents,
-  useBaselines,
+  useAppearanceFeatures,
+  useAppearanceFeaturesComponents,
   useObserverComponentsEvents,
   usePlayerEntity,
   useStdbConnection,
-  useTraits,
-  useTraitsComponents,
 } from "./context/StdbContext";
 import { EntityEvent } from "../stdb";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const connection = useStdbConnection();
   const rendererName = "debug";
-  const baselines = useBaselines();
-  const traits = useTraits();
-  const baselineComponents = useBaselineComponents();
-  const traitsComponents = useTraitsComponents();
+  const appearanceFeatures = useAppearanceFeatures();
+  const appearanceFeaturesComponents = useAppearanceFeaturesComponents();
   const allegianceComponents = useAllegianceComponents();
   const { renderEvent } = useMemo(
     () =>
       renderer[rendererName]({
-        baselines,
-        traits,
-        baselineComponents,
-        traitsComponents,
+        appearanceFeatures,
+        appearanceFeaturesComponents,
         allegianceComponents,
       }),
-    [rendererName]
+    [
+      rendererName,
+      appearanceFeatures,
+      appearanceFeaturesComponents,
+      allegianceComponents,
+    ]
   );
   const playerEntity = usePlayerEntity();
 

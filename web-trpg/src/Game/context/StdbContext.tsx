@@ -10,8 +10,6 @@ import {
 import { DbConnection, EntityEvent, RemoteTables } from "../../stdb";
 import { Identity } from "@clockworklabs/spacetimedb-sdk";
 import { ActionId, EntityId, EventId } from "../trpg";
-import { ActionId, EntityId } from "../trpg";
-
 
 export type StdbContext = Context<{
   connection: DbConnection;
@@ -37,9 +35,8 @@ const queries = [
   "select * from action_names",
 
   // Rendering Queries
-  "select * from baselines",
-  "select * from traits",
   "select * from observable_events",
+  "select * from appearance_features",
 
   // Component Queries
   "select * from entities",
@@ -55,9 +52,8 @@ const queries = [
   "select * from queued_action_state_components",
   "select * from target_components",
   "select * from entity_prominence_components",
-  "select * from baseline_components",
-  "select * from traits_components",
   "select * from observer_components",
+  "select * from appearance_features_components",
 ];
 
 type ConnectionStatus = "connecting" | "connected" | "error";
@@ -192,33 +188,27 @@ export type Id = Extract<
   ? ID
   : never;
 
-const useRow =
-  <T extends keyof RemoteTables>(tableName: T) =>
-  (id: Id | null): RowType<T> | null => {
-    return useTableData(
-      tableName,
-      (table): RowType<T> | null => {
-        if (!("id" in table)) {
-          throw new Error(
-            `Table "${tableName}" used with useRow does not have an id unique index.`
-          );
-        }
+// const useRow =
+//   <T extends keyof RemoteTables>(tableName: T) =>
+//   (id: Id | null): RowType<T> | null => {
+//     return useTableData(
+//       tableName,
+//       (table): RowType<T> | null => {
+//         if (!("id" in table)) {
+//           throw new Error(
+//             `Table "${tableName}" used with useRow does not have an id unique index.`
+//           );
+//         }
 
-        if (id == null) {
-          return null;
-        }
+//         if (id == null) {
+//           return null;
+//         }
 
-        return (table.id.find(id) as any) ?? null;
-      },
-      [id]
-    );
-  };
-
-export const useBaseline = useRow("baselines");
-export const useBaselines = useTable("baselines");
-
-export const useTrait = useRow("traits");
-export const useTraits = useTable("traits");
+//         return (table.id.find(id) as any) ?? null;
+//       },
+//       [id]
+//     );
+//   };
 
 export const useObservableEvents = useTable("observableEvents");
 
@@ -252,9 +242,9 @@ export const useActionStateComponent = useComponent("actionStateComponents");
 
 export const useTargetComponent = useComponent("targetComponents");
 
-export const useBaselineComponent = useComponent("baselineComponents");
-
-export const useTraitsComponent = useComponent("traitsComponents");
+export const useAppearanceFeaturesComponent = useComponent(
+  "appearanceFeaturesComponents"
+);
 
 export const useTarget = (entityId: EntityId | null) => {
   const component = useTargetComponent(entityId);
@@ -359,8 +349,10 @@ export const useEntityProminences = (entityIds: EntityId[]) => {
   );
 };
 
-export const useBaselineComponents = useTable("baselineComponents");
-export const useTraitsComponents = useTable("traitsComponents");
+export const useAppearanceFeatures = useTable("appearanceFeatures");
+export const useAppearanceFeaturesComponents = useTable(
+  "appearanceFeaturesComponents"
+);
 export const useAllegianceComponents = useTable("allegianceComponents");
 
 export const useObserverComponentsObservableEventIds = (

@@ -10,6 +10,7 @@ pub struct StatBlock {
     pub mep: i32,
     pub additive_action_ids: Vec<u64>,
     pub subtractive_action_ids: Vec<u64>,
+    pub appearance_feature_ids: Vec<u64>,
 }
 
 #[allow(dead_code)]
@@ -25,6 +26,10 @@ impl StatBlock {
         if other.subtractive_action_ids.len() > 0 {
             self.subtractive_action_ids
                 .extend(&other.subtractive_action_ids);
+        }
+        if other.appearance_feature_ids.len() > 0 {
+            self.appearance_feature_ids
+                .extend(&other.appearance_feature_ids);
         }
     }
 }

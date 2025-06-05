@@ -7,16 +7,16 @@ use crate::{
     action::{action_names, actions, ActionType},
     component::{
         action_hotkeys_components, action_options_components, action_state_components,
-        actions_components, allegiance_components, attack_components, baseline_components,
-        entity_deactivation_timer_components, entity_prominence_components, ep_components,
-        hp_components, location_components, location_map_components, name_components,
-        path_components, player_controller_components, queued_action_state_components,
-        rng_seed_components, target_components, traits_components, ActionHotkey,
-        ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
-        ActionsComponent, AllegianceComponent, AttackComponent, BaselineComponent,
-        EntityProminenceComponent, EpComponent, HpComponent, LocationComponent,
-        LocationMapComponent, NameComponent, PathComponent, PlayerControllerComponent,
-        RngSeedComponent, TargetComponent, TraitsComponent,
+        actions_components, allegiance_components, appearance_features_components,
+        attack_components, baseline_components, entity_deactivation_timer_components,
+        entity_prominence_components, ep_components, hp_components, location_components,
+        location_map_components, name_components, path_components, player_controller_components,
+        queued_action_state_components, rng_seed_components, target_components, traits_components,
+        ActionHotkey, ActionHotkeysComponent, ActionOption, ActionOptionsComponent,
+        ActionStateComponent, ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent,
+        AttackComponent, BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent,
+        LocationComponent, LocationMapComponent, NameComponent, PathComponent,
+        PlayerControllerComponent, RngSeedComponent, TargetComponent, TraitsComponent,
     },
     stat_block::{baselines, traits, StatBlock},
 };
@@ -730,6 +730,32 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
+    pub fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u64>) -> Self {
+        if let Some(mut c) = self
+            .ctx
+            .db
+            .appearance_features_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            c.appearance_feature_ids = appearance_feature_ids;
+            self.ctx
+                .db
+                .appearance_features_components()
+                .entity_id()
+                .update(c);
+        } else {
+            self.ctx
+                .db
+                .appearance_features_components()
+                .insert(AppearanceFeaturesComponent {
+                    entity_id: self.entity_id,
+                    appearance_feature_ids,
+                });
+        }
+        self
+    }
+
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
         let mut action_ids = stat_block.additive_action_ids.clone();
         action_ids.retain(|id| !stat_block.subtractive_action_ids.contains(id));
@@ -738,6 +764,7 @@ impl<'a> EntityHandle<'a> {
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
             .set_actions(action_ids)
+            .set_appearance_feature_ids(stat_block.appearance_feature_ids)
     }
 
     pub fn set_attack(self, attack: i32) -> Self {

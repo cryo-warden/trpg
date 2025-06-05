@@ -29,18 +29,6 @@ pub struct ActionName {
     pub name: String,
 }
 
-#[allow(dead_code)]
-impl ActionName {
-    pub fn get_id(ctx: &ReducerContext, name: &str) -> u64 {
-        ctx.db
-            .action_names()
-            .name()
-            .find(name.to_string())
-            .map(|a| a.action_id)
-            .unwrap_or(0)
-    }
-}
-
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum Buff {
     Guard(i32),
@@ -72,6 +60,35 @@ pub struct ActionStep {
     action_id: u64,
     sequence_index: i32,
     action_effect: ActionEffect,
+}
+
+pub struct ActionContext<'a> {
+    ctx: &'a ReducerContext,
+}
+
+#[allow(dead_code)]
+impl<'a> ActionContext<'a> {
+    pub fn new(ctx: &'a ReducerContext) -> Self {
+        Self { ctx }
+    }
+
+    pub fn new_handle(&self, action_type: ActionType) -> ActionHandle {
+        ActionHandle::new(self.ctx, action_type)
+    }
+
+    pub fn by_names(&self, names: &[&str]) -> Vec<u64> {
+        names
+            .iter()
+            .filter_map(|n| {
+                self.ctx
+                    .db
+                    .action_names()
+                    .name()
+                    .find(n.to_string())
+                    .map(|a| a.action_id)
+            })
+            .collect()
+    }
 }
 
 pub struct ActionHandle<'a> {

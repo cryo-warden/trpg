@@ -1,28 +1,38 @@
 import { useMemo } from "react";
 import {
-  useBaseline,
-  useBaselineComponent,
-  useTraits,
-  useTraitsComponent,
+  useAppearanceFeatures,
+  useAppearanceFeaturesComponent,
 } from "./context/StdbContext";
 import { EntityId } from "./trpg";
 
 export const EntityName = ({ entityId }: { entityId: EntityId }) => {
-  const baselineComponent = useBaselineComponent(entityId);
-  const baseline = useBaseline(baselineComponent?.baselineId ?? null);
-  const traitsComponent = useTraitsComponent(entityId);
-  const traits = useTraits();
-  const idToTraitName = useMemo(
-    () => new Map(traits.map((t) => [t.id, t.name])),
-    [traits]
+  const appearanceFeaturesComponent = useAppearanceFeaturesComponent(entityId);
+  const allAppearanceFeatures = useAppearanceFeatures();
+  const idToAppearanceFeature = useMemo(
+    () => new Map(allAppearanceFeatures.map((af) => [af.id, af])),
+    [allAppearanceFeatures]
   );
-  const adjectives = (traitsComponent?.traitIds ?? []).map((id) =>
-    idToTraitName.get(id)
+  const appearanceFeatures = useMemo(
+    () =>
+      (appearanceFeaturesComponent?.appearanceFeatureIds ?? [])
+        .map((id) => idToAppearanceFeature.get(id))
+        .filter((id) => id != null),
+    [appearanceFeaturesComponent, idToAppearanceFeature]
   );
-  if (baseline == null) {
-    return "something";
-  }
-  return (
-    (adjectives.length > 0 ? adjectives.join(", ") + " " : "") + baseline.name
+  const adjectives = useMemo(
+    () =>
+      appearanceFeatures
+        .filter((af) => af.appearanceFeatureType.tag === "Adjective")
+        .toSorted((a, b) => a.priority - b.priority)
+        .slice(0, 3),
+    [appearanceFeatures]
   );
+  const noun = useMemo(
+    () =>
+      appearanceFeatures
+        .filter((af) => af.appearanceFeatureType.tag === "Noun")
+        .toSorted((a, b) => a.priority - b.priority)[0]?.text ?? "something",
+    [appearanceFeatures]
+  );
+  return (adjectives.length > 0 ? adjectives.join(", ") + " " : "") + noun;
 };

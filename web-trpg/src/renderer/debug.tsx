@@ -1,12 +1,10 @@
 import type { ReactNode } from "react";
 import "./debug.css";
-import { EntityEvent } from "../stdb";
 import {
+  AppearanceFeature,
+  AppearanceFeaturesComponent,
+  EntityEvent,
   AllegianceComponent,
-  Baseline,
-  BaselineComponent,
-  Trait,
-  TraitsComponent,
 } from "../stdb";
 import { EntityId } from "../Game/trpg";
 
@@ -39,57 +37,46 @@ export type AttackRenderer = {
 };
 
 export const bindRenderer = ({
-  baselines,
-  traits,
-  baselineComponents,
-  traitsComponents,
+  appearanceFeatures,
+  appearanceFeaturesComponents,
   allegianceComponents,
 }: {
-  baselines: Baseline[];
-  traits: Trait[];
-  baselineComponents: BaselineComponent[];
-  traitsComponents: TraitsComponent[];
+  appearanceFeatures: AppearanceFeature[];
+  appearanceFeaturesComponents: AppearanceFeaturesComponent[];
   allegianceComponents: AllegianceComponent[];
 }) => {
-  const idToBaselineMap = new Map(baselines.map((b) => [b.id, b]));
-  const idToTraitMap = new Map(traits.map((t) => [t.id, t]));
-  const entityIdToBaselineComponent = new Map(
-    baselineComponents.map((b) => [b.entityId, b])
+  const idToAppearanceFeature = new Map(
+    appearanceFeatures.map((b) => [b.id, b])
   );
-  const entityIdToTraitsComponent = new Map(
-    traitsComponents.map((t) => [t.entityId, t])
+  const entityIdToAppearanceFeaturesComponent = new Map(
+    appearanceFeaturesComponents.map((b) => [b.entityId, b])
   );
   const entityIdToAllegianceComponent = new Map(
     allegianceComponents.map((a) => [a.entityId, a])
   );
-  const entityIdToBaselineName = (entityId: EntityId): string => {
-    const baselineComponent = entityIdToBaselineComponent.get(entityId);
-    if (baselineComponent == null) {
+  const entityIdToName = (entityId: EntityId): string => {
+    const appearanceFeaturesComponent =
+      entityIdToAppearanceFeaturesComponent.get(entityId);
+
+    if (appearanceFeaturesComponent == null) {
       return "something";
     }
 
-    const baseline = idToBaselineMap.get(baselineComponent.baselineId);
-    if (baseline == null) {
-      return "something";
-    }
+    const appearanceFeatures = appearanceFeaturesComponent.appearanceFeatureIds
+      .map((id) => idToAppearanceFeature.get(id))
+      .filter((af) => af != null);
 
-    return baseline.name;
-  };
+    const noun =
+      appearanceFeatures
+        .filter((af) => af.appearanceFeatureType.tag === "Noun")
+        .toSorted((a, b) => a.priority - b.priority)[0]?.text ?? "something";
 
-  const entityIdToTraitNames = (entityId: EntityId): string[] => {
-    const traitsComponent = entityIdToTraitsComponent.get(entityId);
-    if (traitsComponent == null) {
-      return [];
-    }
+    const adjectives = appearanceFeatures
+      .filter((af) => af.appearanceFeatureType.tag === "Adjective")
+      .toSorted((a, b) => a.priority - b.priority)
+      .slice(0, 3);
 
-    const traits = traitsComponent.traitIds
-      .map((t) => idToTraitMap.get(t))
-      .filter((t) => t != null);
-    if (traits == null) {
-      return [];
-    }
-
-    return traits.map((t) => t.name);
+    return (adjectives.length > 0 ? adjectives.join(", ") + " " : "") + noun;
   };
 
   const entityIdToAllegianceId = (entityId: EntityId): EntityId | null => {
@@ -102,9 +89,9 @@ export const bindRenderer = ({
     viewpointEntityId: EntityId,
     namedEntityId: EntityId | string | undefined,
     subjectEntityId?: EntityId | string | undefined
-  ): string => {
+  ): string | null => {
     if (namedEntityId == null) {
-      return "something";
+      return null;
     }
     if (typeof namedEntityId === "string") {
       return namedEntityId;
@@ -116,11 +103,7 @@ export const bindRenderer = ({
         return "you";
       }
     }
-    const traitNames = entityIdToTraitNames(namedEntityId);
-    return (
-      (traitNames.length > 0 ? traitNames.join(", ") + " " : "") +
-      entityIdToBaselineName(namedEntityId)
-    );
+    return entityIdToName(namedEntityId);
   };
 
   const capitalize = (word: string) =>
