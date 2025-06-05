@@ -31,10 +31,16 @@ export const useStdbIdentity = () => {
 type ConnectionStatus = "connecting" | "connected" | "error";
 
 const queries = [
+  // Action Queries
   "select * from actions",
   "select * from action_steps",
   "select * from action_names",
 
+  // Rendering Queries
+  "select * from baselines",
+  "select * from traits",
+
+  // Component Queries
   "select * from entities",
   "select * from action_hotkeys_components",
   "select * from action_options_components",
@@ -48,6 +54,8 @@ const queries = [
   "select * from queued_action_state_components",
   "select * from target_components",
   "select * from entity_prominence_components",
+  "select * from baseline_components",
+  "select * from traits_components",
 ];
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
@@ -99,6 +107,13 @@ type RowType<T extends keyof RemoteTables> = RemoteTables[T] extends {
   ? R
   : never;
 
+export type Id = Extract<
+  RemoteTables[keyof RemoteTables],
+  { id: any }
+>["id"]["find"] extends (id: infer ID) => any
+  ? ID
+  : never;
+
 // In React hook deps, treat any empty array as the same empty array.
 const emptyGuard: any = [];
 const guardEmpty = <T,>(value: T): T => {
@@ -108,7 +123,7 @@ const guardEmpty = <T,>(value: T): T => {
   return value;
 };
 
-export const useTableData = <
+const useTableData = <
   T extends keyof RemoteTables,
   F extends (table: RemoteTables[T]) => any
 >(
@@ -141,23 +156,17 @@ export const useTableData = <
   return result;
 };
 
-export const useTable = <T extends keyof RemoteTables>(tableName: T) => {
-  return useTableData(
-    tableName,
-    (table): RowType<T>[] => [...table.iter()],
-    []
-  );
-};
+const useTable =
+  <T extends keyof RemoteTables>(tableName: T) =>
+  () => {
+    return useTableData(
+      tableName,
+      (table): RowType<T>[] => [...table.iter()],
+      []
+    );
+  };
 
-export const useTableSet = <T extends keyof RemoteTables>(tableName: T) => {
-  return useTableData(
-    tableName,
-    (table): Set<RowType<T>> => new Set(...table.iter()),
-    []
-  );
-};
-
-export const useComponent =
+const useComponent =
   <T extends keyof RemoteTables>(tableName: T) =>
   (entityId: EntityId | null): RowType<T> | null => {
     return useTableData(
@@ -178,6 +187,34 @@ export const useComponent =
       [entityId]
     );
   };
+
+const useRow =
+  <T extends keyof RemoteTables>(tableName: T) =>
+  (id: Id | null): RowType<T> | null => {
+    return useTableData(
+      tableName,
+      (table): RowType<T> | null => {
+        if (!("id" in table)) {
+          throw new Error(
+            `Table "${tableName}" used with useRow does not have an id unique index.`
+          );
+        }
+
+        if (id == null) {
+          return null;
+        }
+
+        return (table.id.find(id) as any) ?? null;
+      },
+      [id]
+    );
+  };
+
+export const useBaseline = useRow("baselines");
+export const useBaselines = useTable("baselines");
+
+export const useTrait = useRow("traits");
+export const useTraits = useTable("traits");
 
 export const usePlayerControllerComponent = () => {
   const identity = useStdbIdentity();
@@ -208,6 +245,10 @@ export const useEpComponent = useComponent("epComponents");
 export const useActionStateComponent = useComponent("actionStateComponents");
 
 export const useTargetComponent = useComponent("targetComponents");
+
+export const useBaselineComponent = useComponent("baselineComponents");
+
+export const useTraitsComponent = useComponent("traitsComponents");
 
 export const useTarget = (entityId: EntityId | null) => {
   const component = useTargetComponent(entityId);
@@ -311,3 +352,7 @@ export const useEntityProminences = (entityIds: EntityId[]) => {
     [entityIds]
   );
 };
+
+export const useBaselineComponents = useTable("baselineComponents");
+export const useTraitsComponents = useTable("traitsComponents");
+export const useAllegianceComponents = useTable("allegianceComponents");

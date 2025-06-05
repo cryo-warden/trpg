@@ -13,6 +13,7 @@ import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
 import { EntityId } from "../trpg";
+import { EntityName } from "../EntityName";
 
 export const EntityPanel = ({
   entity,
@@ -63,7 +64,9 @@ export const EntityPanel = ({
       ].join(" ")}
       onClick={targetThis}
     >
-      <div>{/* WIP Add name */ `Entity ${entity}`}</div>
+      <div>
+        <EntityName entityId={entity} />
+      </div>
       <HPBar entity={entity} />
       <EPBar entity={entity} />
       {detailed && <ActionBar />}

@@ -12,14 +12,34 @@ import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { renderer } from "../renderer";
-import { usePlayerEntity, useStdbConnection } from "./context/StdbContext";
+import {
+  useAllegianceComponents,
+  useBaselineComponents,
+  useBaselines,
+  usePlayerEntity,
+  useStdbConnection,
+  useTraits,
+  useTraitsComponents,
+} from "./context/StdbContext";
 import { Event } from "../stdb/event_type";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const connection = useStdbConnection();
   const rendererName = "debug";
+  const baselines = useBaselines();
+  const traits = useTraits();
+  const baselineComponents = useBaselineComponents();
+  const traitsComponents = useTraitsComponents();
+  const allegianceComponents = useAllegianceComponents();
   const { renderEvent } = useMemo(
-    () => renderer[rendererName](),
+    () =>
+      renderer[rendererName]({
+        baselines,
+        traits,
+        baselineComponents,
+        traitsComponents,
+        allegianceComponents,
+      }),
     [rendererName]
   );
   const playerEntity = usePlayerEntity();
