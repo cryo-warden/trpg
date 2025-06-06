@@ -6,13 +6,15 @@ use component::{
     action_options_components, action_state_components, attack_components, baseline_components,
     entity_deactivation_timer_components, entity_prominence_components, ep_components,
     hp_components, location_components, observer_components, player_controller_components,
-    queued_action_state_components, realized_map_components, target_components, traits_components,
-    EntityDeactivationTimerComponent, MapComponent, MapLayout, ObserverComponent,
+    queued_action_state_components, realized_map_components, target_components,
+    total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
+    traits_stat_block_dirty_flag_components, EntityDeactivationTimerComponent, MapComponent,
+    MapLayout, ObserverComponent,
 };
 use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
-use stat_block::{baselines, traits, StatBlockBuilder, StatBlockContext};
+use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
 
 mod action;
 mod appearance;
@@ -279,6 +281,13 @@ pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
+pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Result<(), String> {
+    EntityHandle::from_id(ctx, entity_id).add_trait(trait_name);
+
+    Ok(())
+}
+
+#[reducer]
 pub fn damage(ctx: &ReducerContext, entity_id: u64, damage: i32) -> Result<(), String> {
     let mut hp = ctx
         .db
@@ -526,20 +535,43 @@ pub fn entity_deactivation_system(ctx: &ReducerContext) {
 }
 
 pub fn entity_stats_system(ctx: &ReducerContext) {
-    for b in ctx.db.baseline_components().iter() {
-        if let Some(baseline) = ctx.db.baselines().id().find(b.baseline_id) {
-            let mut stat_block = baseline.stat_block;
-
-            if let Some(c) = ctx.db.traits_components().entity_id().find(b.entity_id) {
-                for id in c.trait_ids {
-                    if let Some(t) = ctx.db.traits().id().find(id) {
-                        stat_block.add(t.stat_block);
-                    }
+    for f in ctx.db.traits_stat_block_dirty_flag_components().iter() {
+        log::debug!("Entity {} is computing traits stat block.", f.entity_id);
+        if let Some(c) = ctx.db.traits_components().entity_id().find(f.entity_id) {
+            let mut stat_block = StatBlock::default();
+            for id in c.trait_ids {
+                if let Some(t) = ctx.db.traits().id().find(id) {
+                    stat_block.add(t.stat_block);
                 }
             }
 
-            EntityHandle::from_id(ctx, b.entity_id).apply_stat_block(stat_block);
+            EntityHandle::from_id(ctx, f.entity_id)
+                .set_traits_stat_block_cache(stat_block)
+                .trigger_total_stat_block_dirty_flag();
         }
+    }
+
+    for f in ctx.db.total_stat_block_dirty_flag_components().iter() {
+        log::debug!("Entity {} is computing total stat block.", f.entity_id);
+        let mut stat_block = ctx
+            .db
+            .baseline_components()
+            .entity_id()
+            .find(f.entity_id)
+            .and_then(|b| ctx.db.baselines().id().find(b.baseline_id))
+            .map(|b| b.stat_block)
+            .unwrap_or_else(|| StatBlock::default());
+
+        if let Some(t) = ctx
+            .db
+            .traits_stat_block_cache_components()
+            .entity_id()
+            .find(f.entity_id)
+        {
+            stat_block.add(t.stat_block);
+        }
+
+        EntityHandle::from_id(ctx, f.entity_id).apply_stat_block(stat_block);
     }
 }
 

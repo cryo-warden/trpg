@@ -11,12 +11,15 @@ use crate::{
         attack_components, baseline_components, entity_deactivation_timer_components,
         entity_prominence_components, ep_components, hp_components, location_components,
         location_map_components, name_components, path_components, player_controller_components,
-        queued_action_state_components, rng_seed_components, target_components, traits_components,
-        ActionHotkey, ActionHotkeysComponent, ActionOption, ActionOptionsComponent,
-        ActionStateComponent, ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent,
-        AttackComponent, BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent,
-        LocationComponent, LocationMapComponent, NameComponent, PathComponent,
-        PlayerControllerComponent, RngSeedComponent, TargetComponent, TraitsComponent,
+        queued_action_state_components, rng_seed_components, target_components,
+        total_stat_block_dirty_flag_components, traits_components,
+        traits_stat_block_cache_components, traits_stat_block_dirty_flag_components, ActionHotkey,
+        ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
+        ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent, AttackComponent,
+        BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent, LocationComponent,
+        LocationMapComponent, NameComponent, PathComponent, PlayerControllerComponent,
+        RngSeedComponent, StatBlockCacheComponent, StatBlockDirtyFlagComponent, TargetComponent,
+        TraitsComponent,
     },
     stat_block::{baselines, traits, StatBlock},
 };
@@ -695,41 +698,40 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_baseline(self, name: &str) -> Self {
-        match self.ctx.db.baselines().name().find(name.to_string()) {
-            None => {}
-            Some(baseline) => {
-                self.ctx.db.baseline_components().insert(BaselineComponent {
-                    entity_id: self.entity_id,
-                    baseline_id: baseline.id,
-                });
-            }
+        if let Some(b) = self.ctx.db.baselines().name().find(name.to_string()) {
+            self.ctx.db.baseline_components().insert(BaselineComponent {
+                entity_id: self.entity_id,
+                baseline_id: b.id,
+            });
+
+            self.trigger_total_stat_block_dirty_flag()
+        } else {
+            self
         }
-        self
     }
 
     pub fn add_trait(self, name: &str) -> Self {
-        match self.ctx.db.traits().name().find(name.to_string()) {
-            None => {}
-            Some(t) => match self
+        if let Some(t) = self.ctx.db.traits().name().find(name.to_string()) {
+            if let Some(mut c) = self
                 .ctx
                 .db
                 .traits_components()
                 .entity_id()
                 .find(self.entity_id)
             {
-                None => {
-                    self.ctx.db.traits_components().insert(TraitsComponent {
-                        entity_id: self.entity_id,
-                        trait_ids: vec![t.id],
-                    });
-                }
-                Some(mut c) => {
-                    c.trait_ids.push(t.id);
-                    self.ctx.db.traits_components().entity_id().update(c);
-                }
-            },
+                c.trait_ids.push(t.id);
+                self.ctx.db.traits_components().entity_id().update(c);
+            } else {
+                self.ctx.db.traits_components().insert(TraitsComponent {
+                    entity_id: self.entity_id,
+                    trait_ids: vec![t.id],
+                });
+            }
+
+            self.trigger_traits_stat_block_dirty_flag()
+        } else {
+            self
         }
-        self
     }
 
     pub fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u64>) -> Self {
@@ -759,6 +761,12 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
+        self.ctx
+            .db
+            .total_stat_block_dirty_flag_components()
+            .entity_id()
+            .delete(self.entity_id);
+
         let mut action_ids = stat_block.additive_action_ids.clone();
         action_ids.retain(|id| !stat_block.subtractive_action_ids.contains(id));
         self.set_attack(stat_block.attack)
@@ -767,6 +775,58 @@ impl<'a> EntityHandle<'a> {
             .set_defense(stat_block.defense)
             .set_actions(action_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids)
+    }
+
+    pub fn trigger_traits_stat_block_dirty_flag(self) -> Self {
+        self.ctx
+            .db
+            .traits_stat_block_dirty_flag_components()
+            .insert(StatBlockDirtyFlagComponent {
+                entity_id: self.entity_id,
+            });
+        self
+    }
+    pub fn trigger_total_stat_block_dirty_flag(self) -> Self {
+        self.ctx
+            .db
+            .total_stat_block_dirty_flag_components()
+            .insert(StatBlockDirtyFlagComponent {
+                entity_id: self.entity_id,
+            });
+        self
+    }
+
+    pub fn set_traits_stat_block_cache(self, stat_block: StatBlock) -> Self {
+        if let Some(mut c) = self
+            .ctx
+            .db
+            .traits_stat_block_cache_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            c.stat_block = stat_block;
+            self.ctx
+                .db
+                .traits_stat_block_cache_components()
+                .entity_id()
+                .update(c);
+        } else {
+            self.ctx
+                .db
+                .traits_stat_block_cache_components()
+                .insert(StatBlockCacheComponent {
+                    entity_id: self.entity_id,
+                    stat_block,
+                });
+        }
+
+        self.ctx
+            .db
+            .traits_stat_block_dirty_flag_components()
+            .entity_id()
+            .delete(self.entity_id);
+
+        self
     }
 
     pub fn set_attack(self, attack: i32) -> Self {

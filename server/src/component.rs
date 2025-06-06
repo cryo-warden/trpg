@@ -7,6 +7,7 @@ use spacetimedb::Timestamp;
 
 use crate::appearance::AppearanceFeatureContext;
 use crate::entity::EntityHandle;
+use crate::stat_block::StatBlock;
 
 #[table(name = name_components, public)]
 #[derive(Debug, Clone)]
@@ -58,6 +59,24 @@ pub struct TraitsComponent {
     #[primary_key]
     pub entity_id: u64,
     pub trait_ids: Vec<u64>,
+}
+
+// TODO Add StatBlock caches for equipment and status effects.
+#[table(name = traits_stat_block_cache_components, public)]
+#[derive(Debug, Clone)]
+pub struct StatBlockCacheComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub stat_block: StatBlock,
+}
+
+// TODO Equipment and Status Effects
+#[table(name = traits_stat_block_dirty_flag_components, public)]
+#[table(name = total_stat_block_dirty_flag_components, public)]
+#[derive(Debug, Clone)]
+pub struct StatBlockDirtyFlagComponent {
+    #[primary_key]
+    pub entity_id: u64,
 }
 
 #[table(name = attack_components, public)]
