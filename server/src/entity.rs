@@ -29,6 +29,8 @@ pub struct ComponentSet {
     pub action_hotkeys_component: Option<ActionHotkeysComponent>,
     pub allegiance_component: Option<AllegianceComponent>,
     pub player_controller_component: Option<PlayerControllerComponent>,
+    pub baseline_component: Option<BaselineComponent>,
+    pub traits_component: Option<TraitsComponent>,
 }
 
 #[table(name = named_inactive_entities)]
@@ -117,72 +119,57 @@ impl<'a> InactiveEntityHandle<'a> {
 
     pub fn activate(self) -> EntityHandle<'a> {
         let e = EntityHandle::new(self.ctx);
-        match self.component_set.actions_component {
-            None => {}
-            Some(mut c) => {
-                c.entity_id = e.entity_id;
-                self.ctx.db.actions_components().insert(c);
-            }
+        if let Some(mut c) = self.component_set.actions_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.actions_components().insert(c);
         }
-        match self.component_set.action_hotkeys_component {
-            None => {}
-            Some(mut c) => {
-                c.entity_id = e.entity_id;
-                self.ctx.db.action_hotkeys_components().insert(c);
-            }
+        if let Some(mut c) = self.component_set.action_hotkeys_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.action_hotkeys_components().insert(c);
         }
-        match self.component_set.allegiance_component {
-            None => {}
-            Some(mut c) => {
-                c.entity_id = e.entity_id;
-                self.ctx.db.allegiance_components().insert(c);
-            }
+        if let Some(mut c) = self.component_set.allegiance_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.allegiance_components().insert(c);
         }
-        match self.component_set.ep_component {
-            None => {}
-            Some(mut c) => {
-                c.entity_id = e.entity_id;
-                self.ctx.db.ep_components().insert(c);
-            }
+        if let Some(mut c) = self.component_set.ep_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.ep_components().insert(c);
         }
-        match self.component_set.hp_component {
-            None => {}
-            Some(mut c) => {
-                c.entity_id = e.entity_id;
-                self.ctx.db.hp_components().insert(c);
-            }
+        if let Some(mut c) = self.component_set.hp_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.hp_components().insert(c);
         }
-        match self.component_set.player_controller_component {
-            None => {}
-            Some(mut c) => {
-                c.entity_id = e.entity_id;
-                self.ctx.db.player_controller_components().insert(c);
-            }
+        if let Some(mut c) = self.component_set.player_controller_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.player_controller_components().insert(c);
+        }
+        if let Some(mut c) = self.component_set.baseline_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.baseline_components().insert(c);
+        }
+        if let Some(mut c) = self.component_set.traits_component {
+            c.entity_id = e.entity_id;
+            self.ctx.db.traits_components().insert(c);
         }
 
-        match self.name {
-            Some(prefab_name) => {
-                self.ctx
-                    .db
-                    .named_inactive_entities()
-                    .prefab_name()
-                    .delete(prefab_name);
-            }
-            None => match self.identity {
-                Some(identity) => {
-                    self.ctx
-                        .db
-                        .identity_inactive_entities()
-                        .identity()
-                        .delete(identity);
+        if let Some(prefab_name) = self.name {
+            self.ctx
+                .db
+                .named_inactive_entities()
+                .prefab_name()
+                .delete(prefab_name);
+        } else if let Some(identity) = self.identity {
+            self.ctx
+                .db
+                .identity_inactive_entities()
+                .identity()
+                .delete(identity);
 
-                    return match EntityHandle::from_name(self.ctx, "room1") {
-                        Some(l) => e.add_location(l.entity_id),
-                        None => e,
-                    };
-                }
-                None => {}
-            },
+            // TODO Save map/checkpoint location and apply it here.
+            return match EntityHandle::from_name(self.ctx, "room1") {
+                Some(l) => e.add_location(l.entity_id),
+                None => e,
+            };
         }
 
         e
@@ -356,6 +343,17 @@ impl<'a> EntityHandle<'a> {
             .entity_id()
             .delete(self.entity_id);
 
+        self.ctx
+            .db
+            .baseline_components()
+            .entity_id()
+            .delete(self.entity_id);
+        self.ctx
+            .db
+            .traits_components()
+            .entity_id()
+            .delete(self.entity_id);
+
         self.ctx.db.entities().id().delete(self.entity_id);
         log::debug!("Deleted entity {}.", self.entity_id);
     }
@@ -388,43 +386,47 @@ impl<'a> EntityHandle<'a> {
                 .player_controller_components()
                 .entity_id()
                 .find(self.entity_id),
+            baseline_component: self
+                .ctx
+                .db
+                .baseline_components()
+                .entity_id()
+                .find(self.entity_id),
+            traits_component: self
+                .ctx
+                .db
+                .traits_components()
+                .entity_id()
+                .find(self.entity_id),
         };
-        match self
+        if let Some(p) = self
             .ctx
             .db
             .player_controller_components()
             .entity_id()
             .find(self.entity_id)
         {
-            Some(p) => {
-                self.ctx
-                    .db
-                    .identity_inactive_entities()
-                    .insert(IdentityInactiveEntity {
-                        identity: p.identity,
-                        component_set,
-                    });
-            }
-            None => {
-                match self
-                    .ctx
-                    .db
-                    .name_components()
-                    .entity_id()
-                    .find(self.entity_id)
-                {
-                    Some(n) => {
-                        self.ctx
-                            .db
-                            .named_inactive_entities()
-                            .insert(NamedInactiveEntity {
-                                prefab_name: n.name,
-                                component_set,
-                            });
-                    }
-                    None => {}
-                }
-            }
+            self.ctx
+                .db
+                .identity_inactive_entities()
+                .insert(IdentityInactiveEntity {
+                    identity: p.identity,
+                    component_set,
+                });
+        } else if let Some(n) = self
+            .ctx
+            .db
+            .name_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
+            self.ctx
+                .db
+                .named_inactive_entities()
+                .insert(NamedInactiveEntity {
+                    prefab_name: n.name,
+                    component_set,
+                });
         }
 
         self.delete();
