@@ -24,6 +24,7 @@ export const EntityName = ({ entityId }: { entityId: EntityId }) => {
       appearanceFeatures
         .filter((af) => af.appearanceFeatureType.tag === "Adjective")
         .toSorted((a, b) => a.priority - b.priority)
+        .map((af) => af.text)
         .slice(0, 3),
     [appearanceFeatures]
   );
