@@ -7,6 +7,7 @@ import {
   AllegianceComponent,
 } from "../stdb";
 import { EntityId } from "../Game/trpg";
+import { renderTemplate, RenderValue } from "./template";
 
 export const actionWeightType = ["heavy", "neutral", "light"] as const;
 
@@ -105,6 +106,33 @@ export const bindRenderer = ({
     }
     return entityIdToName(namedEntityId);
   };
+
+  // TODO Update context and use it.
+  const renderValue =
+    (viewpointEntityId: EntityId): RenderValue<EntityId | ReactNode, any> =>
+    (value, context) => {
+      if (typeof value === "bigint") {
+        return [
+          <span className={getClassName(viewpointEntityId, value)}>
+            {getName(viewpointEntityId, value) ?? ""}
+          </span>,
+          context,
+        ];
+      }
+
+      return [value, context];
+    };
+
+  // TODO Cache `renderTemplate(renderValue(viewpointEntity))(template)`
+  const renderWithTemplate =
+    (template: string) =>
+    (viewpointEntity: EntityId) =>
+    (values: (EntityId | ReactNode)[]) =>
+      (
+        <div className="debug renderer">
+          {renderTemplate(renderValue(viewpointEntity))(template)(values, {})}
+        </div>
+      );
 
   const capitalize = (word: string) =>
     word.substring(0, 1).toUpperCase() + word.substring(1);
@@ -338,23 +366,17 @@ export const bindRenderer = ({
               finalPunctuation: ".",
             });
           case "Heal":
-            return renderSentence({
-              viewpointEntity,
-              subject: event.ownerEntityId,
-              directObject: event.targetEntityId,
-              indirectObject: `${event.eventType.value.value}`,
-              verb: "healed",
-              particle: "for",
-              finalPunctuation: "!",
-            });
+            return renderWithTemplate("{0:sentence} healed {1} for {2}.")(
+              viewpointEntity
+            )([
+              event.ownerEntityId,
+              event.targetEntityId,
+              event.eventType.value.value.toString(),
+            ]);
           case "Move":
-            return renderSentence({
-              viewpointEntity,
-              subject: event.ownerEntityId,
-              directObject: event.targetEntityId,
-              verb: "moved through",
-              finalPunctuation: ".",
-            });
+            return renderWithTemplate("{0:sentence} moved through {1}.")(
+              viewpointEntity
+            )([event.ownerEntityId, event.targetEntityId]);
           // case "status":
           //   return renderSentence({
           //     viewpointEntity,
