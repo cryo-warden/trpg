@@ -34,6 +34,8 @@ import {
 // Import and reexport all reducer arg types
 import { Act } from "./act_reducer.ts";
 export { Act };
+import { AddTrait } from "./add_trait_reducer.ts";
+export { AddTrait };
 import { ConsumeObserverComponents } from "./consume_observer_components_reducer.ts";
 export { ConsumeObserverComponents };
 import { Damage } from "./damage_reducer.ts";
@@ -122,10 +124,16 @@ import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
 import { TargetComponentsTableHandle } from "./target_components_table.ts";
 export { TargetComponentsTableHandle };
+import { TotalStatBlockDirtyFlagComponentsTableHandle } from "./total_stat_block_dirty_flag_components_table.ts";
+export { TotalStatBlockDirtyFlagComponentsTableHandle };
 import { TraitsTableHandle } from "./traits_table.ts";
 export { TraitsTableHandle };
 import { TraitsComponentsTableHandle } from "./traits_components_table.ts";
 export { TraitsComponentsTableHandle };
+import { TraitsStatBlockCacheComponentsTableHandle } from "./traits_stat_block_cache_components_table.ts";
+export { TraitsStatBlockCacheComponentsTableHandle };
+import { TraitsStatBlockDirtyFlagComponentsTableHandle } from "./traits_stat_block_dirty_flag_components_table.ts";
+export { TraitsStatBlockDirtyFlagComponentsTableHandle };
 import { UnrealizedMapComponentsTableHandle } from "./unrealized_map_components_table.ts";
 export { UnrealizedMapComponentsTableHandle };
 
@@ -208,6 +216,10 @@ import { RngSeedComponent } from "./rng_seed_component_type.ts";
 export { RngSeedComponent };
 import { StatBlock } from "./stat_block_type.ts";
 export { StatBlock };
+import { StatBlockCacheComponent } from "./stat_block_cache_component_type.ts";
+export { StatBlockCacheComponent };
+import { StatBlockDirtyFlagComponent } from "./stat_block_dirty_flag_component_type.ts";
+export { StatBlockDirtyFlagComponent };
 import { SystemTimer } from "./system_timer_type.ts";
 export { SystemTimer };
 import { TargetComponent } from "./target_component_type.ts";
@@ -397,6 +409,11 @@ const REMOTE_MODULE = {
       rowType: TargetComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
+    total_stat_block_dirty_flag_components: {
+      tableName: "total_stat_block_dirty_flag_components",
+      rowType: StatBlockDirtyFlagComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
     traits: {
       tableName: "traits",
       rowType: Trait.getTypeScriptAlgebraicType(),
@@ -405,6 +422,16 @@ const REMOTE_MODULE = {
     traits_components: {
       tableName: "traits_components",
       rowType: TraitsComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
+    traits_stat_block_cache_components: {
+      tableName: "traits_stat_block_cache_components",
+      rowType: StatBlockCacheComponent.getTypeScriptAlgebraicType(),
+      primaryKey: "entityId",
+    },
+    traits_stat_block_dirty_flag_components: {
+      tableName: "traits_stat_block_dirty_flag_components",
+      rowType: StatBlockDirtyFlagComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
     },
     unrealized_map_components: {
@@ -417,6 +444,10 @@ const REMOTE_MODULE = {
     act: {
       reducerName: "act",
       argsType: Act.getTypeScriptAlgebraicType(),
+    },
+    add_trait: {
+      reducerName: "add_trait",
+      argsType: AddTrait.getTypeScriptAlgebraicType(),
     },
     consume_observer_components: {
       reducerName: "consume_observer_components",
@@ -474,6 +505,7 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "Act", args: Act }
+| { name: "AddTrait", args: AddTrait }
 | { name: "ConsumeObserverComponents", args: ConsumeObserverComponents }
 | { name: "Damage", args: Damage }
 | { name: "DeleteTarget", args: DeleteTarget }
@@ -500,6 +532,22 @@ export class RemoteReducers {
 
   removeOnAct(callback: (ctx: ReducerEventContext, actionId: bigint, targetEntityId: bigint) => void) {
     this.connection.offReducer("act", callback);
+  }
+
+  addTrait(entityId: bigint, traitName: string) {
+    const __args = { entityId, traitName };
+    let __writer = new BinaryWriter(1024);
+    AddTrait.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("add_trait", __argsBuffer, this.setCallReducerFlags.addTraitFlags);
+  }
+
+  onAddTrait(callback: (ctx: ReducerEventContext, entityId: bigint, traitName: string) => void) {
+    this.connection.onReducer("add_trait", callback);
+  }
+
+  removeOnAddTrait(callback: (ctx: ReducerEventContext, entityId: bigint, traitName: string) => void) {
+    this.connection.offReducer("add_trait", callback);
   }
 
   consumeObserverComponents() {
@@ -596,6 +644,11 @@ export class SetReducerFlags {
   actFlags: CallReducerFlags = 'FullUpdate';
   act(flags: CallReducerFlags) {
     this.actFlags = flags;
+  }
+
+  addTraitFlags: CallReducerFlags = 'FullUpdate';
+  addTrait(flags: CallReducerFlags) {
+    this.addTraitFlags = flags;
   }
 
   consumeObserverComponentsFlags: CallReducerFlags = 'FullUpdate';
@@ -772,12 +825,24 @@ export class RemoteTables {
     return new TargetComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TargetComponent>(REMOTE_MODULE.tables.target_components));
   }
 
+  get totalStatBlockDirtyFlagComponents(): TotalStatBlockDirtyFlagComponentsTableHandle {
+    return new TotalStatBlockDirtyFlagComponentsTableHandle(this.connection.clientCache.getOrCreateTable<StatBlockDirtyFlagComponent>(REMOTE_MODULE.tables.total_stat_block_dirty_flag_components));
+  }
+
   get traits(): TraitsTableHandle {
     return new TraitsTableHandle(this.connection.clientCache.getOrCreateTable<Trait>(REMOTE_MODULE.tables.traits));
   }
 
   get traitsComponents(): TraitsComponentsTableHandle {
     return new TraitsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TraitsComponent>(REMOTE_MODULE.tables.traits_components));
+  }
+
+  get traitsStatBlockCacheComponents(): TraitsStatBlockCacheComponentsTableHandle {
+    return new TraitsStatBlockCacheComponentsTableHandle(this.connection.clientCache.getOrCreateTable<StatBlockCacheComponent>(REMOTE_MODULE.tables.traits_stat_block_cache_components));
+  }
+
+  get traitsStatBlockDirtyFlagComponents(): TraitsStatBlockDirtyFlagComponentsTableHandle {
+    return new TraitsStatBlockDirtyFlagComponentsTableHandle(this.connection.clientCache.getOrCreateTable<StatBlockDirtyFlagComponent>(REMOTE_MODULE.tables.traits_stat_block_dirty_flag_components));
   }
 
   get unrealizedMapComponents(): UnrealizedMapComponentsTableHandle {

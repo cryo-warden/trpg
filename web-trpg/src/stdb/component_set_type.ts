@@ -33,17 +33,22 @@ import {
 import { ActionHotkeysComponent as __ActionHotkeysComponent } from "./action_hotkeys_component_type";
 import { ActionsComponent as __ActionsComponent } from "./actions_component_type";
 import { AllegianceComponent as __AllegianceComponent } from "./allegiance_component_type";
+import { BaselineComponent as __BaselineComponent } from "./baseline_component_type";
 import { EpComponent as __EpComponent } from "./ep_component_type";
 import { HpComponent as __HpComponent } from "./hp_component_type";
 import { PlayerControllerComponent as __PlayerControllerComponent } from "./player_controller_component_type";
+import { TraitsComponent as __TraitsComponent } from "./traits_component_type";
 
 export type ComponentSet = {
+  entityId: bigint,
   hpComponent: __HpComponent | undefined,
   epComponent: __EpComponent | undefined,
   actionsComponent: __ActionsComponent | undefined,
   actionHotkeysComponent: __ActionHotkeysComponent | undefined,
   allegianceComponent: __AllegianceComponent | undefined,
   playerControllerComponent: __PlayerControllerComponent | undefined,
+  baselineComponent: __BaselineComponent | undefined,
+  traitsComponent: __TraitsComponent | undefined,
 };
 
 /**
@@ -56,12 +61,15 @@ export namespace ComponentSet {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
+      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("hpComponent", AlgebraicType.createOptionType(__HpComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("epComponent", AlgebraicType.createOptionType(__EpComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("actionsComponent", AlgebraicType.createOptionType(__ActionsComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("actionHotkeysComponent", AlgebraicType.createOptionType(__ActionHotkeysComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("allegianceComponent", AlgebraicType.createOptionType(__AllegianceComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("playerControllerComponent", AlgebraicType.createOptionType(__PlayerControllerComponent.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("baselineComponent", AlgebraicType.createOptionType(__BaselineComponent.getTypeScriptAlgebraicType())),
+      new ProductTypeElement("traitsComponent", AlgebraicType.createOptionType(__TraitsComponent.getTypeScriptAlgebraicType())),
     ]);
   }
 

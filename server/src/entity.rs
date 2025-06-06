@@ -10,9 +10,9 @@ use crate::{
         actions_components, allegiance_components, appearance_features_components,
         attack_components, baseline_components, entity_deactivation_timer_components,
         entity_prominence_components, ep_components, hp_components, location_components,
-        location_map_components, name_components, path_components, player_controller_components,
-        queued_action_state_components, rng_seed_components, target_components,
-        total_stat_block_dirty_flag_components, traits_components,
+        location_map_components, name_components, observer_components, path_components,
+        player_controller_components, queued_action_state_components, rng_seed_components,
+        target_components, total_stat_block_dirty_flag_components, traits_components,
         traits_stat_block_cache_components, traits_stat_block_dirty_flag_components, ActionHotkey,
         ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
         ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent, AttackComponent,
@@ -26,6 +26,7 @@ use crate::{
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ComponentSet {
+    pub entity_id: u64,
     pub hp_component: Option<HpComponent>,
     pub ep_component: Option<EpComponent>,
     pub actions_component: Option<ActionsComponent>,
@@ -87,8 +88,6 @@ impl Entity {
 
 pub struct InactiveEntityHandle<'a> {
     pub ctx: &'a ReducerContext,
-    pub name: Option<String>,
-    pub identity: Option<Identity>,
     pub component_set: ComponentSet,
 }
 
@@ -101,27 +100,34 @@ impl<'a> InactiveEntityHandle<'a> {
             .find(prefab_name.to_string())
             .map(|i| Self {
                 ctx,
-                name: Some(prefab_name.to_string()),
-                identity: None,
                 component_set: i.component_set,
             })
     }
 
     pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
-        ctx.db
+        let result = ctx
+            .db
             .identity_inactive_entities()
             .identity()
             .find(ctx.sender)
             .map(|i| Self {
                 ctx,
-                name: None,
-                identity: Some(ctx.sender),
                 component_set: i.component_set,
-            })
+            });
+        ctx.db
+            .identity_inactive_entities()
+            .identity()
+            .delete(ctx.sender);
+        result
     }
 
     pub fn activate(self) -> EntityHandle<'a> {
-        let e = EntityHandle::new(self.ctx);
+        let id = self.component_set.entity_id;
+        self.activate_with_id(id)
+    }
+
+    pub fn activate_with_id(self, id: u64) -> EntityHandle<'a> {
+        let e = EntityHandle::insert_id(self.ctx, id);
         if let Some(mut c) = self.component_set.actions_component {
             c.entity_id = e.entity_id;
             self.ctx.db.actions_components().insert(c);
@@ -149,33 +155,28 @@ impl<'a> InactiveEntityHandle<'a> {
         if let Some(mut c) = self.component_set.baseline_component {
             c.entity_id = e.entity_id;
             self.ctx.db.baseline_components().insert(c);
+            self.ctx.db.total_stat_block_dirty_flag_components().insert(
+                StatBlockDirtyFlagComponent {
+                    entity_id: e.entity_id,
+                },
+            );
         }
         if let Some(mut c) = self.component_set.traits_component {
             c.entity_id = e.entity_id;
             self.ctx.db.traits_components().insert(c);
-        }
-
-        if let Some(prefab_name) = self.name {
             self.ctx
                 .db
-                .named_inactive_entities()
-                .prefab_name()
-                .delete(prefab_name);
-        } else if let Some(identity) = self.identity {
-            self.ctx
-                .db
-                .identity_inactive_entities()
-                .identity()
-                .delete(identity);
-
-            // TODO Save map/checkpoint location and apply it here.
-            return match EntityHandle::from_name(self.ctx, "room1") {
-                Some(l) => e.add_location(l.entity_id),
-                None => e,
-            };
+                .traits_stat_block_dirty_flag_components()
+                .insert(StatBlockDirtyFlagComponent {
+                    entity_id: e.entity_id,
+                });
         }
 
-        e
+        // TODO Assign location from callsite instead?
+        match EntityHandle::from_name(self.ctx, "room1") {
+            Some(l) => e.add_location(l.entity_id),
+            None => e,
+        }
     }
 }
 
@@ -186,12 +187,16 @@ pub struct EntityHandle<'a> {
 
 #[allow(dead_code)]
 impl<'a> EntityHandle<'a> {
-    pub fn new(ctx: &'a ReducerContext) -> Self {
-        let entity = ctx.db.entities().insert(Entity { id: 0 });
+    pub fn insert_id(ctx: &'a ReducerContext, id: u64) -> Self {
+        let entity = ctx.db.entities().insert(Entity { id });
         Self {
             ctx,
             entity_id: entity.id,
         }
+    }
+
+    pub fn new(ctx: &'a ReducerContext) -> Self {
+        Self::insert_id(ctx, 0)
     }
 
     pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
@@ -342,6 +347,12 @@ impl<'a> EntityHandle<'a> {
 
         self.ctx
             .db
+            .observer_components()
+            .entity_id()
+            .delete(self.entity_id);
+
+        self.ctx
+            .db
             .entity_deactivation_timer_components()
             .entity_id()
             .delete(self.entity_id);
@@ -363,6 +374,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn deactivate(self) {
         let component_set = ComponentSet {
+            entity_id: self.entity_id,
             actions_component: self
                 .ctx
                 .db
