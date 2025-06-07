@@ -1,5 +1,3 @@
-import { bindRenderer } from "./debug";
+import { useDebugRenderer } from "./debug";
 
-export const renderer = {
-  debug: bindRenderer,
-};
+export { useDebugRenderer };

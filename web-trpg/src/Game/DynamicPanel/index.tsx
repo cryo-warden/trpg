@@ -6,12 +6,14 @@ import { HPBar } from "../EntityPanel/HPBar";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 import { EntityId } from "../trpg";
 import {
+  useAttackComponent,
   useEntityProminences,
   useHpComponent,
   useLocation,
   useLocationEntities,
   usePlayerEntity,
 } from "../context/StdbContext";
+import { EntityName } from "../EntityName";
 
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
@@ -20,6 +22,7 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const locationEntities = useLocationEntities(location);
   const playerContents = useLocationEntities(playerEntity);
   const hpComponent = useHpComponent(playerEntity);
+  const attackComponent = useAttackComponent(playerEntity);
   const entities: EntityId[] =
     mode === "location"
       ? locationEntities
@@ -41,10 +44,12 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
 
     return (
       <Panel {...props}>
-        <div>{/* WIP Show name. */ `Entity ${playerEntity}`}</div>
+        <div>
+          <EntityName entityId={playerEntity} />
+        </div>
         <HPBar entity={playerEntity} />
         <EPBar entity={playerEntity} />
-        <div>Attack: {/* WIP Add attack component. */ 0}</div>
+        <div>Attack: {attackComponent?.attack ?? 0}</div>
         <div>Defense: {hpComponent?.defense ?? 0}</div>
       </Panel>
     );

@@ -32,7 +32,7 @@ const lex = (template: string): TemplateNode => {
     type: "value",
     index: Number.parseInt(value),
     ruleSet: new Set(rules.split(":")),
-    next: lex(right),
+    next: right.length > 0 ? lex(right) : void 0,
   };
 
   if (left.length > 0) {

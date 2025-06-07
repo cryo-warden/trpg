@@ -12,11 +12,8 @@ import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
-import { renderer } from "../renderer";
+import { useDebugRenderer } from "../renderer";
 import {
-  useAllegianceComponents,
-  useAppearanceFeatures,
-  useAppearanceFeaturesComponents,
   useObserverComponentsEvents,
   usePlayerEntity,
   useStdbConnection,
@@ -25,24 +22,7 @@ import { EntityEvent } from "../stdb";
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const connection = useStdbConnection();
-  const rendererName = "debug";
-  const appearanceFeatures = useAppearanceFeatures();
-  const appearanceFeaturesComponents = useAppearanceFeaturesComponents();
-  const allegianceComponents = useAllegianceComponents();
-  const { renderEvent } = useMemo(
-    () =>
-      renderer[rendererName]({
-        appearanceFeatures,
-        appearanceFeaturesComponents,
-        allegianceComponents,
-      }),
-    [
-      rendererName,
-      appearanceFeatures,
-      appearanceFeaturesComponents,
-      allegianceComponents,
-    ]
-  );
+  const { renderEvent } = useDebugRenderer();
   const playerEntity = usePlayerEntity();
 
   const EventDisplay = useMemo(() => {
@@ -50,7 +30,7 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
       return () => null;
     }
     return ({ event }: { event: EntityEvent }): ReactNode => {
-      return useMemo(() => renderEvent(playerEntity, event), [event]);
+      return useMemo(() => renderEvent(event), [event]);
     };
   }, [renderEvent, playerEntity]);
 

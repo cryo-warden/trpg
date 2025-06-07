@@ -47,6 +47,7 @@ const queries = [
   "select * from allegiance_components",
   "select * from ep_components",
   "select * from hp_components",
+  "select * from attack_components",
   "select * from location_components",
   "select * from player_controller_components",
   "select * from queued_action_state_components",
@@ -237,6 +238,8 @@ export const useAllegianceComponent = useComponent("allegianceComponents");
 export const useHpComponent = useComponent("hpComponents");
 
 export const useEpComponent = useComponent("epComponents");
+
+export const useAttackComponent = useComponent("attackComponents");
 
 export const useActionStateComponent = useComponent("actionStateComponents");
 
