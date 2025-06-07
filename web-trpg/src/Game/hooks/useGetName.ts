@@ -41,13 +41,14 @@ export const useGetName = (viewpointEntityId: EntityId | null) => {
       const noun =
         appearanceFeatures
           .filter((af) => af.appearanceFeatureType.tag === "Noun")
-          .toSorted(compareAppearanceFeatures)[0]?.text ?? "something";
+          .sort(compareAppearanceFeatures)[0]?.text ?? "something";
 
       const adjectives = appearanceFeatures
         .filter((af) => af.appearanceFeatureType.tag === "Adjective")
-        .toSorted(compareAppearanceFeatures)
+        .sort(compareAppearanceFeatures)
         .map(getText)
-        .slice(0, 3);
+        .slice(0, 3)
+        .reverse();
 
       return (adjectives.length > 0 ? adjectives.join(", ") + " " : "") + noun;
     };

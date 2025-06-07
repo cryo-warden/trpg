@@ -32,7 +32,7 @@ const queries = [
   // Action Queries
   "select * from actions",
   "select * from action_steps",
-  "select * from action_names",
+  "select * from action_appearances",
 
   // Rendering Queries
   "select * from observable_events",
@@ -281,7 +281,7 @@ export const useLocationEntities = (locationEntityId: EntityId | null) => {
 
 export const useActionName = (actionId: ActionId) => {
   return useTableData(
-    "actionNames",
+    "actionAppearances",
     (table) => table.actionId.find(actionId)?.name ?? null,
     [actionId]
   );
@@ -343,6 +343,7 @@ export const useAppearanceFeaturesComponents = useTable(
 );
 export const useAllegianceComponents = useTable("allegianceComponents");
 export const useActions = useTable("actions");
+export const useActionAppearances = useTable("actionAppearances");
 
 const useObserverComponentsObservableEventIds = (
   entityId: EntityId | null
@@ -364,16 +365,11 @@ export const useObserverComponentsEvents = (
 ): EntityEvent[] => {
   const eventIds = useObserverComponentsObservableEventIds(entityId);
   const observableEvents = useObservableEvents();
-  const idToObservableEvent = useMemo(
-    () => new Map(observableEvents.map((e) => [e.id, e])),
-    [observableEvents]
-  );
-  const events = useMemo(
-    () =>
-      eventIds
-        .map((id) => idToObservableEvent.get(id))
-        .filter((e) => e != null),
-    [eventIds, idToObservableEvent]
-  );
+  const events = useMemo(() => {
+    const idToObservableEvent = new Map(observableEvents.map((e) => [e.id, e]));
+    return eventIds
+      .map((id) => idToObservableEvent.get(id))
+      .filter((e) => e != null);
+  }, [eventIds, observableEvents]);
   return events;
 };

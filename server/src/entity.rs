@@ -4,7 +4,7 @@ use spacetimedb::{
 };
 
 use crate::{
-    action::{action_names, actions, ActionType},
+    action::{actions, ActionType},
     component::{
         action_hotkeys_components, action_options_components, action_state_components,
         actions_components, allegiance_components, appearance_features_components,
@@ -642,38 +642,27 @@ impl<'a> EntityHandle<'a> {
         }
     }
 
-    pub fn add_action(self, action_name: &str) -> Self {
-        match self
-            .ctx
-            .db
-            .action_names()
-            .name()
-            .find(action_name.to_string())
-        {
-            None => {
-                log::debug!("Cannot find action \"{}\" to add.", action_name);
+    pub fn add_action(self, name: &str) -> Self {
+        if let Some(action) = self.ctx.db.actions().name().find(name.to_string()) {
+            if let Some(mut c) = self
+                .ctx
+                .db
+                .actions_components()
+                .entity_id()
+                .find(self.entity_id)
+            {
+                c.action_ids.push(action.id);
+                self.ctx.db.actions_components().entity_id().update(c);
+            } else {
+                self.ctx.db.actions_components().insert(ActionsComponent {
+                    entity_id: self.entity_id,
+                    action_ids: vec![action.id],
+                });
             }
-            Some(action_name) => {
-                match self
-                    .ctx
-                    .db
-                    .actions_components()
-                    .entity_id()
-                    .find(self.entity_id)
-                {
-                    None => {
-                        self.ctx.db.actions_components().insert(ActionsComponent {
-                            entity_id: self.entity_id,
-                            action_ids: vec![action_name.action_id],
-                        });
-                    }
-                    Some(mut a) => {
-                        a.action_ids.push(action_name.action_id);
-                        self.ctx.db.actions_components().entity_id().update(a);
-                    }
-                }
-            }
-        };
+        } else {
+            log::debug!("Cannot find action \"{}\" to add.", name);
+        }
+
         self
     }
 
@@ -1028,67 +1017,58 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn set_hotkey(self, action_name: &str, character: char) -> Self {
-        let action_id = match self
-            .ctx
-            .db
-            .action_names()
-            .name()
-            .find(action_name.to_string())
-        {
-            None => {
-                return self;
-            }
-            Some(action_name) => action_name.action_id,
+    pub fn set_hotkey(self, name: &str, character: char) -> Self {
+        let action_id = if let Some(action) = self.ctx.db.actions().name().find(name.to_string()) {
+            action.id
+        } else {
+            return self;
         };
         let character_code = character as u32;
-        match self
+        if let Some(mut a) = self
             .ctx
             .db
             .action_hotkeys_components()
             .entity_id()
             .find(self.entity_id)
         {
-            None => {
-                self.ctx
-                    .db
-                    .action_hotkeys_components()
-                    .insert(ActionHotkeysComponent {
-                        entity_id: self.entity_id,
-                        action_hotkeys: vec![ActionHotkey {
-                            action_id,
-                            character_code,
-                        }],
-                    });
-            }
-            Some(mut a) => {
-                a.action_hotkeys
-                    .retain(|h| h.action_id != action_id && h.character_code != character_code);
-                a.action_hotkeys.push(ActionHotkey {
-                    action_id,
-                    character_code,
+            a.action_hotkeys
+                .retain(|h| h.action_id != action_id && h.character_code != character_code);
+            a.action_hotkeys.push(ActionHotkey {
+                action_id,
+                character_code,
+            });
+            self.ctx
+                .db
+                .action_hotkeys_components()
+                .entity_id()
+                .update(a);
+        } else {
+            self.ctx
+                .db
+                .action_hotkeys_components()
+                .insert(ActionHotkeysComponent {
+                    entity_id: self.entity_id,
+                    action_hotkeys: vec![ActionHotkey {
+                        action_id,
+                        character_code,
+                    }],
                 });
-                self.ctx
-                    .db
-                    .action_hotkeys_components()
-                    .entity_id()
-                    .update(a);
-            }
         }
         self
     }
 
     pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
-        let o = EntityHandle::from_id(self.ctx, other_entity_id);
-        match self.ctx.db.actions().id().find(action_id) {
-            None => false,
-            Some(a) => match a.action_type {
+        if let Some(a) = self.ctx.db.actions().id().find(action_id) {
+            let o = EntityHandle::from_id(self.ctx, other_entity_id);
+            match a.action_type {
                 ActionType::Attack => o.has_hp() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.has_hp() && self.is_ally(other_entity_id),
                 ActionType::Equip => true,     // WIP
                 ActionType::Inventory => true, // WIP
                 ActionType::Move => o.has_path(),
-            },
+            }
+        } else {
+            false
         }
     }
 }

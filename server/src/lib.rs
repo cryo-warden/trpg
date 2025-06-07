@@ -38,45 +38,39 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     let a_ctx = ActionContext::new(ctx);
 
     a_ctx
-        .new_handle(
-            ActionType::Move,
+        .new_handle("quick_move", ActionType::Move)
+        .add_appearance(
+            "Quick Move",
             "{0:sentence:subject} moved quickly toward {1:object}.",
         )
-        .set_name("quick_move")
         .add_move();
     a_ctx
-        .new_handle(
-            ActionType::Buff,
+        .new_handle("divine_heal", ActionType::Buff)
+        .add_appearance(
+            "Divine Heal",
             "{0:sentence:subject} began to focus a beam of pure lifeforce onto {1:object}.",
         )
-        .set_name("divine_heal")
         .add_heal(500);
     a_ctx
-        .new_handle(
-            ActionType::Move,
-            "{0:sentence:subject} moved toward {1:object}.",
-        )
-        .set_name("move")
+        .new_handle("move", ActionType::Move)
+        .add_appearance("Move", "{0:sentence:subject} moved toward {1:object}.")
         .add_rest()
         .add_rest()
         .add_move()
         .add_rest();
     a_ctx
-        .new_handle(
-            ActionType::Attack,
-            "{0:sentence:subject} wound up to bop {1:object}.",
-        )
-        .set_name("bop")
+        .new_handle("bop", ActionType::Attack)
+        .add_appearance("Bop", "{0:sentence:subject} wound up to bop {1:object}.")
         .add_rest()
         .add_rest()
         .add_attack(1)
         .add_rest();
     a_ctx
-        .new_handle(
-            ActionType::Attack,
+        .new_handle("boppity_bop", ActionType::Attack)
+        .add_appearance(
+            "Boppity Bop",
             "{0:sentence:subject} wound up to boppity-bop {1:object}.",
         )
-        .set_name("boppity_bop")
         .add_rest()
         .add_rest()
         .add_attack(1)

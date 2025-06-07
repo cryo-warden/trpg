@@ -17,17 +17,19 @@ pub struct Action {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
+    #[unique]
+    pub name: String,
     pub action_type: ActionType,
-    pub begin_template: String, // TODO Move template into separate per-language table.
 }
 
-#[table(name = action_names, public)]
+#[table(name = action_appearances, public)]
 #[derive(Debug, Clone)]
-pub struct ActionName {
+pub struct ActionAppearance {
     #[primary_key]
     pub action_id: u64,
     #[unique]
     pub name: String,
+    pub begin_template: String,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -73,8 +75,8 @@ impl<'a> ActionContext<'a> {
         Self { ctx }
     }
 
-    pub fn new_handle(&self, action_type: ActionType, begin_template: &str) -> ActionHandle {
-        ActionHandle::new(self.ctx, action_type, begin_template)
+    pub fn new_handle(&self, name: &str, action_type: ActionType) -> ActionHandle {
+        ActionHandle::new(self.ctx, name, action_type)
     }
 
     pub fn by_names(&self, names: &[&str]) -> Vec<u64> {
@@ -83,10 +85,10 @@ impl<'a> ActionContext<'a> {
             .filter_map(|n| {
                 self.ctx
                     .db
-                    .action_names()
+                    .actions()
                     .name()
                     .find(n.to_string())
-                    .map(|a| a.action_id)
+                    .map(|a| a.id)
             })
             .collect()
     }
@@ -99,11 +101,11 @@ pub struct ActionHandle<'a> {
 
 #[allow(dead_code)]
 impl<'a> ActionHandle<'a> {
-    pub fn new(ctx: &'a ReducerContext, action_type: ActionType, begin_template: &str) -> Self {
+    pub fn new(ctx: &'a ReducerContext, name: &str, action_type: ActionType) -> Self {
         let action = ctx.db.actions().insert(Action {
             id: 0,
+            name: name.to_string(),
             action_type,
-            begin_template: begin_template.to_string(),
         });
         Self {
             ctx,
@@ -111,10 +113,11 @@ impl<'a> ActionHandle<'a> {
         }
     }
 
-    pub fn set_name(self, name: &str) -> Self {
-        self.ctx.db.action_names().insert(ActionName {
+    pub fn add_appearance(self, name: &str, begin_template: &str) -> Self {
+        self.ctx.db.action_appearances().insert(ActionAppearance {
             action_id: self.action_id,
             name: name.to_string(),
+            begin_template: begin_template.to_string(),
         });
         self
     }

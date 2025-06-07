@@ -3,7 +3,10 @@ import "./debug.css";
 import { EntityEvent } from "../stdb";
 import { ActionId, EntityId } from "../Game/trpg";
 import { renderTemplate, RenderValue } from "./template";
-import { useActions, usePlayerEntity } from "../Game/context/StdbContext";
+import {
+  useActionAppearances,
+  usePlayerEntity,
+} from "../Game/context/StdbContext";
 import { useGetName } from "../Game/hooks/useGetName";
 import { useGetClassName } from "../Game/hooks/useGetClassName";
 
@@ -16,18 +19,20 @@ const capitalize = (word: string) =>
   word.substring(0, 1).toUpperCase() + word.substring(1);
 
 const useGetActionTemplate = () => {
-  const actions = useActions();
+  const actionAppearances = useActionAppearances();
   return useMemo(() => {
-    const idToActionMap = new Map(actions.map((a) => [a.id, a]));
+    const idToActionAppearanceMap = new Map(
+      actionAppearances.map((a) => [a.actionId, a])
+    );
     return (actionId: ActionId) => {
-      const action = idToActionMap.get(actionId);
+      const action = idToActionAppearanceMap.get(actionId);
       if (action == null) {
         return null;
       }
 
       return action.beginTemplate;
     };
-  }, [actions]);
+  }, [actionAppearances]);
 };
 
 export const useDebugRenderer = () => {

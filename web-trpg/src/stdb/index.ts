@@ -52,10 +52,10 @@ import { Target } from "./target_reducer.ts";
 export { Target };
 
 // Import and reexport all table handle types
+import { ActionAppearancesTableHandle } from "./action_appearances_table.ts";
+export { ActionAppearancesTableHandle };
 import { ActionHotkeysComponentsTableHandle } from "./action_hotkeys_components_table.ts";
 export { ActionHotkeysComponentsTableHandle };
-import { ActionNamesTableHandle } from "./action_names_table.ts";
-export { ActionNamesTableHandle };
 import { ActionOptionsComponentsTableHandle } from "./action_options_components_table.ts";
 export { ActionOptionsComponentsTableHandle };
 import { ActionStateComponentsTableHandle } from "./action_state_components_table.ts";
@@ -140,14 +140,14 @@ export { UnrealizedMapComponentsTableHandle };
 // Import and reexport all types
 import { Action } from "./action_type.ts";
 export { Action };
+import { ActionAppearance } from "./action_appearance_type.ts";
+export { ActionAppearance };
 import { ActionEffect } from "./action_effect_type.ts";
 export { ActionEffect };
 import { ActionHotkey } from "./action_hotkey_type.ts";
 export { ActionHotkey };
 import { ActionHotkeysComponent } from "./action_hotkeys_component_type.ts";
 export { ActionHotkeysComponent };
-import { ActionName } from "./action_name_type.ts";
-export { ActionName };
 import { ActionOption } from "./action_option_type.ts";
 export { ActionOption };
 import { ActionOptionsComponent } from "./action_options_component_type.ts";
@@ -231,15 +231,15 @@ export { TraitsComponent };
 
 const REMOTE_MODULE = {
   tables: {
+    action_appearances: {
+      tableName: "action_appearances",
+      rowType: ActionAppearance.getTypeScriptAlgebraicType(),
+      primaryKey: "actionId",
+    },
     action_hotkeys_components: {
       tableName: "action_hotkeys_components",
       rowType: ActionHotkeysComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
-    },
-    action_names: {
-      tableName: "action_names",
-      rowType: ActionName.getTypeScriptAlgebraicType(),
-      primaryKey: "actionId",
     },
     action_options_components: {
       tableName: "action_options_components",
@@ -681,12 +681,12 @@ export class SetReducerFlags {
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
 
-  get actionHotkeysComponents(): ActionHotkeysComponentsTableHandle {
-    return new ActionHotkeysComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeysComponent>(REMOTE_MODULE.tables.action_hotkeys_components));
+  get actionAppearances(): ActionAppearancesTableHandle {
+    return new ActionAppearancesTableHandle(this.connection.clientCache.getOrCreateTable<ActionAppearance>(REMOTE_MODULE.tables.action_appearances));
   }
 
-  get actionNames(): ActionNamesTableHandle {
-    return new ActionNamesTableHandle(this.connection.clientCache.getOrCreateTable<ActionName>(REMOTE_MODULE.tables.action_names));
+  get actionHotkeysComponents(): ActionHotkeysComponentsTableHandle {
+    return new ActionHotkeysComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeysComponent>(REMOTE_MODULE.tables.action_hotkeys_components));
   }
 
   get actionOptionsComponents(): ActionOptionsComponentsTableHandle {

@@ -81,6 +81,28 @@ export class ActionsTableHandle {
       }
     },
   };
+  /**
+   * Access to the `name` unique index on the table `actions`,
+   * which allows point queries on the field of the same name
+   * via the [`ActionsNameUnique.find`] method.
+   *
+   * Users are encouraged not to explicitly reference this type,
+   * but to directly chain method calls,
+   * like `ctx.db.actions.name().find(...)`.
+   *
+   * Get a handle on the `name` unique index on the table `actions`.
+   */
+  name = {
+    // Find the subscribed row whose `name` column value is equal to `col_val`,
+    // if such a row is present in the client cache.
+    find: (col_val: string): Action | undefined => {
+      for (let row of this.tableCache.iter()) {
+        if (deepEqual(row.name, col_val)) {
+          return row;
+        }
+      }
+    },
+  };
 
   onInsert = (cb: (ctx: EventContext, row: Action) => void) => {
     return this.tableCache.onInsert(cb);

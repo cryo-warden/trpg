@@ -30,15 +30,16 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-export type ActionName = {
+export type ActionAppearance = {
   actionId: bigint,
   name: string,
+  beginTemplate: string,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace ActionName {
+export namespace ActionAppearance {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -47,15 +48,16 @@ export namespace ActionName {
     return AlgebraicType.createProductType([
       new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
+      new ProductTypeElement("beginTemplate", AlgebraicType.createStringType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: ActionName): void {
-    ActionName.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: ActionAppearance): void {
+    ActionAppearance.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): ActionName {
-    return ActionName.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): ActionAppearance {
+    return ActionAppearance.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

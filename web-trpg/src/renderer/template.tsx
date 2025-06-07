@@ -46,24 +46,6 @@ const lex = (template: string): TemplateNode => {
   return valueNode;
 };
 
-// type ApplyRules = (text: string) => string;
-// const applyRules =
-//   (rules: string[]): ApplyRules =>
-//   (text) => {
-//     return rules.reduce((text, rule) => {
-//       if (rule === "sentence") {
-//         return text[0].toUpperCase() + text.substring(1);
-//       }
-//       if (rule === "subject") {
-//         return text;
-//       }
-//       if (rule === "object") {
-//         return text;
-//       }
-//       return text;
-//     }, text);
-//   };
-
 export type RenderValue<T, TContext> = (
   value: T,
   rules: Set<string>,

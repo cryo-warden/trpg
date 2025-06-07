@@ -30,23 +30,23 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
-import { ActionName } from "./action_name_type";
+import { ActionAppearance } from "./action_appearance_type";
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `action_names`.
+ * Table handle for the table `action_appearances`.
  *
- * Obtain a handle from the [`actionNames`] property on [`RemoteTables`],
- * like `ctx.db.actionNames`.
+ * Obtain a handle from the [`actionAppearances`] property on [`RemoteTables`],
+ * like `ctx.db.actionAppearances`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.actionNames.on_insert(...)`.
+ * like `ctx.db.actionAppearances.on_insert(...)`.
  */
-export class ActionNamesTableHandle {
-  tableCache: TableCache<ActionName>;
+export class ActionAppearancesTableHandle {
+  tableCache: TableCache<ActionAppearance>;
 
-  constructor(tableCache: TableCache<ActionName>) {
+  constructor(tableCache: TableCache<ActionAppearance>) {
     this.tableCache = tableCache;
   }
 
@@ -54,24 +54,24 @@ export class ActionNamesTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<ActionName> {
+  iter(): Iterable<ActionAppearance> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `actionId` unique index on the table `action_names`,
+   * Access to the `actionId` unique index on the table `action_appearances`,
    * which allows point queries on the field of the same name
-   * via the [`ActionNamesActionIdUnique.find`] method.
+   * via the [`ActionAppearancesActionIdUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.actionNames.actionId().find(...)`.
+   * like `ctx.db.actionAppearances.actionId().find(...)`.
    *
-   * Get a handle on the `actionId` unique index on the table `action_names`.
+   * Get a handle on the `actionId` unique index on the table `action_appearances`.
    */
   actionId = {
     // Find the subscribed row whose `actionId` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): ActionName | undefined => {
+    find: (col_val: bigint): ActionAppearance | undefined => {
       for (let row of this.tableCache.iter()) {
         if (deepEqual(row.actionId, col_val)) {
           return row;
@@ -80,20 +80,20 @@ export class ActionNamesTableHandle {
     },
   };
   /**
-   * Access to the `name` unique index on the table `action_names`,
+   * Access to the `name` unique index on the table `action_appearances`,
    * which allows point queries on the field of the same name
-   * via the [`ActionNamesNameUnique.find`] method.
+   * via the [`ActionAppearancesNameUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.actionNames.name().find(...)`.
+   * like `ctx.db.actionAppearances.name().find(...)`.
    *
-   * Get a handle on the `name` unique index on the table `action_names`.
+   * Get a handle on the `name` unique index on the table `action_appearances`.
    */
   name = {
     // Find the subscribed row whose `name` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: string): ActionName | undefined => {
+    find: (col_val: string): ActionAppearance | undefined => {
       for (let row of this.tableCache.iter()) {
         if (deepEqual(row.name, col_val)) {
           return row;
@@ -102,27 +102,27 @@ export class ActionNamesTableHandle {
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: ActionName) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: ActionAppearance) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: ActionName) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: ActionAppearance) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: ActionName) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: ActionAppearance) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: ActionName) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: ActionAppearance) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: ActionName, newRow: ActionName) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: ActionAppearance, newRow: ActionAppearance) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: ActionName, newRow: ActionName) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: ActionAppearance, newRow: ActionAppearance) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}
