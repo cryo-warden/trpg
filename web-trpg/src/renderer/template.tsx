@@ -4,7 +4,7 @@ type TemplateNode =
   | {
       type: "value";
       index: number;
-      rules: string[];
+      ruleSet: Set<string>;
       next?: TemplateNode;
     }
   | {
@@ -31,7 +31,7 @@ const lex = (template: string): TemplateNode => {
   const valueNode: TemplateNode = {
     type: "value",
     index: Number.parseInt(value),
-    rules: rules.split(":"),
+    ruleSet: new Set(rules.split(":")),
     next: lex(right),
   };
 
@@ -64,13 +64,19 @@ const lex = (template: string): TemplateNode => {
 //     }, text);
 //   };
 
-export type RenderValue<T, C> = (value: T, context: C) => [ReactNode, C];
+export type RenderValue<T, TContext> = (
+  value: T,
+  rules: Set<string>,
+  context: TContext
+) => [ReactNode, TContext];
 
-const renderTemplateNode = <T, C>(renderValue: RenderValue<T, C>) => {
+const renderTemplateNode = <T, TContext>(
+  renderValue: RenderValue<T, TContext>
+) => {
   return (values: T[]) => {
     const renderTemplateNode = (
       templateNode: TemplateNode,
-      context: C
+      context: TContext
     ): ReactNode => {
       switch (templateNode.type) {
         case "literal": {
@@ -88,6 +94,7 @@ const renderTemplateNode = <T, C>(renderValue: RenderValue<T, C>) => {
         case "value": {
           const [node, nextContext] = renderValue(
             values[templateNode.index],
+            templateNode.ruleSet,
             context
           );
           const next =
@@ -107,10 +114,12 @@ const renderTemplateNode = <T, C>(renderValue: RenderValue<T, C>) => {
   };
 };
 
-export const renderTemplate = <T, C>(renderValue: RenderValue<T, C>) => {
+export const renderTemplate = <T, TContext>(
+  renderValue: RenderValue<T, TContext>
+) => {
   return (template: string) => {
     const templateRoot = lex(template);
-    return (values: T[], context: C): ReactNode => {
+    return (values: T[], context: TContext): ReactNode => {
       return renderTemplateNode(renderValue)(values)(templateRoot, context);
     };
   };

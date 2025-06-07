@@ -107,16 +107,40 @@ export const bindRenderer = ({
     return entityIdToName(namedEntityId);
   };
 
-  // TODO Update context and use it.
+  type RenderContext = {
+    subject: null | EntityId;
+    object: null | EntityId;
+  };
+
   const renderValue =
-    (viewpointEntityId: EntityId): RenderValue<EntityId | ReactNode, any> =>
-    (value, context) => {
+    (
+      viewpointEntityId: EntityId
+    ): RenderValue<EntityId | ReactNode, RenderContext> =>
+    (value, ruleSet, context) => {
       if (typeof value === "bigint") {
+        const nextContext = ruleSet.has("subject")
+          ? { ...context, subject: value }
+          : ruleSet.has("object")
+          ? { ...context, object: value }
+          : context;
+
+        const postProcess = ruleSet.has("sentence")
+          ? capitalize
+          : (v: string) => v;
         return [
           <span className={getClassName(viewpointEntityId, value)}>
-            {getName(viewpointEntityId, value) ?? ""}
+            {postProcess(
+              getName(
+                viewpointEntityId,
+                value,
+                ruleSet.has("object") ? context.subject ?? void 0 : void 0
+              ) ?? ""
+            )}
           </span>,
-          context,
+          {
+            ...nextContext,
+            object: ruleSet.has("sentence") ? null : nextContext.object,
+          },
         ];
       }
 
@@ -130,7 +154,10 @@ export const bindRenderer = ({
     (values: (EntityId | ReactNode)[]) =>
       (
         <div className="debug renderer">
-          {renderTemplate(renderValue(viewpointEntity))(template)(values, {})}
+          {renderTemplate(renderValue(viewpointEntity))(template)(values, {
+            object: null,
+            subject: null,
+          })}
         </div>
       );
 
@@ -366,17 +393,17 @@ export const bindRenderer = ({
               finalPunctuation: ".",
             });
           case "Heal":
-            return renderWithTemplate("{0:sentence} healed {1} for {2}.")(
-              viewpointEntity
-            )([
+            return renderWithTemplate(
+              "{0:sentence:subject} healed {1:object} for {2}."
+            )(viewpointEntity)([
               event.ownerEntityId,
               event.targetEntityId,
               event.eventType.value.value.toString(),
             ]);
           case "Move":
-            return renderWithTemplate("{0:sentence} moved through {1}.")(
-              viewpointEntity
-            )([event.ownerEntityId, event.targetEntityId]);
+            return renderWithTemplate(
+              "{0:sentence:subject} moved through {1:object}."
+            )(viewpointEntity)([event.ownerEntityId, event.targetEntityId]);
           // case "status":
           //   return renderSentence({
           //     viewpointEntity,
