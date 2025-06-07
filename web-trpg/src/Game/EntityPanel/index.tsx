@@ -4,7 +4,6 @@ import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
 import {
   useActionOptions,
-  useAllegiance,
   usePlayerEntity,
   useStdbConnection,
   useTarget,
@@ -14,6 +13,7 @@ import { HPBar } from "./HPBar";
 import "./index.css";
 import { EntityId } from "../trpg";
 import { EntityName } from "../EntityName";
+import { useGetClassName } from "../hooks/useGetClassName";
 
 export const EntityPanel = ({
   entity,
@@ -27,8 +27,7 @@ export const EntityPanel = ({
 } & ComponentPropsWithoutRef<typeof Panel>) => {
   const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
-  const playerAllegiance = useAllegiance(playerEntity);
-  const allegiance = useAllegiance(entity);
+  const getClassName = useGetClassName(playerEntity);
   const target = useTarget(playerEntity);
   const targetThis = useCallback(() => {
     connection.reducers.target(entity);
@@ -55,11 +54,7 @@ export const EntityPanel = ({
       className={[
         props.className ?? "",
         "EntityPanel",
-        allegiance == null
-          ? ""
-          : allegiance !== playerAllegiance
-          ? "hostile"
-          : "friendly",
+        getClassName(entity),
         entity === target ? "targetted" : "",
       ].join(" ")}
       onClick={targetThis}

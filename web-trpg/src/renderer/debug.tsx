@@ -3,13 +3,9 @@ import "./debug.css";
 import { EntityEvent } from "../stdb";
 import { ActionId, EntityId } from "../Game/trpg";
 import { renderTemplate, RenderValue } from "./template";
-import {
-  useActions,
-  useAllegianceComponents,
-  useAppearanceFeatures,
-  useAppearanceFeaturesComponents,
-  usePlayerEntity,
-} from "../Game/context/StdbContext";
+import { useActions, usePlayerEntity } from "../Game/context/StdbContext";
+import { useGetName } from "../Game/hooks/useGetName";
+import { useGetClassName } from "../Game/hooks/useGetClassName";
 
 type RenderContext = {
   subject: null | EntityId;
@@ -34,105 +30,10 @@ const useGetActionTemplate = () => {
   }, [actions]);
 };
 
-const useGetName = () => {
-  const viewpointEntityId = usePlayerEntity();
-  const appearanceFeatures = useAppearanceFeatures();
-  const appearanceFeaturesComponents = useAppearanceFeaturesComponents();
-
-  return useMemo(() => {
-    const idToAppearanceFeature = new Map(
-      appearanceFeatures.map((af) => [af.id, af])
-    );
-    const entityIdToAppearanceFeaturesComponent = new Map(
-      appearanceFeaturesComponents.map((c) => [c.entityId, c])
-    );
-    const entityIdToName = (entityId: EntityId): string => {
-      const appearanceFeaturesComponent =
-        entityIdToAppearanceFeaturesComponent.get(entityId);
-
-      if (appearanceFeaturesComponent == null) {
-        return "something";
-      }
-
-      const appearanceFeatures =
-        appearanceFeaturesComponent.appearanceFeatureIds
-          .map((id) => idToAppearanceFeature.get(id))
-          .filter((af) => af != null);
-
-      const noun =
-        appearanceFeatures
-          .filter((af) => af.appearanceFeatureType.tag === "Noun")
-          .toSorted((a, b) => a.priority - b.priority)[0]?.text ?? "something";
-
-      const adjectives = appearanceFeatures
-        .filter((af) => af.appearanceFeatureType.tag === "Adjective")
-        .toSorted((a, b) => a.priority - b.priority)
-        .slice(0, 3);
-
-      return (adjectives.length > 0 ? adjectives.join(", ") + " " : "") + noun;
-    };
-    return (
-      namedEntityId: EntityId | string | undefined,
-      subjectEntityId?: EntityId | string | undefined
-    ): string | null => {
-      if (namedEntityId == null) {
-        return null;
-      }
-      if (typeof namedEntityId === "string") {
-        return namedEntityId;
-      }
-      if (viewpointEntityId === namedEntityId) {
-        if (subjectEntityId === namedEntityId) {
-          return "yourself";
-        } else {
-          return "you";
-        }
-      }
-      return entityIdToName(namedEntityId);
-    };
-  }, [appearanceFeatures, appearanceFeaturesComponents, viewpointEntityId]);
-};
-
-const useGetClassName = () => {
-  const viewpointEntityId = usePlayerEntity();
-  const allegianceComponents = useAllegianceComponents();
-
-  const entityIdToAllegianceId = useMemo(() => {
-    const entityIdToAllegianceComponent = new Map(
-      allegianceComponents.map((a) => [a.entityId, a])
-    );
-    return (entityId: EntityId | null): EntityId | null => {
-      if (entityId == null) {
-        return null;
-      }
-      return (
-        entityIdToAllegianceComponent.get(entityId)?.allegianceEntityId ?? null
-      );
-    };
-  }, [allegianceComponents]);
-
-  return useMemo(
-    () => (entity: EntityId | string | undefined) => {
-      if (entity == null || typeof entity === "string") {
-        return "";
-      }
-      const viewpointAllegianceId = entityIdToAllegianceId(viewpointEntityId);
-      const entityAllegianceId = entityIdToAllegianceId(entity);
-      if (viewpointAllegianceId == null || entityAllegianceId == null) {
-        return "neutral";
-      }
-      if (viewpointAllegianceId === entityAllegianceId) {
-        return "friendly";
-      }
-      return "hostile";
-    },
-    [viewpointEntityId, allegianceComponents]
-  );
-};
-
 export const useDebugRenderer = () => {
-  const getName = useGetName();
-  const getClassName = useGetClassName();
+  const playerEntity = usePlayerEntity();
+  const getName = useGetName(playerEntity);
+  const getClassName = useGetClassName(playerEntity);
   const getActionTemplate = useGetActionTemplate();
 
   const renderValue: RenderValue<EntityId | ReactNode, RenderContext> = useMemo(

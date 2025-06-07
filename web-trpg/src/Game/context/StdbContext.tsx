@@ -231,9 +231,7 @@ export const usePlayerEntity = (): EntityId | null => {
   return playerControllerComponent.entityId;
 };
 
-export const useLocationComponent = useComponent("locationComponents");
-
-export const useAllegianceComponent = useComponent("allegianceComponents");
+const useLocationComponent = useComponent("locationComponents");
 
 export const useHpComponent = useComponent("hpComponents");
 
@@ -244,10 +242,6 @@ export const useAttackComponent = useComponent("attackComponents");
 export const useActionStateComponent = useComponent("actionStateComponents");
 
 export const useTargetComponent = useComponent("targetComponents");
-
-export const useAppearanceFeaturesComponent = useComponent(
-  "appearanceFeaturesComponents"
-);
 
 export const useTarget = (entityId: EntityId | null) => {
   const component = useTargetComponent(entityId);
@@ -269,15 +263,6 @@ export const useLocation = (entityId: EntityId | null) => {
   }
 
   return component.locationEntityId;
-};
-
-export const useAllegiance = (entityId: EntityId | null) => {
-  const component = useAllegianceComponent(entityId);
-  if (component == null) {
-    return null;
-  }
-
-  return component.allegianceEntityId;
 };
 
 export const useLocationEntities = (locationEntityId: EntityId | null) => {
@@ -359,7 +344,7 @@ export const useAppearanceFeaturesComponents = useTable(
 export const useAllegianceComponents = useTable("allegianceComponents");
 export const useActions = useTable("actions");
 
-export const useObserverComponentsObservableEventIds = (
+const useObserverComponentsObservableEventIds = (
   entityId: EntityId | null
 ): EventId[] => {
   return useTableData(

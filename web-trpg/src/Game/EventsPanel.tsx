@@ -20,6 +20,9 @@ import {
 } from "./context/StdbContext";
 import { EntityEvent } from "../stdb";
 
+const compareEvents = (a: EntityEvent, b: EntityEvent) =>
+  Number(a.time.microsSinceUnixEpoch - b.time.microsSinceUnixEpoch);
+
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const connection = useStdbConnection();
   const { renderEvent } = useDebugRenderer();
@@ -43,7 +46,7 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
       if (events.length < 1) {
         return oldEvents;
       }
-      return new Set([...oldEvents, ...events]);
+      return new Set([...oldEvents, ...events].toSorted(compareEvents));
     });
   }, [events]);
 
