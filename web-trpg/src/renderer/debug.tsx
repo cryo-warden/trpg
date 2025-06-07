@@ -1,14 +1,12 @@
 import { useMemo, type ReactNode } from "react";
-import "./debug.css";
-import { EntityEvent } from "../stdb";
+import { usePlayerEntity } from "../Game/context/StdbContext/components";
+import { useActionAppearances } from "../Game/context/StdbContext/rendering";
 import { ActionId, EntityId } from "../Game/trpg";
+import { EntityEvent } from "../stdb";
+import "./debug.css";
 import { renderTemplate, RenderValue } from "./template";
-import {
-  useActionAppearances,
-  usePlayerEntity,
-} from "../Game/context/StdbContext";
-import { useGetName } from "../Game/hooks/useGetName";
-import { useGetClassName } from "../Game/hooks/useGetClassName";
+import { useGetClassName } from "./useGetClassName";
+import { useGetName } from "./useGetName";
 
 type RenderContext = {
   subject: null | EntityId;

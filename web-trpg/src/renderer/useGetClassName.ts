@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useAllegianceComponents } from "../context/StdbContext";
-import { EntityId } from "../trpg";
+import { useAllegianceComponents } from "../Game/context/StdbContext/components";
+import { EntityId } from "../Game/trpg";
 
 export const useGetClassName = (viewpointEntityId: EntityId | null) => {
   const allegianceComponents = useAllegianceComponents();

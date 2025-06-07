@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { usePlayerEntity } from "../context/StdbContext";
+import { usePlayerEntity } from "../context/StdbContext/components";
 import { ActionId } from "../trpg";
 
 export const useSetActionHotkey = (_action: ActionId) => {

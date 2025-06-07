@@ -1,10 +1,8 @@
 import { useMemo } from "react";
-import {
-  useAppearanceFeatures,
-  useAppearanceFeaturesComponents,
-} from "../context/StdbContext";
-import { EntityId } from "../trpg";
-import { AppearanceFeature } from "../../stdb";
+import { useAppearanceFeaturesComponents } from "../Game/context/StdbContext/components";
+import { useAppearanceFeatures } from "../Game/context/StdbContext/rendering";
+import { EntityId } from "../Game/trpg";
+import { AppearanceFeature } from "../stdb";
 
 const compareAppearanceFeatures = (
   a: AppearanceFeature,

@@ -1,10 +1,6 @@
 import { ComponentPropsWithRef } from "react";
 import { Panel } from "../../structural/Panel";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
-import { EPBar } from "../EntityPanel/EPBar";
-import { HPBar } from "../EntityPanel/HPBar";
-import { EntitiesDisplay } from "./EntitiesDisplay";
-import { EntityId } from "../trpg";
 import {
   useAttackComponent,
   useEntityProminences,
@@ -12,8 +8,12 @@ import {
   useLocation,
   useLocationEntities,
   usePlayerEntity,
-} from "../context/StdbContext";
+} from "../context/StdbContext/components";
 import { EntityName } from "../EntityName";
+import { EPBar } from "../EntityPanel/EPBar";
+import { HPBar } from "../EntityPanel/HPBar";
+import { EntityId } from "../trpg";
+import { EntitiesDisplay } from "./EntitiesDisplay";
 
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();

@@ -1,19 +1,19 @@
 import { ComponentPropsWithoutRef, useCallback } from "react";
+import { useGetClassName } from "../../renderer/useGetClassName";
 import { Panel } from "../../structural/Panel";
 import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
 import {
   useActionOptions,
   usePlayerEntity,
-  useStdbConnection,
   useTarget,
-} from "../context/StdbContext";
+} from "../context/StdbContext/components";
+import { useStdbConnection } from "../context/StdbContext/useStdb";
+import { EntityName } from "../EntityName";
+import { EntityId } from "../trpg";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
-import { EntityId } from "../trpg";
-import { EntityName } from "../EntityName";
-import { useGetClassName } from "../hooks/useGetClassName";
 
 export const EntityPanel = ({
   entity,

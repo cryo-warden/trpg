@@ -1,7 +1,7 @@
 import { useRef } from "react";
-import "./HPBar.css";
-import { useHpComponent } from "../context/StdbContext";
+import { useHpComponent } from "../context/StdbContext/components";
 import { EntityId } from "../trpg";
+import "./HPBar.css";
 
 export const HPBar = ({ entity }: { entity: EntityId }) => {
   const hpComponent = useHpComponent(entity);

@@ -1,16 +1,16 @@
 import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Button } from "../structural/Button";
 import "./ActionButton.css";
-import { ActionId, EntityId } from "./trpg";
 import {
   useActionHotkey,
-  useActionName,
   useActionStateComponent,
   usePlayerEntity,
   useQueuedActionStateComponent,
-  useStdbConnection,
   useTarget,
-} from "./context/StdbContext";
+} from "./context/StdbContext/components";
+import { useActionName } from "./context/StdbContext/rendering";
+import { useStdbConnection } from "./context/StdbContext/useStdb";
+import { ActionId, EntityId } from "./trpg";
 
 export const ActionButton = ({
   target,

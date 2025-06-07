@@ -1,5 +1,3 @@
-import "./index.css";
-
 import {
   ComponentPropsWithoutRef,
   ReactNode,
@@ -8,17 +6,16 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useDebugRenderer } from "../renderer";
+import { EntityEvent } from "../stdb";
 import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
-import { useDebugRenderer } from "../renderer";
-import {
-  useObserverComponentsEvents,
-  usePlayerEntity,
-  useStdbConnection,
-} from "./context/StdbContext";
-import { EntityEvent } from "../stdb";
+import { usePlayerEntity } from "./context/StdbContext/components";
+import { useObserverComponentsEvents } from "./context/StdbContext/rendering";
+import { useStdbConnection } from "./context/StdbContext/useStdb";
+import "./index.css";
 
 const compareEvents = (a: EntityEvent, b: EntityEvent) =>
   Number(a.time.microsSinceUnixEpoch - b.time.microsSinceUnixEpoch);

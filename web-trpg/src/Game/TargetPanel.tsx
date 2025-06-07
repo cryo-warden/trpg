@@ -2,7 +2,7 @@ import { ComponentPropsWithRef } from "react";
 import { Panel } from "../structural/Panel";
 import { DynamicSelectionPanel } from "./DynamicPanel/DynamicSelectionPanel";
 import { EntityPanel } from "./EntityPanel";
-import { usePlayerEntity, useTarget } from "./context/StdbContext";
+import { usePlayerEntity, useTarget } from "./context/StdbContext/components";
 
 export const TargetPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const playerEntity = usePlayerEntity();

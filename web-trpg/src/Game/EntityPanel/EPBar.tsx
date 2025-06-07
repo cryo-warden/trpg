@@ -1,7 +1,7 @@
 import { useRef } from "react";
-import "./EPBar.css";
-import { useEpComponent } from "../context/StdbContext";
+import { useEpComponent } from "../context/StdbContext/components";
 import { EntityId } from "../trpg";
+import "./EPBar.css";
 
 export const EPBar = ({ entity }: { entity: EntityId }) => {
   const epComponent = useEpComponent(entity);
