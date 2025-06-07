@@ -18,6 +18,7 @@ pub struct Action {
     #[auto_inc]
     pub id: u64,
     pub action_type: ActionType,
+    pub begin_template: String, // TODO Move template into separate per-language table.
 }
 
 #[table(name = action_names, public)]
@@ -72,8 +73,8 @@ impl<'a> ActionContext<'a> {
         Self { ctx }
     }
 
-    pub fn new_handle(&self, action_type: ActionType) -> ActionHandle {
-        ActionHandle::new(self.ctx, action_type)
+    pub fn new_handle(&self, action_type: ActionType, begin_template: &str) -> ActionHandle {
+        ActionHandle::new(self.ctx, action_type, begin_template)
     }
 
     pub fn by_names(&self, names: &[&str]) -> Vec<u64> {
@@ -98,8 +99,12 @@ pub struct ActionHandle<'a> {
 
 #[allow(dead_code)]
 impl<'a> ActionHandle<'a> {
-    pub fn new(ctx: &'a ReducerContext, action_type: ActionType) -> Self {
-        let action = ctx.db.actions().insert(Action { id: 0, action_type });
+    pub fn new(ctx: &'a ReducerContext, action_type: ActionType, begin_template: &str) -> Self {
+        let action = ctx.db.actions().insert(Action {
+            id: 0,
+            action_type,
+            begin_template: begin_template.to_string(),
+        });
         Self {
             ctx,
             action_id: action.id,

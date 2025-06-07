@@ -7,7 +7,7 @@ use crate::{
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum EventType {
-    StartAction,
+    StartAction(u64),
     ActionEffect(ActionEffect),
 }
 
@@ -77,7 +77,7 @@ impl EntityEvent {
         let target_entity_id = self.target_entity_id;
         log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
         match self.event_type {
-            EventType::StartAction => {}
+            EventType::StartAction(_) => {}
             EventType::ActionEffect(ref action_effect) => match action_effect {
                 ActionEffect::Buff(_) => {} // WIP
                 ActionEffect::Rest => {}

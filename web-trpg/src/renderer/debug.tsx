@@ -1,9 +1,10 @@
 import { useMemo, type ReactNode } from "react";
 import "./debug.css";
 import { EntityEvent } from "../stdb";
-import { EntityId } from "../Game/trpg";
+import { ActionId, EntityId } from "../Game/trpg";
 import { renderTemplate, RenderValue } from "./template";
 import {
+  useActions,
   useAllegianceComponents,
   useAppearanceFeatures,
   useAppearanceFeaturesComponents,
@@ -17,6 +18,21 @@ type RenderContext = {
 
 const capitalize = (word: string) =>
   word.substring(0, 1).toUpperCase() + word.substring(1);
+
+const useGetActionTemplate = () => {
+  const actions = useActions();
+  return useMemo(() => {
+    const idToActionMap = new Map(actions.map((a) => [a.id, a]));
+    return (actionId: ActionId) => {
+      const action = idToActionMap.get(actionId);
+      if (action == null) {
+        return null;
+      }
+
+      return action.beginTemplate;
+    };
+  }, [actions]);
+};
 
 const useGetName = () => {
   const viewpointEntityId = usePlayerEntity();
@@ -117,6 +133,7 @@ const useGetClassName = () => {
 export const useDebugRenderer = () => {
   const getName = useGetName();
   const getClassName = useGetClassName();
+  const getActionTemplate = useGetActionTemplate();
 
   const renderValue: RenderValue<EntityId | ReactNode, RenderContext> = useMemo(
     () => (value, ruleSet, context) => {
@@ -182,12 +199,19 @@ export const useDebugRenderer = () => {
   const renderAction = useMemo(
     () =>
       (event: EntityEvent): ReactNode => {
-        // WIP Get the template for the given action.
+        if (event.eventType.tag !== "StartAction") {
+          throw new Error(
+            `Unexpected event type "${event.eventType.tag}" cannot be rendered as an action.`
+          );
+        }
+        const actionId = event.eventType.value;
+        const template = getActionTemplate(actionId);
         return renderWithTemplate(
-          "{0:sentence:subject} began to {2} {1:object}."
-        )([event.ownerEntityId, event.targetEntityId, "do something to"]);
+          template ??
+            "{0:sentence:subject} began a mysterious action toward {1:object}."
+        )([event.ownerEntityId, event.targetEntityId]);
       },
-    [renderWithTemplate]
+    [renderWithTemplate, getActionTemplate]
   );
 
   const renderEvent = useMemo(

@@ -37,7 +37,7 @@ export namespace EventType {
   // These are the generated variant types for each variant of the tagged union.
   // One type is generated per variant and will be used in the `value` field of
   // the tagged union.
-  export type StartAction = { tag: "StartAction" };
+  export type StartAction = { tag: "StartAction", value: bigint };
   export type ActionEffect = { tag: "ActionEffect", value: __ActionEffect };
 
   // Helper functions for constructing each variant of the tagged union.
@@ -46,12 +46,12 @@ export namespace EventType {
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  export const StartAction = { tag: "StartAction" };
+  export const StartAction = (value: bigint): EventType => ({ tag: "StartAction", value });
   export const ActionEffect = (value: __ActionEffect): EventType => ({ tag: "ActionEffect", value });
 
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createSumType([
-      new SumTypeVariant("StartAction", AlgebraicType.createProductType([])),
+      new SumTypeVariant("StartAction", AlgebraicType.createU64Type()),
       new SumTypeVariant("ActionEffect", __ActionEffect.getTypeScriptAlgebraicType()),
     ]);
   }

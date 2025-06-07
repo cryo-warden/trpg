@@ -357,6 +357,7 @@ export const useAppearanceFeaturesComponents = useTable(
   "appearanceFeaturesComponents"
 );
 export const useAllegianceComponents = useTable("allegianceComponents");
+export const useActions = useTable("actions");
 
 export const useObserverComponentsObservableEventIds = (
   entityId: EntityId | null

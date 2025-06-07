@@ -38,29 +38,44 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     let a_ctx = ActionContext::new(ctx);
 
     a_ctx
-        .new_handle(ActionType::Move)
+        .new_handle(
+            ActionType::Move,
+            "{0:sentence:subject} moved quickly toward {1:object}.",
+        )
         .set_name("quick_move")
         .add_move();
     a_ctx
-        .new_handle(ActionType::Buff)
+        .new_handle(
+            ActionType::Buff,
+            "{0:sentence:subject} began to focus a beam of pure lifeforce onto {1:object}.",
+        )
         .set_name("divine_heal")
         .add_heal(500);
     a_ctx
-        .new_handle(ActionType::Move)
+        .new_handle(
+            ActionType::Move,
+            "{0:sentence:subject} moved toward {1:object}.",
+        )
         .set_name("move")
         .add_rest()
         .add_rest()
         .add_move()
         .add_rest();
     a_ctx
-        .new_handle(ActionType::Attack)
+        .new_handle(
+            ActionType::Attack,
+            "{0:sentence:subject} wound up to bop {1:object}.",
+        )
         .set_name("bop")
         .add_rest()
         .add_rest()
         .add_attack(1)
         .add_rest();
     a_ctx
-        .new_handle(ActionType::Attack)
+        .new_handle(
+            ActionType::Attack,
+            "{0:sentence:subject} wound up to boppity-bop {1:object}.",
+        )
         .set_name("boppity_bop")
         .add_rest()
         .add_rest()
@@ -384,7 +399,16 @@ pub fn shift_queued_action_system(ctx: &ReducerContext) {
     for q in ctx.db.queued_action_state_components().iter() {
         let e = EntityHandle::from_id(ctx, q.entity_id);
         if e.action_state_component().is_none() {
-            e.shift_queued_action_state();
+            let e = e.shift_queued_action_state();
+            if let Some(a) = e.action_state_component() {
+                ctx.db.observable_events().insert(EntityEvent {
+                    id: 0,
+                    event_type: EventType::StartAction(a.action_id),
+                    owner_entity_id: a.entity_id,
+                    target_entity_id: a.target_entity_id,
+                    time: ctx.timestamp,
+                });
+            }
         }
     }
 }
