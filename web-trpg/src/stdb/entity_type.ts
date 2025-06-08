@@ -30,8 +30,11 @@ import {
   Timestamp,
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
+import { Archetype as __Archetype } from "./archetype_type";
+
 export type Entity = {
   id: bigint,
+  archetype: __Archetype,
 };
 
 /**
@@ -45,6 +48,7 @@ export namespace Entity {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("archetype", __Archetype.getTypeScriptAlgebraicType()),
     ]);
   }
 

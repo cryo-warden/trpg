@@ -66,6 +66,8 @@ import { ActionsTableHandle } from "./actions_table.ts";
 export { ActionsTableHandle };
 import { ActionsComponentsTableHandle } from "./actions_components_table.ts";
 export { ActionsComponentsTableHandle };
+import { ActorArchetypesTableHandle } from "./actor_archetypes_table.ts";
+export { ActorArchetypesTableHandle };
 import { AllegianceComponentsTableHandle } from "./allegiance_components_table.ts";
 export { AllegianceComponentsTableHandle };
 import { AppearanceFeaturesTableHandle } from "./appearance_features_table.ts";
@@ -160,6 +162,8 @@ import { ActionType } from "./action_type_type.ts";
 export { ActionType };
 import { ActionsComponent } from "./actions_component_type.ts";
 export { ActionsComponent };
+import { ActorArchetype } from "./actor_archetype_type.ts";
+export { ActorArchetype };
 import { AllegianceComponent } from "./allegiance_component_type.ts";
 export { AllegianceComponent };
 import { AppearanceFeature } from "./appearance_feature_type.ts";
@@ -168,6 +172,8 @@ import { AppearanceFeatureType } from "./appearance_feature_type_type.ts";
 export { AppearanceFeatureType };
 import { AppearanceFeaturesComponent } from "./appearance_features_component_type.ts";
 export { AppearanceFeaturesComponent };
+import { Archetype } from "./archetype_type.ts";
+export { Archetype };
 import { AttackComponent } from "./attack_component_type.ts";
 export { AttackComponent };
 import { Baseline } from "./baseline_type.ts";
@@ -265,6 +271,10 @@ const REMOTE_MODULE = {
       tableName: "actions_components",
       rowType: ActionsComponent.getTypeScriptAlgebraicType(),
       primaryKey: "entityId",
+    },
+    actor_archetypes: {
+      tableName: "actor_archetypes",
+      rowType: ActorArchetype.getTypeScriptAlgebraicType(),
     },
     allegiance_components: {
       tableName: "allegiance_components",
@@ -707,6 +717,10 @@ export class RemoteTables {
 
   get actionsComponents(): ActionsComponentsTableHandle {
     return new ActionsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionsComponent>(REMOTE_MODULE.tables.actions_components));
+  }
+
+  get actorArchetypes(): ActorArchetypesTableHandle {
+    return new ActorArchetypesTableHandle(this.connection.clientCache.getOrCreateTable<ActorArchetype>(REMOTE_MODULE.tables.actor_archetypes));
   }
 
   get allegianceComponents(): AllegianceComponentsTableHandle {

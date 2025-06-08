@@ -45,6 +45,16 @@ pub struct Baseline {
     pub stat_block: StatBlock,
 }
 
+impl Baseline {
+    pub fn name_to_id(ctx: &ReducerContext, name: &str) -> Option<u64> {
+        ctx.db
+            .baselines()
+            .name()
+            .find(name.to_string())
+            .map(|b| b.id)
+    }
+}
+
 #[table(name = traits, public)]
 #[derive(Debug, Clone)]
 pub struct Trait {
@@ -54,6 +64,15 @@ pub struct Trait {
     #[unique]
     pub name: String,
     pub stat_block: StatBlock,
+}
+
+impl Trait {
+    pub fn name_to_ids(ctx: &ReducerContext, names: &[&str]) -> Vec<u64> {
+        names
+            .iter()
+            .flat_map(|name| ctx.db.traits().name().find(name.to_string()).map(|t| t.id))
+            .collect()
+    }
 }
 
 pub struct StatBlockContext<'a> {

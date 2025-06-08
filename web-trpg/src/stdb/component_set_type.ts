@@ -36,8 +36,8 @@ import { AllegianceComponent as __AllegianceComponent } from "./allegiance_compo
 import { BaselineComponent as __BaselineComponent } from "./baseline_component_type";
 import { EpComponent as __EpComponent } from "./ep_component_type";
 import { HpComponent as __HpComponent } from "./hp_component_type";
-import { PlayerControllerComponent as __PlayerControllerComponent } from "./player_controller_component_type";
 import { TraitsComponent as __TraitsComponent } from "./traits_component_type";
+import { PlayerControllerComponent as __PlayerControllerComponent } from "./player_controller_component_type";
 
 export type ComponentSet = {
   entityId: bigint,

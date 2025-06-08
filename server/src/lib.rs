@@ -6,15 +6,20 @@ use component::{
     action_options_components, action_state_components, attack_components, baseline_components,
     entity_deactivation_timer_components, entity_prominence_components, ep_components,
     hp_components, location_components, observer_components, player_controller_components,
-    queued_action_state_components, realized_map_components, target_components,
-    total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
-    traits_stat_block_dirty_flag_components, EntityDeactivationTimerComponent, MapComponent,
-    MapLayout, ObserverComponent,
+    queued_action_state_components, target_components, total_stat_block_dirty_flag_components,
+    traits_components, traits_stat_block_cache_components, traits_stat_block_dirty_flag_components,
+    EntityDeactivationTimerComponent, MapComponent, MapLayout, ObserverComponent,
 };
 use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
+
+use crate::{
+    component::RngSeedComponent,
+    entity::{ActorArchetype, AllegianceArchetype, EntityWrap, MapArchetype},
+    stat_block::{Baseline, Trait},
+};
 
 mod action;
 mod appearance;
@@ -137,27 +142,38 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
                 .mhp(5),
         );
 
-    // TODO Move map logic to EntityHandle.
-    // TODO Realize and unrealize maps.
-    let map = EntityHandle::new(ctx).set_rng_seed(0);
-    let map_component = ctx.db.realized_map_components().insert(MapComponent {
-        entity_id: map.entity_id,
-        loop_count: 0, // TODO Add loops.
-        main_room_count: 10,
-        map_layout: MapLayout::Path,
-        map_theme_id: 0, // TODO Add map_themes table.
-        extra_room_count: 10,
-    });
-    let map_result = map_component.generate(ctx);
+    // TODO Realize and unrealize maps base on player locations.
+    let map_archetype = MapArchetype {
+        entity_id: 0,
+        map: MapComponent {
+            entity_id: 0,
+            loop_count: 0, // TODO Add loops.
+            main_room_count: 10,
+            map_layout: MapLayout::Path,
+            map_theme_id: 0, // TODO Add map_themes table.
+            extra_room_count: 10,
+        },
+        rng_seed: RngSeedComponent {
+            entity_id: 0,
+            rng_seed: 0,
+        },
+    }
+    .insert(ctx);
 
-    EntityHandle::new(ctx).set_name("allegiance1");
-    let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
-    let room = EntityHandle::from_id(ctx, map_result.room_ids[0]).set_name("room1");
+    let rooms = map_archetype.generate(ctx).rooms;
+
+    let room1 = &rooms[0]; // WIP Set name to "room1"
+
+    AllegianceArchetype::new().insert(ctx); // WIP Add name allegiance1
+    let aa2 = AllegianceArchetype::new().insert(ctx); // WIP allegiance2
+
     for _ in 0..5 {
-        EntityHandle::new(ctx)
-            .set_allegiance(allegiance2.entity_id)
-            .set_baseline("slime")
-            .add_location(room.entity_id);
+        ActorArchetype::new(
+            aa2.entity_id,
+            room1.entity_id,
+            Baseline::name_to_id(ctx, "slime").unwrap_or_default(),
+            Trait::name_to_ids(ctx, &[]),
+        );
     }
 
     ctx.db.system_timers().insert(SystemTimer {
@@ -171,6 +187,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
+        // WIP Make Entity::from_send_identity(ctx)
         Some(e) => {
             ctx.db
                 .entity_deactivation_timer_components()
@@ -183,13 +200,17 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
             );
         }
         None => match InactiveEntityHandle::from_player_identity(ctx) {
-            Some(h) => {
-                let e = h.activate();
-                log::debug!("Reactivated {} to {}.", ctx.sender, e.entity_id);
+            Some(_) => {
+                // WIP implement activate for Actor/Player Archetypes.
+                log::debug!("Reactivated {} to {}.", ctx.sender, -1); // WIP
             }
             None => {
-                let e = Entity::new_player(ctx)?;
-                log::debug!("Connected {} to new player {}.", ctx.sender, e.entity_id);
+                let p = Entity::new_player_archetype(ctx)?;
+                log::debug!(
+                    "Connected {} to new player archetype {}.",
+                    ctx.sender,
+                    p.entity_id
+                );
             }
         },
     }

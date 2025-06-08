@@ -31,6 +31,8 @@ import {
   deepEqual,
 } from "@clockworklabs/spacetimedb-sdk";
 import { Entity } from "./entity_type";
+import { Archetype as __Archetype } from "./archetype_type";
+
 import { EventContext, Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**

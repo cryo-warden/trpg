@@ -1,3 +1,6 @@
+extern crate archetype;
+
+use derive_builder::Builder;
 use spacetimedb::{
     rand::{rngs::StdRng, RngCore, SeedableRng},
     table, Identity, ReducerContext, SpacetimeType, Table,
@@ -5,6 +8,7 @@ use spacetimedb::{
 
 use crate::{
     action::{actions, ActionType},
+    appearance::AppearanceFeatureContext,
     component::{
         action_hotkeys_components, action_options_components, action_state_components,
         actions_components, allegiance_components, appearance_features_components,
@@ -17,12 +21,14 @@ use crate::{
         ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
         ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent, AttackComponent,
         BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent, LocationComponent,
-        LocationMapComponent, NameComponent, PathComponent, PlayerControllerComponent,
-        RngSeedComponent, StatBlockCacheComponent, StatBlockDirtyFlagComponent, TargetComponent,
-        TraitsComponent,
+        LocationMapComponent, MapComponent, NameComponent, PathComponent,
+        PlayerControllerComponent, RngSeedComponent, StatBlockCacheComponent,
+        StatBlockDirtyFlagComponent, TargetComponent, TraitsComponent,
     },
     stat_block::{baselines, traits, StatBlock},
 };
+
+use archetype::EntityWrap;
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ComponentSet {
@@ -53,36 +59,395 @@ pub struct IdentityInactiveEntity {
     pub component_set: ComponentSet,
 }
 
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum Archetype {
+    ActorArchetype,
+    AllegianceArchetype,
+    MapArchetype,
+    PathArchetype,
+    RoomArchetype,
+}
+
+pub type EntityId = u64;
+
 #[table(name = entities, public)]
 #[derive(Debug, Clone)]
 pub struct Entity {
     #[primary_key]
     #[auto_inc]
-    pub id: u64,
+    pub id: EntityId,
+    pub archetype: Archetype,
+}
+
+#[allow(dead_code, unused_variables)]
+pub trait EntityWrap: Sized + Clone {
+    fn entity_id(&self) -> EntityId;
+    fn archetype(&self) -> Archetype;
+    fn update(self, ctx: &ReducerContext) -> Self;
+    fn insert(self, ctx: &ReducerContext) -> Self;
+
+    fn action_hotkeys(&self) -> Option<&ActionHotkeysComponent> {
+        None
+    }
+    fn action_options(&self) -> Option<&ActionOptionsComponent> {
+        None
+    }
+    fn action_state_component(&self) -> Option<&ActionStateComponent> {
+        None
+    }
+    fn actions(&self) -> Option<&ActionsComponent> {
+        None
+    }
+    fn allegiance(&self) -> Option<&AllegianceComponent> {
+        None
+    }
+    fn appearance_features(&self) -> Option<&AppearanceFeaturesComponent> {
+        None
+    }
+    fn attack(&self) -> Option<&AttackComponent> {
+        None
+    }
+    fn baseline(&self) -> Option<&BaselineComponent> {
+        None
+    }
+    // TODO EntityDeactivationTimerComponent TODO Generate code to handle optional field type.
+    fn entity_prominence(&self) -> Option<&EntityProminenceComponent> {
+        None
+    }
+    fn ep(&self) -> Option<&EpComponent> {
+        None
+    }
+    fn hp(&self) -> Option<&HpComponent> {
+        None
+    }
+    fn location(&self) -> Option<&LocationComponent> {
+        None
+    }
+    fn location_map(&self) -> Option<&LocationMapComponent> {
+        None
+    }
+    fn map(&self) -> Option<&MapComponent> {
+        None
+    }
+    // TODO ObserverComponent TODO denormalize
+    fn path(&self) -> Option<&PathComponent> {
+        None
+    }
+    fn player_controller(&self) -> Option<&PlayerControllerComponent> {
+        None
+    }
+    fn rng_seed(&self) -> Option<&RngSeedComponent> {
+        None
+    }
+    fn target(&self) -> Option<&TargetComponent> {
+        None
+    }
+    fn traits(&self) -> Option<&TraitsComponent> {
+        None
+    }
+
+    fn set_action_hotkeys(self, action_hotkeys: ActionHotkeysComponent) -> Self {
+        self
+    }
+    fn set_action_options(self, action_hotkeys: ActionOptionsComponent) -> Self {
+        self
+    }
+    fn set_action_state_component(self, action_state_component: ActionStateComponent) -> Self {
+        self
+    }
+    fn set_actions(self, actions: ActionsComponent) -> Self {
+        self
+    }
+    fn set_allegiance(self, allegiance: AllegianceComponent) -> Self {
+        self
+    }
+    fn set_appearance_features(self, appearance_features: AppearanceFeaturesComponent) -> Self {
+        self
+    }
+    fn set_attack(self, attack: AttackComponent) -> Self {
+        self
+    }
+    fn set_baseline(self, baseline: BaselineComponent) -> Self {
+        self
+    }
+    fn set_entity_prominence(self, entity_prominence: EntityProminenceComponent) -> Self {
+        self
+    }
+    fn set_ep(self, ep: EpComponent) -> Self {
+        self
+    }
+    fn set_hp(self, hp: HpComponent) -> Self {
+        self
+    }
+    fn set_location(self, location: LocationComponent) -> Self {
+        self
+    }
+    fn set_location_map(self, location_map: LocationMapComponent) -> Self {
+        self
+    }
+    fn set_map(self, map: MapComponent) -> Self {
+        self
+    }
+    fn set_path(self, path: PathComponent) -> Self {
+        self
+    }
+    fn set_player_controller(self, player_controller: PlayerControllerComponent) -> Self {
+        self
+    }
+    fn set_rng_seed(self, rng_seed: RngSeedComponent) -> Self {
+        self
+    }
+    fn set_target(self, target: TargetComponent) -> Self {
+        self
+    }
+    fn set_traits(self, traits: TraitsComponent) -> Self {
+        self
+    }
+}
+
+#[allow(dead_code)]
+pub trait StatBlockApplier {
+    fn apply_stat_block(self, stat_block: StatBlock) -> Self;
+}
+
+impl<T: EntityWrap> StatBlockApplier for T {
+    fn apply_stat_block(self, stat_block: StatBlock) -> Self {
+        let hp = HpComponent {
+            mhp: stat_block.mhp,
+            defense: stat_block.defense,
+            ..self.hp().map(|c| c.clone()).unwrap_or_default()
+        };
+        let ep = EpComponent {
+            mep: stat_block.mep,
+            ..self.ep().map(|c| c.clone()).unwrap_or_default()
+        };
+        let attack = AttackComponent {
+            attack: stat_block.attack,
+            ..self.attack().map(|c| c.clone()).unwrap_or_default()
+        };
+        let appearance_features = AppearanceFeaturesComponent {
+            appearance_feature_ids: stat_block.appearance_feature_ids,
+            ..self
+                .appearance_features()
+                .map(|c| c.clone())
+                .unwrap_or_default()
+        };
+        let actions = ActionsComponent {
+            action_ids: stat_block.additive_action_ids,
+            ..self.actions().map(|c| c.clone()).unwrap_or_default()
+        };
+
+        self.set_hp(hp)
+            .set_ep(ep)
+            .set_attack(attack)
+            .set_appearance_features(appearance_features)
+            .set_actions(actions)
+    }
+}
+
+pub trait RngSeeded {
+    fn get_rng(&self) -> StdRng;
+}
+
+impl<T: EntityWrap> RngSeeded for T {
+    fn get_rng(&self) -> StdRng {
+        match self.rng_seed() {
+            Some(s) => StdRng::seed_from_u64(s.rng_seed),
+            None => StdRng::seed_from_u64(0),
+        }
+    }
+}
+
+#[table(name = actor_archetypes, public)]
+#[derive(Debug, Clone, Default, Builder, EntityWrap)]
+#[entity_wrap(table = actor_archetypes)]
+pub struct ActorArchetype {
+    #[unique]
+    pub entity_id: EntityId,
+    pub actions: ActionsComponent,
+    pub allegiance: AllegianceComponent,
+    pub appearance_features: AppearanceFeaturesComponent,
+    pub attack: AttackComponent,
+    pub baseline: BaselineComponent,
+    pub ep: EpComponent,
+    pub hp: HpComponent,
+    pub location: LocationComponent,
+    pub traits: TraitsComponent,
+}
+
+impl ActorArchetype {
+    pub fn new(
+        allegiance_entity_id: EntityId,
+        location_entity_id: EntityId,
+        baseline_id: u64,
+        trait_ids: Vec<u64>,
+    ) -> Self {
+        Self {
+            entity_id: 0,
+            actions: ActionsComponent {
+                entity_id: 0,
+                action_ids: vec![],
+            },
+            allegiance: AllegianceComponent {
+                entity_id: 0,
+                allegiance_entity_id,
+            },
+            appearance_features: AppearanceFeaturesComponent {
+                entity_id: 0,
+                appearance_feature_ids: vec![],
+            },
+            attack: AttackComponent {
+                entity_id: 0,
+                attack: 5,
+            },
+            baseline: BaselineComponent {
+                entity_id: 0,
+                baseline_id,
+            },
+            ep: EpComponent {
+                entity_id: 0,
+                ep: 5,
+                mep: 5,
+            },
+            hp: HpComponent {
+                entity_id: 0,
+                hp: 5,
+                mhp: 5,
+                defense: 5,
+                accumulated_damage: 0,
+                accumulated_healing: 0,
+            },
+            location: LocationComponent {
+                entity_id: 0,
+                location_entity_id,
+            },
+            traits: TraitsComponent {
+                entity_id: 0,
+                trait_ids,
+            },
+        }
+    }
+}
+
+#[table(name = allegiance_archetypes, public)]
+#[derive(Debug, Clone, Builder, EntityWrap)]
+#[entity_wrap(table = allegiance_archetypes)]
+pub struct AllegianceArchetype {
+    #[unique]
+    pub entity_id: EntityId,
+}
+
+impl AllegianceArchetype {
+    pub fn new() -> Self {
+        Self { entity_id: 0 }
+    }
+}
+
+#[table(name = map_archetypes, public)]
+#[derive(Debug, Clone, Builder, EntityWrap)]
+#[entity_wrap(table = map_archetypes)]
+pub struct MapArchetype {
+    #[unique]
+    pub entity_id: EntityId,
+    pub map: MapComponent,
+    pub rng_seed: RngSeedComponent,
+}
+
+pub struct MapArchetypeGenerationResult {
+    pub rooms: Vec<RoomArchetype>,
+}
+
+impl MapArchetype {
+    pub fn generate(&self, ctx: &ReducerContext) -> MapArchetypeGenerationResult {
+        let af_ctx = AppearanceFeatureContext::new(ctx);
+        let mut rng = self.get_rng();
+        let total_room_count = self.map.extra_room_count + self.map.main_room_count;
+        let rooms: Vec<RoomArchetype> = (0..total_room_count)
+            .map(|_| RoomArchetype::new(af_ctx.by_texts(&["room"]), self.entity_id))
+            .collect();
+
+        for i in 0..(self.map.main_room_count as usize - 1) {
+            let a = &rooms[i];
+            let b = &rooms[i + 1];
+            PathArchetype::new(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id).insert(ctx);
+            PathArchetype::new(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id).insert(ctx);
+        }
+
+        for i in (self.map.main_room_count as u32)..(total_room_count as u32) {
+            let a = &rooms[i as usize];
+            let b = &rooms[(rng.next_u32() % i) as usize];
+            PathArchetype::new(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id).insert(ctx);
+            PathArchetype::new(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id).insert(ctx);
+        }
+
+        MapArchetypeGenerationResult { rooms }
+    }
+}
+
+#[table(name = path_archetypes, public)]
+#[derive(Debug, Clone, Builder, EntityWrap)]
+#[entity_wrap(table = path_archetypes)]
+pub struct PathArchetype {
+    #[unique]
+    pub entity_id: EntityId,
+    pub appearance_features: AppearanceFeaturesComponent,
+    pub location: LocationComponent,
+    pub path: PathComponent,
+}
+
+impl PathArchetype {
+    pub fn new(
+        appearance_feature_ids: Vec<u64>,
+        location_entity_id: EntityId,
+        destination_entity_id: EntityId,
+    ) -> Self {
+        Self {
+            entity_id: 0,
+            appearance_features: AppearanceFeaturesComponent {
+                entity_id: 0,
+                appearance_feature_ids,
+            },
+            location: LocationComponent {
+                entity_id: 0,
+                location_entity_id,
+            },
+            path: PathComponent {
+                entity_id: 0,
+                destination_entity_id,
+            },
+        }
+    }
+}
+
+#[table(name = room_archetypes, public)]
+#[derive(Debug, Clone, Builder, EntityWrap)]
+#[entity_wrap(table = room_archetypes)]
+pub struct RoomArchetype {
+    #[unique]
+    pub entity_id: EntityId,
+    pub appearance_features: AppearanceFeaturesComponent,
+    pub location_map: LocationMapComponent,
+}
+
+impl RoomArchetype {
+    pub fn new(appearance_feature_ids: Vec<u64>, map_entity_id: EntityId) -> Self {
+        Self {
+            entity_id: 0,
+            appearance_features: AppearanceFeaturesComponent {
+                entity_id: 0,
+                appearance_feature_ids,
+            },
+            location_map: LocationMapComponent {
+                entity_id: 0,
+                map_entity_id,
+            },
+        }
+    }
 }
 
 impl Entity {
-    pub fn new_player(ctx: &ReducerContext) -> Result<EntityHandle, String> {
-        Ok(EntityHandle::new(ctx)
-            .add_player_controller(ctx.sender)
-            .set_allegiance(
-                EntityHandle::from_name(ctx, "allegiance1")
-                    .ok_or("Cannot find starting allegiance.")?
-                    .entity_id,
-            )
-            .add_location(
-                EntityHandle::from_name(ctx, "room1")
-                    .ok_or("Cannot find starting room.")?
-                    .entity_id,
-            )
-            .set_baseline("human")
-            .add_trait("admin")
-            .add_trait("mobile")
-            .add_trait("bopper")
-            .set_hotkey("bop", 'b')
-            .set_hotkey("boppity_bop", 'v')
-            .set_hotkey("quick_move", 'm')
-            .set_hotkey("divine_heal", 'h'))
+    pub fn new_player_archetype(ctx: &ReducerContext) -> Result<ActorArchetype, String> {
+        Ok(ActorArchetype::new(0, 0, 0, vec![]).insert(ctx))
     }
 }
 
@@ -188,7 +553,10 @@ pub struct EntityHandle<'a> {
 #[allow(dead_code)]
 impl<'a> EntityHandle<'a> {
     pub fn insert_id(ctx: &'a ReducerContext, id: u64) -> Self {
-        let entity = ctx.db.entities().insert(Entity { id });
+        let entity = ctx.db.entities().insert(Entity {
+            id,
+            archetype: Archetype::ActorArchetype,
+        });
         Self {
             ctx,
             entity_id: entity.id,
