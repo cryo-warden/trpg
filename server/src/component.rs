@@ -1,9 +1,52 @@
+use archetype::flag_component;
+use archetype::timer_component;
 use spacetimedb::table;
 use spacetimedb::Identity;
+use spacetimedb::ReducerContext;
 use spacetimedb::SpacetimeType;
+use spacetimedb::Table;
 use spacetimedb::Timestamp;
 
+use crate::entity::EntityId;
 use crate::stat_block::StatBlock;
+
+// TODO Equipment and Status Effects
+#[table(name = traits_stat_block_dirty_flag_components, public)]
+#[flag_component(traits_stat_block_dirty)]
+#[table(name = total_stat_block_dirty_flag_components, public)]
+#[flag_component(total_stat_block_dirty)]
+#[derive(Debug, Default, Clone)]
+pub struct FlagComponent {
+    #[primary_key]
+    pub entity_id: u64,
+}
+
+#[allow(dead_code)]
+impl FlagComponent {
+    pub fn insert(ctx: &ReducerContext, entity_id: EntityId) {
+        ctx.db
+            .traits_stat_block_dirty_flag_components()
+            .insert(FlagComponent { entity_id });
+    }
+}
+
+#[table(name = entity_deactivation_timer_components, public)]
+#[timer_component(entity_deactivation)]
+#[derive(Debug, Clone)]
+pub struct TimerComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    pub timestamp: Timestamp,
+}
+
+impl Default for TimerComponent {
+    fn default() -> Self {
+        Self {
+            entity_id: 0,
+            timestamp: Timestamp::from_micros_since_unix_epoch(0),
+        }
+    }
+}
 
 #[table(name = name_components, public)]
 #[derive(Debug, Default, Clone)]
@@ -12,6 +55,15 @@ pub struct NameComponent {
     pub entity_id: u64,
     #[unique]
     pub name: String,
+}
+
+#[table(name = player_controller_components, public)]
+#[derive(Debug, Default, Clone)]
+pub struct PlayerControllerComponent {
+    #[primary_key]
+    pub entity_id: u64,
+    #[unique]
+    pub identity: Identity,
 }
 
 #[table(name = location_components, public)]
@@ -66,15 +118,6 @@ pub struct StatBlockCacheComponent {
     pub stat_block: StatBlock,
 }
 
-// TODO Equipment and Status Effects
-#[table(name = traits_stat_block_dirty_flag_components, public)]
-#[table(name = total_stat_block_dirty_flag_components, public)]
-#[derive(Debug, Default, Clone)]
-pub struct StatBlockDirtyFlagComponent {
-    #[primary_key]
-    pub entity_id: u64,
-}
-
 #[table(name = attack_components, public)]
 #[derive(Debug, Default, Clone)]
 pub struct AttackComponent {
@@ -102,15 +145,6 @@ pub struct EpComponent {
     pub entity_id: u64,
     pub ep: i32,
     pub mep: i32,
-}
-
-#[table(name = player_controller_components, public)]
-#[derive(Debug, Default, Clone)]
-pub struct PlayerControllerComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[unique]
-    pub identity: Identity,
 }
 
 #[table(name = target_components, public)]
@@ -174,23 +208,6 @@ pub struct EntityProminenceComponent {
     #[primary_key]
     pub entity_id: u64,
     pub prominence: i32,
-}
-
-#[table(name = entity_deactivation_timer_components, public)]
-#[derive(Debug, Clone)]
-pub struct EntityDeactivationTimerComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub timestamp: Timestamp,
-}
-
-impl Default for EntityDeactivationTimerComponent {
-    fn default() -> Self {
-        Self {
-            entity_id: 0,
-            timestamp: Timestamp::from_micros_since_unix_epoch(0),
-        }
-    }
 }
 
 #[table(name = rng_seed_components, public)]

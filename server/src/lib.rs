@@ -8,7 +8,7 @@ use component::{
     hp_components, location_components, observer_components, player_controller_components,
     queued_action_state_components, target_components, total_stat_block_dirty_flag_components,
     traits_components, traits_stat_block_cache_components, traits_stat_block_dirty_flag_components,
-    EntityDeactivationTimerComponent, MapComponent, MapLayout, ObserverComponent,
+    MapComponent, MapLayout, ObserverComponent, TimerComponent,
 };
 use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
@@ -186,17 +186,13 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
-        // WIP Make Entity::from_send_identity(ctx)
+    match Entity::from_sender_identity(ctx) {
         Some(e) => {
-            ctx.db
-                .entity_deactivation_timer_components()
-                .entity_id()
-                .delete(e.entity_id);
+            TimerComponent::delete_entity_deactivation_timer_component(ctx, e.id);
             log::debug!(
                 "Reconnected {} to {} and removed deactivation timer.",
                 ctx.sender,
-                e.entity_id
+                e.id
             );
         }
         None => match InactiveEntityHandle::from_player_identity(ctx) {
@@ -238,12 +234,12 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
                 {
                     None => {}
                     Some(timestamp) => {
-                        ctx.db.entity_deactivation_timer_components().insert(
-                            EntityDeactivationTimerComponent {
+                        ctx.db
+                            .entity_deactivation_timer_components()
+                            .insert(TimerComponent {
                                 entity_id: e.entity_id,
                                 timestamp,
-                            },
-                        );
+                            });
                         log::debug!(
                             "Disconnected {} from player {} and set deactivation timer.",
                             ctx.sender,

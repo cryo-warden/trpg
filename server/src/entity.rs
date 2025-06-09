@@ -20,10 +20,10 @@ use crate::{
         traits_stat_block_cache_components, traits_stat_block_dirty_flag_components, ActionHotkey,
         ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
         ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent, AttackComponent,
-        BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent, LocationComponent,
-        LocationMapComponent, MapComponent, NameComponent, PathComponent,
-        PlayerControllerComponent, RngSeedComponent, StatBlockCacheComponent,
-        StatBlockDirtyFlagComponent, TargetComponent, TraitsComponent,
+        BaselineComponent, EntityProminenceComponent, EpComponent, FlagComponent, HpComponent,
+        LocationComponent, LocationMapComponent, MapComponent, NameComponent, PathComponent,
+        PlayerControllerComponent, RngSeedComponent, StatBlockCacheComponent, TargetComponent,
+        TraitsComponent,
     },
     stat_block::{baselines, traits, StatBlock},
 };
@@ -65,11 +65,13 @@ pub enum Archetype {
     AllegianceArchetype,
     MapArchetype,
     PathArchetype,
+    PlayerArchetype,
     RoomArchetype,
 }
 
 pub type EntityId = u64;
 
+#[table(name = inactive_entities, public)]
 #[table(name = entities, public)]
 #[derive(Debug, Clone)]
 pub struct Entity {
@@ -79,12 +81,29 @@ pub struct Entity {
     pub archetype: Archetype,
 }
 
+#[allow(dead_code)]
+impl Entity {
+    pub fn new_player_archetype(ctx: &ReducerContext) -> Result<ActorArchetype, String> {
+        Ok(ActorArchetype::new(0, 0, 0, vec![]).insert(ctx))
+    }
+    pub fn from_sender_identity(ctx: &ReducerContext) -> Option<Self> {
+        ctx.db
+            .player_controller_components()
+            .identity()
+            .find(ctx.sender)
+            .and_then(|p| ctx.db.entities().id().find(p.entity_id))
+    }
+}
+
 #[allow(dead_code, unused_variables)]
 pub trait EntityWrap: Sized + Clone {
     fn entity_id(&self) -> EntityId;
     fn archetype(&self) -> Archetype;
+    fn from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
     fn update(self, ctx: &ReducerContext) -> Self;
     fn insert(self, ctx: &ReducerContext) -> Self;
+    fn activate(self, ctx: &ReducerContext) -> Self;
+    fn deactivate(self, ctx: &ReducerContext) -> Self;
 
     fn action_hotkeys(&self) -> Option<&ActionHotkeysComponent> {
         None
@@ -258,11 +277,12 @@ impl<T: EntityWrap> RngSeeded for T {
     }
 }
 
+#[table(name = inactive_actor_archetypes, public)]
 #[table(name = actor_archetypes, public)]
 #[derive(Debug, Clone, Default, Builder, EntityWrap)]
 #[entity_wrap(table = actor_archetypes)]
 pub struct ActorArchetype {
-    #[unique]
+    #[primary_key]
     pub entity_id: EntityId,
     pub actions: ActionsComponent,
     pub allegiance: AllegianceComponent,
@@ -272,6 +292,7 @@ pub struct ActorArchetype {
     pub ep: EpComponent,
     pub hp: HpComponent,
     pub location: LocationComponent,
+    pub player_controller: Option<PlayerControllerComponent>,
     pub traits: TraitsComponent,
 }
 
@@ -321,6 +342,7 @@ impl ActorArchetype {
                 entity_id: 0,
                 location_entity_id,
             },
+            player_controller: None,
             traits: TraitsComponent {
                 entity_id: 0,
                 trait_ids,
@@ -329,11 +351,12 @@ impl ActorArchetype {
     }
 }
 
+#[table(name = inactive_allegiance_archetypes, public)]
 #[table(name = allegiance_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = allegiance_archetypes)]
 pub struct AllegianceArchetype {
-    #[unique]
+    #[primary_key]
     pub entity_id: EntityId,
 }
 
@@ -343,11 +366,12 @@ impl AllegianceArchetype {
     }
 }
 
+#[table(name = inactive_map_archetypes, public)]
 #[table(name = map_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = map_archetypes)]
 pub struct MapArchetype {
-    #[unique]
+    #[primary_key]
     pub entity_id: EntityId,
     pub map: MapComponent,
     pub rng_seed: RngSeedComponent,
@@ -384,11 +408,12 @@ impl MapArchetype {
     }
 }
 
+#[table(name = inactive_path_archetypes, public)]
 #[table(name = path_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = path_archetypes)]
 pub struct PathArchetype {
-    #[unique]
+    #[primary_key]
     pub entity_id: EntityId,
     pub appearance_features: AppearanceFeaturesComponent,
     pub location: LocationComponent,
@@ -419,11 +444,12 @@ impl PathArchetype {
     }
 }
 
+#[table(name = inactive_room_archetypes, public)]
 #[table(name = room_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = room_archetypes)]
 pub struct RoomArchetype {
-    #[unique]
+    #[primary_key]
     pub entity_id: EntityId,
     pub appearance_features: AppearanceFeaturesComponent,
     pub location_map: LocationMapComponent,
@@ -442,12 +468,6 @@ impl RoomArchetype {
                 map_entity_id,
             },
         }
-    }
-}
-
-impl Entity {
-    pub fn new_player_archetype(ctx: &ReducerContext) -> Result<ActorArchetype, String> {
-        Ok(ActorArchetype::new(0, 0, 0, vec![]).insert(ctx))
     }
 }
 
@@ -520,11 +540,12 @@ impl<'a> InactiveEntityHandle<'a> {
         if let Some(mut c) = self.component_set.baseline_component {
             c.entity_id = e.entity_id;
             self.ctx.db.baseline_components().insert(c);
-            self.ctx.db.total_stat_block_dirty_flag_components().insert(
-                StatBlockDirtyFlagComponent {
+            self.ctx
+                .db
+                .total_stat_block_dirty_flag_components()
+                .insert(FlagComponent {
                     entity_id: e.entity_id,
-                },
-            );
+                });
         }
         if let Some(mut c) = self.component_set.traits_component {
             c.entity_id = e.entity_id;
@@ -532,7 +553,7 @@ impl<'a> InactiveEntityHandle<'a> {
             self.ctx
                 .db
                 .traits_stat_block_dirty_flag_components()
-                .insert(StatBlockDirtyFlagComponent {
+                .insert(FlagComponent {
                     entity_id: e.entity_id,
                 });
         }
@@ -1150,7 +1171,7 @@ impl<'a> EntityHandle<'a> {
         self.ctx
             .db
             .traits_stat_block_dirty_flag_components()
-            .insert(StatBlockDirtyFlagComponent {
+            .insert(FlagComponent {
                 entity_id: self.entity_id,
             });
         self
@@ -1159,7 +1180,7 @@ impl<'a> EntityHandle<'a> {
         self.ctx
             .db
             .total_stat_block_dirty_flag_components()
-            .insert(StatBlockDirtyFlagComponent {
+            .insert(FlagComponent {
                 entity_id: self.entity_id,
             });
         self
