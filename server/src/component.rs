@@ -10,6 +10,27 @@ use spacetimedb::Timestamp;
 use crate::entity::EntityId;
 use crate::stat_block::StatBlock;
 
+#[table(name = players, public)]
+#[derive(Debug, Default, Clone)]
+pub struct Player {
+    #[primary_key]
+    pub identity: Identity,
+    pub entity_id: u64,
+}
+
+#[allow(dead_code)]
+impl Player {
+    pub fn find(ctx: &ReducerContext) -> Option<Self> {
+        ctx.db.players().identity().find(ctx.sender)
+    }
+    pub fn insert(ctx: &ReducerContext, entity_id: EntityId) -> Self {
+        ctx.db.players().insert(Player {
+            identity: ctx.sender,
+            entity_id,
+        })
+    }
+}
+
 // TODO Equipment and Status Effects
 #[table(name = traits_stat_block_dirty_flag_components, public)]
 #[flag_component(traits_stat_block_dirty)]

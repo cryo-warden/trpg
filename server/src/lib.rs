@@ -10,13 +10,13 @@ use component::{
     traits_components, traits_stat_block_cache_components, traits_stat_block_dirty_flag_components,
     MapComponent, MapLayout, ObserverComponent, TimerComponent,
 };
-use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
+use entity::{entities, Entity, EntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
 
 use crate::{
-    component::RngSeedComponent,
+    component::{Player, RngSeedComponent},
     entity::{ActorArchetype, AllegianceArchetype, EntityWrap, MapArchetype},
     stat_block::{Baseline, Trait},
 };
@@ -186,29 +186,38 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
-    match Entity::from_sender_identity(ctx) {
-        Some(e) => {
+    if let Some(p) = Player::find(ctx) {
+        if let Some(e) = Entity::find_active(ctx, p.entity_id) {
             TimerComponent::delete_entity_deactivation_timer_component(ctx, e.id);
             log::debug!(
                 "Reconnected {} to {} and removed deactivation timer.",
                 ctx.sender,
                 e.id
             );
+        } else if let Some(e) = Entity::find_inactive(ctx, p.entity_id) {
+            if let Some(a) = ActorArchetype::inactive_from_entity_id(ctx, e.id) {
+                a.activate(ctx);
+                log::debug!("Reactivated {} to {}.", ctx.sender, e.id); // WIP
+            } else {
+                return Err(format!(
+                    "Inactive entity {} does not have a corresponding inactive actor archetype.",
+                    e.id
+                ));
+            }
+        } else {
+            return Err(format!(
+                "Found a player {} with no active or inactive entity {}.",
+                p.identity, p.entity_id
+            ));
         }
-        None => match InactiveEntityHandle::from_player_identity(ctx) {
-            Some(_) => {
-                // WIP implement activate for Actor/Player Archetypes.
-                log::debug!("Reactivated {} to {}.", ctx.sender, -1); // WIP
-            }
-            None => {
-                let p = Entity::new_player_archetype(ctx)?;
-                log::debug!(
-                    "Connected {} to new player archetype {}.",
-                    ctx.sender,
-                    p.entity_id
-                );
-            }
-        },
+    } else {
+        let a = Entity::new_player_archetype(ctx)?;
+        let p = Player::insert(ctx, a.entity_id);
+        log::debug!(
+            "Connected new player {} to new actor archetype {}.",
+            ctx.sender,
+            p.entity_id
+        );
     }
 
     Ok(())

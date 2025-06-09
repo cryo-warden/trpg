@@ -86,12 +86,11 @@ impl Entity {
     pub fn new_player_archetype(ctx: &ReducerContext) -> Result<ActorArchetype, String> {
         Ok(ActorArchetype::new(0, 0, 0, vec![]).insert(ctx))
     }
-    pub fn from_sender_identity(ctx: &ReducerContext) -> Option<Self> {
-        ctx.db
-            .player_controller_components()
-            .identity()
-            .find(ctx.sender)
-            .and_then(|p| ctx.db.entities().id().find(p.entity_id))
+    pub fn find_active(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self> {
+        ctx.db.entities().id().find(entity_id)
+    }
+    pub fn find_inactive(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self> {
+        ctx.db.entities().id().find(entity_id)
     }
 }
 
@@ -100,6 +99,7 @@ pub trait EntityWrap: Sized + Clone {
     fn entity_id(&self) -> EntityId;
     fn archetype(&self) -> Archetype;
     fn from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
+    fn inactive_from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
     fn update(self, ctx: &ReducerContext) -> Self;
     fn insert(self, ctx: &ReducerContext) -> Self;
     fn activate(self, ctx: &ReducerContext) -> Self;
@@ -150,9 +150,6 @@ pub trait EntityWrap: Sized + Clone {
     }
     // TODO ObserverComponent TODO denormalize
     fn path(&self) -> Option<&PathComponent> {
-        None
-    }
-    fn player_controller(&self) -> Option<&PlayerControllerComponent> {
         None
     }
     fn rng_seed(&self) -> Option<&RngSeedComponent> {
@@ -208,9 +205,6 @@ pub trait EntityWrap: Sized + Clone {
         self
     }
     fn set_path(self, path: PathComponent) -> Self {
-        self
-    }
-    fn set_player_controller(self, player_controller: PlayerControllerComponent) -> Self {
         self
     }
     fn set_rng_seed(self, rng_seed: RngSeedComponent) -> Self {
@@ -292,7 +286,6 @@ pub struct ActorArchetype {
     pub ep: EpComponent,
     pub hp: HpComponent,
     pub location: LocationComponent,
-    pub player_controller: Option<PlayerControllerComponent>,
     pub traits: TraitsComponent,
 }
 
@@ -342,7 +335,6 @@ impl ActorArchetype {
                 entity_id: 0,
                 location_entity_id,
             },
-            player_controller: None,
             traits: TraitsComponent {
                 entity_id: 0,
                 trait_ids,
@@ -467,101 +459,6 @@ impl RoomArchetype {
                 entity_id: 0,
                 map_entity_id,
             },
-        }
-    }
-}
-
-pub struct InactiveEntityHandle<'a> {
-    pub ctx: &'a ReducerContext,
-    pub component_set: ComponentSet,
-}
-
-#[allow(dead_code)]
-impl<'a> InactiveEntityHandle<'a> {
-    pub fn from_prefab_name(ctx: &'a ReducerContext, prefab_name: &str) -> Option<Self> {
-        ctx.db
-            .named_inactive_entities()
-            .prefab_name()
-            .find(prefab_name.to_string())
-            .map(|i| Self {
-                ctx,
-                component_set: i.component_set,
-            })
-    }
-
-    pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
-        let result = ctx
-            .db
-            .identity_inactive_entities()
-            .identity()
-            .find(ctx.sender)
-            .map(|i| Self {
-                ctx,
-                component_set: i.component_set,
-            });
-        ctx.db
-            .identity_inactive_entities()
-            .identity()
-            .delete(ctx.sender);
-        result
-    }
-
-    pub fn activate(self) -> EntityHandle<'a> {
-        let id = self.component_set.entity_id;
-        self.activate_with_id(id)
-    }
-
-    pub fn activate_with_id(self, id: u64) -> EntityHandle<'a> {
-        let e = EntityHandle::insert_id(self.ctx, id);
-        if let Some(mut c) = self.component_set.actions_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.actions_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.action_hotkeys_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.action_hotkeys_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.allegiance_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.allegiance_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.ep_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.ep_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.hp_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.hp_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.player_controller_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.player_controller_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.baseline_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.baseline_components().insert(c);
-            self.ctx
-                .db
-                .total_stat_block_dirty_flag_components()
-                .insert(FlagComponent {
-                    entity_id: e.entity_id,
-                });
-        }
-        if let Some(mut c) = self.component_set.traits_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.traits_components().insert(c);
-            self.ctx
-                .db
-                .traits_stat_block_dirty_flag_components()
-                .insert(FlagComponent {
-                    entity_id: e.entity_id,
-                });
-        }
-
-        // TODO Assign location from callsite instead?
-        match EntityHandle::from_name(self.ctx, "room1") {
-            Some(l) => e.add_location(l.entity_id),
-            None => e,
         }
     }
 }
