@@ -17,7 +17,7 @@ use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContex
 
 use crate::{
     component::{Player, RngSeedComponent},
-    entity::{ActorArchetype, AllegianceArchetype, EntityWrap, MapArchetype},
+    entity::{ActorArchetype, AllegianceArchetype, MapArchetype, MapGenerator, WithEntityId},
     stat_block::{Baseline, Trait},
 };
 

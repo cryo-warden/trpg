@@ -6,7 +6,10 @@ extern crate syn;
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use syn::{Data, DeriveInput, Fields, Ident};
+use syn::{
+    Data, DeriveInput, Expr, ExprPath, Fields, Ident, Meta, MetaNameValue, Result,
+    parse::{Parse, ParseStream},
+};
 
 fn extract_ident_from_type(ty: &syn::Type) -> Option<&syn::Ident> {
     if let syn::Type::Path(type_path) = ty {
@@ -16,164 +19,6 @@ fn extract_ident_from_type(ty: &syn::Type) -> Option<&syn::Ident> {
         }
     }
     None
-}
-
-fn get_option_inner_type(ty: &syn::Type) -> Option<&syn::Type> {
-    if let syn::Type::Path(type_path) = ty {
-        let segment = type_path.path.segments.first()?;
-        if segment.ident == "Option" {
-            if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
-                if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
-                    return Some(inner_ty);
-                }
-            }
-        }
-    }
-    None
-}
-
-#[allow(dead_code)]
-#[proc_macro_derive(EntityWrap, attributes(entity_wrap))]
-pub fn entity_wrap(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
-
-    let name = input.ident;
-
-    let mut table = None;
-
-    // Look through attributes like #[my_macro(...)]
-    for attr in &input.attrs {
-        if attr.path().is_ident("entity_wrap") {
-            let _ = attr.parse_nested_meta(|meta| {
-                if meta.path.is_ident("table") {
-                    let value: syn::Ident = meta.value()?.parse()?;
-                    table = Some(value);
-                }
-                Ok(())
-            });
-        }
-    }
-    let table_name = if let Some(table_name) = table {
-        table_name
-    } else {
-        return syn::Error::new_spanned(name, "Must specify a table.")
-            .to_compile_error()
-            .into();
-    };
-    let inactive_table_name = format_ident!("inactive_{}", table_name);
-
-    let fields = match input.data {
-        Data::Struct(ref data_struct) => match &data_struct.fields {
-            Fields::Named(fields_named) => &fields_named.named,
-            _ => {
-                return syn::Error::new_spanned(
-                    data_struct.struct_token,
-                    "FieldMethods can only be derived for structs with named fields",
-                )
-                .to_compile_error()
-                .into();
-            }
-        },
-        _ => {
-            return syn::Error::new_spanned(name, "FieldMethods can only be derived for structs")
-                .to_compile_error()
-                .into();
-        }
-    };
-
-    let getters = fields.iter().map(|f| {
-        if let Some(field_name) = &f.ident {
-            if field_name == "entity_id" {
-                return quote! {};
-            }
-
-            let field_ty = &f.ty;
-            let setter_name = Ident::new(&format!("set_{}", field_name), field_name.span());
-            if let Some(inner_type) = get_option_inner_type(field_ty) {
-                quote! {
-                    fn #field_name(&self) -> Option<&#inner_type> {
-                        if let Some(ref value) = self.#field_name {
-                          Some(value)
-                        } else {
-                          None
-                        }
-                    }
-                    fn #setter_name(mut self, #field_name: #inner_type) -> Self {
-                        self.#field_name = Some(#field_name);
-                        self
-                    }
-                }
-            } else {
-                quote! {
-                    fn #field_name(&self) -> Option<&#field_ty> {
-                        Some(&self.#field_name)
-                    }
-                    fn #setter_name(mut self, #field_name: #field_ty) -> Self {
-                        self.#field_name = #field_name;
-                        self
-                    }
-                }
-            }
-        } else {
-            quote! {}
-        }
-    });
-
-    let expanded = quote! {
-        #[automatically_derived]
-        #[allow(dead_code)]
-        impl EntityWrap for #name {
-          fn entity_id(&self) -> EntityId {
-              self.entity_id
-          }
-          fn archetype(&self) -> Archetype {
-              Archetype::#name
-          }
-          fn from_entity_id(ctx: &spacetimedb::ReducerContext, entity_id: EntityId) -> Option<Self> {
-              ctx.db.#table_name().entity_id().find(entity_id)
-          }
-          fn inactive_from_entity_id(ctx: &spacetimedb::ReducerContext, entity_id: EntityId) -> Option<Self> {
-              ctx.db.#inactive_table_name().entity_id().find(entity_id)
-          }
-          fn update(self, ctx: &spacetimedb::ReducerContext) -> Self {
-              let e = ctx.db.entities().id().update(Entity {
-                  id: self.entity_id(),
-                  archetype: self.archetype(),
-              });
-              ctx.db.#table_name().entity_id().update(self)
-          }
-          fn insert(mut self, ctx: &spacetimedb::ReducerContext) -> Self {
-              let e = ctx.db.entities().insert(Entity {
-                  id: 0,
-                  archetype: self.archetype(),
-              });
-              self.entity_id = e.id;
-              ctx.db.#table_name().insert(self)
-          }
-          fn activate(self, ctx: &spacetimedb::ReducerContext) -> Self {
-              ctx.db.inactive_entities().id().delete(self.entity_id);
-              ctx.db.entities().insert(Entity {
-                  id: self.entity_id,
-                  archetype: self.archetype(),
-              });
-              ctx.db.#inactive_table_name().entity_id().delete(self.entity_id);
-              ctx.db.#table_name().insert(self)
-          }
-          fn deactivate(self, ctx: &spacetimedb::ReducerContext) -> Self {
-              ctx.db.entities().id().delete(self.entity_id);
-              ctx.db.inactive_entities().insert(Entity {
-                  id: self.entity_id,
-                  archetype: self.archetype(),
-              });
-              ctx.db.#table_name().entity_id().delete(self.entity_id);
-              ctx.db.#inactive_table_name().insert(self)
-          }
-
-          #(#getters)*
-        }
-    };
-
-    TokenStream::from(expanded)
 }
 
 #[proc_macro_attribute]
@@ -275,10 +120,45 @@ pub fn component(attr: TokenStream, item: TokenStream) -> TokenStream {
     output.into()
 }
 
+struct OneNamedArg {
+    value: Ident,
+}
+
+impl Parse for OneNamedArg {
+    fn parse(input: ParseStream) -> Result<Self> {
+        // Parse: name = "Foo"
+        let meta: Meta = input.parse()?;
+
+        if let Meta::NameValue(MetaNameValue { path, value, .. }) = &meta {
+            if let Some(ident) = path.get_ident() {
+                if ident == "table" {
+                    if let Expr::Path(ExprPath { path, .. }) = value {
+                        if let Some(value) = path.get_ident() {
+                            return Ok(OneNamedArg {
+                                value: value.clone(),
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        Err(syn::Error::new_spanned(
+            meta,
+            "Expected named argument like `name = \"...\"`",
+        ))
+    }
+}
+
 #[proc_macro_attribute]
-pub fn entity(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn entity(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let attr = parse_macro_input!(attr as OneNamedArg);
     let input = parse_macro_input!(item as DeriveInput);
-    let ident = &input.ident;
+    let struct_name = &input.ident;
+
+    let table_name = attr.value;
+
+    let inactive_table_name = format_ident!("inactive_{}", table_name);
 
     let mut output_struct = input.clone();
 
@@ -309,9 +189,12 @@ pub fn entity(_attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         },
         _ => {
-            return syn::Error::new_spanned(ident, "FieldMethods can only be derived for structs")
-                .to_compile_error()
-                .into();
+            return syn::Error::new_spanned(
+                struct_name,
+                "FieldMethods can only be derived for structs",
+            )
+            .to_compile_error()
+            .into();
         }
     };
 
@@ -326,7 +209,8 @@ pub fn entity(_attr: TokenStream, item: TokenStream) -> TokenStream {
         if has_attr {
             if let Some(field_type_name) = extract_ident_from_type(field_ty) {
                 let trait_name = format_ident!("{}Entity", field_type_name);
-                let mod_name = format_ident!("mod_{}_component_{}_entity", field_ident, ident);
+                let mod_name =
+                    format_ident!("mod_{}_component_{}_entity", field_ident, struct_name);
                 let getter = format_ident!("{}", field_ident);
                 let mut_getter = format_ident!("mut_{}", getter);
                 let setter = format_ident!("set_{}", field_ident);
@@ -337,7 +221,7 @@ pub fn entity(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         use super::*;
                         use crate::component::{#trait_name};
                         #[allow(dead_code)]
-                        impl #trait_name for #ident {
+                        impl #trait_name for #struct_name {
                             fn #getter(&self) -> &#field_ty {
                                 &self.#field_ident
                             }
@@ -353,7 +237,7 @@ pub fn entity(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 });
             } else {
                 return syn::Error::new_spanned(
-                    ident,
+                    struct_name,
                     "FieldMethods can only be derived for structs",
                 )
                 .to_compile_error()
@@ -364,6 +248,54 @@ pub fn entity(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let output = quote! {
         #output_struct
+
+        impl crate::entity::WithEntityId for #struct_name {
+            fn entity_id(&self) -> u64 {
+                self.entity_id
+            }
+            fn archetype(&self) -> Archetype {
+                Archetype::#struct_name
+            }
+            fn from_entity_id(ctx: &spacetimedb::ReducerContext, entity_id: EntityId) -> Option<Self> {
+                ctx.db.#table_name().entity_id().find(entity_id)
+            }
+            fn inactive_from_entity_id(ctx: &spacetimedb::ReducerContext, entity_id: EntityId) -> Option<Self> {
+                ctx.db.#inactive_table_name().entity_id().find(entity_id)
+            }
+            fn update(self, ctx: &spacetimedb::ReducerContext) -> Self {
+                let e = ctx.db.entities().id().update(Entity {
+                    id: self.entity_id(),
+                    archetype: self.archetype(),
+                });
+                ctx.db.#table_name().entity_id().update(self)
+            }
+            fn insert(mut self, ctx: &spacetimedb::ReducerContext) -> Self {
+                let e = ctx.db.entities().insert(Entity {
+                    id: 0,
+                    archetype: self.archetype(),
+                });
+                self.entity_id = e.id;
+                ctx.db.#table_name().insert(self)
+            }
+            fn activate(self, ctx: &spacetimedb::ReducerContext) -> Self {
+                ctx.db.inactive_entities().id().delete(self.entity_id);
+                ctx.db.entities().insert(Entity {
+                    id: self.entity_id,
+                    archetype: self.archetype(),
+                });
+                ctx.db.#inactive_table_name().entity_id().delete(self.entity_id);
+                ctx.db.#table_name().insert(self)
+            }
+            fn deactivate(self, ctx: &spacetimedb::ReducerContext) -> Self {
+                ctx.db.entities().id().delete(self.entity_id);
+                ctx.db.inactive_entities().insert(Entity {
+                    id: self.entity_id,
+                    archetype: self.archetype(),
+                });
+                ctx.db.#table_name().entity_id().delete(self.entity_id);
+                ctx.db.#inactive_table_name().insert(self)
+            }
+        }
 
         #(#impl_traits)*
     };

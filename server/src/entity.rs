@@ -23,13 +23,14 @@ use crate::{
         AppearanceFeaturesComponentEntity, AttackComponent, AttackComponentEntity,
         BaselineComponent, EntityProminenceComponent, EpComponent, EpComponentEntity,
         FlagComponent, HpComponent, HpComponentEntity, LocationComponent, LocationMapComponent,
-        MapComponent, NameComponent, PathComponent, PlayerControllerComponent, RngSeedComponent,
-        StatBlockCacheComponent, TargetComponent, TraitsComponent, TraitsComponentEntity,
+        MapComponent, MapComponentEntity, NameComponent, PathComponent, PlayerControllerComponent,
+        RngSeedComponent, RngSeedComponentEntity, StatBlockCacheComponent, TargetComponent,
+        TraitsComponent, TraitsComponentEntity,
     },
     stat_block::{baselines, traits, StatBlock},
 };
 
-use archetype::{entity, EntityWrap};
+use archetype::entity;
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ComponentSet {
@@ -72,6 +73,18 @@ pub enum Archetype {
 
 pub type EntityId = u64;
 
+#[allow(dead_code)]
+pub trait WithEntityId: Sized + Clone {
+    fn entity_id(&self) -> EntityId;
+    fn archetype(&self) -> Archetype;
+    fn from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
+    fn inactive_from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
+    fn update(self, ctx: &ReducerContext) -> Self;
+    fn insert(self, ctx: &ReducerContext) -> Self;
+    fn activate(self, ctx: &ReducerContext) -> Self;
+    fn deactivate(self, ctx: &ReducerContext) -> Self;
+}
+
 #[table(name = inactive_entities, public)]
 #[table(name = entities, public)]
 #[derive(Debug, Clone)]
@@ -92,130 +105,6 @@ impl Entity {
     }
     pub fn find_inactive(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self> {
         ctx.db.entities().id().find(entity_id)
-    }
-}
-
-#[allow(dead_code, unused_variables)]
-pub trait EntityWrap: Sized + Clone {
-    fn entity_id(&self) -> EntityId;
-    fn archetype(&self) -> Archetype;
-    fn from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
-    fn inactive_from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
-    fn update(self, ctx: &ReducerContext) -> Self;
-    fn insert(self, ctx: &ReducerContext) -> Self;
-    fn activate(self, ctx: &ReducerContext) -> Self;
-    fn deactivate(self, ctx: &ReducerContext) -> Self;
-
-    fn action_hotkeys(&self) -> Option<&ActionHotkeysComponent> {
-        None
-    }
-    fn action_options(&self) -> Option<&ActionOptionsComponent> {
-        None
-    }
-    fn action_state_component(&self) -> Option<&ActionStateComponent> {
-        None
-    }
-    fn actions(&self) -> Option<&ActionsComponent> {
-        None
-    }
-    fn allegiance(&self) -> Option<&AllegianceComponent> {
-        None
-    }
-    fn appearance_features(&self) -> Option<&AppearanceFeaturesComponent> {
-        None
-    }
-    fn attack(&self) -> Option<&AttackComponent> {
-        None
-    }
-    fn baseline(&self) -> Option<&BaselineComponent> {
-        None
-    }
-    // TODO EntityDeactivationTimerComponent TODO Generate code to handle optional field type.
-    fn entity_prominence(&self) -> Option<&EntityProminenceComponent> {
-        None
-    }
-    fn ep(&self) -> Option<&EpComponent> {
-        None
-    }
-    fn hp(&self) -> Option<&HpComponent> {
-        None
-    }
-    fn location(&self) -> Option<&LocationComponent> {
-        None
-    }
-    fn location_map(&self) -> Option<&LocationMapComponent> {
-        None
-    }
-    fn map(&self) -> Option<&MapComponent> {
-        None
-    }
-    // TODO ObserverComponent TODO denormalize
-    fn path(&self) -> Option<&PathComponent> {
-        None
-    }
-    fn rng_seed(&self) -> Option<&RngSeedComponent> {
-        None
-    }
-    fn target(&self) -> Option<&TargetComponent> {
-        None
-    }
-    fn traits(&self) -> Option<&TraitsComponent> {
-        None
-    }
-
-    fn set_action_hotkeys(self, action_hotkeys: ActionHotkeysComponent) -> Self {
-        self
-    }
-    fn set_action_options(self, action_hotkeys: ActionOptionsComponent) -> Self {
-        self
-    }
-    fn set_action_state_component(self, action_state_component: ActionStateComponent) -> Self {
-        self
-    }
-    fn set_actions(self, actions: ActionsComponent) -> Self {
-        self
-    }
-    fn set_allegiance(self, allegiance: AllegianceComponent) -> Self {
-        self
-    }
-    fn set_appearance_features(self, appearance_features: AppearanceFeaturesComponent) -> Self {
-        self
-    }
-    fn set_attack(self, attack: AttackComponent) -> Self {
-        self
-    }
-    fn set_baseline(self, baseline: BaselineComponent) -> Self {
-        self
-    }
-    fn set_entity_prominence(self, entity_prominence: EntityProminenceComponent) -> Self {
-        self
-    }
-    fn set_ep(self, ep: EpComponent) -> Self {
-        self
-    }
-    fn set_hp(self, hp: HpComponent) -> Self {
-        self
-    }
-    fn set_location(self, location: LocationComponent) -> Self {
-        self
-    }
-    fn set_location_map(self, location_map: LocationMapComponent) -> Self {
-        self
-    }
-    fn set_map(self, map: MapComponent) -> Self {
-        self
-    }
-    fn set_path(self, path: PathComponent) -> Self {
-        self
-    }
-    fn set_rng_seed(self, rng_seed: RngSeedComponent) -> Self {
-        self
-    }
-    fn set_target(self, target: TargetComponent) -> Self {
-        self
-    }
-    fn set_traits(self, traits: TraitsComponent) -> Self {
-        self
     }
 }
 
@@ -268,20 +157,16 @@ pub trait RngSeeded {
     fn get_rng(&self) -> StdRng;
 }
 
-impl<T: EntityWrap> RngSeeded for T {
+impl<T: RngSeedComponentEntity> RngSeeded for T {
     fn get_rng(&self) -> StdRng {
-        match self.rng_seed() {
-            Some(s) => StdRng::seed_from_u64(s.rng_seed),
-            None => StdRng::seed_from_u64(0),
-        }
+        StdRng::seed_from_u64(self.rng_seed().rng_seed)
     }
 }
 
-#[table(name = inactive_actor_archetypes, public)]
+#[entity(table = actor_archetypes)]
 #[table(name = actor_archetypes, public)]
-#[derive(Debug, Clone, Default, Builder, EntityWrap)]
-#[entity_wrap(table = actor_archetypes)]
-#[entity]
+#[table(name = inactive_actor_archetypes, public)]
+#[derive(Debug, Clone, Default, Builder)]
 pub struct ActorArchetype {
     #[primary_key]
     pub entity_id: EntityId,
@@ -359,11 +244,10 @@ impl ActorArchetype {
     }
 }
 
-#[table(name = inactive_allegiance_archetypes, public)]
+#[entity(table = allegiance_archetypes)]
 #[table(name = allegiance_archetypes, public)]
-#[derive(Debug, Clone, Builder, EntityWrap)]
-#[entity_wrap(table = allegiance_archetypes)]
-#[entity]
+#[table(name = inactive_allegiance_archetypes, public)]
+#[derive(Debug, Clone, Builder)]
 pub struct AllegianceArchetype {
     #[primary_key]
     pub entity_id: EntityId,
@@ -375,11 +259,10 @@ impl AllegianceArchetype {
     }
 }
 
-#[table(name = inactive_map_archetypes, public)]
+#[entity(table = map_archetypes)]
 #[table(name = map_archetypes, public)]
-#[derive(Debug, Clone, Builder, EntityWrap)]
-#[entity_wrap(table = map_archetypes)]
-#[entity]
+#[table(name = inactive_map_archetypes, public)]
+#[derive(Debug, Clone, Builder)]
 pub struct MapArchetype {
     #[primary_key]
     pub entity_id: EntityId,
@@ -389,42 +272,46 @@ pub struct MapArchetype {
     pub rng_seed: RngSeedComponent,
 }
 
-pub struct MapArchetypeGenerationResult {
+pub struct MapGeneratorResult {
     pub rooms: Vec<RoomArchetype>,
 }
 
-impl MapArchetype {
-    pub fn generate(&self, ctx: &ReducerContext) -> MapArchetypeGenerationResult {
+pub trait MapGenerator {
+    fn generate(&self, ctx: &ReducerContext) -> MapGeneratorResult;
+}
+
+impl<T: WithEntityId + RngSeedComponentEntity + MapComponentEntity> MapGenerator for T {
+    fn generate(&self, ctx: &ReducerContext) -> MapGeneratorResult {
+        let map = self.map();
         let af_ctx = AppearanceFeatureContext::new(ctx);
         let mut rng = self.get_rng();
-        let total_room_count = self.map.extra_room_count + self.map.main_room_count;
+        let total_room_count = map.extra_room_count + map.main_room_count;
         let rooms: Vec<RoomArchetype> = (0..total_room_count)
-            .map(|_| RoomArchetype::new(af_ctx.by_texts(&["room"]), self.entity_id))
+            .map(|_| RoomArchetype::new(af_ctx.by_texts(&["room"]), self.entity_id()))
             .collect();
 
-        for i in 0..(self.map.main_room_count as usize - 1) {
+        for i in 0..(map.main_room_count as usize - 1) {
             let a = &rooms[i];
             let b = &rooms[i + 1];
             PathArchetype::new(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id).insert(ctx);
             PathArchetype::new(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id).insert(ctx);
         }
 
-        for i in (self.map.main_room_count as u32)..(total_room_count as u32) {
+        for i in (map.main_room_count as u32)..(total_room_count as u32) {
             let a = &rooms[i as usize];
             let b = &rooms[(rng.next_u32() % i) as usize];
             PathArchetype::new(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id).insert(ctx);
             PathArchetype::new(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id).insert(ctx);
         }
 
-        MapArchetypeGenerationResult { rooms }
+        MapGeneratorResult { rooms }
     }
 }
 
-#[table(name = inactive_path_archetypes, public)]
+#[entity(table = path_archetypes)]
 #[table(name = path_archetypes, public)]
-#[derive(Debug, Clone, Builder, EntityWrap)]
-#[entity_wrap(table = path_archetypes)]
-#[entity]
+#[table(name = inactive_path_archetypes, public)]
+#[derive(Debug, Clone, Builder)]
 pub struct PathArchetype {
     #[primary_key]
     pub entity_id: EntityId,
@@ -460,11 +347,10 @@ impl PathArchetype {
     }
 }
 
-#[table(name = inactive_room_archetypes, public)]
+#[entity(table = room_archetypes)]
 #[table(name = room_archetypes, public)]
-#[derive(Debug, Clone, Builder, EntityWrap)]
-#[entity_wrap(table = room_archetypes)]
-#[entity]
+#[table(name = inactive_room_archetypes, public)]
+#[derive(Debug, Clone, Builder)]
 pub struct RoomArchetype {
     #[primary_key]
     pub entity_id: EntityId,
