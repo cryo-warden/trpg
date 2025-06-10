@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
 use component::{
-    entity_deactivation_timer_components, hp_components, location_components, observer_components,
+    entity_deactivation_timer_components, location_components, observer_components,
     player_controller_components, total_stat_block_dirty_flag_components,
     traits_stat_block_dirty_flag_components, MapComponent, MapLayout, ObserverComponent,
     TimerComponent,
@@ -20,8 +20,8 @@ use crate::{
         TraitsComponentEntity,
     },
     entity::{
-        actor_archetypes, ActorArchetype, AllegianceArchetype, MapArchetype, MapGenerator,
-        StatBlockApplier, WithEntityId,
+        actor_archetypes, ActorArchetype, AllegianceArchetype, EntityId, MapArchetype,
+        MapGenerator, StatBlockApplier, WithEntityId,
     },
     stat_block::{Baseline, Trait},
 };
@@ -263,7 +263,7 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
 }
 
 #[reducer]
-pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Result<(), String> {
+pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: EntityId) -> Result<(), String> {
     match Player::find(ctx) {
         Some(p) => {
             if let Some(mut a) = ActorArchetype::from_entity_id(ctx, p.entity_id) {
@@ -279,7 +279,7 @@ pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Resul
 }
 
 #[reducer]
-pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String> {
+pub fn target(ctx: &ReducerContext, target_entity_id: EntityId) -> Result<(), String> {
     match Player::find(ctx).and_then(|p| ActorArchetype::from_entity_id(ctx, p.entity_id)) {
         Some(p) => {
             log::debug!(
@@ -317,7 +317,11 @@ pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Result<(), String> {
+pub fn add_trait(
+    ctx: &ReducerContext,
+    entity_id: EntityId,
+    trait_name: &str,
+) -> Result<(), String> {
     if let Some(mut a) = ActorArchetype::from_entity_id(ctx, entity_id) {
         a.mut_traits()
             .trait_ids
@@ -330,16 +334,11 @@ pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Resu
 }
 
 #[reducer]
-pub fn damage(ctx: &ReducerContext, entity_id: u64, damage: i32) -> Result<(), String> {
-    let mut hp = ctx
-        .db
-        .hp_components()
-        .entity_id()
-        .find(entity_id)
-        .ok_or("Cannot find entity.")?;
+pub fn damage(ctx: &ReducerContext, entity_id: EntityId, damage: i32) -> Result<(), String> {
+    let mut a = ActorArchetype::from_entity_id(ctx, entity_id).ok_or("Cannot find entity.")?;
+    let hp = a.mut_hp();
     hp.accumulated_damage += damage;
-    ctx.db.hp_components().entity_id().update(hp);
-
+    a.update(ctx);
     Ok(())
 }
 

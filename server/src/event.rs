@@ -2,7 +2,8 @@ use spacetimedb::{table, ReducerContext, SpacetimeType, Table, Timestamp};
 
 use crate::{
     action::ActionEffect,
-    component::{hp_components, location_components, path_components},
+    component::{HpComponentEntity, LocationComponentEntity, PathComponentEntity},
+    entity::{ActorArchetype, EntityId, PathArchetype, WithEntityId},
 };
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -21,18 +22,18 @@ pub struct EntityEvent {
     #[auto_inc]
     pub id: u64,
     pub time: Timestamp,
-    pub owner_entity_id: u64,
+    pub owner_entity_id: EntityId,
     pub event_type: EventType,
-    pub target_entity_id: u64,
+    pub target_entity_id: EntityId,
 }
 
 #[allow(dead_code)]
 impl EntityEvent {
     pub fn emit_early(
         ctx: &ReducerContext,
-        owner_entity_id: u64,
+        owner_entity_id: EntityId,
         event_type: EventType,
-        target_entity_id: u64,
+        target_entity_id: EntityId,
     ) {
         ctx.db.early_events().insert(EntityEvent {
             id: 0,
@@ -45,9 +46,9 @@ impl EntityEvent {
 
     pub fn emit_middle(
         ctx: &ReducerContext,
-        owner_entity_id: u64,
+        owner_entity_id: EntityId,
         event_type: EventType,
-        target_entity_id: u64,
+        target_entity_id: EntityId,
     ) {
         ctx.db.middle_events().insert(EntityEvent {
             id: 0,
@@ -60,9 +61,9 @@ impl EntityEvent {
 
     pub fn emit_late(
         ctx: &ReducerContext,
-        owner_entity_id: u64,
+        owner_entity_id: EntityId,
         event_type: EventType,
-        target_entity_id: u64,
+        target_entity_id: EntityId,
     ) {
         ctx.db.late_events().insert(EntityEvent {
             id: 0,
@@ -83,46 +84,27 @@ impl EntityEvent {
                 ActionEffect::Buff(_) => {} // WIP
                 ActionEffect::Rest => {}
                 ActionEffect::Move => {
-                    match ctx.db.path_components().entity_id().find(target_entity_id) {
-                        None => {}
-                        Some(path_component) => {
-                            match ctx
-                                .db
-                                .location_components()
-                                .entity_id()
-                                .find(self.owner_entity_id)
-                            {
-                                None => {}
-                                Some(mut location_component) => {
-                                    location_component.location_entity_id =
-                                        path_component.destination_entity_id;
-                                    ctx.db
-                                        .location_components()
-                                        .entity_id()
-                                        .update(location_component);
-                                }
-                            }
-                        }
+                    if let (Some(p), Some(mut a)) = (
+                        PathArchetype::from_entity_id(ctx, target_entity_id),
+                        ActorArchetype::from_entity_id(ctx, self.owner_entity_id),
+                    ) {
+                        let l = a.mut_location();
+                        l.location_entity_id = p.path().destination_entity_id;
+                        a.update(ctx);
                     }
                 }
                 ActionEffect::Attack(damage) => {
-                    let target_hp = ctx.db.hp_components().entity_id().find(target_entity_id);
-                    match target_hp {
-                        None => {}
-                        Some(mut target_hp) => {
-                            target_hp.accumulated_damage += damage;
-                            ctx.db.hp_components().entity_id().update(target_hp);
-                        }
+                    if let Some(mut t) = ActorArchetype::from_entity_id(ctx, target_entity_id) {
+                        let hp = t.mut_hp();
+                        hp.accumulated_damage += damage;
+                        t.update(ctx);
                     }
                 }
                 ActionEffect::Heal(heal) => {
-                    let target_hp = ctx.db.hp_components().entity_id().find(target_entity_id);
-                    match target_hp {
-                        None => {}
-                        Some(mut target_hp) => {
-                            target_hp.accumulated_healing += heal;
-                            ctx.db.hp_components().entity_id().update(target_hp);
-                        }
+                    if let Some(mut t) = ActorArchetype::from_entity_id(ctx, target_entity_id) {
+                        let hp = t.mut_hp();
+                        hp.accumulated_healing += heal;
+                        t.update(ctx);
                     }
                 }
                 ActionEffect::Take => {}    // WIP

@@ -23,7 +23,7 @@ pub struct Player {
     #[primary_key]
     pub identity: Identity,
     #[unique]
-    pub entity_id: u64,
+    pub entity_id: EntityId,
     pub action_hotkeys: Vec<ActionHotkey>,
 }
 
@@ -49,7 +49,7 @@ impl Player {
 #[derive(Debug, Default, Clone)]
 pub struct FlagComponent {
     #[primary_key]
-    pub entity_id: u64,
+    pub entity_id: EntityId,
 }
 
 #[allow(dead_code)]
@@ -66,7 +66,7 @@ impl FlagComponent {
 #[derive(Debug, Clone)]
 pub struct TimerComponent {
     #[primary_key]
-    pub entity_id: u64,
+    pub entity_id: EntityId,
     pub timestamp: Timestamp,
 }
 
@@ -83,7 +83,7 @@ impl Default for TimerComponent {
 #[derive(Debug, Default, Clone)]
 pub struct EntityName {
     #[primary_key]
-    pub entity_id: u64,
+    pub entity_id: EntityId,
     #[unique]
     pub name: String,
 }
@@ -93,7 +93,7 @@ pub struct EntityName {
 #[derive(Debug, Default, Clone)]
 pub struct PlayerControllerComponent {
     #[primary_key]
-    pub entity_id: u64,
+    pub entity_id: EntityId,
     #[unique]
     pub identity: Identity,
 }
@@ -104,25 +104,21 @@ pub struct PlayerControllerComponent {
 #[component(location)]
 pub struct LocationComponent {
     #[primary_key]
-    pub entity_id: u64,
+    pub entity_id: EntityId,
     #[index(btree)]
-    pub location_entity_id: u64,
+    pub location_entity_id: EntityId,
 }
 
-#[table(name = path_components, public)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(path)]
 pub struct PathComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[index(btree)]
-    pub destination_entity_id: u64,
+    pub destination_entity_id: EntityId,
 }
 
 #[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(allegiance)]
 pub struct AllegianceComponent {
-    pub allegiance_entity_id: u64,
+    pub allegiance_entity_id: EntityId,
 }
 
 #[derive(Debug, Default, Clone, SpacetimeType)]
@@ -144,12 +140,9 @@ pub struct AttackComponent {
     pub attack: i32,
 }
 
-#[table(name = hp_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(hp)]
 pub struct HpComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub hp: i32,
     pub mhp: i32,
     pub defense: i32,
@@ -166,7 +159,7 @@ pub struct EpComponent {
 
 #[derive(Debug, Default, Clone, SpacetimeType)]
 pub struct ActionState {
-    pub target_entity_id: u64,
+    pub target_entity_id: EntityId,
     pub action_id: u64,
 }
 
@@ -179,7 +172,7 @@ pub struct ActionStateComponent {
 }
 
 impl ActionStateComponent {
-    pub fn set_queued_action_state(&mut self, action_id: u64, target_entity_id: u64) {
+    pub fn set_queued_action_state(&mut self, action_id: u64, target_entity_id: EntityId) {
         self.queued_action_state = Some(ActionState {
             target_entity_id,
             action_id,
@@ -201,7 +194,7 @@ pub struct ActionsComponent {
 #[derive(Debug, Default, Clone, SpacetimeType)]
 pub struct ActionOption {
     pub action_id: u64,
-    pub target_entity_id: u64,
+    pub target_entity_id: EntityId,
 }
 
 #[derive(Debug, Default, Clone, SpacetimeType)]
@@ -213,7 +206,7 @@ pub struct RngSeedComponent {
 #[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(location_map)]
 pub struct LocationMapComponent {
-    pub map_entity_id: u64,
+    pub map_entity_id: EntityId,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -243,7 +236,7 @@ pub struct MapComponent {
 #[derive(Debug, Default, Clone)]
 pub struct ObserverComponent {
     #[index(btree)]
-    pub entity_id: u64,
+    pub entity_id: EntityId,
     #[index(btree)]
     pub observable_event_id: u64,
 }

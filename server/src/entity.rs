@@ -64,7 +64,7 @@ impl Entity {
     pub fn find_inactive(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self> {
         ctx.db.entities().id().find(entity_id)
     }
-    pub fn is_ally(&self, ctx: &ReducerContext, other_entity_id: u64) -> bool {
+    pub fn is_ally(&self, ctx: &ReducerContext, other_entity_id: EntityId) -> bool {
         if self.id == other_entity_id {
             return true;
         }
@@ -305,7 +305,6 @@ impl ActorArchetype {
             baseline: BaselineComponent { baseline_id },
             ep: EpComponent { ep: 5, mep: 5 },
             hp: HpComponent {
-                entity_id: 0,
                 hp: 5,
                 mhp: 5,
                 defense: 5,
@@ -419,7 +418,6 @@ impl PathArchetype {
                 location_entity_id,
             },
             path: PathComponent {
-                entity_id: 0,
                 destination_entity_id,
             },
         }
