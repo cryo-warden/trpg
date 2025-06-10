@@ -2,6 +2,8 @@ use std::cmp::max;
 
 use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
 
+use crate::entity::{Entity, EntityId, WithEntityId};
+
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ActionType {
     Buff,
@@ -20,6 +22,32 @@ pub struct Action {
     #[unique]
     pub name: String,
     pub action_type: ActionType,
+}
+
+#[allow(dead_code)]
+impl Action {
+    pub fn can_target(
+        &self,
+        ctx: &ReducerContext,
+        entity_id: EntityId,
+        target_entity_id: EntityId,
+    ) -> bool {
+        if let (Some(e), Some(o)) = (
+            Entity::from_entity_id(ctx, entity_id),
+            Entity::from_entity_id(ctx, target_entity_id),
+        ) {
+            // WIP Add ComponentOptionalEntity traits and use them to check unknown components via the Entity implementation.
+            match self.action_type {
+                ActionType::Attack => o.can_be_attacked() && !e.is_ally(ctx, target_entity_id),
+                ActionType::Buff => o.can_be_buffed() && e.is_ally(ctx, target_entity_id),
+                ActionType::Equip => true,     // WIP
+                ActionType::Inventory => true, // WIP
+                ActionType::Move => o.can_be_moved_through(),
+            }
+        } else {
+            false
+        }
+    }
 }
 
 #[table(name = action_appearances, public)]

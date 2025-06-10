@@ -15,7 +15,7 @@ pub struct StatBlock {
 
 #[allow(dead_code)]
 impl StatBlock {
-    pub fn add(&mut self, other: StatBlock) {
+    pub fn add(&mut self, other: &StatBlock) {
         self.attack += other.attack;
         self.mhp += other.mhp;
         self.defense += other.defense;
@@ -46,6 +46,9 @@ pub struct Baseline {
 }
 
 impl Baseline {
+    pub fn find(ctx: &ReducerContext, id: u64) -> Option<Self> {
+        ctx.db.baselines().id().find(id)
+    }
     pub fn name_to_id(ctx: &ReducerContext, name: &str) -> Option<u64> {
         ctx.db
             .baselines()
@@ -67,7 +70,10 @@ pub struct Trait {
 }
 
 impl Trait {
-    pub fn name_to_ids(ctx: &ReducerContext, names: &[&str]) -> Vec<u64> {
+    pub fn find(ctx: &ReducerContext, id: u64) -> Option<Self> {
+        ctx.db.traits().id().find(id)
+    }
+    pub fn names_to_ids(ctx: &ReducerContext, names: &[&str]) -> Vec<u64> {
         names
             .iter()
             .flat_map(|name| ctx.db.traits().name().find(name.to_string()).map(|t| t.id))

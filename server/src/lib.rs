@@ -3,21 +3,26 @@ use std::cmp::{max, min};
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
 use component::{
-    action_options_components, action_state_components, attack_components, baseline_components,
-    entity_deactivation_timer_components, entity_prominence_components, ep_components,
-    hp_components, location_components, observer_components, player_controller_components,
-    queued_action_state_components, target_components, total_stat_block_dirty_flag_components,
-    traits_components, traits_stat_block_cache_components, traits_stat_block_dirty_flag_components,
-    MapComponent, MapLayout, ObserverComponent, TimerComponent,
+    entity_deactivation_timer_components, hp_components, location_components, observer_components,
+    player_controller_components, total_stat_block_dirty_flag_components,
+    traits_stat_block_dirty_flag_components, MapComponent, MapLayout, ObserverComponent,
+    TimerComponent,
 };
-use entity::{entities, Entity, EntityHandle};
+use entity::Entity;
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
-use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
+use stat_block::{StatBlock, StatBlockBuilder, StatBlockContext};
 
 use crate::{
-    component::{Player, RngSeedComponent},
-    entity::{ActorArchetype, AllegianceArchetype, MapArchetype, MapGenerator, WithEntityId},
+    component::{
+        ActionStateComponentEntity, AttackComponentEntity, BaselineComponentEntity,
+        EpComponentEntity, FlagComponent, HpComponentEntity, Player, RngSeedComponent,
+        TraitsComponentEntity,
+    },
+    entity::{
+        actor_archetypes, ActorArchetype, AllegianceArchetype, MapArchetype, MapGenerator,
+        StatBlockApplier, WithEntityId,
+    },
     stat_block::{Baseline, Trait},
 };
 
@@ -172,7 +177,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
             aa2.entity_id,
             room1.entity_id,
             Baseline::name_to_id(ctx, "slime").unwrap_or_default(),
-            Trait::name_to_ids(ctx, &[]),
+            Trait::names_to_ids(ctx, &[]),
         );
     }
 
@@ -225,7 +230,7 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer(client_disconnected)]
 pub fn identity_disconnected(ctx: &ReducerContext) {
-    match EntityHandle::from_player_identity(ctx) {
+    match Player::find(ctx) {
         None => {
             log::debug!("Disconnected {} but cannot find any player.", ctx.sender);
         }
@@ -263,10 +268,11 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
 
 #[reducer]
 pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
+    match Player::find(ctx) {
         Some(p) => {
-            if p.can_target_other(target_entity_id, action_id) {
-                p.set_queued_action_state(action_id, target_entity_id);
+            if let Some(mut a) = ActorArchetype::from_entity_id(ctx, p.entity_id) {
+                a.action_state
+                    .set_queued_action_state(action_id, target_entity_id);
                 Ok(())
             } else {
                 Err("Invalid target for the given action.".to_string())
@@ -278,11 +284,13 @@ pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Resul
 
 #[reducer]
 pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
+    match Player::find(ctx).and_then(|p| ActorArchetype::from_entity_id(ctx, p.entity_id)) {
         Some(p) => {
-            p.set_target(target_entity_id);
-            // TODO Only update for the given player and target.
-            action_option_system(ctx);
+            log::debug!(
+                "Tried to set target {} for actor: {:?}",
+                target_entity_id,
+                p
+            );
             Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
@@ -291,9 +299,9 @@ pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String>
 
 #[reducer]
 pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
+    match Player::find(ctx).and_then(|p| ActorArchetype::from_entity_id(ctx, p.entity_id)) {
         Some(p) => {
-            p.delete_target();
+            log::debug!("Tried to delete target from actor: {:?}", p);
             Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
@@ -302,13 +310,10 @@ pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
-    if let Some(p) = ctx
-        .db
-        .player_controller_components()
-        .identity()
-        .find(ctx.sender)
+    if let Some(a) =
+        Player::find(ctx).and_then(|p| ActorArchetype::from_entity_id(ctx, p.entity_id))
     {
-        ctx.db.observer_components().entity_id().delete(p.entity_id);
+        log::debug!("Tried to consume observations for actor: {:?}", a);
         Ok(())
     } else {
         Err("Cannot consume observer events without a player controller component.".to_string())
@@ -317,7 +322,13 @@ pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Result<(), String> {
-    EntityHandle::from_id(ctx, entity_id).add_trait(trait_name);
+    if let Some(mut a) = ActorArchetype::from_entity_id(ctx, entity_id) {
+        a.mut_traits()
+            .trait_ids
+            .append(&mut Trait::names_to_ids(ctx, &[trait_name]));
+        a.update(ctx);
+        FlagComponent::insert_traits_stat_block_dirty_flag_component(ctx, entity_id);
+    }
 
     Ok(())
 }
@@ -381,6 +392,10 @@ pub fn event_resolve_system(ctx: &ReducerContext) {
         ctx.db.early_events().id().delete(event.id);
     }
 
+    // WIP Split the different event timings and apply other systems in the middle.
+    // Apply stat updates between early and middle events.
+    // Apply interruptions between middle and late events.
+
     for event in ctx.db.middle_events().iter() {
         event.resolve(ctx);
         ctx.db.middle_events().id().delete(event.id);
@@ -393,187 +408,142 @@ pub fn event_resolve_system(ctx: &ReducerContext) {
 }
 
 pub fn hp_system(ctx: &ReducerContext) {
-    for mut hp_component in ctx.db.hp_components().iter() {
-        hp_component.hp = max(
+    for mut a in ctx.db.actor_archetypes().iter() {
+        let hp = a.mut_hp();
+        if hp.hp >= 0
+            && hp.hp <= hp.mhp
+            && hp.accumulated_damage == 0
+            && hp.accumulated_healing == 0
+        {
+            continue;
+        }
+
+        hp.hp = max(
             0,
             min(
-                hp_component.mhp,
-                hp_component.hp + hp_component.accumulated_healing
-                    - hp_component.accumulated_damage,
+                hp.mhp,
+                hp.hp + hp.accumulated_healing - hp.accumulated_damage,
             ),
         );
-        hp_component.accumulated_healing = 0;
-        hp_component.accumulated_damage = 0;
-        ctx.db.hp_components().entity_id().update(hp_component);
+        hp.accumulated_healing = 0;
+        hp.accumulated_damage = 0;
+
+        a.update(ctx);
     }
 }
 
 pub fn ep_system(ctx: &ReducerContext) {
-    for mut ep_component in ctx.db.ep_components().iter() {
-        ep_component.ep = max(0, min(ep_component.mep, ep_component.ep));
-        ctx.db.ep_components().entity_id().update(ep_component);
+    for mut a in ctx.db.actor_archetypes().iter() {
+        let ep = a.mut_ep();
+        if ep.ep >= 0 && ep.ep <= ep.mep {
+            continue;
+        }
+
+        ep.ep = max(0, min(ep.mep, ep.ep));
+
+        a.update(ctx);
     }
 }
 
 pub fn shift_queued_action_system(ctx: &ReducerContext) {
-    for q in ctx.db.queued_action_state_components().iter() {
-        let e = EntityHandle::from_id(ctx, q.entity_id);
-        if e.action_state_component().is_none() {
-            let e = e.shift_queued_action_state();
-            if let Some(a) = e.action_state_component() {
+    for mut a in ctx.db.actor_archetypes().iter() {
+        if a.action_state().action_state.is_none() && a.action_state().queued_action_state.is_some()
+        {
+            a.mut_action_state().shift_queued_action_state();
+            if let Some(ref state) = a.action_state().action_state {
                 ctx.db.observable_events().insert(EntityEvent {
                     id: 0,
-                    event_type: EventType::StartAction(a.action_id),
-                    owner_entity_id: a.entity_id,
-                    target_entity_id: a.target_entity_id,
+                    event_type: EventType::StartAction(state.action_id),
+                    owner_entity_id: a.entity_id(),
+                    target_entity_id: state.target_entity_id,
                     time: ctx.timestamp,
                 });
             }
+            a.update(ctx);
         }
     }
 }
 
 pub fn action_system(ctx: &ReducerContext) {
-    for mut action_state in ctx.db.action_state_components().iter() {
-        let entity_id = action_state.entity_id;
-        let action_handle = ActionHandle::from_id(ctx, action_state.action_id);
-
-        let effect = action_handle.effect(action_state.sequence_index);
-        if let Some(ref effect) = effect {
-            match effect {
-                ActionEffect::Buff(_) => {
-                    EntityEvent::emit_early(
-                        ctx,
-                        entity_id,
-                        EventType::ActionEffect(effect.to_owned()),
-                        action_state.target_entity_id,
-                    );
-                }
-                ActionEffect::Attack(damage) => {
-                    let attack = ctx
-                        .db
-                        .attack_components()
-                        .entity_id()
-                        .find(entity_id)
-                        .map(|c| c.attack)
-                        .unwrap_or(0);
-                    let target_defense = ctx
-                        .db
-                        .hp_components()
-                        .entity_id()
-                        .find(action_state.target_entity_id)
-                        .map(|c| c.defense)
-                        .unwrap_or(0);
-                    EntityEvent::emit_middle(
-                        ctx,
-                        entity_id,
-                        EventType::ActionEffect(ActionEffect::Attack(max(
-                            0,
-                            damage + attack - target_defense,
-                        ))),
-                        action_state.target_entity_id,
-                    );
-                }
-                ActionEffect::Heal(_) => {
-                    EntityEvent::emit_middle(
-                        ctx,
-                        entity_id,
-                        EventType::ActionEffect(effect.to_owned()),
-                        action_state.target_entity_id,
-                    );
-                }
-                _ => {
-                    EntityEvent::emit_late(
-                        ctx,
-                        entity_id,
-                        EventType::ActionEffect(effect.to_owned()),
-                        action_state.target_entity_id,
-                    );
-                }
-            }
-        }
-
-        action_state.sequence_index += 1;
-        let new_sequence_index = action_state.sequence_index;
-
-        ctx.db
-            .action_state_components()
-            .entity_id()
-            .update(action_state);
-
-        let effect = action_handle.effect(new_sequence_index);
-        if effect.is_none() {
-            // TODO Emit event for finished action.
-            ctx.db
-                .action_state_components()
-                .entity_id()
-                .delete(entity_id);
-        }
-    }
-}
-
-pub fn target_validation_system(ctx: &ReducerContext) {
-    for target_component in ctx.db.target_components().iter() {
-        let e = EntityHandle::from_id(ctx, target_component.entity_id);
-        let t = EntityHandle::from_id(ctx, target_component.target_entity_id);
-        let is_valid = match t.location() {
-            None => false,
-            Some(tl) => {
-                tl == e.entity_id
-                    || match e.location() {
-                        None => false,
-                        Some(el) => tl == el,
-                    }
-            }
+    for mut a in ctx.db.actor_archetypes().iter() {
+        let t = if let Some(t) = a
+            .action_state()
+            .action_state
+            .clone()
+            .and_then(|state| ActorArchetype::from_entity_id(ctx, state.target_entity_id))
+        {
+            t
+        } else {
+            continue;
         };
+        let entity_id = a.entity_id();
+        let attack = a.attack().attack;
+        let c = a.mut_action_state();
+        if let Some(ref action_state) = c.action_state {
+            let action_handle = ActionHandle::from_id(ctx, action_state.action_id);
 
-        if !is_valid {
-            e.delete_target();
-        }
-    }
-}
-
-pub fn action_option_system(ctx: &ReducerContext) {
-    for action_option_component in ctx.db.action_options_components().iter() {
-        ctx.db
-            .action_options_components()
-            .delete(action_option_component);
-    }
-    for location_component in ctx.db.location_components().iter() {
-        let mut e = EntityHandle::from_id(ctx, location_component.entity_id);
-        for other_entity_id in match e.target() {
-            None => vec![e.entity_id],
-            Some(target) => {
-                if e.entity_id == target {
-                    vec![e.entity_id]
-                } else {
-                    vec![e.entity_id, target]
+            let effect = action_handle.effect(c.sequence_index);
+            if let Some(ref effect) = effect {
+                match effect {
+                    ActionEffect::Buff(_) => {
+                        EntityEvent::emit_early(
+                            ctx,
+                            entity_id,
+                            EventType::ActionEffect(effect.to_owned()),
+                            action_state.target_entity_id,
+                        );
+                    }
+                    ActionEffect::Attack(damage) => {
+                        let target_defense = t.hp().defense;
+                        EntityEvent::emit_middle(
+                            ctx,
+                            entity_id,
+                            EventType::ActionEffect(ActionEffect::Attack(max(
+                                0,
+                                damage + attack - target_defense,
+                            ))),
+                            action_state.target_entity_id,
+                        );
+                    }
+                    ActionEffect::Heal(_) => {
+                        EntityEvent::emit_middle(
+                            ctx,
+                            entity_id,
+                            EventType::ActionEffect(effect.to_owned()),
+                            action_state.target_entity_id,
+                        );
+                    }
+                    _ => {
+                        EntityEvent::emit_late(
+                            ctx,
+                            entity_id,
+                            EventType::ActionEffect(effect.to_owned()),
+                            action_state.target_entity_id,
+                        );
+                    }
                 }
             }
-        } {
-            for action_id in e.actions() {
-                if e.can_target_other(other_entity_id, action_id) {
-                    e = e.add_action_option(action_id, other_entity_id);
-                }
-            }
-        }
-    }
-}
 
-pub fn entity_prominence_system(ctx: &ReducerContext) {
-    for p in ctx.db.entity_prominence_components().iter() {
-        ctx.db.entity_prominence_components().delete(p);
-    }
-    for entity in ctx.db.entities().iter() {
-        EntityHandle::from_id(ctx, entity.id).generate_prominence();
+            c.sequence_index += 1;
+            let new_sequence_index = c.sequence_index;
+
+            let effect = action_handle.effect(new_sequence_index);
+            if effect.is_none() {
+                // TODO Emit event for finished action.
+                a.action_state.action_state = None;
+            }
+
+            a.update(ctx);
+        }
     }
 }
 
 pub fn entity_deactivation_system(ctx: &ReducerContext) {
+    // WIP Generate a method instead of entity_deactivation_timer_components
     for t in ctx.db.entity_deactivation_timer_components().iter() {
         if t.timestamp.le(&ctx.timestamp) {
-            EntityHandle::from_id(ctx, t.entity_id).deactivate();
-            ctx.db.entity_deactivation_timer_components().delete(t);
+            Entity::find_active(ctx, t.entity_id).map(|e| e.deactivate(ctx));
+            TimerComponent::delete_entity_deactivation_timer_component(ctx, t.entity_id);
         }
     }
 }
@@ -581,41 +551,30 @@ pub fn entity_deactivation_system(ctx: &ReducerContext) {
 pub fn entity_stats_system(ctx: &ReducerContext) {
     for f in ctx.db.traits_stat_block_dirty_flag_components().iter() {
         log::debug!("Entity {} is computing traits stat block.", f.entity_id);
-        if let Some(c) = ctx.db.traits_components().entity_id().find(f.entity_id) {
+        // WIP Add a method to update the TraitsComponent
+        if let Some(mut a) = ActorArchetype::from_entity_id(ctx, f.entity_id) {
             let mut stat_block = StatBlock::default();
-            for id in c.trait_ids {
-                if let Some(t) = ctx.db.traits().id().find(id) {
-                    stat_block.add(t.stat_block);
+            for id in a.traits().trait_ids.iter() {
+                if let Some(t) = Trait::find(ctx, *id) {
+                    stat_block.add(&t.stat_block);
                 }
             }
 
-            EntityHandle::from_id(ctx, f.entity_id)
-                .set_traits_stat_block_cache(stat_block)
-                .trigger_total_stat_block_dirty_flag();
+            a.mut_traits().stat_block_cache = stat_block;
         }
     }
 
     for f in ctx.db.total_stat_block_dirty_flag_components().iter() {
         log::debug!("Entity {} is computing total stat block.", f.entity_id);
-        let mut stat_block = ctx
-            .db
-            .baseline_components()
-            .entity_id()
-            .find(f.entity_id)
-            .and_then(|b| ctx.db.baselines().id().find(b.baseline_id))
-            .map(|b| b.stat_block)
-            .unwrap_or_else(|| StatBlock::default());
+        if let Some(a) = ActorArchetype::from_entity_id(ctx, f.entity_id) {
+            let mut stat_block = Baseline::find(ctx, a.baseline().baseline_id)
+                .map(|b| b.stat_block)
+                .unwrap_or_else(|| StatBlock::default());
 
-        if let Some(t) = ctx
-            .db
-            .traits_stat_block_cache_components()
-            .entity_id()
-            .find(f.entity_id)
-        {
-            stat_block.add(t.stat_block);
+            stat_block.add(&a.traits().stat_block_cache);
+
+            a.apply_stat_block(stat_block);
         }
-
-        EntityHandle::from_id(ctx, f.entity_id).apply_stat_block(stat_block);
     }
 }
 
@@ -626,9 +585,6 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     hp_system(ctx);
     ep_system(ctx);
     shift_queued_action_system(ctx);
-    target_validation_system(ctx);
-    action_option_system(ctx);
-    entity_prominence_system(ctx);
     entity_deactivation_system(ctx);
     entity_stats_system(ctx);
     observation_system(ctx);

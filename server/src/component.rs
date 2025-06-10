@@ -134,6 +134,7 @@ pub struct TraitsComponent {
     #[primary_key]
     pub entity_id: u64,
     pub trait_ids: Vec<u64>,
+    pub stat_block_cache: StatBlock,
 }
 
 // TODO Add StatBlock caches for equipment and status effects.
@@ -186,6 +187,12 @@ pub struct TargetComponent {
     pub target_entity_id: u64,
 }
 
+#[derive(Debug, Default, Clone, SpacetimeType)]
+pub struct ActionState {
+    pub target_entity_id: u64,
+    pub action_id: u64,
+}
+
 #[table(name = queued_action_state_components, public)]
 #[table(name = action_state_components, public)]
 #[derive(Debug, Default, Clone)]
@@ -193,9 +200,23 @@ pub struct TargetComponent {
 pub struct ActionStateComponent {
     #[primary_key]
     pub entity_id: u64,
-    pub target_entity_id: u64,
-    pub action_id: u64,
     pub sequence_index: i32,
+    pub action_state: Option<ActionState>,
+    pub queued_action_state: Option<ActionState>,
+}
+
+impl ActionStateComponent {
+    pub fn set_queued_action_state(&mut self, action_id: u64, target_entity_id: u64) {
+        self.queued_action_state = Some(ActionState {
+            target_entity_id,
+            action_id,
+        });
+    }
+    pub fn shift_queued_action_state(&mut self) {
+        self.sequence_index = 0;
+        self.action_state = self.queued_action_state.clone();
+        self.queued_action_state = None;
+    }
 }
 
 #[table(name = actions_components, public)]
