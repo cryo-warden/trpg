@@ -19,16 +19,17 @@ use crate::{
         target_components, total_stat_block_dirty_flag_components, traits_components,
         traits_stat_block_cache_components, traits_stat_block_dirty_flag_components, ActionHotkey,
         ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
-        ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent, AttackComponent,
-        BaselineComponent, EntityProminenceComponent, EpComponent, FlagComponent, HpComponent,
-        LocationComponent, LocationMapComponent, MapComponent, NameComponent, PathComponent,
-        PlayerControllerComponent, RngSeedComponent, StatBlockCacheComponent, TargetComponent,
-        TraitsComponent,
+        ActionsComponent, ActionsComponentEntity, AllegianceComponent, AppearanceFeaturesComponent,
+        AppearanceFeaturesComponentEntity, AttackComponent, AttackComponentEntity,
+        BaselineComponent, EntityProminenceComponent, EpComponent, EpComponentEntity,
+        FlagComponent, HpComponent, HpComponentEntity, LocationComponent, LocationMapComponent,
+        MapComponent, NameComponent, PathComponent, PlayerControllerComponent, RngSeedComponent,
+        StatBlockCacheComponent, TargetComponent, TraitsComponent, TraitsComponentEntity,
     },
     stat_block::{baselines, traits, StatBlock},
 };
 
-use archetype::EntityWrap;
+use archetype::{entity, EntityWrap};
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ComponentSet {
@@ -223,31 +224,36 @@ pub trait StatBlockApplier {
     fn apply_stat_block(self, stat_block: StatBlock) -> Self;
 }
 
-impl<T: EntityWrap> StatBlockApplier for T {
+impl<
+        T: TraitsComponentEntity
+            + HpComponentEntity
+            + EpComponentEntity
+            + AttackComponentEntity
+            + AppearanceFeaturesComponentEntity
+            + ActionsComponentEntity,
+    > StatBlockApplier for T
+{
     fn apply_stat_block(self, stat_block: StatBlock) -> Self {
         let hp = HpComponent {
             mhp: stat_block.mhp,
             defense: stat_block.defense,
-            ..self.hp().map(|c| c.clone()).unwrap_or_default()
+            ..*self.hp()
         };
         let ep = EpComponent {
             mep: stat_block.mep,
-            ..self.ep().map(|c| c.clone()).unwrap_or_default()
+            ..*self.ep()
         };
         let attack = AttackComponent {
             attack: stat_block.attack,
-            ..self.attack().map(|c| c.clone()).unwrap_or_default()
+            ..*self.attack()
         };
         let appearance_features = AppearanceFeaturesComponent {
             appearance_feature_ids: stat_block.appearance_feature_ids,
-            ..self
-                .appearance_features()
-                .map(|c| c.clone())
-                .unwrap_or_default()
+            ..*self.appearance_features()
         };
         let actions = ActionsComponent {
             action_ids: stat_block.additive_action_ids,
-            ..self.actions().map(|c| c.clone()).unwrap_or_default()
+            ..*self.actions()
         };
 
         self.set_hp(hp)
@@ -275,17 +281,27 @@ impl<T: EntityWrap> RngSeeded for T {
 #[table(name = actor_archetypes, public)]
 #[derive(Debug, Clone, Default, Builder, EntityWrap)]
 #[entity_wrap(table = actor_archetypes)]
+#[entity]
 pub struct ActorArchetype {
     #[primary_key]
     pub entity_id: EntityId,
+    #[component]
     pub actions: ActionsComponent,
+    #[component]
     pub allegiance: AllegianceComponent,
+    #[component]
     pub appearance_features: AppearanceFeaturesComponent,
+    #[component]
     pub attack: AttackComponent,
+    #[component]
     pub baseline: BaselineComponent,
+    #[component]
     pub ep: EpComponent,
+    #[component]
     pub hp: HpComponent,
+    #[component]
     pub location: LocationComponent,
+    #[component]
     pub traits: TraitsComponent,
 }
 
@@ -347,6 +363,7 @@ impl ActorArchetype {
 #[table(name = allegiance_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = allegiance_archetypes)]
+#[entity]
 pub struct AllegianceArchetype {
     #[primary_key]
     pub entity_id: EntityId,
@@ -362,10 +379,13 @@ impl AllegianceArchetype {
 #[table(name = map_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = map_archetypes)]
+#[entity]
 pub struct MapArchetype {
     #[primary_key]
     pub entity_id: EntityId,
+    #[component]
     pub map: MapComponent,
+    #[component]
     pub rng_seed: RngSeedComponent,
 }
 
@@ -404,11 +424,15 @@ impl MapArchetype {
 #[table(name = path_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = path_archetypes)]
+#[entity]
 pub struct PathArchetype {
     #[primary_key]
     pub entity_id: EntityId,
+    #[component]
     pub appearance_features: AppearanceFeaturesComponent,
+    #[component]
     pub location: LocationComponent,
+    #[component]
     pub path: PathComponent,
 }
 
@@ -440,10 +464,13 @@ impl PathArchetype {
 #[table(name = room_archetypes, public)]
 #[derive(Debug, Clone, Builder, EntityWrap)]
 #[entity_wrap(table = room_archetypes)]
+#[entity]
 pub struct RoomArchetype {
     #[primary_key]
     pub entity_id: EntityId,
+    #[component]
     pub appearance_features: AppearanceFeaturesComponent,
+    #[component]
     pub location_map: LocationMapComponent,
 }
 

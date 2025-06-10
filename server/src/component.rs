@@ -1,3 +1,4 @@
+use archetype::component;
 use archetype::flag_component;
 use archetype::timer_component;
 use spacetimedb::table;
@@ -89,6 +90,7 @@ pub struct PlayerControllerComponent {
 
 #[table(name = location_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(location)]
 pub struct LocationComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -98,6 +100,7 @@ pub struct LocationComponent {
 
 #[table(name = path_components, public)]
 #[derive(Debug, Clone)]
+#[component(path)]
 pub struct PathComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -107,6 +110,7 @@ pub struct PathComponent {
 
 #[table(name = allegiance_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(allegiance)]
 pub struct AllegianceComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -116,6 +120,7 @@ pub struct AllegianceComponent {
 
 #[table(name = baseline_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(baseline)]
 pub struct BaselineComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -124,6 +129,7 @@ pub struct BaselineComponent {
 
 #[table(name = traits_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(traits)]
 pub struct TraitsComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -141,6 +147,7 @@ pub struct StatBlockCacheComponent {
 
 #[table(name = attack_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(attack)]
 pub struct AttackComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -149,6 +156,7 @@ pub struct AttackComponent {
 
 #[table(name = hp_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(hp)]
 pub struct HpComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -161,6 +169,7 @@ pub struct HpComponent {
 
 #[table(name = ep_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(ep)]
 pub struct EpComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -170,6 +179,7 @@ pub struct EpComponent {
 
 #[table(name = target_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(target)]
 pub struct TargetComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -179,6 +189,7 @@ pub struct TargetComponent {
 #[table(name = queued_action_state_components, public)]
 #[table(name = action_state_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(action_state)]
 pub struct ActionStateComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -189,6 +200,7 @@ pub struct ActionStateComponent {
 
 #[table(name = actions_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(actions)]
 pub struct ActionsComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -203,6 +215,7 @@ pub struct ActionHotkey {
 
 #[table(name = action_hotkeys_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(action_hotkeys)]
 pub struct ActionHotkeysComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -225,6 +238,7 @@ pub struct ActionOptionsComponent {
 
 #[table(name = entity_prominence_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(entity_prominence)]
 pub struct EntityProminenceComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -233,6 +247,7 @@ pub struct EntityProminenceComponent {
 
 #[table(name = rng_seed_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(rng_seed)]
 pub struct RngSeedComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -241,6 +256,7 @@ pub struct RngSeedComponent {
 
 #[table(name = location_map_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(location_map)]
 pub struct LocationMapComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -262,6 +278,7 @@ impl Default for MapLayout {
 #[table(name = realized_map_components, public)]
 #[table(name = unrealized_map_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(map)]
 pub struct MapComponent {
     #[primary_key]
     pub entity_id: u64,
@@ -283,6 +300,7 @@ pub struct ObserverComponent {
 
 #[table(name = appearance_features_components, public)]
 #[derive(Debug, Default, Clone)]
+#[component(appearance_features)]
 pub struct AppearanceFeaturesComponent {
     #[primary_key]
     pub entity_id: u64,
