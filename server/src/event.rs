@@ -73,6 +73,7 @@ impl EntityEvent {
         });
     }
 
+    // WIP For each effect, create a separate method with a generic trait bound. Route to the proper version using an enum.
     pub fn resolve(&self, ctx: &ReducerContext) {
         let target_entity_id = self.target_entity_id;
         log::debug!("resolve event {} of type {:?}", self.id, self.event_type);

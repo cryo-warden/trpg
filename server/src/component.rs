@@ -11,12 +11,20 @@ use spacetimedb::Timestamp;
 use crate::entity::EntityId;
 use crate::stat_block::StatBlock;
 
+#[derive(Debug, Default, Clone, SpacetimeType)]
+pub struct ActionHotkey {
+    pub action_id: u64,
+    pub character_code: u32,
+}
+
 #[table(name = players, public)]
 #[derive(Debug, Default, Clone)]
 pub struct Player {
     #[primary_key]
     pub identity: Identity,
+    #[unique]
     pub entity_id: u64,
+    pub action_hotkeys: Vec<ActionHotkey>,
 }
 
 #[allow(dead_code)]
@@ -28,6 +36,7 @@ impl Player {
         ctx.db.players().insert(Player {
             identity: ctx.sender,
             entity_id,
+            action_hotkeys: vec![],
         })
     }
 }
@@ -70,15 +79,16 @@ impl Default for TimerComponent {
     }
 }
 
-#[table(name = name_components, public)]
+#[table(name = entity_names, public)]
 #[derive(Debug, Default, Clone)]
-pub struct NameComponent {
+pub struct EntityName {
     #[primary_key]
     pub entity_id: u64,
     #[unique]
     pub name: String,
 }
 
+// WIP
 #[table(name = player_controller_components, public)]
 #[derive(Debug, Default, Clone)]
 pub struct PlayerControllerComponent {
@@ -88,6 +98,7 @@ pub struct PlayerControllerComponent {
     pub identity: Identity,
 }
 
+// WIP
 #[table(name = location_components, public)]
 #[derive(Debug, Default, Clone)]
 #[component(location)]
@@ -108,50 +119,28 @@ pub struct PathComponent {
     pub destination_entity_id: u64,
 }
 
-#[table(name = allegiance_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(allegiance)]
 pub struct AllegianceComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    #[index(btree)]
     pub allegiance_entity_id: u64,
 }
 
-#[table(name = baseline_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(baseline)]
 pub struct BaselineComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub baseline_id: u64,
 }
 
-#[table(name = traits_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(traits)]
 pub struct TraitsComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub trait_ids: Vec<u64>,
     pub stat_block_cache: StatBlock,
 }
 
-// TODO Add StatBlock caches for equipment and status effects.
-#[table(name = traits_stat_block_cache_components, public)]
-#[derive(Debug, Default, Clone)]
-pub struct StatBlockCacheComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub stat_block: StatBlock,
-}
-
-#[table(name = attack_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(attack)]
 pub struct AttackComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub attack: i32,
 }
 
@@ -168,23 +157,11 @@ pub struct HpComponent {
     pub accumulated_healing: i32,
 }
 
-#[table(name = ep_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(ep)]
 pub struct EpComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub ep: i32,
     pub mep: i32,
-}
-
-#[table(name = target_components, public)]
-#[derive(Debug, Default, Clone)]
-#[component(target)]
-pub struct TargetComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub target_entity_id: u64,
 }
 
 #[derive(Debug, Default, Clone, SpacetimeType)]
@@ -193,13 +170,9 @@ pub struct ActionState {
     pub action_id: u64,
 }
 
-#[table(name = queued_action_state_components, public)]
-#[table(name = action_state_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(action_state)]
 pub struct ActionStateComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub sequence_index: i32,
     pub action_state: Option<ActionState>,
     pub queued_action_state: Option<ActionState>,
@@ -219,28 +192,10 @@ impl ActionStateComponent {
     }
 }
 
-#[table(name = actions_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(actions)]
 pub struct ActionsComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub action_ids: Vec<u64>,
-}
-
-#[derive(Debug, Default, Clone, SpacetimeType)]
-pub struct ActionHotkey {
-    pub action_id: u64,
-    pub character_code: u32,
-}
-
-#[table(name = action_hotkeys_components, public)]
-#[derive(Debug, Default, Clone)]
-#[component(action_hotkeys)]
-pub struct ActionHotkeysComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub action_hotkeys: Vec<ActionHotkey>,
 }
 
 #[derive(Debug, Default, Clone, SpacetimeType)]
@@ -249,38 +204,15 @@ pub struct ActionOption {
     pub target_entity_id: u64,
 }
 
-#[table(name = action_options_components, public)]
-#[derive(Debug, Default, Clone)]
-pub struct ActionOptionsComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub action_options: Vec<ActionOption>,
-}
-
-#[table(name = entity_prominence_components, public)]
-#[derive(Debug, Default, Clone)]
-#[component(entity_prominence)]
-pub struct EntityProminenceComponent {
-    #[primary_key]
-    pub entity_id: u64,
-    pub prominence: i32,
-}
-
-#[table(name = rng_seed_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(rng_seed)]
 pub struct RngSeedComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub rng_seed: u64,
 }
 
-#[table(name = location_map_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(location_map)]
 pub struct LocationMapComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub map_entity_id: u64,
 }
 
@@ -296,13 +228,9 @@ impl Default for MapLayout {
     }
 }
 
-#[table(name = realized_map_components, public)]
-#[table(name = unrealized_map_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(map)]
 pub struct MapComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub map_theme_id: u64,
     pub map_layout: MapLayout,
     pub extra_room_count: u8,
@@ -310,6 +238,7 @@ pub struct MapComponent {
     pub loop_count: u8,
 }
 
+// WIP Rename and move to show association with Player.
 #[table(name = observer_components, public)]
 #[derive(Debug, Default, Clone)]
 pub struct ObserverComponent {
@@ -319,11 +248,8 @@ pub struct ObserverComponent {
     pub observable_event_id: u64,
 }
 
-#[table(name = appearance_features_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(appearance_features)]
 pub struct AppearanceFeaturesComponent {
-    #[primary_key]
-    pub entity_id: u64,
     pub appearance_feature_ids: Vec<u64>,
 }

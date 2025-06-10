@@ -289,37 +289,21 @@ impl ActorArchetype {
     ) -> Self {
         Self {
             entity_id: 0,
-            actions: ActionsComponent {
-                entity_id: 0,
-                action_ids: vec![],
-            },
+            actions: ActionsComponent { action_ids: vec![] },
             action_state: ActionStateComponent {
-                entity_id: 0,
                 action_state: None,
                 sequence_index: 0,
                 queued_action_state: None,
             },
             allegiance: AllegianceComponent {
-                entity_id: 0,
                 allegiance_entity_id,
             },
             appearance_features: AppearanceFeaturesComponent {
-                entity_id: 0,
                 appearance_feature_ids: vec![],
             },
-            attack: AttackComponent {
-                entity_id: 0,
-                attack: 5,
-            },
-            baseline: BaselineComponent {
-                entity_id: 0,
-                baseline_id,
-            },
-            ep: EpComponent {
-                entity_id: 0,
-                ep: 5,
-                mep: 5,
-            },
+            attack: AttackComponent { attack: 5 },
+            baseline: BaselineComponent { baseline_id },
+            ep: EpComponent { ep: 5, mep: 5 },
             hp: HpComponent {
                 entity_id: 0,
                 hp: 5,
@@ -333,7 +317,6 @@ impl ActorArchetype {
                 location_entity_id,
             },
             traits: TraitsComponent {
-                entity_id: 0,
                 trait_ids,
                 stat_block_cache: StatBlock::default(),
             },
@@ -429,7 +412,6 @@ impl PathArchetype {
         Self {
             entity_id: 0,
             appearance_features: AppearanceFeaturesComponent {
-                entity_id: 0,
                 appearance_feature_ids,
             },
             location: LocationComponent {
@@ -462,13 +444,9 @@ impl RoomArchetype {
         Self {
             entity_id: 0,
             appearance_features: AppearanceFeaturesComponent {
-                entity_id: 0,
                 appearance_feature_ids,
             },
-            location_map: LocationMapComponent {
-                entity_id: 0,
-                map_entity_id,
-            },
+            location_map: LocationMapComponent { map_entity_id },
         }
     }
 }

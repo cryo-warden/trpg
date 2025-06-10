@@ -151,17 +151,13 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     let map_archetype = MapArchetype {
         entity_id: 0,
         map: MapComponent {
-            entity_id: 0,
             loop_count: 0, // TODO Add loops.
             main_room_count: 10,
             map_layout: MapLayout::Path,
             map_theme_id: 0, // TODO Add map_themes table.
             extra_room_count: 10,
         },
-        rng_seed: RngSeedComponent {
-            entity_id: 0,
-            rng_seed: 0,
-        },
+        rng_seed: RngSeedComponent { rng_seed: 0 },
     }
     .insert(ctx);
 
