@@ -10,10 +10,11 @@ use spacetimedb::{
 use crate::{
     appearance::AppearanceFeatureContext,
     component::{
-        ActionStateComponent, ActionsComponent, ActionsComponentEntity, AllegianceComponent,
-        AllegianceComponentEntity, AppearanceFeaturesComponent, AppearanceFeaturesComponentEntity,
-        AttackComponent, AttackComponentEntity, BaselineComponent, EpComponent, EpComponentEntity,
-        HpComponent, HpComponentEntity, LocationComponent, LocationMapComponent, MapComponent,
+        entity_names, ActionStateComponent, ActionsComponent, ActionsComponentEntity,
+        AllegianceComponent, AllegianceComponentEntity, AppearanceFeaturesComponent,
+        AppearanceFeaturesComponentEntity, AttackComponent, AttackComponentEntity,
+        BaselineComponent, EntityName, EpComponent, EpComponentEntity, HpComponent,
+        HpComponentEntity, LocationComponent, LocationMapComponent, MapComponent,
         MapComponentEntity, PathComponent, RngSeedComponent, RngSeedComponentEntity,
         TraitsComponent,
     },
@@ -36,11 +37,40 @@ pub trait WithEntityId: Sized + Clone {
     fn entity_id(&self) -> EntityId;
     fn archetype(&self) -> Archetype;
     fn from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
+    fn iter_table(ctx: &ReducerContext) -> impl Iterator<Item = Self>;
     fn inactive_from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self>;
     fn update(self, ctx: &ReducerContext) -> Self;
     fn insert(self, ctx: &ReducerContext) -> Self;
     fn activate(self, ctx: &ReducerContext) -> Self;
     fn deactivate(self, ctx: &ReducerContext) -> Self;
+}
+
+#[allow(dead_code)]
+pub trait Nameable: WithEntityId {
+    fn get_name(&self, ctx: &ReducerContext) -> Option<String>;
+    fn set_name(self, ctx: &ReducerContext, name: &str) -> Self;
+}
+
+impl<T: WithEntityId> Nameable for T {
+    fn get_name(&self, ctx: &ReducerContext) -> Option<String> {
+        ctx.db
+            .entity_names()
+            .entity_id()
+            .find(self.entity_id())
+            .map(|n| n.name)
+    }
+    fn set_name(self, ctx: &ReducerContext, name: &str) -> Self {
+        if let Some(mut n) = ctx.db.entity_names().entity_id().find(self.entity_id()) {
+            n.name = name.to_string();
+            ctx.db.entity_names().entity_id().update(n);
+        } else {
+            ctx.db.entity_names().insert(EntityName {
+                entity_id: self.entity_id(),
+                name: name.to_string(),
+            });
+        }
+        self
+    }
 }
 
 #[table(name = inactive_entities, public)]
@@ -123,6 +153,9 @@ impl WithEntityId for Entity {
     }
     fn inactive_from_entity_id(ctx: &ReducerContext, entity_id: EntityId) -> Option<Self> {
         ctx.db.inactive_entities().id().find(entity_id)
+    }
+    fn iter_table(ctx: &ReducerContext) -> impl Iterator<Item = Self> {
+        ctx.db.entities().iter()
     }
     fn insert(self, ctx: &ReducerContext) -> Self {
         match self.archetype {

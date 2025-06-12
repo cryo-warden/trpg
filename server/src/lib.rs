@@ -3,10 +3,9 @@ use std::cmp::{max, min};
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
 use component::{
-    entity_deactivation_timer_components, location_components, observer_components,
-    player_controller_components, total_stat_block_dirty_flag_components,
-    traits_stat_block_dirty_flag_components, MapComponent, MapLayout, ObserverComponent,
-    TimerComponent,
+    entity_deactivation_timer_components, observer_components,
+    total_stat_block_dirty_flag_components, traits_stat_block_dirty_flag_components, MapComponent,
+    MapLayout, ObserverComponent, TimerComponent,
 };
 use entity::Entity;
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
@@ -16,8 +15,8 @@ use stat_block::{StatBlock, StatBlockBuilder, StatBlockContext};
 use crate::{
     component::{
         ActionStateComponentEntity, AttackComponentEntity, BaselineComponentEntity,
-        EpComponentEntity, FlagComponent, HpComponentEntity, Player, RngSeedComponent,
-        TraitsComponentEntity,
+        EpComponentEntity, FlagComponent, HpComponentEntity, LocationComponentEntity, Player,
+        RngSeedComponent, TraitsComponentEntity,
     },
     entity::{
         actor_archetypes, ActorArchetype, AllegianceArchetype, EntityId, MapArchetype,
@@ -264,44 +263,12 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
 
 #[reducer]
 pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: EntityId) -> Result<(), String> {
-    match Player::find(ctx) {
-        Some(p) => {
-            if let Some(mut a) = ActorArchetype::from_entity_id(ctx, p.entity_id) {
-                a.action_state
-                    .set_queued_action_state(action_id, target_entity_id);
-                Ok(())
-            } else {
-                Err("Invalid target for the given action.".to_string())
-            }
-        }
-        None => Err("Cannot find a player entity.".to_string()),
-    }
-}
-
-#[reducer]
-pub fn target(ctx: &ReducerContext, target_entity_id: EntityId) -> Result<(), String> {
-    match Player::find(ctx).and_then(|p| ActorArchetype::from_entity_id(ctx, p.entity_id)) {
-        Some(p) => {
-            log::debug!(
-                "Tried to set target {} for actor: {:?}",
-                target_entity_id,
-                p
-            );
-            Ok(())
-        }
-        None => Err("Cannot find a player entity.".to_string()),
-    }
-}
-
-#[reducer]
-pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
-    match Player::find(ctx).and_then(|p| ActorArchetype::from_entity_id(ctx, p.entity_id)) {
-        Some(p) => {
-            log::debug!("Tried to delete target from actor: {:?}", p);
-            Ok(())
-        }
-        None => Err("Cannot find a player entity.".to_string()),
-    }
+    let p = Player::find(ctx).ok_or("Cannot find a player entity.")?;
+    let mut a = ActorArchetype::from_entity_id(ctx, p.entity_id)
+        .ok_or("Invalid target for the given action.")?;
+    a.action_state
+        .set_queued_action_state(action_id, target_entity_id);
+    Ok(())
 }
 
 #[reducer]
@@ -322,14 +289,12 @@ pub fn add_trait(
     entity_id: EntityId,
     trait_name: &str,
 ) -> Result<(), String> {
-    if let Some(mut a) = ActorArchetype::from_entity_id(ctx, entity_id) {
-        a.mut_traits()
-            .trait_ids
-            .append(&mut Trait::names_to_ids(ctx, &[trait_name]));
-        a.update(ctx);
-        FlagComponent::insert_traits_stat_block_dirty_flag_component(ctx, entity_id);
-    }
-
+    let mut a = ActorArchetype::from_entity_id(ctx, entity_id).ok_or("Trait not found.")?;
+    a.mut_traits()
+        .trait_ids
+        .append(&mut Trait::names_to_ids(ctx, &[trait_name]));
+    a.update(ctx);
+    FlagComponent::insert_traits_stat_block_dirty_flag_component(ctx, entity_id);
     Ok(())
 }
 
@@ -351,31 +316,16 @@ pub struct SystemTimer {
 }
 
 pub fn observation_system(ctx: &ReducerContext) {
-    for o in ctx.db.observable_events().iter() {
-        if let Some(l) = ctx
-            .db
-            .location_components()
-            .entity_id()
-            .find(o.target_entity_id)
-        {
-            for l in ctx
-                .db
-                .location_components()
-                .location_entity_id()
-                .filter(l.location_entity_id)
+    for ee in ctx.db.observable_events().iter() {
+        if let Some(l) = ActorArchetype::from_entity_id(ctx, ee.target_entity_id) {
+            // TODO Move filtering into trait implementation to use SpacetimeDB filter.
+            for a in ActorArchetype::iter_table(ctx)
+                .filter(|a| a.location().location_entity_id == l.location().location_entity_id)
             {
-                if ctx
-                    .db
-                    .player_controller_components()
-                    .entity_id()
-                    .find(l.entity_id)
-                    .is_some()
-                {
-                    ctx.db.observer_components().insert(ObserverComponent {
-                        entity_id: l.entity_id,
-                        observable_event_id: o.id,
-                    });
-                }
+                ctx.db.observer_components().insert(ObserverComponent {
+                    entity_id: a.entity_id(),
+                    observable_event_id: ee.id,
+                });
             }
         }
     }

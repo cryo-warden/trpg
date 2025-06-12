@@ -262,6 +262,9 @@ pub fn entity(attr: TokenStream, item: TokenStream) -> TokenStream {
             fn inactive_from_entity_id(ctx: &spacetimedb::ReducerContext, entity_id: EntityId) -> Option<Self> {
                 ctx.db.#inactive_table_name().entity_id().find(entity_id)
             }
+            fn iter_table(ctx: &spacetimedb::ReducerContext) -> impl Iterator<Item = Self> {
+                ctx.db.#table_name().iter()
+            }
             fn update(self, ctx: &spacetimedb::ReducerContext) -> Self {
                 let e = ctx.db.entities().id().update(Entity {
                     id: self.entity_id(),
