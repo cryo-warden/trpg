@@ -13,3 +13,4 @@ spacetimedb = "1.1.2"
 log = "0.4"
 derive_builder = "0.20.2"
 archetype = { path = "../archetype" }
+itertools = "0.14.0"

@@ -9,18 +9,19 @@ use component::{
 };
 use entity::Entity;
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
+use itertools::Itertools;
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{StatBlock, StatBlockBuilder, StatBlockContext};
 
 use crate::{
     component::{
         ActionStateComponentEntity, AttackComponentEntity, BaselineComponentEntity,
-        EpComponentEntity, FlagComponent, HpComponentEntity, LocationComponentEntity, Player,
-        RngSeedComponent, TraitsComponentEntity,
+        EpComponentEntity, FlagComponent, HpComponentEntity, Player, RngSeedComponent,
+        TraitsComponentEntity,
     },
     entity::{
-        actor_archetypes, ActorArchetype, AllegianceArchetype, EntityId, MapArchetype,
-        MapGenerator, StatBlockApplier, WithEntityId,
+        actor_archetypes, ActorArchetype, AllegianceArchetype, EntityId, LocationQuery,
+        MapArchetype, MapGenerator, Query, StatBlockApplier, WithEntityId,
     },
     stat_block::{Baseline, Trait},
 };
@@ -316,14 +317,13 @@ pub struct SystemTimer {
 }
 
 pub fn observation_system(ctx: &ReducerContext) {
+    let lmap = LocationQuery::iter(ctx).into_group_map_by(|a| a.location.location_entity_id);
     for ee in ctx.db.observable_events().iter() {
         if let Some(l) = ActorArchetype::from_entity_id(ctx, ee.target_entity_id) {
             // TODO Move filtering into trait implementation to use SpacetimeDB filter.
-            for a in ActorArchetype::iter_table(ctx)
-                .filter(|a| a.location().location_entity_id == l.location().location_entity_id)
-            {
+            for a in lmap.get(&l.location.location_entity_id).unwrap_or(&vec![]) {
                 ctx.db.observer_components().insert(ObserverComponent {
-                    entity_id: a.entity_id(),
+                    entity_id: a.entity_id,
                     observable_event_id: ee.id,
                 });
             }

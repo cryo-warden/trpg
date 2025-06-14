@@ -21,6 +21,33 @@ use crate::{
     stat_block::StatBlock,
 };
 
+pub trait Query<T> {
+    fn iter(ctx: &ReducerContext) -> impl Iterator<Item = T>;
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct LocationQuery {}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct LocationQueryResult {
+    pub entity_id: EntityId,
+    pub location: LocationComponent,
+}
+
+impl Query<LocationQueryResult> for LocationQuery {
+    fn iter(ctx: &ReducerContext) -> impl Iterator<Item = LocationQueryResult> {
+        ActorArchetype::iter_table(ctx)
+            .map(|a| LocationQueryResult {
+                entity_id: a.entity_id,
+                location: a.location,
+            })
+            .chain(PathArchetype::iter_table(ctx).map(|a| LocationQueryResult {
+                entity_id: a.entity_id,
+                location: a.location,
+            }))
+    }
+}
+
 #[derive(Debug, Clone, Copy, SpacetimeType)]
 pub enum Archetype {
     ActorArchetype,
@@ -344,10 +371,7 @@ impl ActorArchetype {
                 accumulated_damage: 0,
                 accumulated_healing: 0,
             },
-            location: LocationComponent {
-                entity_id: 0,
-                location_entity_id,
-            },
+            location: LocationComponent { location_entity_id },
             traits: TraitsComponent {
                 trait_ids,
                 stat_block_cache: StatBlock::default(),
@@ -446,10 +470,7 @@ impl PathArchetype {
             appearance_features: AppearanceFeaturesComponent {
                 appearance_feature_ids,
             },
-            location: LocationComponent {
-                entity_id: 0,
-                location_entity_id,
-            },
+            location: LocationComponent { location_entity_id },
             path: PathComponent {
                 destination_entity_id,
             },

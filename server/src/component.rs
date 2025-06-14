@@ -88,24 +88,9 @@ pub struct EntityName {
     pub name: String,
 }
 
-// WIP
-#[table(name = player_controller_components, public)]
-#[derive(Debug, Default, Clone)]
-pub struct PlayerControllerComponent {
-    #[primary_key]
-    pub entity_id: EntityId,
-    #[unique]
-    pub identity: Identity,
-}
-
-// WIP
-#[table(name = location_components, public)]
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, SpacetimeType)]
 #[component(location)]
 pub struct LocationComponent {
-    #[primary_key]
-    pub entity_id: EntityId,
-    #[index(btree)]
     pub location_entity_id: EntityId,
 }
 
