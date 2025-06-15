@@ -2,14 +2,17 @@
 extern crate quote;
 #[macro_use]
 extern crate syn;
-
 extern crate proc_macro;
+extern crate proc_macro2;
 
 use proc_macro::TokenStream;
+use quote::quote;
 use syn::{
     Data, DeriveInput, Expr, ExprPath, Fields, Ident, Meta, MetaNameValue, Result,
     parse::{Parse, ParseStream},
 };
+
+use crate::parse_tree::{Ecs, Tokenize};
 
 fn extract_ident_from_type(ty: &syn::Type) -> Option<&syn::Ident> {
     if let syn::Type::Path(type_path) = ty {
@@ -304,4 +307,254 @@ pub fn entity(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     output.into()
+}
+
+#[allow(dead_code)]
+mod parse_tree {
+    use proc_macro2::TokenStream;
+    use quote::{ToTokens, quote};
+    use std::collections::HashMap;
+    use syn::{
+        Error, Ident, Result, Type,
+        parse::{Parse, ParseStream},
+    };
+
+    mod kw {
+        custom_keyword!(components);
+        custom_keyword!(archetype);
+        custom_keyword!(query);
+    }
+
+    pub trait Tokenize {
+        fn tokenize(&self) -> Result<TokenStream>;
+    }
+
+    struct Component {
+        pub name: Ident,
+        pub ty: Type,
+    }
+
+    impl Parse for Component {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let name: syn::Ident = input.parse()?;
+            input.parse::<Token![:]>()?;
+            let ty: syn::Type = input.parse()?;
+            Ok(Self { name, ty })
+        }
+    }
+
+    impl Tokenize for Component {
+        fn tokenize(&self) -> Result<TokenStream> {
+            let Component { name, ty } = self;
+            Ok(quote! {
+              pub #name: #ty,
+            })
+        }
+    }
+
+    impl ToTokens for Component {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            tokens.extend(self.tokenize());
+        }
+    }
+
+    struct ComponentsBlock {
+        pub components: Vec<Component>,
+    }
+
+    impl Parse for ComponentsBlock {
+        fn parse(input: ParseStream) -> Result<Self> {
+            input.parse::<kw::components>()?;
+
+            let content;
+            syn::braced!(content in input);
+
+            let mut components = vec![];
+
+            while !content.is_empty() {
+                let components_punct = content.parse_terminated(Component::parse, Token![,])?;
+                components.extend(components_punct.into_iter());
+            }
+
+            Ok(Self { components })
+        }
+    }
+
+    struct Archetype {
+        pub name: Ident,
+        pub component_names: Vec<Ident>,
+    }
+
+    struct ArchetypeTokenizer<'a>(&'a Archetype, &'a Ecs);
+
+    impl<'a> Tokenize for ArchetypeTokenizer<'a> {
+        fn tokenize(&self) -> Result<TokenStream> {
+            let ArchetypeTokenizer(archetype, ecs) = self;
+            let name = &archetype.name;
+            let component_lines: Vec<TokenStream> = archetype
+                .component_names
+                .iter()
+                .map(|n| ecs.get_component(n)?.tokenize())
+                .collect::<Result<Vec<TokenStream>>>()?;
+            Ok(quote! {
+              pub struct #name {
+                #(#component_lines)*
+              }
+            })
+        }
+    }
+
+    impl<'a> ToTokens for ArchetypeTokenizer<'a> {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            tokens.extend(self.tokenize());
+        }
+    }
+
+    impl Parse for Archetype {
+        fn parse(input: ParseStream) -> Result<Self> {
+            input.parse::<kw::archetype>()?;
+
+            let name: syn::Ident = input.parse()?;
+            let content;
+            syn::braced!(content in input);
+
+            let component_names_punct = content.parse_terminated(Ident::parse, Token![,])?;
+            let component_names = component_names_punct.into_iter().collect();
+
+            Ok(Self {
+                name,
+                component_names,
+            })
+        }
+    }
+
+    struct Query {
+        pub name: Ident,
+        pub component_names: Vec<Ident>,
+    }
+
+    impl Parse for Query {
+        fn parse(input: ParseStream) -> Result<Self> {
+            input.parse::<kw::query>()?;
+
+            let name: syn::Ident = input.parse()?;
+            let content;
+            syn::braced!(content in input);
+
+            let component_names_punct = content.parse_terminated(Ident::parse, Token![,])?;
+            let component_names = component_names_punct.into_iter().collect();
+
+            Ok(Self {
+                name,
+                component_names,
+            })
+        }
+    }
+
+    struct QueryTokenizer<'a>(&'a Query, &'a Ecs);
+
+    impl<'a> Tokenize for QueryTokenizer<'a> {
+        fn tokenize(&self) -> Result<TokenStream> {
+            let QueryTokenizer(archetype, ecs) = self;
+            let name = &archetype.name;
+            let result_name = format_ident!("{}Result", name);
+            let component_lines: Vec<TokenStream> = archetype
+                .component_names
+                .iter()
+                .map(|n| ecs.get_component(n)?.tokenize())
+                .collect::<Result<Vec<TokenStream>>>()?;
+            Ok(quote! {
+              pub struct #name;
+              pub struct #result_name {
+                #(#component_lines)*
+              }
+            })
+        }
+    }
+
+    impl<'a> ToTokens for QueryTokenizer<'a> {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            tokens.extend(self.tokenize());
+        }
+    }
+
+    pub struct Ecs {
+        component_map: HashMap<Ident, Component>,
+        archetypes: Vec<Archetype>,
+        queries: Vec<Query>,
+    }
+
+    impl Ecs {
+        fn get_component(&self, key: &Ident) -> Result<&Component> {
+            self.component_map.get(key).ok_or(Error::new(
+                key.span(),
+                format!("Cannot find component \"{}\".", key),
+            ))
+        }
+    }
+
+    // WIP Output the structs for the archetypes, queries, and query results.
+    // WIP Output the trait for generating each query result.
+    // WIP Output the trait implementation for each query result for each matching archetype.
+
+    impl Parse for Ecs {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let mut components_blocks: Vec<ComponentsBlock> = vec![];
+            let mut archetypes: Vec<Archetype> = vec![];
+            let mut queries: Vec<Query> = vec![];
+            // TODO Learn to loop through twice to define archetype and query structs with all the data they need, post validation. Failure should never occur during the tokenization step.
+            while !input.is_empty() {
+                let la = input.lookahead1();
+                if la.peek(kw::components) {
+                    components_blocks.push(input.parse()?);
+                } else if la.peek(kw::archetype) {
+                    archetypes.push(input.parse()?);
+                } else if la.peek(kw::query) {
+                    queries.push(input.parse()?);
+                } else {
+                    Err(la.error())?;
+                }
+            }
+            Ok(Self {
+                component_map: components_blocks
+                    .into_iter()
+                    .flat_map(|b| b.components.into_iter().map(|c| (c.name.to_owned(), c)))
+                    .collect(),
+                archetypes,
+                queries,
+            })
+        }
+    }
+
+    impl Tokenize for Ecs {
+        fn tokenize(&self) -> Result<TokenStream> {
+            let a = self
+                .archetypes
+                .iter()
+                .map(|a| ArchetypeTokenizer(a, self).tokenize())
+                .collect::<Result<Vec<TokenStream>>>()?;
+            let q = self
+                .queries
+                .iter()
+                .map(|q| QueryTokenizer(q, self).tokenize())
+                .collect::<Result<Vec<TokenStream>>>()?;
+            Ok(quote! {
+              #(#a)*
+              #(#q)*
+            })
+        }
+    }
+
+    impl ToTokens for Ecs {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            tokens.extend(self.tokenize());
+        }
+    }
+}
+
+#[proc_macro]
+pub fn ecs(input: TokenStream) -> TokenStream {
+    let ecs: Ecs = parse_macro_input!(input);
+    // TODO Eliminate unwrap by moving all fallible steps into parsing.
+    TokenStream::from(ecs.tokenize().unwrap())
 }
