@@ -317,12 +317,69 @@ mod parse_tree {
     use syn::{
         Attribute, Error, Ident, Result, Type,
         parse::{Parse, ParseStream},
+        spanned::Spanned,
     };
 
     mod kw {
+        custom_keyword!(shared);
         custom_keyword!(components);
         custom_keyword!(archetype);
+        custom_keyword!(tables);
         custom_keyword!(query);
+    }
+
+    #[derive(Clone)]
+    struct SharedField {
+        pub attrs: Vec<Attribute>,
+        pub name: Ident,
+        pub ty: Type,
+    }
+
+    impl Parse for SharedField {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let attrs = input.call(Attribute::parse_outer)?;
+            let name: syn::Ident = input.parse()?;
+            input.parse::<Token![:]>()?;
+            let ty: syn::Type = input.parse()?;
+            Ok(Self { attrs, name, ty })
+        }
+    }
+
+    impl ToTokens for SharedField {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let SharedField { attrs, name, ty } = self;
+            tokens.extend(quote! {
+              #(#attrs)*
+              pub #name: #ty
+            });
+        }
+    }
+
+    struct SharedFieldsBlockItem {
+        pub attrs: Vec<Attribute>,
+        pub shared_fields: Vec<SharedField>,
+    }
+
+    impl Parse for SharedFieldsBlockItem {
+        fn parse(input: ParseStream) -> Result<Self> {
+            input.parse::<kw::shared>()?;
+
+            let content;
+            syn::braced!(content in input);
+
+            let mut shared_fields = vec![];
+
+            while !content.is_empty() {
+                let shared_fields_punct =
+                    content.parse_terminated(SharedField::parse, Token![,])?;
+                shared_fields.extend(shared_fields_punct.into_iter());
+            }
+
+            Ok(Self {
+                attrs: vec![],
+                shared_fields,
+            })
+        }
     }
 
     #[derive(Clone)]
@@ -374,6 +431,7 @@ mod parse_tree {
     struct ArchetypeItem {
         pub attrs: Vec<Attribute>,
         pub name: Ident,
+        pub table_names: Vec<Ident>,
         pub component_names: Vec<Ident>,
     }
 
@@ -381,6 +439,18 @@ mod parse_tree {
         fn parse(input: ParseStream) -> Result<Self> {
             input.parse::<kw::archetype>()?;
             let name: syn::Ident = input.parse()?;
+            let la = input.lookahead1();
+            let table_names = if la.peek(kw::tables) {
+                input.parse::<kw::tables>()?;
+                let content;
+                syn::parenthesized!(content in input);
+
+                let table_names_punct = content.parse_terminated(Ident::parse, Token![,])?;
+                table_names_punct.into_iter().collect()
+            } else {
+                vec![]
+            };
+
             let content;
             syn::braced!(content in input);
 
@@ -390,6 +460,7 @@ mod parse_tree {
             Ok(Self {
                 attrs: vec![],
                 name,
+                table_names,
                 component_names,
             })
         }
@@ -419,6 +490,8 @@ mod parse_tree {
     }
 
     pub struct EcsBlockItem {
+        shared_attrs: Vec<Attribute>,
+        shared_fields: Vec<SharedField>,
         component_map: HashMap<Ident, Component>,
         archetypes: Vec<ArchetypeItem>,
         queries: Vec<QueryItem>,
@@ -435,25 +508,50 @@ mod parse_tree {
 
     impl Parse for EcsBlockItem {
         fn parse(input: ParseStream) -> Result<Self> {
+            let mut shared_field_blocks: Vec<SharedFieldsBlockItem> = vec![];
             let mut components_blocks: Vec<ComponentsBlockItem> = vec![];
             let mut archetypes: Vec<ArchetypeItem> = vec![];
             let mut queries: Vec<QueryItem> = vec![];
             while !input.is_empty() {
                 let attrs = input.call(Attribute::parse_outer)?;
                 let la = input.lookahead1();
-                if la.peek(kw::components) {
+                if la.peek(kw::shared) {
+                    let mut item: SharedFieldsBlockItem = input.parse()?;
+                    item.attrs = attrs;
+                    shared_field_blocks.push(item);
+                } else if la.peek(kw::components) {
+                    if attrs.len() > 0 {
+                        return Err(Error::new(
+                            attrs[0].span(),
+                            "Attributes are not allowed here.",
+                        ));
+                    }
                     components_blocks.push(input.parse()?);
                 } else if la.peek(kw::archetype) {
                     let mut item: ArchetypeItem = input.parse()?;
                     item.attrs = attrs;
                     archetypes.push(item);
                 } else if la.peek(kw::query) {
+                    if attrs.len() > 0 {
+                        return Err(Error::new(
+                            attrs[0].span(),
+                            "Attributes are not allowed here.",
+                        ));
+                    }
                     queries.push(input.parse()?);
                 } else {
                     Err(la.error())?;
                 }
             }
             Ok(Self {
+                shared_attrs: shared_field_blocks
+                    .iter()
+                    .flat_map(|b| b.attrs.to_owned().into_iter())
+                    .collect(),
+                shared_fields: shared_field_blocks
+                    .iter()
+                    .flat_map(|b| b.shared_fields.to_owned().into_iter())
+                    .collect(),
                 component_map: components_blocks
                     .into_iter()
                     .flat_map(|b| b.components.into_iter().map(|c| (c.name.to_owned(), c)))
@@ -466,32 +564,35 @@ mod parse_tree {
 
     #[derive(Clone)]
     struct Archetype {
-        pub table_names: Vec<Ident>,
         pub attrs: Vec<Attribute>,
         pub name: Ident,
+        pub table_names: Vec<Ident>,
+        pub shared_fields: Vec<SharedField>,
         pub components: Vec<Component>,
     }
 
     impl Archetype {
         pub fn try_new(
             item: ArchetypeItem,
+            shared_attrs: &Vec<Attribute>,
+            shared_fields: &Vec<SharedField>,
             component_map: &HashMap<Ident, Component>,
         ) -> Result<Self> {
             let ArchetypeItem {
                 attrs,
                 name,
+                table_names,
                 component_names,
             } = item;
-            // TODO
-            // let table_names = attrs
-            //     .iter()
-            //     .filter(|a| a.path().is_ident("table"))
-            //     .map(|a|a.)
-            //     .collect<>()?;
             Ok(Self {
-                table_names: vec![],
-                attrs,
+                attrs: shared_attrs
+                    .iter()
+                    .chain(attrs.iter())
+                    .map(|a| a.to_owned())
+                    .collect(),
                 name,
+                table_names,
+                shared_fields: shared_fields.to_owned(),
                 components: component_names
                     .iter()
                     .map(|n| {
@@ -517,19 +618,21 @@ mod parse_tree {
                 table_names: _,
                 attrs,
                 name,
+                shared_fields,
                 components,
             } = self;
+            let shared_field_lines: Vec<TokenStream> = shared_fields
+                .iter()
+                .map(|f| quote! { #f })
+                .collect::<Vec<TokenStream>>();
             let component_lines: Vec<TokenStream> = components
                 .iter()
-                .map(|c| {
-                    quote! {
-                      #c
-                    }
-                })
+                .map(|c| quote! { #c })
                 .collect::<Vec<TokenStream>>();
             tokens.extend(quote! {
               #(#attrs)*
               pub struct #name {
+                #(#shared_field_lines,)*
                 #(#component_lines,)*
               }
             });
@@ -538,6 +641,7 @@ mod parse_tree {
 
     struct Query {
         pub name: Ident,
+        pub shared_fields: Vec<SharedField>,
         pub components: Vec<Component>,
         pub matched_archetypes: Vec<Archetype>,
     }
@@ -545,6 +649,7 @@ mod parse_tree {
     impl Query {
         pub fn try_new(
             item: QueryItem,
+            shared_fields: &Vec<SharedField>,
             component_map: &HashMap<Ident, Component>,
             archetypes: &Vec<Archetype>,
         ) -> Result<Self> {
@@ -565,6 +670,14 @@ mod parse_tree {
                 .collect();
             Ok(Self {
                 name: item.name,
+                shared_fields: shared_fields
+                    .iter()
+                    .map(|f| SharedField {
+                        attrs: vec![],
+                        name: f.name.to_owned(),
+                        ty: f.ty.to_owned(),
+                    })
+                    .collect(),
                 components,
                 matched_archetypes,
             })
@@ -575,18 +688,19 @@ mod parse_tree {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             let Query {
                 name,
+                shared_fields,
                 components,
                 matched_archetypes,
             } = self;
             let result_name = format_ident!("{}Result", name);
             let trait_name = format_ident!("Into{}", result_name);
+            let shared_field_lines: Vec<TokenStream> = shared_fields
+                .iter()
+                .map(|f| quote! { #f })
+                .collect::<Vec<TokenStream>>();
             let component_lines: Vec<TokenStream> = components
                 .iter()
-                .map(|c| {
-                    quote! {
-                      #c
-                    }
-                })
+                .map(|c| quote! { #c })
                 .collect::<Vec<TokenStream>>();
             let archetype_tables: Vec<TokenStream> = matched_archetypes
                 .iter()
@@ -597,11 +711,13 @@ mod parse_tree {
                 .iter()
                 .map(|a| {
                     let Archetype { name, .. } = a;
+                    let shared_field_names = shared_fields.iter().map(|f| f.name.to_owned());
                     let component_names = components.iter().map(|c| c.name.to_owned());
                     quote! {
                       impl #trait_name for #name {
                         fn into(self) -> #result_name {
                           #result_name {
+                            #(#shared_field_names: self.#shared_field_names,)*
                             #(#component_names: self.#component_names,)*
                           }
                         }
@@ -612,6 +728,7 @@ mod parse_tree {
             tokens.extend(quote! {
               pub struct #name;
               pub struct #result_name {
+                #(#shared_field_lines,)*
                 #(#component_lines,)*
               }
               pub trait #trait_name {
@@ -635,17 +752,19 @@ mod parse_tree {
     impl Ecs {
         pub fn try_new(item: EcsBlockItem) -> Result<Self> {
             let EcsBlockItem {
+                shared_attrs,
+                shared_fields,
                 component_map,
                 archetypes,
                 queries,
             } = item;
             let archetypes = archetypes
                 .into_iter()
-                .map(|a| Archetype::try_new(a, &component_map))
+                .map(|a| Archetype::try_new(a, &shared_attrs, &shared_fields, &component_map))
                 .collect::<Result<_>>()?;
             let queries = queries
                 .into_iter()
-                .map(|q| Query::try_new(q, &component_map, &archetypes))
+                .map(|q| Query::try_new(q, &shared_fields, &component_map, &archetypes))
                 .collect::<Result<_>>()?;
             Ok(Self {
                 archetypes,

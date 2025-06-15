@@ -7,5 +7,5 @@ edition = "2024"
 crate-type = ["cdylib"]
 
 [dependencies]
-archetype = { path = ".." }
+archetype = { path = "../archetype" }
 spacetimedb = "1.1.2"
