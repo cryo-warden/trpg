@@ -24,14 +24,14 @@ ecs! {
   }
 
   #[table(name = actor_archetypes)]
-  archetype Actor tables (actor_archetypes) {
+  archetype Actor table actor_archetypes {
     location,
     inventory,
     equipment,
   }
 
   #[table(name = path_archetypes)]
-  archetype Path tables (path_archetypes) { location, path }
+  archetype Path table path_archetypes { location, path }
 
   query WithLocation { location }
 }

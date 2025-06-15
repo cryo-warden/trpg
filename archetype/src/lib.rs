@@ -324,7 +324,7 @@ mod parse_tree {
         custom_keyword!(shared);
         custom_keyword!(components);
         custom_keyword!(archetype);
-        custom_keyword!(tables);
+        custom_keyword!(table);
         custom_keyword!(query);
     }
 
@@ -431,7 +431,7 @@ mod parse_tree {
     struct ArchetypeItem {
         pub attrs: Vec<Attribute>,
         pub name: Ident,
-        pub table_names: Vec<Ident>,
+        pub table_name: Ident,
         pub component_names: Vec<Ident>,
     }
 
@@ -439,17 +439,8 @@ mod parse_tree {
         fn parse(input: ParseStream) -> Result<Self> {
             input.parse::<kw::archetype>()?;
             let name: syn::Ident = input.parse()?;
-            let la = input.lookahead1();
-            let table_names = if la.peek(kw::tables) {
-                input.parse::<kw::tables>()?;
-                let content;
-                syn::parenthesized!(content in input);
-
-                let table_names_punct = content.parse_terminated(Ident::parse, Token![,])?;
-                table_names_punct.into_iter().collect()
-            } else {
-                vec![]
-            };
+            input.parse::<kw::table>()?;
+            let table_name = input.parse()?;
 
             let content;
             syn::braced!(content in input);
@@ -460,7 +451,7 @@ mod parse_tree {
             Ok(Self {
                 attrs: vec![],
                 name,
-                table_names,
+                table_name,
                 component_names,
             })
         }
@@ -566,7 +557,7 @@ mod parse_tree {
     struct Archetype {
         pub attrs: Vec<Attribute>,
         pub name: Ident,
-        pub table_names: Vec<Ident>,
+        pub table_name: Ident,
         pub shared_fields: Vec<SharedField>,
         pub components: Vec<Component>,
     }
@@ -581,7 +572,7 @@ mod parse_tree {
             let ArchetypeItem {
                 attrs,
                 name,
-                table_names,
+                table_name,
                 component_names,
             } = item;
             Ok(Self {
@@ -591,7 +582,7 @@ mod parse_tree {
                     .map(|a| a.to_owned())
                     .collect(),
                 name,
-                table_names,
+                table_name,
                 shared_fields: shared_fields.to_owned(),
                 components: component_names
                     .iter()
@@ -615,7 +606,7 @@ mod parse_tree {
     impl ToTokens for Archetype {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             let Archetype {
-                table_names: _,
+                table_name: _,
                 attrs,
                 name,
                 shared_fields,
@@ -702,23 +693,41 @@ mod parse_tree {
                 .iter()
                 .map(|c| quote! { #c })
                 .collect::<Vec<TokenStream>>();
+            let archetype_names = matched_archetypes.iter().map(|a| a.name.to_owned());
             let archetype_tables: Vec<TokenStream> = matched_archetypes
                 .iter()
-                .flat_map(|a| a.table_names.to_owned())
-                .map(|n| quote! { #n })
+                .map(|a| {
+                    let n = &a.table_name;
+                    quote! { #n }
+                })
                 .collect();
             let archetype_traits: Vec<TokenStream> = matched_archetypes
                 .iter()
                 .map(|a| {
-                    let Archetype { name, .. } = a;
+                    let Archetype {
+                        name, table_name, ..
+                    } = a;
                     let shared_field_names = shared_fields.iter().map(|f| f.name.to_owned());
                     let component_names = components.iter().map(|c| c.name.to_owned());
+                    let shared_field_names2 = shared_field_names.to_owned();
+                    let component_names2 = component_names.to_owned();
                     quote! {
                       impl #trait_name for #name {
                         fn into(self) -> #result_name {
                           #result_name {
                             #(#shared_field_names: self.#shared_field_names,)*
                             #(#component_names: self.#component_names,)*
+                          }
+                        }
+                        fn update(ctx: &spacetimedb::ReducerContext, value: #result_name) -> Option<#result_name> {
+                          // TODO Parameterize the index.
+                          if let Some(mut old_value) = ctx.db.#table_name().entity_id().find(value.entity_id) {
+                            #(old_value.#shared_field_names2 = value.#shared_field_names2;)*
+                            #(old_value.#component_names2 = value.#component_names2;)*
+                            ctx.db.#table_name().entity_id().update(old_value);
+                            None
+                          } else {
+                            Some(value)
                           }
                         }
                       }
@@ -733,11 +742,16 @@ mod parse_tree {
               }
               pub trait #trait_name {
                 fn into(self) -> #result_name;
+                fn update(ctx: &spacetimedb::ReducerContext, value: #result_name) -> Option<#result_name>;
               }
               #(#archetype_traits)*
               impl #name {
                 pub fn iter(ctx: &spacetimedb::ReducerContext) -> impl Iterator<Item = #result_name> {
                   std::iter::empty::<#result_name>()#(.chain(ctx.db.#archetype_tables().iter().map(#trait_name::into)))*
+                }
+                pub fn update(ctx: &spacetimedb::ReducerContext, value: #result_name) {
+                  let mut value = Some(value);
+                  #(value = if let Some(value) = value { #archetype_names::update(ctx, value) } else { None };)*
                 }
               }
             });
