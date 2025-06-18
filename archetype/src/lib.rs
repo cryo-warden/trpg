@@ -12,7 +12,7 @@ use syn::{
     parse::{Parse, ParseStream},
 };
 
-use crate::parse_tree::Ecs;
+use crate::ecs::Ecs;
 
 fn extract_ident_from_type(ty: &syn::Type) -> Option<&syn::Ident> {
     if let syn::Type::Path(type_path) = ty {
@@ -310,7 +310,7 @@ pub fn entity(attr: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 #[allow(dead_code)]
-mod parse_tree {
+mod ecs {
     use proc_macro2::TokenStream;
     use quote::{ToTokens, quote};
     use std::collections::{HashMap, HashSet};
@@ -402,6 +402,17 @@ mod parse_tree {
             let Component { name, ty } = self;
             tokens.extend(quote! {
              pub #name: #ty
+            });
+        }
+    }
+
+    struct OptionalComponent(Component);
+
+    impl ToTokens for OptionalComponent {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let OptionalComponent(Component { name, ty }) = self;
+            tokens.extend(quote! {
+              pub #name: ::core::option::Option<#ty>
             });
         }
     }
@@ -612,19 +623,62 @@ mod parse_tree {
                 shared_fields,
                 components,
             } = self;
-            let shared_field_lines: Vec<TokenStream> = shared_fields
-                .iter()
-                .map(|f| quote! { #f })
-                .collect::<Vec<TokenStream>>();
-            let component_lines: Vec<TokenStream> = components
-                .iter()
-                .map(|c| quote! { #c })
-                .collect::<Vec<TokenStream>>();
             tokens.extend(quote! {
               #(#attrs)*
               pub struct #name {
-                #(#shared_field_lines,)*
-                #(#component_lines,)*
+                #(#shared_fields,)*
+                #(#components,)*
+              }
+            });
+        }
+    }
+
+    struct QueryArchetype {
+        archetype: Archetype,
+        shared_fields: Vec<SharedField>,
+        components: Vec<Component>,
+        optional_components: Vec<OptionalComponent>,
+    }
+
+    impl ToTokens for QueryArchetype {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let QueryArchetype {
+                archetype: Archetype {
+                    name, table_name, ..
+                },
+                shared_fields,
+                components,
+                optional_components,
+            } = self;
+            let shared_field_names = shared_fields.iter().map(|f| f.name.to_owned());
+            let component_names = components.iter().map(|c| c.name.to_owned());
+            let optional_component_names = optional_components
+                .iter()
+                .map(|OptionalComponent(c)| c.name.to_owned());
+            let shared_field_names2 = shared_field_names.to_owned();
+            let component_names2 = component_names.to_owned();
+            let trait_name = format_ident!("temp_trait");
+            let result_name = format_ident!("temp_result");
+            tokens.extend(quote! {
+              impl #trait_name for #name {
+                fn into(self) -> #result_name {
+                  #result_name {
+                    #(#shared_field_names: self.#shared_field_names,)*
+                    #(#component_names: self.#component_names,)*
+                    #(#optional_component_names: Some(self.#optional_component_names),)*
+                  }
+                }
+                fn update(ctx: &spacetimedb::ReducerContext, value: #result_name) -> Option<#result_name> {
+                  // TODO Parameterize the index.
+                  if let Some(mut old_value) = ctx.db.#table_name().entity_id().find(value.entity_id) {
+                    #(old_value.#shared_field_names2 = value.#shared_field_names2;)*
+                    #(old_value.#component_names2 = value.#component_names2;)*
+                    ctx.db.#table_name().entity_id().update(old_value);
+                    None
+                  } else {
+                    Some(value)
+                  }
+                }
               }
             });
         }
@@ -634,6 +688,7 @@ mod parse_tree {
         pub name: Ident,
         pub shared_fields: Vec<SharedField>,
         pub components: Vec<Component>,
+        pub optional_components: Vec<OptionalComponent>,
         pub matched_archetypes: Vec<Archetype>,
     }
 
@@ -669,6 +724,7 @@ mod parse_tree {
                         ty: f.ty.to_owned(),
                     })
                     .collect(),
+                optional_components: vec![], // WIP
                 components,
                 matched_archetypes,
             })
@@ -681,18 +737,11 @@ mod parse_tree {
                 name,
                 shared_fields,
                 components,
+                optional_components,
                 matched_archetypes,
             } = self;
             let result_name = format_ident!("{}Result", name);
             let trait_name = format_ident!("Into{}", result_name);
-            let shared_field_lines: Vec<TokenStream> = shared_fields
-                .iter()
-                .map(|f| quote! { #f })
-                .collect::<Vec<TokenStream>>();
-            let component_lines: Vec<TokenStream> = components
-                .iter()
-                .map(|c| quote! { #c })
-                .collect::<Vec<TokenStream>>();
             let archetype_names = matched_archetypes.iter().map(|a| a.name.to_owned());
             let archetype_tables: Vec<TokenStream> = matched_archetypes
                 .iter()
@@ -709,6 +758,7 @@ mod parse_tree {
                     } = a;
                     let shared_field_names = shared_fields.iter().map(|f| f.name.to_owned());
                     let component_names = components.iter().map(|c| c.name.to_owned());
+                    let optional_component_names = optional_components.iter().map(|OptionalComponent(c)| c.name.to_owned());
                     let shared_field_names2 = shared_field_names.to_owned();
                     let component_names2 = component_names.to_owned();
                     quote! {
@@ -717,6 +767,7 @@ mod parse_tree {
                           #result_name {
                             #(#shared_field_names: self.#shared_field_names,)*
                             #(#component_names: self.#component_names,)*
+                            #(#optional_component_names: Some(self.#optional_component_names),)*
                           }
                         }
                         fn update(ctx: &spacetimedb::ReducerContext, value: #result_name) -> Option<#result_name> {
@@ -737,8 +788,9 @@ mod parse_tree {
             tokens.extend(quote! {
               pub struct #name;
               pub struct #result_name {
-                #(#shared_field_lines,)*
-                #(#component_lines,)*
+                #(#shared_fields,)*
+                #(#components,)*
+                #(#optional_components,)*
               }
               pub trait #trait_name {
                 fn into(self) -> #result_name;
@@ -751,7 +803,11 @@ mod parse_tree {
                 }
                 pub fn update(ctx: &spacetimedb::ReducerContext, value: #result_name) {
                   let mut value = Some(value);
-                  #(value = if let Some(value) = value { #archetype_names::update(ctx, value) } else { None };)*
+                  #(value = if let Some(value) = value {
+                    #archetype_names::update(ctx, value)
+                  } else {
+                    None
+                  };)*
                 }
               }
             });

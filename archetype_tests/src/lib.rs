@@ -49,3 +49,5 @@ pub mod tests {
         // }
     }
 }
+
+pub fn test() {}
