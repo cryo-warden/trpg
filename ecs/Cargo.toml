@@ -1,0 +1,8 @@
+[package]
+name = "ecs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ecs-macro = { path = "../ecs-macro" }
+spacetimedb = "1.2.0"
