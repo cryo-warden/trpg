@@ -5,7 +5,7 @@ extern crate proc_macro;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{
-    Attribute, Error, Field, Ident, Result, Token, Type, braced, parenthesized,
+    Attribute, Error, Field, Ident, Result, Token, braced, parenthesized,
     parse::{Parse, ParseStream},
     parse_macro_input,
 };
@@ -88,7 +88,7 @@ impl ToTokens for Tables {
 
 struct ComponentDeclaration {
     pub name: Ident,
-    pub ty: Type,
+    pub ty_name: Ident,
     pub tables: Tables,
     pub fields: Fields,
 }
@@ -100,12 +100,12 @@ impl Parse for ComponentDeclaration {
         input.parse::<kw::component>()?;
         let name = input.parse()?;
         input.parse::<Token![:]>()?;
-        let ty = input.parse()?;
+        let ty_name = input.parse()?;
         let tables = input.parse()?;
         let fields = input.parse()?;
         Ok(Self {
             name,
-            ty,
+            ty_name,
             tables,
             fields,
         })
@@ -115,7 +115,7 @@ impl Parse for ComponentDeclaration {
 struct EntityDeclaration {
     pub name: Ident,
     pub id_name: Ident,
-    pub id_ty: Type,
+    pub id_ty_name: Ident,
     pub tables: Tables,
 }
 
@@ -127,13 +127,13 @@ impl Parse for EntityDeclaration {
         let name = input.parse()?;
         let id_name = input.parse()?;
         input.parse::<Token![:]>()?;
-        let id_ty = input.parse()?;
+        let id_ty_name = input.parse()?;
         let tables = input.parse()?;
         input.parse::<Token![;]>()?;
         Ok(Self {
             name,
             id_name,
-            id_ty,
+            id_ty_name,
             tables,
         })
     }
@@ -186,12 +186,12 @@ impl ToTokens for EntityDeclaration {
         let EntityDeclaration {
             name,
             id_name: _,
-            id_ty,
+            id_ty_name,
             tables: _,
         } = self;
         tokens.extend(quote! {
           pub struct #name {
-            pub id: #id_ty,
+            pub id: #id_ty_name,
           }
         });
     }
@@ -211,13 +211,13 @@ impl<'a> ToTokens for ComponentTrait<'a> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let ComponentTrait(c) = self;
         let trait_name = component_trait_name(c);
-        let ComponentDeclaration { name, ty, .. } = c;
+        let ComponentDeclaration { name, ty_name, .. } = c;
         let update_name = format_ident!("update_{}", name);
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
           pub trait #trait_name {
-            fn #name(&self) -> ::core::option::Option<#ty>;
-            fn #update_name(&self, value: #ty) -> #ty;
+            fn #name(&self) -> ::core::option::Option<#ty_name>;
+            fn #update_name(&self, value: #ty_name) -> #ty_name;
           }
         })
     }
@@ -231,15 +231,15 @@ impl<'a> ToTokens for ComponentTraitImplementation<'a> {
         let EntityDeclaration { id_name, .. } = e;
         let entity_handle = handle_name(e);
         let trait_name = component_trait_name(c);
-        let ComponentDeclaration { name, ty, .. } = c;
+        let ComponentDeclaration { name, ty_name, .. } = c;
         let update_name = format_ident!("update_{}", name);
         let table = c.tables.0.first().unwrap();
         tokens.extend(quote! {
           impl<'a> #trait_name for #entity_handle<'a> {
-            fn #name(&self) -> ::core::option::Option<#ty> {
+            fn #name(&self) -> ::core::option::Option<#ty_name> {
               self.ctx.db.#table().#id_name().find(self.#id_name)
             }
-            fn #update_name(&self, value: #ty) -> #ty {
+            fn #update_name(&self, value: #ty_name) -> #ty_name {
               self.ctx.db.#table().#id_name().update(value)
             }
           }
@@ -258,15 +258,22 @@ impl<'a> ToTokens for ComponentDefinition<'a> {
         let c = &c.value;
         let e = &e.value;
         let ComponentDeclaration {
-            ty, tables, fields, ..
+            ty_name,
+            tables,
+            fields,
+            ..
         } = c;
-        let EntityDeclaration { id_name, id_ty, .. } = e;
+        let EntityDeclaration {
+            id_name,
+            id_ty_name,
+            ..
+        } = e;
         let component_trait = ComponentTrait(c);
         tokens.extend(quote! {
           #tables
-          pub struct #ty {
+          pub struct #ty_name {
             #[primary_key]
-            pub #id_name: #id_ty,
+            pub #id_name: #id_ty_name,
             #fields
           }
           #component_trait
@@ -291,14 +298,14 @@ impl<'a> ToTokens for EntityHandle<'a> {
         let EntityDeclaration {
             name,
             id_name,
-            id_ty,
+            id_ty_name,
             tables: _,
         } = entity_declaration;
         let entity_handle = format_ident!("{}Handle", name);
         tokens.extend(quote! {
           pub struct #entity_handle<'a> {
             pub ctx: &'a spacetimedb::ReducerContext,
-            pub #id_name: #id_ty,
+            pub #id_name: #id_ty_name,
           }
           #(#component_trait_implementations)*
         })

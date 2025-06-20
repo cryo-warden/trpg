@@ -12,6 +12,7 @@ entity! {
   component path: PathComponent tables(path_components) { destination_entity_id: EntityId }
 }
 
-pub fn sandbox(ctx: &spacetimedb::ReducerContext) {
+#[allow(unused_variables, dead_code)]
+fn sandbox(ctx: &spacetimedb::ReducerContext) {
     let e = EntityHandle { entity_id: 0, ctx };
 }
