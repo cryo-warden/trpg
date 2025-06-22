@@ -26,8 +26,12 @@ impl<'a> EntityHandle<'a> {
 }
 
 #[allow(unused_variables, dead_code)]
-fn sandbox(ctx: &spacetimedb::ReducerContext) {
+fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     let e = EntityHandle { entity_id: 0, ctx };
     LocationComponent::new();
     EntityHandle::peek();
+    let e = e.with_path()?.with_location()?;
+    e.location();
+    e.path();
+    Some(())
 }

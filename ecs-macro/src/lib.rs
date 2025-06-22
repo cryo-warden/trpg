@@ -215,11 +215,10 @@ mod gen_struct {
     use quote::quote;
     use syn::Ident;
 
-    use crate::Attributes;
-    use crate::Fields;
-    use crate::Tables;
-    use crate::macro_input::ComponentDeclaration;
-    use crate::macro_input::EntityDeclaration;
+    use crate::{
+        Attributes, Fields, Tables,
+        macro_input::{ComponentDeclaration, EntityDeclaration},
+    };
 
     use super::WithAttrs;
 
@@ -377,7 +376,7 @@ mod gen_trait {
     use quote::{ToTokens, format_ident, quote};
     use syn::Ident;
 
-    use crate::macro_input::{self, ComponentDeclaration};
+    use crate::{gen_struct, macro_input};
 
     #[derive(Clone)]
     pub struct ComponentTrait {
@@ -388,7 +387,7 @@ mod gen_trait {
     }
 
     impl ComponentTrait {
-        pub fn new(c: &ComponentDeclaration) -> Self {
+        pub fn new(c: &macro_input::ComponentDeclaration) -> Self {
             Self {
                 trait_name: format_ident!("{}Trait", c.ty_name),
                 component_ty_name: c.ty_name.to_owned(),
@@ -408,7 +407,7 @@ mod gen_trait {
             } = self;
             tokens.extend(quote! {
               #[allow(non_camel_case_types)]
-              pub trait #trait_name {
+              pub trait #trait_name: Sized {
                 fn #getter_fn_name(&self) -> &#component_ty_name;
                 fn #update_fn_name(self) -> Self;
               }
@@ -420,17 +419,26 @@ mod gen_trait {
     pub struct OptionComponentTrait {
         pub source: macro_input::ComponentDeclaration,
         pub trait_name: Ident,
+        pub component_name: Ident,
         pub component_ty_name: Ident,
+        pub with_component_struct_name: Ident,
+        pub with_fn_name: Ident,
         pub getter_fn_name: Ident,
         pub update_fn_name: Ident,
     }
 
     impl OptionComponentTrait {
-        pub fn new(c: &ComponentDeclaration) -> Self {
+        pub fn new(
+            c: &macro_input::ComponentDeclaration,
+            wcs: &gen_struct::WithComponentStruct,
+        ) -> Self {
             Self {
                 source: c.to_owned(),
                 trait_name: format_ident!("Option{}Trait", c.ty_name),
+                component_name: c.name.to_owned(),
                 component_ty_name: c.ty_name.to_owned(),
+                with_component_struct_name: wcs.struct_name.to_owned(),
+                with_fn_name: format_ident!("with_{}", c.name),
                 getter_fn_name: c.name.to_owned(),
                 update_fn_name: format_ident!("update_{}", c.name),
             }
@@ -442,13 +450,22 @@ mod gen_trait {
             let Self {
                 source: _,
                 trait_name,
+                component_name,
                 component_ty_name,
+                with_component_struct_name,
+                with_fn_name,
                 getter_fn_name,
                 update_fn_name,
             } = self;
             tokens.extend(quote! {
               #[allow(non_camel_case_types)]
-              pub trait #trait_name {
+              pub trait #trait_name: Sized {
+                fn #with_fn_name(self) -> ::core::option::Option<#with_component_struct_name<Self>> {
+                  Some(#with_component_struct_name {
+                    #component_name: self.#getter_fn_name()?,
+                    value: self,
+                  })
+                }
                 fn #getter_fn_name(&self) -> ::core::option::Option<#component_ty_name>;
                 fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name;
               }
@@ -689,8 +706,17 @@ impl Parse for EntityMacro {
             .collect::<Vec<_>>();
         let option_component_traits = component_declarations
             .iter()
-            .map(|d| gen_trait::OptionComponentTrait::new(&d.value))
-            .collect::<Vec<_>>();
+            .map(|d| {
+                let wcs = with_component_structs
+                    .iter()
+                    .find(|wcs| wcs.component_ty_name == d.value.ty_name)
+                    .ok_or(Error::new(
+                        d.value.ty_name.span(),
+                        "Cannot find the corresponding with-component struct.",
+                    ))?;
+                Ok(gen_trait::OptionComponentTrait::new(&d.value, wcs))
+            })
+            .collect::<Result<Vec<_>>>()?;
 
         let replacement_component_trait_for_with_component_struct_impls = with_component_structs
             .iter()
