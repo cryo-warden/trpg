@@ -481,6 +481,54 @@ mod gen_impl {
 
     use crate::{gen_struct, gen_trait};
 
+    pub struct ComponentStructImpl {
+        pub component_struct: gen_struct::ComponentStruct,
+        pub with_component_struct: gen_struct::WithComponentStruct,
+        pub entity_handle_struct: gen_struct::EntityHandleStruct,
+    }
+
+    impl ComponentStructImpl {
+        pub fn new(
+            cs: &gen_struct::ComponentStruct,
+            wcs: &gen_struct::WithComponentStruct,
+            ehs: &gen_struct::EntityHandleStruct,
+        ) -> Self {
+            Self {
+                component_struct: cs.to_owned(),
+                with_component_struct: wcs.to_owned(),
+                entity_handle_struct: ehs.to_owned(),
+            }
+        }
+    }
+
+    impl ToTokens for ComponentStructImpl {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let gen_struct::ComponentStruct {
+                ref struct_name, ..
+            } = self.component_struct;
+            let gen_struct::WithComponentStruct {
+                struct_name: ref with_component_struct_name,
+                ref component_name,
+                ..
+            } = self.with_component_struct;
+            let gen_struct::EntityHandleStruct {
+                struct_name: ref entity_handle_struct,
+                ..
+            } = self.entity_handle_struct;
+            tokens.extend(quote! {
+              impl #struct_name {
+                fn into_handle(self, ctx: &spacetimedb::ReducerContext) -> #with_component_struct_name<#entity_handle_struct> {
+                  let entity_id = self.entity_id;
+                  #with_component_struct_name {
+                    #component_name: self,
+                    value: #entity_handle_struct { entity_id, ctx },
+                  }
+                }
+              }
+            });
+        }
+    }
+
     pub struct ReplacementComponentTraitForWithComponentStructImpl {
         pub with_component_struct: gen_struct::WithComponentStruct,
         pub component_trait: gen_trait::ComponentTrait,
@@ -672,6 +720,7 @@ struct EntityMacro {
     component_traits: Vec<gen_trait::ComponentTrait>,
     option_component_traits: Vec<gen_trait::OptionComponentTrait>,
 
+    component_struct_impls: Vec<gen_impl::ComponentStructImpl>,
     replacement_component_trait_for_with_component_struct_impls:
         Vec<gen_impl::ReplacementComponentTraitForWithComponentStructImpl>,
     component_trait_for_with_component_struct_impls:
@@ -715,6 +764,24 @@ impl Parse for EntityMacro {
                         "Cannot find the corresponding with-component struct.",
                     ))?;
                 Ok(gen_trait::OptionComponentTrait::new(&d.value, wcs))
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let component_struct_impls = component_structs
+            .iter()
+            .map(|cs| {
+                let wcs = with_component_structs
+                    .iter()
+                    .find(|wcs| wcs.component_ty_name == cs.struct_name)
+                    .ok_or(Error::new(
+                        cs.struct_name.span(),
+                        "Cannot find the corresponding with-component struct.",
+                    ))?;
+                Ok(gen_impl::ComponentStructImpl::new(
+                    cs,
+                    wcs,
+                    &entity_handle_struct,
+                ))
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -784,6 +851,7 @@ impl Parse for EntityMacro {
             component_traits,
             option_component_traits,
 
+            component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
             component_trait_for_with_component_struct_impls,
             option_component_trait_for_with_component_struct_impls,
@@ -803,6 +871,7 @@ impl ToTokens for EntityMacro {
             component_traits,
             option_component_traits,
 
+            component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
             component_trait_for_with_component_struct_impls,
             option_component_trait_for_with_component_struct_impls,
@@ -817,6 +886,7 @@ impl ToTokens for EntityMacro {
           #(#component_traits)*
           #(#option_component_traits)*
 
+          #(#component_struct_impls)*
           #(#replacement_component_trait_for_with_component_struct_impls)*
           #(#component_trait_for_with_component_struct_impls)*
           #(#option_component_trait_for_with_component_struct_impls)*
