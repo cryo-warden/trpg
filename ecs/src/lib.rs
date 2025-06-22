@@ -8,8 +8,18 @@ pub type EntityId = u64;
 entity! {
   entity Entity entity_id: EntityId tables();
 
-  component location: LocationComponent tables(location_components) { pub location_entity_id: EntityId }
-  component path: PathComponent tables(path_components) { pub destination_entity_id: EntityId }
+  component LocationComponent [
+    (location, location_components),
+    (secondary_location, secondary_location_components),
+  ] {
+    pub location_entity_id: EntityId,
+  }
+  component PathComponent [
+    (path, path_components),
+    (excess_path, excess_path_components)
+  ] {
+    pub destination_entity_id: EntityId,
+  }
 }
 
 impl LocationComponent {
@@ -30,8 +40,9 @@ fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     let e = EntityHandle { entity_id: 0, ctx };
     LocationComponent::new();
     EntityHandle::peek();
-    let e = e.with_path()?.with_location()?;
+    let e = e.with_path()?.with_location()?.with_secondary_location()?;
     e.location();
     e.path();
+    e.secondary_location();
     Some(())
 }

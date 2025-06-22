@@ -1,5 +1,7 @@
 extern crate proc_macro;
 
+use std::collections::HashSet;
+
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{
@@ -106,17 +108,33 @@ impl ToTokens for Tables {
 
 mod macro_input {
     use syn::{
-        Error, Ident, Result, Token,
+        Error, Ident, Result, Token, bracketed, parenthesized,
         parse::{Parse, ParseStream},
     };
 
     use crate::{AddAttrs, Fields, Tables, WithAttrs, kw};
 
     #[derive(Clone)]
-    pub struct ComponentDeclaration {
+    pub struct ComponentNameTablePair {
         pub name: Ident,
+        pub table_name: Ident,
+    }
+
+    impl Parse for ComponentNameTablePair {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let content;
+            parenthesized!(content in input);
+            let name = content.parse()?;
+            content.parse::<Token![,]>()?;
+            let table_name = content.parse()?;
+            Ok(Self { name, table_name })
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct ComponentDeclaration {
         pub ty_name: Ident,
-        pub tables: Tables,
+        pub name_table_pairs: Vec<ComponentNameTablePair>,
         pub fields: Fields,
     }
 
@@ -125,15 +143,17 @@ mod macro_input {
     impl Parse for ComponentDeclaration {
         fn parse(input: ParseStream) -> Result<Self> {
             input.parse::<kw::component>()?;
-            let name = input.parse()?;
-            input.parse::<Token![:]>()?;
             let ty_name = input.parse()?;
-            let tables = input.parse()?;
+            let content;
+            bracketed!(content in input);
+            let name_table_pairs = content
+                .parse_terminated(ComponentNameTablePair::parse, Token![,])?
+                .into_iter()
+                .collect();
             let fields = input.parse()?;
             Ok(Self {
-                name,
                 ty_name,
-                tables,
+                name_table_pairs,
                 fields,
             })
         }
@@ -215,10 +235,7 @@ mod gen_struct {
     use quote::quote;
     use syn::Ident;
 
-    use crate::{
-        Attributes, Fields, Tables,
-        macro_input::{ComponentDeclaration, EntityDeclaration},
-    };
+    use crate::{Attributes, Fields, Tables, macro_input};
 
     use super::WithAttrs;
 
@@ -231,7 +248,7 @@ mod gen_struct {
     }
 
     impl EntityStruct {
-        pub fn new(ewa: &WithAttrs<EntityDeclaration>) -> Self {
+        pub fn new(ewa: &WithAttrs<macro_input::EntityDeclaration>) -> Self {
             Self {
                 attrs: ewa.attrs.to_owned(),
                 tables: ewa.value.tables.to_owned(),
@@ -270,11 +287,17 @@ mod gen_struct {
 
     impl ComponentStruct {
         pub fn new(
-            cwa: &WithAttrs<ComponentDeclaration>,
-            ewa: &WithAttrs<EntityDeclaration>,
+            cwa: &WithAttrs<macro_input::ComponentDeclaration>,
+            ewa: &WithAttrs<macro_input::EntityDeclaration>,
         ) -> Self {
             Self {
-                tables: cwa.value.tables.to_owned(),
+                tables: Tables(
+                    cwa.value
+                        .name_table_pairs
+                        .iter()
+                        .map(|ntp| ntp.table_name.to_owned())
+                        .collect(),
+                ),
                 struct_name: cwa.value.ty_name.to_owned(),
                 id_name: ewa.value.id_name.to_owned(),
                 id_ty_name: ewa.value.id_ty_name.to_owned(),
@@ -311,7 +334,7 @@ mod gen_struct {
     }
 
     impl EntityHandleStruct {
-        pub fn new(ewa: &WithAttrs<EntityDeclaration>) -> Self {
+        pub fn new(ewa: &WithAttrs<macro_input::EntityDeclaration>) -> Self {
             let struct_name = format_ident!("{}Handle", ewa.value.name);
             Self {
                 struct_name,
@@ -345,10 +368,13 @@ mod gen_struct {
     }
 
     impl WithComponentStruct {
-        pub fn new(cwa: &WithAttrs<ComponentDeclaration>) -> Self {
+        pub fn new(
+            ntp: &macro_input::ComponentNameTablePair,
+            cwa: &WithAttrs<macro_input::ComponentDeclaration>,
+        ) -> Self {
             Self {
-                struct_name: format_ident!("With{}", cwa.value.ty_name),
-                component_name: cwa.value.name.to_owned(),
+                struct_name: format_ident!("With__{}__Component", ntp.name),
+                component_name: ntp.name.to_owned(),
                 component_ty_name: cwa.value.ty_name.to_owned(),
             }
         }
@@ -362,6 +388,7 @@ mod gen_struct {
                 component_ty_name,
             } = self;
             tokens.extend(quote! {
+              #[allow(non_camel_case_types)]
               pub struct #with_component_name<T> {
                 pub #component_name: #component_ty_name,
                 pub value: T,
@@ -381,18 +408,23 @@ mod gen_trait {
     #[derive(Clone)]
     pub struct ComponentTrait {
         pub trait_name: Ident,
+        pub component_name: Ident,
         pub component_ty_name: Ident,
         pub getter_fn_name: Ident,
         pub update_fn_name: Ident,
     }
 
     impl ComponentTrait {
-        pub fn new(c: &macro_input::ComponentDeclaration) -> Self {
+        pub fn new(
+            ntp: &macro_input::ComponentNameTablePair,
+            c: &macro_input::ComponentDeclaration,
+        ) -> Self {
             Self {
-                trait_name: format_ident!("{}Trait", c.ty_name),
+                component_name: ntp.name.to_owned(),
+                trait_name: format_ident!("__{}__Trait", ntp.name),
                 component_ty_name: c.ty_name.to_owned(),
-                getter_fn_name: c.name.to_owned(),
-                update_fn_name: format_ident!("update_{}", c.name),
+                getter_fn_name: ntp.name.to_owned(),
+                update_fn_name: format_ident!("update_{}", ntp.name),
             }
         }
     }
@@ -400,6 +432,7 @@ mod gen_trait {
     impl ToTokens for ComponentTrait {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             let Self {
+                component_name: _,
                 trait_name,
                 component_ty_name,
                 getter_fn_name,
@@ -417,10 +450,10 @@ mod gen_trait {
 
     #[derive(Clone)]
     pub struct OptionComponentTrait {
-        pub source: macro_input::ComponentDeclaration,
         pub trait_name: Ident,
         pub component_name: Ident,
         pub component_ty_name: Ident,
+        pub table_name: Ident,
         pub with_component_struct_name: Ident,
         pub with_fn_name: Ident,
         pub getter_fn_name: Ident,
@@ -429,18 +462,19 @@ mod gen_trait {
 
     impl OptionComponentTrait {
         pub fn new(
-            c: &macro_input::ComponentDeclaration,
+            ntp: &macro_input::ComponentNameTablePair,
+            d: &macro_input::ComponentDeclaration,
             wcs: &gen_struct::WithComponentStruct,
         ) -> Self {
             Self {
-                source: c.to_owned(),
-                trait_name: format_ident!("Option{}Trait", c.ty_name),
-                component_name: c.name.to_owned(),
-                component_ty_name: c.ty_name.to_owned(),
+                trait_name: format_ident!("Option__{}__Trait", ntp.name),
+                component_name: ntp.name.to_owned(),
+                component_ty_name: d.ty_name.to_owned(),
+                table_name: ntp.table_name.to_owned(),
                 with_component_struct_name: wcs.struct_name.to_owned(),
-                with_fn_name: format_ident!("with_{}", c.name),
-                getter_fn_name: c.name.to_owned(),
-                update_fn_name: format_ident!("update_{}", c.name),
+                with_fn_name: format_ident!("with_{}", ntp.name),
+                getter_fn_name: ntp.name.to_owned(),
+                update_fn_name: format_ident!("update_{}", ntp.name),
             }
         }
     }
@@ -448,10 +482,10 @@ mod gen_trait {
     impl ToTokens for OptionComponentTrait {
         fn to_tokens(&self, tokens: &mut TokenStream) {
             let Self {
-                source: _,
                 trait_name,
                 component_name,
                 component_ty_name,
+                table_name: _,
                 with_component_struct_name,
                 with_fn_name,
                 getter_fn_name,
@@ -476,19 +510,21 @@ mod gen_trait {
 
 mod gen_impl {
     use proc_macro2::TokenStream;
-    use quote::{ToTokens, quote};
+    use quote::{ToTokens, format_ident, quote};
     use syn::Ident;
 
-    use crate::{gen_struct, gen_trait};
+    use crate::{gen_struct, gen_trait, macro_input};
 
     pub struct ComponentStructImpl {
         pub component_struct: gen_struct::ComponentStruct,
         pub with_component_struct: gen_struct::WithComponentStruct,
         pub entity_handle_struct: gen_struct::EntityHandleStruct,
+        pub into_handle_fn_name: Ident,
     }
 
     impl ComponentStructImpl {
         pub fn new(
+            ntp: &macro_input::ComponentNameTablePair,
             cs: &gen_struct::ComponentStruct,
             wcs: &gen_struct::WithComponentStruct,
             ehs: &gen_struct::EntityHandleStruct,
@@ -497,12 +533,17 @@ mod gen_impl {
                 component_struct: cs.to_owned(),
                 with_component_struct: wcs.to_owned(),
                 entity_handle_struct: ehs.to_owned(),
+                into_handle_fn_name: format_ident!("into_{}_handle", ntp.name),
             }
         }
     }
 
     impl ToTokens for ComponentStructImpl {
         fn to_tokens(&self, tokens: &mut TokenStream) {
+            let Self {
+                into_handle_fn_name,
+                ..
+            } = self;
             let gen_struct::ComponentStruct {
                 ref struct_name, ..
             } = self.component_struct;
@@ -517,7 +558,7 @@ mod gen_impl {
             } = self.entity_handle_struct;
             tokens.extend(quote! {
               impl #struct_name {
-                fn into_handle(self, ctx: &spacetimedb::ReducerContext) -> #with_component_struct_name<#entity_handle_struct> {
+                fn #into_handle_fn_name(self, ctx: &spacetimedb::ReducerContext) -> #with_component_struct_name<#entity_handle_struct> {
                   let entity_id = self.entity_id;
                   #with_component_struct_name {
                     #component_name: self,
@@ -677,7 +718,7 @@ mod gen_impl {
             Self {
                 entity_handle_struct: ehs.to_owned(),
                 option_component_trait: oct.to_owned(),
-                table_name: oct.source.tables.0.first().unwrap().to_owned(), // WIP Eliminate unwrap call. Change return type to syn::Result.
+                table_name: oct.table_name.to_owned(),
             }
         }
     }
@@ -738,6 +779,20 @@ impl Parse for EntityMacro {
             component_declarations,
         } = input.parse()?;
 
+        let mut component_name_set = HashSet::new();
+        for d in &component_declarations {
+            for ntp in &d.value.name_table_pairs {
+                if component_name_set.contains(&ntp.name) {
+                    return Err(Error::new(
+                        ntp.name.span(),
+                        "Cannot duplicate component name.",
+                    ));
+                }
+
+                component_name_set.insert(&ntp.name);
+            }
+        }
+
         let entity_struct = gen_struct::EntityStruct::new(&entity_declaration);
         let component_structs = component_declarations
             .iter()
@@ -746,42 +801,64 @@ impl Parse for EntityMacro {
         let entity_handle_struct = gen_struct::EntityHandleStruct::new(&entity_declaration);
         let with_component_structs = component_declarations
             .iter()
-            .map(|d| gen_struct::WithComponentStruct::new(d))
+            .flat_map(|d| {
+                d.value
+                    .name_table_pairs
+                    .iter()
+                    .map(|ntp| gen_struct::WithComponentStruct::new(ntp, d))
+            })
             .collect::<Vec<_>>();
 
         let component_traits = component_declarations
             .iter()
-            .map(|d| gen_trait::ComponentTrait::new(&d.value))
+            .flat_map(|d| {
+                d.value
+                    .name_table_pairs
+                    .iter()
+                    .map(|ntp| gen_trait::ComponentTrait::new(ntp, &d.value))
+            })
             .collect::<Vec<_>>();
         let option_component_traits = component_declarations
             .iter()
-            .map(|d| {
-                let wcs = with_component_structs
-                    .iter()
-                    .find(|wcs| wcs.component_ty_name == d.value.ty_name)
-                    .ok_or(Error::new(
-                        d.value.ty_name.span(),
-                        "Cannot find the corresponding with-component struct.",
-                    ))?;
-                Ok(gen_trait::OptionComponentTrait::new(&d.value, wcs))
+            .flat_map(|d| {
+                d.value.name_table_pairs.iter().map(|ntp| {
+                    let wcs = with_component_structs
+                        .iter()
+                        .find(|wcs| wcs.component_name == ntp.name)
+                        .ok_or(Error::new(
+                            ntp.name.span(),
+                            "Cannot find the corresponding with-component struct.",
+                        ))?;
+                    Ok(gen_trait::OptionComponentTrait::new(ntp, &d.value, wcs))
+                })
             })
             .collect::<Result<Vec<_>>>()?;
 
-        let component_struct_impls = component_structs
+        let component_struct_impls = component_declarations
             .iter()
-            .map(|cs| {
-                let wcs = with_component_structs
-                    .iter()
-                    .find(|wcs| wcs.component_ty_name == cs.struct_name)
-                    .ok_or(Error::new(
-                        cs.struct_name.span(),
-                        "Cannot find the corresponding with-component struct.",
-                    ))?;
-                Ok(gen_impl::ComponentStructImpl::new(
-                    cs,
-                    wcs,
-                    &entity_handle_struct,
-                ))
+            .flat_map(|d| {
+                d.value.name_table_pairs.iter().map(|ntp| {
+                    let wcs = with_component_structs
+                        .iter()
+                        .find(|wcs| wcs.component_name == ntp.name)
+                        .ok_or(Error::new(
+                            ntp.name.span(),
+                            "Cannot find the corresponding with-component struct.",
+                        ))?;
+                    let cs = component_structs
+                        .iter()
+                        .find(|cs| cs.struct_name == wcs.component_ty_name)
+                        .ok_or(Error::new(
+                            ntp.name.span(),
+                            "Cannot find the corresponding component struct.",
+                        ))?;
+                    Ok(gen_impl::ComponentStructImpl::new(
+                        ntp,
+                        cs,
+                        wcs,
+                        &entity_handle_struct,
+                    ))
+                })
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -790,16 +867,16 @@ impl Parse for EntityMacro {
             .map(|wcs| {
                 let ct = component_traits
                     .iter()
-                    .find(|ct| ct.component_ty_name == wcs.component_ty_name)
+                    .find(|ct| ct.component_name == wcs.component_name)
                     .ok_or(Error::new(
-                        wcs.struct_name.span(),
+                        wcs.component_name.span(),
                         "Cannot find the corresponding component trait.",
                     ))?;
                 let oct = option_component_traits
                     .iter()
-                    .find(|ct| ct.component_ty_name == wcs.component_ty_name)
+                    .find(|ct| ct.component_name == wcs.component_name)
                     .ok_or(Error::new(
-                        wcs.struct_name.span(),
+                        wcs.component_name.span(),
                         "Cannot find the corresponding option component trait.",
                     ))?;
                 Ok(
@@ -815,7 +892,7 @@ impl Parse for EntityMacro {
             .flat_map(|wcs| {
                 component_traits
                     .iter()
-                    .filter(|ct| ct.component_ty_name != wcs.component_ty_name)
+                    .filter(|ct| ct.component_name != wcs.component_name)
                     .map(|ct| gen_impl::ComponentTraitForWithComponentStructImpl::new(wcs, ct))
             })
             .collect::<Vec<_>>();
@@ -825,7 +902,7 @@ impl Parse for EntityMacro {
             .flat_map(|wcs| {
                 option_component_traits
                     .iter()
-                    .filter(|oct| oct.component_ty_name != wcs.component_ty_name)
+                    .filter(|oct| oct.component_name != wcs.component_name)
                     .map(|oct| {
                         gen_impl::OptionComponentTraitForWithComponentStructImpl::new(wcs, oct)
                     })
