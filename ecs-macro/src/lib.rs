@@ -1,9 +1,7 @@
-#![allow(dead_code)]
-
 extern crate proc_macro;
 
 use proc_macro2::TokenStream;
-use quote::{ToTokens, format_ident, quote};
+use quote::{ToTokens, quote};
 use syn::{
     Attribute, Error, Field, Ident, Result, Token, braced, parenthesized,
     parse::{Parse, ParseStream},
@@ -18,13 +16,31 @@ mod kw {
     custom_keyword!(tables);
 }
 
+#[derive(Clone)]
+struct Attributes(Vec<Attribute>);
+
+impl Parse for Attributes {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Ok(Self(input.call(Attribute::parse_outer)?))
+    }
+}
+
+impl ToTokens for Attributes {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Attributes(attrs) = self;
+        tokens.extend(quote! {
+          #(#attrs)*
+        });
+    }
+}
+
 struct WithAttrs<T> {
-    pub attrs: Vec<Attribute>,
+    pub attrs: Attributes,
     pub value: T,
 }
 
 trait AddAttrs: Sized {
-    fn add_attrs(self, attrs: Vec<Attribute>) -> WithAttrs<Self> {
+    fn add_attrs(self, attrs: Attributes) -> WithAttrs<Self> {
         WithAttrs { attrs, value: self }
     }
 }
@@ -33,12 +49,13 @@ impl<T: ToTokens> ToTokens for WithAttrs<T> {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let WithAttrs { attrs, value } = self;
         tokens.extend(quote! {
-          #(#attrs)*
+          #attrs
           #value
         });
     }
 }
 
+#[derive(Clone)]
 struct Fields(Vec<Field>);
 
 impl Parse for Fields {
@@ -62,6 +79,7 @@ impl ToTokens for Fields {
     }
 }
 
+#[derive(Clone)]
 struct Tables(Vec<Ident>);
 
 impl Parse for Tables {
@@ -86,253 +104,704 @@ impl ToTokens for Tables {
     }
 }
 
-struct ComponentDeclaration {
-    pub name: Ident,
-    pub ty_name: Ident,
-    pub tables: Tables,
-    pub fields: Fields,
-}
+mod macro_input {
+    use syn::{
+        Error, Ident, Result, Token,
+        parse::{Parse, ParseStream},
+    };
 
-impl AddAttrs for ComponentDeclaration {}
+    use crate::{AddAttrs, Fields, Tables, WithAttrs, kw};
 
-impl Parse for ComponentDeclaration {
-    fn parse(input: ParseStream) -> Result<Self> {
-        input.parse::<kw::component>()?;
-        let name = input.parse()?;
-        input.parse::<Token![:]>()?;
-        let ty_name = input.parse()?;
-        let tables = input.parse()?;
-        let fields = input.parse()?;
-        Ok(Self {
-            name,
-            ty_name,
-            tables,
-            fields,
-        })
+    #[derive(Clone)]
+    pub struct ComponentDeclaration {
+        pub name: Ident,
+        pub ty_name: Ident,
+        pub tables: Tables,
+        pub fields: Fields,
     }
-}
 
-struct EntityDeclaration {
-    pub name: Ident,
-    pub id_name: Ident,
-    pub id_ty_name: Ident,
-    pub tables: Tables,
-}
+    impl AddAttrs for ComponentDeclaration {}
 
-impl AddAttrs for EntityDeclaration {}
-
-impl Parse for EntityDeclaration {
-    fn parse(input: ParseStream) -> Result<Self> {
-        input.parse::<kw::entity>()?;
-        let name = input.parse()?;
-        let id_name = input.parse()?;
-        input.parse::<Token![:]>()?;
-        let id_ty_name = input.parse()?;
-        let tables = input.parse()?;
-        input.parse::<Token![;]>()?;
-        Ok(Self {
-            name,
-            id_name,
-            id_ty_name,
-            tables,
-        })
+    impl Parse for ComponentDeclaration {
+        fn parse(input: ParseStream) -> Result<Self> {
+            input.parse::<kw::component>()?;
+            let name = input.parse()?;
+            input.parse::<Token![:]>()?;
+            let ty_name = input.parse()?;
+            let tables = input.parse()?;
+            let fields = input.parse()?;
+            Ok(Self {
+                name,
+                ty_name,
+                tables,
+                fields,
+            })
+        }
     }
-}
 
-struct Entity {
-    pub entity_declaration: WithAttrs<EntityDeclaration>,
-    pub component_declarations: Vec<WithAttrs<ComponentDeclaration>>,
-}
+    pub struct EntityDeclaration {
+        pub name: Ident,
+        pub id_name: Ident,
+        pub id_ty_name: Ident,
+        pub tables: Tables,
+    }
 
-impl Parse for Entity {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let mut entities = vec![];
-        let mut components = vec![];
-        while !input.is_empty() {
-            let attrs = input.call(Attribute::parse_outer)?;
-            let la = input.lookahead1();
-            if la.peek(kw::entity) {
-                let entity = input.parse::<EntityDeclaration>()?.add_attrs(attrs);
-                if entities.len() > 0 {
-                    return Err(Error::new(
-                        entity.value.name.span(),
-                        "Only one entity declaration is allowed.",
-                    ));
+    impl AddAttrs for EntityDeclaration {}
+
+    impl Parse for EntityDeclaration {
+        fn parse(input: ParseStream) -> Result<Self> {
+            input.parse::<kw::entity>()?;
+            let name = input.parse()?;
+            let id_name = input.parse()?;
+            input.parse::<Token![:]>()?;
+            let id_ty_name = input.parse()?;
+            let tables = input.parse()?;
+            input.parse::<Token![;]>()?;
+            Ok(Self {
+                name,
+                id_name,
+                id_ty_name,
+                tables,
+            })
+        }
+    }
+    pub struct EntityMacroInput {
+        pub entity_declaration: WithAttrs<EntityDeclaration>,
+        pub component_declarations: Vec<WithAttrs<ComponentDeclaration>>,
+    }
+
+    impl Parse for EntityMacroInput {
+        fn parse(input: ParseStream) -> Result<Self> {
+            let mut entities = vec![];
+            let mut components = vec![];
+            while !input.is_empty() {
+                let attrs = input.parse()?;
+                let la = input.lookahead1();
+                if la.peek(kw::entity) {
+                    let entity = input.parse::<EntityDeclaration>()?.add_attrs(attrs);
+                    if entities.len() > 0 {
+                        return Err(Error::new(
+                            entity.value.name.span(),
+                            "Only one entity declaration is allowed.",
+                        ));
+                    }
+                    entities.push(entity);
+                } else if la.peek(kw::component) {
+                    components.push(input.parse::<ComponentDeclaration>()?.add_attrs(attrs));
+                } else {
+                    return Err(la.error());
                 }
-                entities.push(entity);
-            } else if la.peek(kw::component) {
-                components.push(input.parse::<ComponentDeclaration>()?.add_attrs(attrs));
-            } else {
-                return Err(la.error());
+            }
+
+            if entities.len() < 1 {
+                return Err(Error::new(
+                    input.span(),
+                    "An entity declaration must be specified.",
+                ));
+            }
+
+            Ok(EntityMacroInput {
+                entity_declaration: entities.remove(0),
+                component_declarations: components,
+            })
+        }
+    }
+}
+
+mod gen_struct {
+    use proc_macro2::TokenStream;
+    use quote::ToTokens;
+    use quote::format_ident;
+    use quote::quote;
+    use syn::Ident;
+
+    use crate::Attributes;
+    use crate::Fields;
+    use crate::Tables;
+    use crate::macro_input::ComponentDeclaration;
+    use crate::macro_input::EntityDeclaration;
+
+    use super::WithAttrs;
+
+    #[derive(Clone)]
+    pub struct EntityStruct {
+        pub attrs: Attributes,
+        pub tables: Tables,
+        pub struct_name: Ident,
+        pub id_ty_name: Ident,
+    }
+
+    impl EntityStruct {
+        pub fn new(ewa: &WithAttrs<EntityDeclaration>) -> Self {
+            Self {
+                attrs: ewa.attrs.to_owned(),
+                tables: ewa.value.tables.to_owned(),
+                struct_name: ewa.value.name.to_owned(),
+                id_ty_name: ewa.value.id_ty_name.to_owned(),
             }
         }
+    }
 
-        if entities.len() < 1 {
-            return Err(Error::new(
-                input.span(),
-                "An entity declaration must be specified.",
-            ));
+    impl ToTokens for EntityStruct {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let EntityStruct {
+                struct_name: name,
+                id_ty_name,
+                tables,
+                attrs,
+            } = self;
+            tokens.extend(quote! {
+              #attrs
+              #tables
+              pub struct #name {
+                pub id: #id_ty_name,
+              }
+            });
         }
-
-        Ok(Entity {
-            entity_declaration: entities.remove(0),
-            component_declarations: components,
-        })
     }
-}
 
-impl ToTokens for EntityDeclaration {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let EntityDeclaration {
-            name,
-            id_name: _,
-            id_ty_name,
-            tables: _,
-        } = self;
-        tokens.extend(quote! {
-          pub struct #name {
-            pub id: #id_ty_name,
-          }
-        });
+    #[derive(Clone)]
+    pub struct ComponentStruct {
+        pub tables: Tables,
+        pub struct_name: Ident,
+        pub id_name: Ident,
+        pub id_ty_name: Ident,
+        pub fields: Fields,
     }
-}
 
-fn component_trait_name(c: &ComponentDeclaration) -> Ident {
-    format_ident!("__{}__Trait", c.name)
-}
-
-fn handle_name(e: &EntityDeclaration) -> Ident {
-    format_ident!("{}Handle", e.name)
-}
-
-struct ComponentTrait<'a>(&'a ComponentDeclaration);
-
-impl<'a> ToTokens for ComponentTrait<'a> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let ComponentTrait(c) = self;
-        let trait_name = component_trait_name(c);
-        let ComponentDeclaration { name, ty_name, .. } = c;
-        let update_name = format_ident!("update_{}", name);
-        tokens.extend(quote! {
-          #[allow(non_camel_case_types)]
-          pub trait #trait_name {
-            fn #name(&self) -> ::core::option::Option<#ty_name>;
-            fn #update_name(&self, value: #ty_name) -> #ty_name;
-          }
-        })
-    }
-}
-
-struct ComponentTraitImplementation<'a>(&'a EntityDeclaration, &'a ComponentDeclaration);
-
-impl<'a> ToTokens for ComponentTraitImplementation<'a> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self(e, c) = self;
-        let EntityDeclaration { id_name, .. } = e;
-        let entity_handle = handle_name(e);
-        let trait_name = component_trait_name(c);
-        let ComponentDeclaration { name, ty_name, .. } = c;
-        let update_name = format_ident!("update_{}", name);
-        let table = c.tables.0.first().unwrap();
-        tokens.extend(quote! {
-          impl<'a> #trait_name for #entity_handle<'a> {
-            fn #name(&self) -> ::core::option::Option<#ty_name> {
-              self.ctx.db.#table().#id_name().find(self.#id_name)
+    impl ComponentStruct {
+        pub fn new(
+            cwa: &WithAttrs<ComponentDeclaration>,
+            ewa: &WithAttrs<EntityDeclaration>,
+        ) -> Self {
+            Self {
+                tables: cwa.value.tables.to_owned(),
+                struct_name: cwa.value.ty_name.to_owned(),
+                id_name: ewa.value.id_name.to_owned(),
+                id_ty_name: ewa.value.id_ty_name.to_owned(),
+                fields: cwa.value.fields.to_owned(),
             }
-            fn #update_name(&self, value: #ty_name) -> #ty_name {
-              self.ctx.db.#table().#id_name().update(value)
+        }
+    }
+
+    impl ToTokens for ComponentStruct {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let ComponentStruct {
+                tables,
+                struct_name,
+                id_name,
+                id_ty_name,
+                fields,
+            } = self;
+            tokens.extend(quote! {
+              #tables
+              pub struct #struct_name {
+                #[primary_key]
+                pub #id_name: #id_ty_name,
+                #fields
+              }
+            });
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct EntityHandleStruct {
+        pub struct_name: Ident,
+        pub id_name: Ident,
+        pub id_ty_name: Ident,
+    }
+
+    impl EntityHandleStruct {
+        pub fn new(ewa: &WithAttrs<EntityDeclaration>) -> Self {
+            let struct_name = format_ident!("{}Handle", ewa.value.name);
+            Self {
+                struct_name,
+                id_name: ewa.value.id_name.to_owned(),
+                id_ty_name: ewa.value.id_ty_name.to_owned(),
             }
-          }
-        });
+        }
+    }
+
+    impl ToTokens for EntityHandleStruct {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let EntityHandleStruct {
+                struct_name,
+                id_name,
+                id_ty_name,
+            } = self;
+            tokens.extend(quote! {
+              pub struct #struct_name<'a> {
+                pub ctx: &'a spacetimedb::ReducerContext,
+                pub #id_name: #id_ty_name,
+              }
+            })
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct WithComponentStruct {
+        pub struct_name: Ident,
+        pub component_name: Ident,
+        pub component_ty_name: Ident,
+    }
+
+    impl WithComponentStruct {
+        pub fn new(cwa: &WithAttrs<ComponentDeclaration>) -> Self {
+            Self {
+                struct_name: format_ident!("With{}", cwa.value.ty_name),
+                component_name: cwa.value.name.to_owned(),
+                component_ty_name: cwa.value.ty_name.to_owned(),
+            }
+        }
+    }
+
+    impl ToTokens for WithComponentStruct {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let Self {
+                struct_name: with_component_name,
+                component_name,
+                component_ty_name,
+            } = self;
+            tokens.extend(quote! {
+              pub struct #with_component_name<T> {
+                pub #component_name: #component_ty_name,
+                pub value: T,
+              }
+            })
+        }
     }
 }
 
-struct ComponentDefinition<'a>(
-    &'a WithAttrs<ComponentDeclaration>,
-    &'a WithAttrs<EntityDeclaration>,
-);
+mod gen_trait {
+    use proc_macro2::TokenStream;
+    use quote::{ToTokens, format_ident, quote};
+    use syn::Ident;
 
-impl<'a> ToTokens for ComponentDefinition<'a> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let ComponentDefinition(c, e) = self;
-        let c = &c.value;
-        let e = &e.value;
-        let ComponentDeclaration {
-            ty_name,
-            tables,
-            fields,
-            ..
-        } = c;
-        let EntityDeclaration {
-            id_name,
-            id_ty_name,
-            ..
-        } = e;
-        let component_trait = ComponentTrait(c);
-        tokens.extend(quote! {
-          #tables
-          pub struct #ty_name {
-            #[primary_key]
-            pub #id_name: #id_ty_name,
-            #fields
-          }
-          #component_trait
-        });
+    use crate::macro_input::{self, ComponentDeclaration};
+
+    #[derive(Clone)]
+    pub struct ComponentTrait {
+        pub trait_name: Ident,
+        pub component_ty_name: Ident,
+        pub getter_fn_name: Ident,
+        pub update_fn_name: Ident,
+    }
+
+    impl ComponentTrait {
+        pub fn new(c: &ComponentDeclaration) -> Self {
+            Self {
+                trait_name: format_ident!("{}Trait", c.ty_name),
+                component_ty_name: c.ty_name.to_owned(),
+                getter_fn_name: c.name.to_owned(),
+                update_fn_name: format_ident!("update_{}", c.name),
+            }
+        }
+    }
+
+    impl ToTokens for ComponentTrait {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let Self {
+                trait_name,
+                component_ty_name,
+                getter_fn_name,
+                update_fn_name,
+            } = self;
+            tokens.extend(quote! {
+              #[allow(non_camel_case_types)]
+              pub trait #trait_name {
+                fn #getter_fn_name(&self) -> &#component_ty_name;
+                fn #update_fn_name(self) -> Self;
+              }
+            })
+        }
+    }
+
+    #[derive(Clone)]
+    pub struct OptionComponentTrait {
+        pub source: macro_input::ComponentDeclaration,
+        pub trait_name: Ident,
+        pub component_ty_name: Ident,
+        pub getter_fn_name: Ident,
+        pub update_fn_name: Ident,
+    }
+
+    impl OptionComponentTrait {
+        pub fn new(c: &ComponentDeclaration) -> Self {
+            Self {
+                source: c.to_owned(),
+                trait_name: format_ident!("Option{}Trait", c.ty_name),
+                component_ty_name: c.ty_name.to_owned(),
+                getter_fn_name: c.name.to_owned(),
+                update_fn_name: format_ident!("update_{}", c.name),
+            }
+        }
+    }
+
+    impl ToTokens for OptionComponentTrait {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let Self {
+                source: _,
+                trait_name,
+                component_ty_name,
+                getter_fn_name,
+                update_fn_name,
+            } = self;
+            tokens.extend(quote! {
+              #[allow(non_camel_case_types)]
+              pub trait #trait_name {
+                fn #getter_fn_name(&self) -> ::core::option::Option<#component_ty_name>;
+                fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name;
+              }
+            })
+        }
     }
 }
 
-struct EntityHandle<'a>(&'a Entity);
+mod gen_impl {
+    use proc_macro2::TokenStream;
+    use quote::{ToTokens, quote};
+    use syn::Ident;
 
-impl<'a> ToTokens for EntityHandle<'a> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let EntityHandle(entity) = *self;
-        let Entity {
+    use crate::{gen_struct, gen_trait};
+
+    pub struct ReplacementComponentTraitForWithComponentStructImpl {
+        pub with_component_struct: gen_struct::WithComponentStruct,
+        pub component_trait: gen_trait::ComponentTrait,
+        pub option_component_trait: gen_trait::OptionComponentTrait,
+    }
+
+    impl ReplacementComponentTraitForWithComponentStructImpl {
+        pub fn new(
+            wcs: &gen_struct::WithComponentStruct,
+            ct: &gen_trait::ComponentTrait,
+            oct: &gen_trait::OptionComponentTrait,
+        ) -> Self {
+            Self {
+                with_component_struct: wcs.to_owned(),
+                component_trait: ct.to_owned(),
+                option_component_trait: oct.to_owned(),
+            }
+        }
+    }
+
+    impl ToTokens for ReplacementComponentTraitForWithComponentStructImpl {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let gen_struct::WithComponentStruct {
+                ref struct_name,
+                ref component_name,
+                ..
+            } = self.with_component_struct;
+            let gen_trait::ComponentTrait {
+                ref trait_name,
+                ref component_ty_name,
+                ref getter_fn_name,
+                ref update_fn_name,
+                ..
+            } = self.component_trait;
+            let gen_trait::OptionComponentTrait {
+                trait_name: ref option_trait_name,
+                ..
+            } = self.option_component_trait;
+            tokens.extend(quote! {
+              impl<T: #option_trait_name> #trait_name for #struct_name<T> {
+                fn #getter_fn_name(&self) -> &#component_ty_name {
+                  &self.#component_name
+                }
+                fn #update_fn_name(mut self) -> Self {
+                  self.#component_name = self.value.#update_fn_name(self.#component_name);
+                  self
+                }
+              }
+            });
+        }
+    }
+
+    pub struct ComponentTraitForWithComponentStructImpl {
+        pub with_component_struct: gen_struct::WithComponentStruct,
+        pub component_trait: gen_trait::ComponentTrait,
+    }
+
+    impl ComponentTraitForWithComponentStructImpl {
+        pub fn new(wcs: &gen_struct::WithComponentStruct, ct: &gen_trait::ComponentTrait) -> Self {
+            Self {
+                with_component_struct: wcs.to_owned(),
+                component_trait: ct.to_owned(),
+            }
+        }
+    }
+
+    impl ToTokens for ComponentTraitForWithComponentStructImpl {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let gen_struct::WithComponentStruct {
+                ref struct_name, ..
+            } = self.with_component_struct;
+            let gen_trait::ComponentTrait {
+                ref trait_name,
+                ref component_ty_name,
+                ref getter_fn_name,
+                ref update_fn_name,
+                ..
+            } = self.component_trait;
+            tokens.extend(quote! {
+              impl<T: #trait_name> #trait_name for #struct_name<T> {
+                fn #getter_fn_name(&self) -> &#component_ty_name {
+                  self.value.#getter_fn_name()
+                }
+                fn #update_fn_name(mut self) -> Self {
+                  self.value = self.value.#update_fn_name();
+                  self
+                }
+              }
+            });
+        }
+    }
+
+    pub struct OptionComponentTraitForWithComponentStructImpl {
+        pub with_component_struct: gen_struct::WithComponentStruct,
+        pub option_component_trait: gen_trait::OptionComponentTrait,
+    }
+
+    impl OptionComponentTraitForWithComponentStructImpl {
+        pub fn new(
+            wcs: &gen_struct::WithComponentStruct,
+            oct: &gen_trait::OptionComponentTrait,
+        ) -> Self {
+            Self {
+                with_component_struct: wcs.to_owned(),
+                option_component_trait: oct.to_owned(),
+            }
+        }
+    }
+
+    impl ToTokens for OptionComponentTraitForWithComponentStructImpl {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let gen_struct::WithComponentStruct {
+                ref struct_name, ..
+            } = self.with_component_struct;
+            let gen_trait::OptionComponentTrait {
+                ref trait_name,
+                ref component_ty_name,
+                ref getter_fn_name,
+                ref update_fn_name,
+                ..
+            } = self.option_component_trait;
+            tokens.extend(quote! {
+              impl<T: #trait_name> #trait_name for #struct_name<T> {
+                fn #getter_fn_name(&self) -> ::core::option::Option<#component_ty_name> {
+                  self.value.#getter_fn_name()
+                }
+                fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name {
+                  self.value.#update_fn_name(value)
+                }
+              }
+            });
+        }
+    }
+
+    pub struct OptionComponentTraitForEntityHandleStructImpl {
+        pub entity_handle_struct: gen_struct::EntityHandleStruct,
+        pub option_component_trait: gen_trait::OptionComponentTrait,
+        pub table_name: Ident,
+    }
+
+    impl OptionComponentTraitForEntityHandleStructImpl {
+        pub fn new(
+            ehs: &gen_struct::EntityHandleStruct,
+            oct: &gen_trait::OptionComponentTrait,
+        ) -> Self {
+            Self {
+                entity_handle_struct: ehs.to_owned(),
+                option_component_trait: oct.to_owned(),
+                table_name: oct.source.tables.0.first().unwrap().to_owned(), // WIP Eliminate unwrap call. Change return type to syn::Result.
+            }
+        }
+    }
+
+    impl ToTokens for OptionComponentTraitForEntityHandleStructImpl {
+        fn to_tokens(&self, tokens: &mut TokenStream) {
+            let gen_struct::EntityHandleStruct {
+                ref id_name,
+                ref struct_name,
+                ..
+            } = self.entity_handle_struct;
+            let gen_trait::OptionComponentTrait {
+                ref trait_name,
+                ref component_ty_name,
+                ref getter_fn_name,
+                ref update_fn_name,
+                ..
+            } = self.option_component_trait;
+            let table_name = &self.table_name;
+            tokens.extend(quote! {
+              impl<'a> #trait_name for #struct_name<'a> {
+                fn #getter_fn_name(&self) -> ::core::option::Option<#component_ty_name> {
+                  self.ctx.db.#table_name().#id_name().find(self.#id_name)
+                }
+                fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name {
+                  self.ctx.db.#table_name().#id_name().update(value)
+                }
+              }
+            });
+        }
+    }
+}
+
+struct EntityMacro {
+    entity_struct: gen_struct::EntityStruct,
+    component_structs: Vec<gen_struct::ComponentStruct>,
+    entity_handle_struct: gen_struct::EntityHandleStruct,
+    with_component_structs: Vec<gen_struct::WithComponentStruct>,
+
+    component_traits: Vec<gen_trait::ComponentTrait>,
+    option_component_traits: Vec<gen_trait::OptionComponentTrait>,
+
+    replacement_component_trait_for_with_component_struct_impls:
+        Vec<gen_impl::ReplacementComponentTraitForWithComponentStructImpl>,
+    component_trait_for_with_component_struct_impls:
+        Vec<gen_impl::ComponentTraitForWithComponentStructImpl>,
+    option_component_trait_for_with_component_struct_impls:
+        Vec<gen_impl::OptionComponentTraitForWithComponentStructImpl>,
+    option_component_trait_for_entity_handle_struct_impls:
+        Vec<gen_impl::OptionComponentTraitForEntityHandleStructImpl>,
+}
+
+impl Parse for EntityMacro {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let macro_input::EntityMacroInput {
             entity_declaration,
             component_declarations,
-        } = entity;
-        let entity_declaration = &entity_declaration.value;
-        let component_trait_implementations = component_declarations
+        } = input.parse()?;
+
+        let entity_struct = gen_struct::EntityStruct::new(&entity_declaration);
+        let component_structs = component_declarations
             .iter()
-            .map(|WithAttrs { value: c, .. }| ComponentTraitImplementation(entity_declaration, c))
+            .map(|d| gen_struct::ComponentStruct::new(d, &entity_declaration))
             .collect::<Vec<_>>();
-        let EntityDeclaration {
-            name,
-            id_name,
-            id_ty_name,
-            tables: _,
-        } = entity_declaration;
-        let entity_handle = format_ident!("{}Handle", name);
-        tokens.extend(quote! {
-          pub struct #entity_handle<'a> {
-            pub ctx: &'a spacetimedb::ReducerContext,
-            pub #id_name: #id_ty_name,
-          }
-          #(#component_trait_implementations)*
+        let entity_handle_struct = gen_struct::EntityHandleStruct::new(&entity_declaration);
+        let with_component_structs = component_declarations
+            .iter()
+            .map(|d| gen_struct::WithComponentStruct::new(d))
+            .collect::<Vec<_>>();
+
+        let component_traits = component_declarations
+            .iter()
+            .map(|d| gen_trait::ComponentTrait::new(&d.value))
+            .collect::<Vec<_>>();
+        let option_component_traits = component_declarations
+            .iter()
+            .map(|d| gen_trait::OptionComponentTrait::new(&d.value))
+            .collect::<Vec<_>>();
+
+        let replacement_component_trait_for_with_component_struct_impls = with_component_structs
+            .iter()
+            .map(|wcs| {
+                let ct = component_traits
+                    .iter()
+                    .find(|ct| ct.component_ty_name == wcs.component_ty_name)
+                    .ok_or(Error::new(
+                        wcs.struct_name.span(),
+                        "Cannot find the corresponding component trait.",
+                    ))?;
+                let oct = option_component_traits
+                    .iter()
+                    .find(|ct| ct.component_ty_name == wcs.component_ty_name)
+                    .ok_or(Error::new(
+                        wcs.struct_name.span(),
+                        "Cannot find the corresponding option component trait.",
+                    ))?;
+                Ok(
+                    gen_impl::ReplacementComponentTraitForWithComponentStructImpl::new(
+                        wcs, ct, oct,
+                    ),
+                )
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let component_trait_for_with_component_struct_impls = with_component_structs
+            .iter()
+            .flat_map(|wcs| {
+                component_traits
+                    .iter()
+                    .filter(|ct| ct.component_ty_name != wcs.component_ty_name)
+                    .map(|ct| gen_impl::ComponentTraitForWithComponentStructImpl::new(wcs, ct))
+            })
+            .collect::<Vec<_>>();
+
+        let option_component_trait_for_with_component_struct_impls = with_component_structs
+            .iter()
+            .flat_map(|wcs| {
+                option_component_traits
+                    .iter()
+                    .filter(|oct| oct.component_ty_name != wcs.component_ty_name)
+                    .map(|oct| {
+                        gen_impl::OptionComponentTraitForWithComponentStructImpl::new(wcs, oct)
+                    })
+            })
+            .collect::<Vec<_>>();
+
+        let option_component_trait_for_entity_handle_struct_impls = option_component_traits
+            .iter()
+            .map(|oct| {
+                gen_impl::OptionComponentTraitForEntityHandleStructImpl::new(
+                    &entity_handle_struct,
+                    oct,
+                )
+            })
+            .collect::<Vec<_>>();
+
+        Ok(Self {
+            entity_struct,
+            component_structs,
+            entity_handle_struct,
+            with_component_structs,
+
+            component_traits,
+            option_component_traits,
+
+            replacement_component_trait_for_with_component_struct_impls,
+            component_trait_for_with_component_struct_impls,
+            option_component_trait_for_with_component_struct_impls,
+            option_component_trait_for_entity_handle_struct_impls,
         })
     }
 }
 
-impl ToTokens for Entity {
+impl ToTokens for EntityMacro {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Entity {
-            entity_declaration,
-            component_declarations: components,
+        let EntityMacro {
+            entity_struct,
+            component_structs,
+            entity_handle_struct,
+            with_component_structs,
+
+            component_traits,
+            option_component_traits,
+
+            replacement_component_trait_for_with_component_struct_impls,
+            component_trait_for_with_component_struct_impls,
+            option_component_trait_for_with_component_struct_impls,
+            option_component_trait_for_entity_handle_struct_impls,
         } = self;
-        let component_definitions = components
-            .iter()
-            .map(|c| ComponentDefinition(c, entity_declaration));
-        let entity_handle = EntityHandle(self);
         tokens.extend(quote! {
-          #entity_declaration
-          #(#component_definitions)*
-          #entity_handle
+          #entity_struct
+          #(#component_structs)*
+          #entity_handle_struct
+          #(#with_component_structs)*
+
+          #(#component_traits)*
+          #(#option_component_traits)*
+
+          #(#replacement_component_trait_for_with_component_struct_impls)*
+          #(#component_trait_for_with_component_struct_impls)*
+          #(#option_component_trait_for_with_component_struct_impls)*
+          #(#option_component_trait_for_entity_handle_struct_impls)*
         });
     }
 }
 
 #[proc_macro]
 pub fn entity(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let entity = parse_macro_input!(input as Entity);
+    let entity_macro = parse_macro_input!(input as EntityMacro);
 
-    proc_macro::TokenStream::from(quote! { #entity })
+    proc_macro::TokenStream::from(quote! { #entity_macro })
 }
