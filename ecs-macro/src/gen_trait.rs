@@ -11,6 +11,7 @@ pub struct ComponentTrait {
     pub component_ty_name: Ident,
     pub getter_fn_name: Ident,
     pub update_fn_name: Ident,
+    pub delete_fn_name: Ident,
 }
 
 impl ComponentTrait {
@@ -24,6 +25,7 @@ impl ComponentTrait {
             component_ty_name: c.ty_name.to_owned(),
             getter_fn_name: ntp.name.to_owned(),
             update_fn_name: format_ident!("update_{}", ntp.name),
+            delete_fn_name: format_ident!("delete_{}", ntp.name),
         }
     }
 }
@@ -36,12 +38,14 @@ impl ToTokens for ComponentTrait {
             component_ty_name,
             getter_fn_name,
             update_fn_name,
+            delete_fn_name,
         } = self;
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
           pub trait #trait_name: Sized {
             fn #getter_fn_name(&self) -> &#component_ty_name;
             fn #update_fn_name(self) -> Self;
+            fn #delete_fn_name(self);
           }
         })
     }
@@ -57,6 +61,7 @@ pub struct OptionComponentTrait {
     pub with_fn_name: Ident,
     pub getter_fn_name: Ident,
     pub update_fn_name: Ident,
+    pub delete_fn_name: Ident,
 }
 
 impl OptionComponentTrait {
@@ -74,6 +79,7 @@ impl OptionComponentTrait {
             with_fn_name: format_ident!("with_{}", ntp.name),
             getter_fn_name: ntp.name.to_owned(),
             update_fn_name: format_ident!("update_{}", ntp.name),
+            delete_fn_name: format_ident!("delete_{}", ntp.name),
         }
     }
 }
@@ -89,6 +95,7 @@ impl ToTokens for OptionComponentTrait {
             with_fn_name,
             getter_fn_name,
             update_fn_name,
+            delete_fn_name,
         } = self;
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
@@ -101,6 +108,7 @@ impl ToTokens for OptionComponentTrait {
             }
             fn #getter_fn_name(&self) -> ::core::option::Option<#component_ty_name>;
             fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name;
+            fn #delete_fn_name(&self);
           }
         })
     }

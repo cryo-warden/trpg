@@ -100,10 +100,13 @@ impl ToTokens for ReplacementComponentTraitForWithComponentStructImpl {
             ref component_ty_name,
             ref getter_fn_name,
             ref update_fn_name,
+            ref delete_fn_name,
             ..
         } = self.component_trait;
         let gen_trait::OptionComponentTrait {
             trait_name: ref option_trait_name,
+            update_fn_name: ref option_update_fn_name,
+            delete_fn_name: ref option_delete_fn_name,
             ..
         } = self.option_component_trait;
         tokens.extend(quote! {
@@ -112,8 +115,11 @@ impl ToTokens for ReplacementComponentTraitForWithComponentStructImpl {
               &self.#component_name
             }
             fn #update_fn_name(mut self) -> Self {
-              self.#component_name = self.value.#update_fn_name(self.#component_name);
+              self.#component_name = self.value.#option_update_fn_name(self.#component_name);
               self
+            }
+            fn #delete_fn_name(mut self) {
+              self.value.#option_delete_fn_name();
             }
           }
         });
@@ -144,6 +150,7 @@ impl ToTokens for ComponentTraitForWithComponentStructImpl {
             ref component_ty_name,
             ref getter_fn_name,
             ref update_fn_name,
+            ref delete_fn_name,
             ..
         } = self.component_trait;
         tokens.extend(quote! {
@@ -154,6 +161,9 @@ impl ToTokens for ComponentTraitForWithComponentStructImpl {
             fn #update_fn_name(mut self) -> Self {
               self.value = self.value.#update_fn_name();
               self
+            }
+            fn #delete_fn_name(mut self) {
+              self.value.#delete_fn_name();
             }
           }
         });
@@ -187,6 +197,7 @@ impl ToTokens for OptionComponentTraitForWithComponentStructImpl {
             ref component_ty_name,
             ref getter_fn_name,
             ref update_fn_name,
+            ref delete_fn_name,
             ..
         } = self.option_component_trait;
         tokens.extend(quote! {
@@ -196,6 +207,9 @@ impl ToTokens for OptionComponentTraitForWithComponentStructImpl {
             }
             fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name {
               self.value.#update_fn_name(value)
+            }
+            fn #delete_fn_name(&self) {
+              self.value.#delete_fn_name()
             }
           }
         });
@@ -233,6 +247,7 @@ impl ToTokens for OptionComponentTraitForEntityHandleStructImpl {
             ref component_ty_name,
             ref getter_fn_name,
             ref update_fn_name,
+            ref delete_fn_name,
             ..
         } = self.option_component_trait;
         let table_name = &self.table_name;
@@ -243,6 +258,9 @@ impl ToTokens for OptionComponentTraitForEntityHandleStructImpl {
             }
             fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name {
               self.hidden.ctx.db.#table_name().#id_name().update(value)
+            }
+            fn #delete_fn_name(&self) {
+              self.hidden.ctx.db.#table_name().#id_name().delete(self.#id_name);
             }
           }
         });
