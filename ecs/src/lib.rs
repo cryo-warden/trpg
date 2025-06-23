@@ -1,4 +1,3 @@
-#[cfg(test)]
 mod tests;
 
 pub use ecs_macro::entity;

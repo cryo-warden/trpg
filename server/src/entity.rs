@@ -268,7 +268,7 @@ impl Entity {
             .set_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
                     .ok_or("Cannot find starting allegiance.")?
-                    .value // WIP just make an `#id_name()` function trait
+                    .value // WIP just make an `#id()` function trait
                     .entity_id,
             )
             .add_location(

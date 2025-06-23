@@ -23,14 +23,19 @@ struct EntityMacro {
     with_component_structs: Vec<gen_struct::WithComponentStruct>,
 
     component_traits: Vec<gen_trait::ComponentTrait>,
+    component_delete_traits: Vec<gen_trait::ComponentDeleteTrait>,
     option_component_traits: Vec<gen_trait::OptionComponentTrait>,
     option_component_iter_traits: Vec<gen_trait::OptionComponentIterTrait>,
 
     component_struct_impls: Vec<gen_impl::ComponentStructImpl>,
     replacement_component_trait_for_with_component_struct_impls:
         Vec<gen_impl::ReplacementComponentTraitForWithComponentStructImpl>,
+    replacement_component_delete_trait_for_with_component_struct_impls:
+        Vec<gen_impl::ReplacementComponentDeleteTraitForWithComponentStructImpl>,
     component_trait_for_with_component_struct_impls:
         Vec<gen_impl::ComponentTraitForWithComponentStructImpl>,
+    component_delete_trait_for_with_component_struct_impls:
+        Vec<gen_impl::ComponentDeleteTraitForWithComponentStructImpl>,
     option_component_trait_for_with_component_struct_impls:
         Vec<gen_impl::OptionComponentTraitForWithComponentStructImpl>,
     option_component_trait_for_entity_handle_struct_impls:
@@ -46,23 +51,23 @@ impl Parse for EntityMacro {
             struct_attrs,
         } = input.parse()?;
 
-        let mut component_name_set = HashSet::new();
+        let mut component_set = HashSet::new();
         for d in &component_declarations {
-            if d.value.name_table_pairs.len() < 1 {
+            if d.value.component_table_pairs.len() < 1 {
                 return Err(Error::new(
-                    d.value.ty_name.span(),
+                    d.value.component_ty.span(),
                     "Must provide at least one component name.",
                 ));
             }
-            for ntp in &d.value.name_table_pairs {
-                if component_name_set.contains(&ntp.name) {
+            for ctp in &d.value.component_table_pairs {
+                if component_set.contains(&ctp.component) {
                     return Err(Error::new(
-                        ntp.name.span(),
+                        ctp.component.span(),
                         "Cannot duplicate component name.",
                     ));
                 }
 
-                component_name_set.insert(&ntp.name);
+                component_set.insert(&ctp.component);
             }
         }
 
@@ -77,9 +82,9 @@ impl Parse for EntityMacro {
             .iter()
             .flat_map(|d| {
                 d.value
-                    .name_table_pairs
+                    .component_table_pairs
                     .iter()
-                    .map(|ntp| gen_struct::WithComponentStruct::new(&struct_attrs, ntp, d))
+                    .map(|ctp| gen_struct::WithComponentStruct::new(&struct_attrs, ctp, d))
             })
             .collect::<Vec<_>>();
 
@@ -87,23 +92,32 @@ impl Parse for EntityMacro {
             .iter()
             .flat_map(|d| {
                 d.value
-                    .name_table_pairs
+                    .component_table_pairs
                     .iter()
-                    .map(|ntp| gen_trait::ComponentTrait::new(ntp, &d.value))
+                    .map(|ctp| gen_trait::ComponentTrait::new(ctp, &d.value))
+            })
+            .collect::<Vec<_>>();
+        let component_delete_traits = component_declarations
+            .iter()
+            .flat_map(|d| {
+                d.value
+                    .component_table_pairs
+                    .iter()
+                    .map(|ctp| gen_trait::ComponentDeleteTrait::new(ctp))
             })
             .collect::<Vec<_>>();
         let option_component_traits = component_declarations
             .iter()
             .flat_map(|d| {
-                d.value.name_table_pairs.iter().map(|ntp| {
+                d.value.component_table_pairs.iter().map(|ctp| {
                     let wcs = with_component_structs
                         .iter()
-                        .find(|wcs| wcs.component_name == ntp.name)
+                        .find(|wcs| wcs.component == ctp.component)
                         .ok_or(Error::new(
-                            ntp.name.span(),
+                            ctp.component.span(),
                             "Cannot find the corresponding with-component struct.",
                         ))?;
-                    Ok(gen_trait::OptionComponentTrait::new(ntp, &d.value, wcs))
+                    Ok(gen_trait::OptionComponentTrait::new(ctp, &d.value, wcs))
                 })
             })
             .collect::<Result<Vec<_>>>()?;
@@ -112,9 +126,9 @@ impl Parse for EntityMacro {
             .map(|oct| {
                 let wcs = with_component_structs
                     .iter()
-                    .find(|wcs| wcs.component_name == oct.component_name)
+                    .find(|wcs| wcs.component == oct.component)
                     .ok_or(Error::new(
-                        oct.component_name.span(),
+                        oct.component.span(),
                         "Cannot find the corresponding with-component struct.",
                     ))?;
                 Ok(gen_trait::OptionComponentIterTrait::new(oct, wcs))
@@ -124,23 +138,23 @@ impl Parse for EntityMacro {
         let component_struct_impls = component_declarations
             .iter()
             .flat_map(|d| {
-                d.value.name_table_pairs.iter().map(|ntp| {
+                d.value.component_table_pairs.iter().map(|ctp| {
                     let wcs = with_component_structs
                         .iter()
-                        .find(|wcs| wcs.component_name == ntp.name)
+                        .find(|wcs| wcs.component == ctp.component)
                         .ok_or(Error::new(
-                            ntp.name.span(),
+                            ctp.component.span(),
                             "Cannot find the corresponding with-component struct.",
                         ))?;
                     let cs = component_structs
                         .iter()
-                        .find(|cs| cs.struct_name == wcs.component_ty_name)
+                        .find(|cs| cs.component_struct == wcs.component_ty)
                         .ok_or(Error::new(
-                            ntp.name.span(),
+                            ctp.component.span(),
                             "Cannot find the corresponding component struct.",
                         ))?;
                     Ok(gen_impl::ComponentStructImpl::new(
-                        ntp,
+                        ctp,
                         cs,
                         wcs,
                         &entity_handle_struct,
@@ -154,16 +168,16 @@ impl Parse for EntityMacro {
             .map(|wcs| {
                 let ct = component_traits
                     .iter()
-                    .find(|ct| ct.component_name == wcs.component_name)
+                    .find(|ct| ct.component == wcs.component)
                     .ok_or(Error::new(
-                        wcs.component_name.span(),
+                        wcs.component.span(),
                         "Cannot find the corresponding component trait.",
                     ))?;
                 let oct = option_component_traits
                     .iter()
-                    .find(|ct| ct.component_name == wcs.component_name)
+                    .find(|ct| ct.component == wcs.component)
                     .ok_or(Error::new(
-                        wcs.component_name.span(),
+                        wcs.component.span(),
                         "Cannot find the corresponding option component trait.",
                     ))?;
                 Ok(
@@ -174,13 +188,46 @@ impl Parse for EntityMacro {
             })
             .collect::<Result<Vec<_>>>()?;
 
+        let replacement_component_delete_trait_for_with_component_struct_impls =
+            replacement_component_trait_for_with_component_struct_impls
+                .iter()
+                .map(|r| {
+                    let cdt = component_delete_traits
+                        .iter()
+                        .find(|cdt| cdt.component == r.component_trait.component)
+                        .ok_or(Error::new(
+                            r.component_trait.component.span(),
+                            "Cannot find the corresponding component delete trait.",
+                        ))?;
+                    Ok(
+                        gen_impl::ReplacementComponentDeleteTraitForWithComponentStructImpl::new(
+                            &r.with_component_struct,
+                            cdt,
+                            &r.option_component_trait,
+                        ),
+                    )
+                })
+                .collect::<Result<Vec<_>>>()?;
+
         let component_trait_for_with_component_struct_impls = with_component_structs
             .iter()
             .flat_map(|wcs| {
                 component_traits
                     .iter()
-                    .filter(|ct| ct.component_name != wcs.component_name)
+                    .filter(|ct| ct.component != wcs.component)
                     .map(|ct| gen_impl::ComponentTraitForWithComponentStructImpl::new(wcs, ct))
+            })
+            .collect::<Vec<_>>();
+
+        let component_delete_trait_for_with_component_struct_impls = with_component_structs
+            .iter()
+            .flat_map(|wcs| {
+                component_delete_traits
+                    .iter()
+                    .filter(|cdt| cdt.component != wcs.component)
+                    .map(|cdt| {
+                        gen_impl::ComponentDeleteTraitForWithComponentStructImpl::new(wcs, cdt)
+                    })
             })
             .collect::<Vec<_>>();
 
@@ -189,7 +236,7 @@ impl Parse for EntityMacro {
             .flat_map(|wcs| {
                 option_component_traits
                     .iter()
-                    .filter(|oct| oct.component_name != wcs.component_name)
+                    .filter(|oct| oct.component != wcs.component)
                     .map(|oct| {
                         gen_impl::OptionComponentTraitForWithComponentStructImpl::new(wcs, oct)
                     })
@@ -218,12 +265,15 @@ impl Parse for EntityMacro {
             with_component_structs,
 
             component_traits,
+            component_delete_traits,
             option_component_traits,
             option_component_iter_traits,
 
             component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
+            replacement_component_delete_trait_for_with_component_struct_impls,
             component_trait_for_with_component_struct_impls,
+            component_delete_trait_for_with_component_struct_impls,
             option_component_trait_for_with_component_struct_impls,
             option_component_trait_for_entity_handle_struct_impls,
             option_component_iter_trait_impls,
@@ -240,12 +290,15 @@ impl ToTokens for EntityMacro {
             with_component_structs,
 
             component_traits,
+            component_delete_traits,
             option_component_traits,
             option_component_iter_traits,
 
             component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
+            replacement_component_delete_trait_for_with_component_struct_impls,
             component_trait_for_with_component_struct_impls,
+            component_delete_trait_for_with_component_struct_impls,
             option_component_trait_for_with_component_struct_impls,
             option_component_trait_for_entity_handle_struct_impls,
             option_component_iter_trait_impls,
@@ -257,12 +310,15 @@ impl ToTokens for EntityMacro {
           #(#with_component_structs)*
 
           #(#component_traits)*
+          #(#component_delete_traits)*
           #(#option_component_traits)*
           #(#option_component_iter_traits)*
 
           #(#component_struct_impls)*
           #(#replacement_component_trait_for_with_component_struct_impls)*
+          #(#replacement_component_delete_trait_for_with_component_struct_impls)*
           #(#component_trait_for_with_component_struct_impls)*
+          #(#component_delete_trait_for_with_component_struct_impls)*
           #(#option_component_trait_for_with_component_struct_impls)*
           #(#option_component_trait_for_entity_handle_struct_impls)*
           #(#option_component_iter_trait_impls)*

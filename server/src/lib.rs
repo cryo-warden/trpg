@@ -7,19 +7,17 @@ use entity::{
     entity_observations, ep_components, hp_components, location_components,
     player_controller_components, queued_action_state_components, target_components,
     total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
-    traits_stat_block_dirty_flag_components, unrealized_map_components, Entity, EntityHandle,
-    EntityObservations, InactiveEntityHandle, MapComponent, MapLayout, TimerComponent,
+    traits_stat_block_dirty_flag_components, unrealized_map_components, ActionStateComponent,
+    Entity, EntityHandle, EntityObservations, EntityProminenceComponent, InactiveEntityHandle,
+    MapComponent, MapGenerator, MapLayout, Option__action_state__Trait, Option__attack__Trait,
+    Option__entity_deactivation_timer__Trait, Option__hp__Trait, Option__rng_seed__Trait,
+    TimerComponent, __action_state__DeleteTrait, __action_state__Trait,
+    __entity_deactivation_timer__DeleteTrait, __entity_deactivation_timer__Trait,
+    __entity_prominence__DeleteTrait,
 };
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
-
-use crate::entity::{
-    ActionStateComponent, EntityProminenceComponent, MapGenerator, Option__action_state__Trait,
-    Option__attack__Trait, Option__entity_deactivation_timer__Trait, Option__hp__Trait,
-    Option__rng_seed__Trait, __action_state__Trait, __entity_deactivation_timer__Trait,
-    __entity_prominence__Trait,
-};
 
 mod action;
 mod appearance;

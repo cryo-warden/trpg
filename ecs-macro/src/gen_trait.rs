@@ -6,28 +6,26 @@ use crate::{gen_struct, macro_input};
 
 #[derive(Clone)]
 pub struct ComponentTrait {
-    pub trait_name: Ident,
-    pub component_name: Ident,
-    pub component_ty_name: Ident,
-    pub mut_getter_fn_name: Ident,
-    pub getter_fn_name: Ident,
-    pub update_fn_name: Ident,
-    pub delete_fn_name: Ident,
+    pub component_trait: Ident,
+    pub component: Ident,
+    pub component_ty: Ident,
+    pub mut_getter_fn: Ident,
+    pub getter_fn: Ident,
+    pub update_fn: Ident,
 }
 
 impl ComponentTrait {
     pub fn new(
-        ntp: &macro_input::ComponentNameTablePair,
+        ctp: &macro_input::ComponentTablePair,
         c: &macro_input::ComponentDeclaration,
     ) -> Self {
         Self {
-            component_name: ntp.name.to_owned(),
-            trait_name: format_ident!("__{}__Trait", ntp.name),
-            component_ty_name: c.ty_name.to_owned(),
-            mut_getter_fn_name: format_ident!("{}_mut", ntp.name),
-            getter_fn_name: ntp.name.to_owned(),
-            update_fn_name: format_ident!("update_{}", ntp.name),
-            delete_fn_name: format_ident!("delete_{}", ntp.name),
+            component_trait: format_ident!("__{}__Trait", ctp.component),
+            component: ctp.component.to_owned(),
+            component_ty: c.component_ty.to_owned(),
+            mut_getter_fn: format_ident!("{}_mut", ctp.component),
+            getter_fn: ctp.component.to_owned(),
+            update_fn: format_ident!("update_{}", ctp.component),
         }
     }
 }
@@ -35,21 +33,52 @@ impl ComponentTrait {
 impl ToTokens for ComponentTrait {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            component_name: _,
-            trait_name,
-            component_ty_name,
-            mut_getter_fn_name,
-            getter_fn_name,
-            update_fn_name,
-            delete_fn_name,
+            component_trait,
+            component: _,
+            component_ty,
+            mut_getter_fn,
+            getter_fn,
+            update_fn,
         } = self;
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
-          pub trait #trait_name: Sized {
-            fn #mut_getter_fn_name(&mut self) -> &mut #component_ty_name;
-            fn #getter_fn_name(&self) -> &#component_ty_name;
-            fn #update_fn_name(self) -> Self;
-            fn #delete_fn_name(self);
+          pub trait #component_trait: Sized {
+            fn #mut_getter_fn(&mut self) -> &mut #component_ty;
+            fn #getter_fn(&self) -> &#component_ty;
+            fn #update_fn(self) -> Self;
+          }
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct ComponentDeleteTrait {
+    pub component_delete_trait: Ident,
+    pub component: Ident,
+    pub delete_fn: Ident,
+}
+
+impl ComponentDeleteTrait {
+    pub fn new(ctp: &macro_input::ComponentTablePair) -> Self {
+        Self {
+            component_delete_trait: format_ident!("__{}__DeleteTrait", ctp.component),
+            component: ctp.component.to_owned(),
+            delete_fn: format_ident!("delete_{}", ctp.component),
+        }
+    }
+}
+
+impl ToTokens for ComponentDeleteTrait {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            component_delete_trait,
+            component: _,
+            delete_fn,
+        } = self;
+        tokens.extend(quote! {
+          #[allow(non_camel_case_types)]
+          pub trait #component_delete_trait<T>: Sized {
+            fn #delete_fn(self) -> T;
           }
         })
     }
@@ -57,33 +86,33 @@ impl ToTokens for ComponentTrait {
 
 #[derive(Clone)]
 pub struct OptionComponentTrait {
-    pub trait_name: Ident,
-    pub component_name: Ident,
-    pub component_ty_name: Ident,
-    pub table_name: Ident,
-    pub with_component_struct_name: Ident,
-    pub with_fn_name: Ident,
-    pub getter_fn_name: Ident,
-    pub update_fn_name: Ident,
-    pub delete_fn_name: Ident,
+    pub option_component_trait: Ident,
+    pub component: Ident,
+    pub component_ty: Ident,
+    pub table: Ident,
+    pub with_component_struct: Ident,
+    pub with_fn: Ident,
+    pub getter_fn: Ident,
+    pub update_fn: Ident,
+    pub delete_fn: Ident,
 }
 
 impl OptionComponentTrait {
     pub fn new(
-        ntp: &macro_input::ComponentNameTablePair,
+        ctp: &macro_input::ComponentTablePair,
         d: &macro_input::ComponentDeclaration,
         wcs: &gen_struct::WithComponentStruct,
     ) -> Self {
         Self {
-            trait_name: format_ident!("Option__{}__Trait", ntp.name),
-            component_name: ntp.name.to_owned(),
-            component_ty_name: d.ty_name.to_owned(),
-            table_name: ntp.table_name.to_owned(),
-            with_component_struct_name: wcs.struct_name.to_owned(),
-            with_fn_name: format_ident!("with_{}", ntp.name),
-            getter_fn_name: ntp.name.to_owned(),
-            update_fn_name: format_ident!("update_{}", ntp.name),
-            delete_fn_name: format_ident!("delete_{}", ntp.name),
+            option_component_trait: format_ident!("Option__{}__Trait", ctp.component),
+            component: ctp.component.to_owned(),
+            component_ty: d.component_ty.to_owned(),
+            table: ctp.table.to_owned(),
+            with_component_struct: wcs.with_component_struct.to_owned(),
+            with_fn: format_ident!("with_{}", ctp.component),
+            getter_fn: ctp.component.to_owned(),
+            update_fn: format_ident!("update_{}", ctp.component),
+            delete_fn: format_ident!("delete_{}", ctp.component),
         }
     }
 }
@@ -91,28 +120,28 @@ impl OptionComponentTrait {
 impl ToTokens for OptionComponentTrait {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            trait_name,
-            component_name,
-            component_ty_name,
-            table_name: _,
-            with_component_struct_name,
-            with_fn_name,
-            getter_fn_name,
-            update_fn_name,
-            delete_fn_name,
+            option_component_trait,
+            component,
+            component_ty,
+            table: _,
+            with_component_struct,
+            with_fn,
+            getter_fn,
+            update_fn,
+            delete_fn,
         } = self;
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
-          pub trait #trait_name: Sized {
-            fn #with_fn_name(self) -> ::core::option::Option<#with_component_struct_name<Self>> {
-              Some(#with_component_struct_name {
-                #component_name: self.#getter_fn_name()?,
+          pub trait #option_component_trait: Sized {
+            fn #with_fn(self) -> ::core::option::Option<#with_component_struct<Self>> {
+              Some(#with_component_struct {
+                #component: self.#getter_fn()?,
                 value: self,
               })
             }
-            fn #getter_fn_name(&self) -> ::core::option::Option<#component_ty_name>;
-            fn #update_fn_name(&self, value: #component_ty_name) -> #component_ty_name;
-            fn #delete_fn_name(&self);
+            fn #getter_fn(&self) -> ::core::option::Option<#component_ty>;
+            fn #update_fn(&self, value: #component_ty) -> #component_ty;
+            fn #delete_fn(&self);
           }
         })
     }
@@ -120,19 +149,19 @@ impl ToTokens for OptionComponentTrait {
 
 #[derive(Clone)]
 pub struct OptionComponentIterTrait {
-    pub trait_name: Ident,
-    pub option_trait_name: Ident,
-    pub with_component_struct_name: Ident,
-    pub with_fn_name: Ident,
+    pub option_component_iter_trait: Ident,
+    pub option_component_trait: Ident,
+    pub with_component_struct: Ident,
+    pub with_fn: Ident,
 }
 
 impl OptionComponentIterTrait {
     pub fn new(oct: &OptionComponentTrait, wcs: &gen_struct::WithComponentStruct) -> Self {
         Self {
-            trait_name: format_ident!("Option__{}__IterTrait", oct.component_name),
-            option_trait_name: oct.trait_name.to_owned(),
-            with_component_struct_name: wcs.struct_name.to_owned(),
-            with_fn_name: oct.with_fn_name.to_owned(),
+            option_component_iter_trait: format_ident!("Option__{}__IterTrait", oct.component),
+            option_component_trait: oct.option_component_trait.to_owned(),
+            with_component_struct: wcs.with_component_struct.to_owned(),
+            with_fn: oct.with_fn.to_owned(),
         }
     }
 }
@@ -140,16 +169,16 @@ impl OptionComponentIterTrait {
 impl ToTokens for OptionComponentIterTrait {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            trait_name,
-            option_trait_name,
-            with_component_struct_name,
-            with_fn_name,
+            option_component_iter_trait,
+            option_component_trait,
+            with_component_struct,
+            with_fn,
         } = self;
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
-          pub trait #trait_name<T: #option_trait_name>: Sized + Iterator<Item = T> {
-              fn #with_fn_name(self) -> impl Iterator<Item = #with_component_struct_name<T>> {
-                  self.flat_map(|e| e.#with_fn_name())
+          pub trait #option_component_iter_trait<T: #option_component_trait>: Sized + Iterator<Item = T> {
+              fn #with_fn(self) -> impl Iterator<Item = #with_component_struct<T>> {
+                  self.flat_map(|e| e.#with_fn())
               }
           }
         })

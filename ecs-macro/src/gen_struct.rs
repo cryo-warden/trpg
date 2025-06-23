@@ -10,8 +10,8 @@ use crate::{fundamental, macro_input};
 pub struct EntityStruct {
     pub attrs: fundamental::Attributes,
     pub tables: fundamental::Tables,
-    pub struct_name: Ident,
-    pub id_ty_name: Ident,
+    pub entity_struct: Ident,
+    pub id_ty: Ident,
 }
 
 impl EntityStruct {
@@ -22,8 +22,8 @@ impl EntityStruct {
         Self {
             attrs: a.attrs.to_joined(&ewa.attrs),
             tables: ewa.value.tables.to_owned(),
-            struct_name: ewa.value.name.to_owned(),
-            id_ty_name: ewa.value.id_ty_name.to_owned(),
+            entity_struct: ewa.value.entity.to_owned(),
+            id_ty: ewa.value.id_ty.to_owned(),
         }
     }
 }
@@ -33,16 +33,16 @@ impl ToTokens for EntityStruct {
         let EntityStruct {
             attrs,
             tables,
-            struct_name: name,
-            id_ty_name,
+            entity_struct,
+            id_ty,
         } = self;
         tokens.extend(quote! {
           #attrs
           #tables
-          pub struct #name {
+          pub struct #entity_struct {
             #[primary_key]
             #[auto_inc]
-            pub id: #id_ty_name,
+            pub id: #id_ty,
           }
         });
     }
@@ -52,9 +52,9 @@ impl ToTokens for EntityStruct {
 pub struct ComponentStruct {
     pub attrs: fundamental::Attributes,
     pub tables: fundamental::Tables,
-    pub struct_name: Ident,
-    pub id_name: Ident,
-    pub id_ty_name: Ident,
+    pub component_struct: Ident,
+    pub id: Ident,
+    pub id_ty: Ident,
     pub fields: fundamental::Fields,
 }
 
@@ -68,14 +68,14 @@ impl ComponentStruct {
             attrs: a.attrs.to_joined(&cwa.attrs),
             tables: fundamental::Tables(
                 cwa.value
-                    .name_table_pairs
+                    .component_table_pairs
                     .iter()
-                    .map(|ntp| ntp.table_name.to_owned())
+                    .map(|ctp| ctp.table.to_owned())
                     .collect(),
             ),
-            struct_name: cwa.value.ty_name.to_owned(),
-            id_name: ewa.value.id_name.to_owned(),
-            id_ty_name: ewa.value.id_ty_name.to_owned(),
+            component_struct: cwa.value.component_ty.to_owned(),
+            id: ewa.value.id.to_owned(),
+            id_ty: ewa.value.id_ty.to_owned(),
             fields: cwa.value.fields.to_owned(),
         }
     }
@@ -86,17 +86,17 @@ impl ToTokens for ComponentStruct {
         let ComponentStruct {
             attrs,
             tables,
-            struct_name,
-            id_name,
-            id_ty_name,
+            component_struct,
+            id,
+            id_ty,
             fields,
         } = self;
         tokens.extend(quote! {
           #attrs
           #tables
-          pub struct #struct_name {
+          pub struct #component_struct {
             #[primary_key]
-            pub #id_name: #id_ty_name,
+            pub #id: #id_ty,
             #fields
           }
         });
@@ -106,9 +106,9 @@ impl ToTokens for ComponentStruct {
 #[derive(Clone)]
 pub struct EntityHandleStruct {
     pub attrs: fundamental::Attributes,
-    pub struct_name: Ident,
-    pub id_name: Ident,
-    pub id_ty_name: Ident,
+    pub entity_handle_struct: Ident,
+    pub id: Ident,
+    pub id_ty: Ident,
 }
 
 impl EntityHandleStruct {
@@ -116,12 +116,11 @@ impl EntityHandleStruct {
         a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
         ewa: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
     ) -> Self {
-        let struct_name = format_ident!("{}Handle", ewa.value.name);
         Self {
             attrs: a.attrs.to_owned(),
-            struct_name,
-            id_name: ewa.value.id_name.to_owned(),
-            id_ty_name: ewa.value.id_ty_name.to_owned(),
+            entity_handle_struct: format_ident!("{}Handle", ewa.value.entity),
+            id: ewa.value.id.to_owned(),
+            id_ty: ewa.value.id_ty.to_owned(),
         }
     }
 }
@@ -130,15 +129,15 @@ impl ToTokens for EntityHandleStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let EntityHandleStruct {
             attrs,
-            struct_name,
-            id_name,
-            id_ty_name,
+            entity_handle_struct,
+            id,
+            id_ty,
         } = self;
         tokens.extend(quote! {
           #attrs
-          pub struct #struct_name<'a> {
+          pub struct #entity_handle_struct<'a> {
             hidden: ecs::EntityHandleHidden<'a>,
-            pub #id_name: #id_ty_name,
+            pub #id: #id_ty,
           }
         })
     }
@@ -147,22 +146,22 @@ impl ToTokens for EntityHandleStruct {
 #[derive(Clone)]
 pub struct WithComponentStruct {
     pub attrs: fundamental::Attributes,
-    pub struct_name: Ident,
-    pub component_name: Ident,
-    pub component_ty_name: Ident,
+    pub with_component_struct: Ident,
+    pub component: Ident,
+    pub component_ty: Ident,
 }
 
 impl WithComponentStruct {
     pub fn new(
         a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
-        ntp: &macro_input::ComponentNameTablePair,
+        ctp: &macro_input::ComponentTablePair,
         cwa: &fundamental::WithAttrs<macro_input::ComponentDeclaration>,
     ) -> Self {
         Self {
             attrs: a.attrs.to_owned(),
-            struct_name: format_ident!("With__{}__Component", ntp.name),
-            component_name: ntp.name.to_owned(),
-            component_ty_name: cwa.value.ty_name.to_owned(),
+            with_component_struct: format_ident!("With__{}__Component", ctp.component),
+            component: ctp.component.to_owned(),
+            component_ty: cwa.value.component_ty.to_owned(),
         }
     }
 }
@@ -171,15 +170,15 @@ impl ToTokens for WithComponentStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             attrs,
-            struct_name: with_component_name,
-            component_name,
-            component_ty_name,
+            with_component_struct,
+            component,
+            component_ty,
         } = self;
         tokens.extend(quote! {
           #attrs
           #[allow(non_camel_case_types)]
-          pub struct #with_component_name<T> {
-            #component_name: #component_ty_name,
+          pub struct #with_component_struct<T> {
+            #component: #component_ty,
             value: T,
           }
         })
