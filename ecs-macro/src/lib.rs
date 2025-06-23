@@ -75,7 +75,7 @@ impl ToTokens for Fields {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Fields(fields) = self;
         tokens.extend(quote! {
-          #(#fields)*
+          #(#fields,)*
         })
     }
 }
@@ -396,7 +396,7 @@ mod gen_struct {
             tokens.extend(quote! {
               #attrs
               pub struct #struct_name<'a> {
-                hidden: EntityHandleHidden<'a>,
+                hidden: ecs::EntityHandleHidden<'a>,
                 pub #id_name: #id_ty_name,
               }
             })
@@ -654,7 +654,7 @@ mod gen_impl {
                   let entity_id = self.entity_id;
                   #with_component_struct_name {
                     #component_name: self,
-                    value: #entity_handle_struct { entity_id, hidden: EntityHandleHidden { ctx } },
+                    value: #entity_handle_struct { entity_id, hidden: ecs::EntityHandleHidden { ctx } },
                   }
                 }
                 fn #iter_fn_name(ctx: &spacetimedb::ReducerContext) -> impl Iterator<Item = #with_component_struct_name<#entity_handle_struct>> {

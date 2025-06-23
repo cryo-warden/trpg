@@ -8,8 +8,8 @@ use component::{
     hp_components, location_components, observer_components, player_controller_components,
     queued_action_state_components, realized_map_components, target_components,
     total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
-    traits_stat_block_dirty_flag_components, EntityDeactivationTimerComponent, MapComponent,
-    MapLayout, ObserverComponent,
+    traits_stat_block_dirty_flag_components, MapComponent, MapLayout, ObserverComponent,
+    TimerComponent,
 };
 use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
@@ -217,12 +217,12 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
                 {
                     None => {}
                     Some(timestamp) => {
-                        ctx.db.entity_deactivation_timer_components().insert(
-                            EntityDeactivationTimerComponent {
+                        ctx.db
+                            .entity_deactivation_timer_components()
+                            .insert(TimerComponent {
                                 entity_id: e.entity_id,
                                 timestamp,
-                            },
-                        );
+                            });
                         log::debug!(
                             "Disconnected {} from player {} and set deactivation timer.",
                             ctx.sender,

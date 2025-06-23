@@ -16,9 +16,9 @@ use crate::{
         traits_stat_block_cache_components, traits_stat_block_dirty_flag_components, ActionHotkey,
         ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
         ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent, AttackComponent,
-        BaselineComponent, EntityProminenceComponent, EpComponent, HpComponent, LocationComponent,
-        LocationMapComponent, NameComponent, PathComponent, PlayerControllerComponent,
-        RngSeedComponent, StatBlockCacheComponent, StatBlockDirtyFlagComponent, TargetComponent,
+        BaselineComponent, EntityProminenceComponent, EpComponent, FlagComponent, HpComponent,
+        LocationComponent, LocationMapComponent, NameComponent, PathComponent,
+        PlayerControllerComponent, RngSeedComponent, StatBlockCacheComponent, TargetComponent,
         TraitsComponent,
     },
     stat_block::{baselines, traits, StatBlock},
@@ -155,11 +155,12 @@ impl<'a> InactiveEntityHandle<'a> {
         if let Some(mut c) = self.component_set.baseline_component {
             c.entity_id = e.entity_id;
             self.ctx.db.baseline_components().insert(c);
-            self.ctx.db.total_stat_block_dirty_flag_components().insert(
-                StatBlockDirtyFlagComponent {
+            self.ctx
+                .db
+                .total_stat_block_dirty_flag_components()
+                .insert(FlagComponent {
                     entity_id: e.entity_id,
-                },
-            );
+                });
         }
         if let Some(mut c) = self.component_set.traits_component {
             c.entity_id = e.entity_id;
@@ -167,7 +168,7 @@ impl<'a> InactiveEntityHandle<'a> {
             self.ctx
                 .db
                 .traits_stat_block_dirty_flag_components()
-                .insert(StatBlockDirtyFlagComponent {
+                .insert(FlagComponent {
                     entity_id: e.entity_id,
                 });
         }
@@ -782,7 +783,7 @@ impl<'a> EntityHandle<'a> {
         self.ctx
             .db
             .traits_stat_block_dirty_flag_components()
-            .insert(StatBlockDirtyFlagComponent {
+            .insert(FlagComponent {
                 entity_id: self.entity_id,
             });
         self
@@ -791,7 +792,7 @@ impl<'a> EntityHandle<'a> {
         self.ctx
             .db
             .total_stat_block_dirty_flag_components()
-            .insert(StatBlockDirtyFlagComponent {
+            .insert(FlagComponent {
                 entity_id: self.entity_id,
             });
         self
