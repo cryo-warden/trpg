@@ -15,7 +15,7 @@ use event::{early_events, late_events, middle_events, observable_events, EntityE
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
 
-use crate::entity::{MapGenerator, Option__rng_seed__Trait};
+use crate::entity::{MapGenerator, Option__action_state__Trait, Option__rng_seed__Trait};
 
 mod action;
 mod appearance;
@@ -399,9 +399,9 @@ pub fn ep_system(ctx: &ReducerContext) {
 pub fn shift_queued_action_system(ctx: &ReducerContext) {
     for q in ctx.db.queued_action_state_components().iter() {
         let e = EntityHandle::from_id(ctx, q.entity_id);
-        if e.action_state_component().is_none() {
+        if e.action_state().is_none() {
             let e = e.shift_queued_action_state();
-            if let Some(a) = e.action_state_component() {
+            if let Some(a) = e.action_state() {
                 ctx.db.observable_events().insert(EntityEvent {
                     id: 0,
                     event_type: EventType::StartAction(a.action_id),
@@ -497,11 +497,11 @@ pub fn target_validation_system(ctx: &ReducerContext) {
     for target_component in ctx.db.target_components().iter() {
         let e = EntityHandle::from_id(ctx, target_component.entity_id);
         let t = EntityHandle::from_id(ctx, target_component.target_entity_id);
-        let is_valid = match t.location() {
+        let is_valid = match t.location_id() {
             None => false,
             Some(tl) => {
                 tl == e.entity_id
-                    || match e.location() {
+                    || match e.location_id() {
                         None => false,
                         Some(el) => tl == el,
                     }
@@ -522,7 +522,7 @@ pub fn action_option_system(ctx: &ReducerContext) {
     }
     for location_component in ctx.db.location_components().iter() {
         let mut e = EntityHandle::from_id(ctx, location_component.entity_id);
-        for other_entity_id in match e.target() {
+        for other_entity_id in match e.target_id() {
             None => vec![e.entity_id],
             Some(target) => {
                 if e.entity_id == target {
@@ -532,7 +532,7 @@ pub fn action_option_system(ctx: &ReducerContext) {
                 }
             }
         } {
-            for action_id in e.actions() {
+            for action_id in e.action_ids() {
                 if e.can_target_other(other_entity_id, action_id) {
                     e = e.add_action_option(action_id, other_entity_id);
                 }
