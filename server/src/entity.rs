@@ -450,94 +450,26 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
+    // WIP Macro-generate a trait to delete entity and all components.
+    #[allow(dead_code)]
     pub fn delete(self) {
-        self.hidden
-            .ctx
-            .db
-            .actions_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .action_hotkeys_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .action_options_components()
-            .entity_id()
-            .delete(self.entity_id);
-
-        self.hidden
-            .ctx
-            .db
-            .action_state_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .queued_action_state_components()
-            .entity_id()
-            .delete(self.entity_id);
-
-        self.hidden
-            .ctx
-            .db
-            .allegiance_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .ep_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .hp_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .location_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .name_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .path_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .player_controller_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .target_components()
-            .entity_id()
-            .delete(self.entity_id);
-
-        self.hidden
-            .ctx
-            .db
-            .entity_prominence_components()
-            .entity_id()
-            .delete(self.entity_id);
+        self.delete_actions();
+        self.delete_action_hotkeys();
+        self.delete_action_options();
+        self.delete_action_state();
+        self.delete_queued_action_state();
+        self.delete_allegiance();
+        self.delete_ep();
+        self.delete_hp();
+        self.delete_location();
+        self.delete_name();
+        self.delete_path();
+        self.delete_player_controller();
+        self.delete_target();
+        self.delete_entity_prominence();
+        self.delete_entity_deactivation_timer();
+        self.delete_baseline();
+        self.delete_traits();
 
         self.hidden
             .ctx
@@ -546,30 +478,12 @@ impl<'a> EntityHandle<'a> {
             .entity_id()
             .delete(self.entity_id);
 
-        self.hidden
-            .ctx
-            .db
-            .entity_deactivation_timer_components()
-            .entity_id()
-            .delete(self.entity_id);
-
-        self.hidden
-            .ctx
-            .db
-            .baseline_components()
-            .entity_id()
-            .delete(self.entity_id);
-        self.hidden
-            .ctx
-            .db
-            .traits_components()
-            .entity_id()
-            .delete(self.entity_id);
-
         self.hidden.ctx.db.entities().id().delete(self.entity_id);
         log::debug!("Deleted entity {}.", self.entity_id);
     }
 
+    // WIP Move into a new macro-gen trait. First make trait for entity_id(), then make struct for all components as options, then finally make traits for delete and deactivate that automatically apply to anything with all the OPTION component traits or any wrapper which contains something that implements the traits.
+    #[allow(dead_code)]
     pub fn deactivate(self) {
         let component_set = ComponentSet {
             entity_id: self.entity_id,
@@ -633,13 +547,8 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn delete_target(self) -> Self {
-        self.hidden
-            .ctx
-            .db
-            .target_components()
-            .entity_id()
-            .delete(self.entity_id);
+    pub fn delete_target_component(self) -> Self {
+        self.delete_target();
         self
     }
 
@@ -817,12 +726,7 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
-        self.hidden
-            .ctx
-            .db
-            .total_stat_block_dirty_flag_components()
-            .entity_id()
-            .delete(self.entity_id);
+        self.delete_total_stat_block_dirty_flag();
 
         let mut action_ids = stat_block.additive_action_ids.clone();
         action_ids.retain(|id| !stat_block.subtractive_action_ids.contains(id));
@@ -870,12 +774,7 @@ impl<'a> EntityHandle<'a> {
                 });
         }
 
-        self.hidden
-            .ctx
-            .db
-            .traits_stat_block_dirty_flag_components()
-            .entity_id()
-            .delete(self.entity_id);
+        self.delete_traits_stat_block_dirty_flag();
 
         self
     }
@@ -973,12 +872,7 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_queued_action_state(self, action_id: u64, target_entity_id: u64) -> Self {
-        self.hidden
-            .ctx
-            .db
-            .queued_action_state_components()
-            .entity_id()
-            .delete(self.entity_id);
+        self.delete_queued_action_state();
         self.hidden
             .ctx
             .db
@@ -994,12 +888,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn shift_queued_action_state(self) -> Self {
         if let Some(queued_action_state) = self.queued_action_state() {
-            self.hidden
-                .ctx
-                .db
-                .queued_action_state_components()
-                .entity_id()
-                .delete(self.entity_id);
+            self.delete_queued_action_state();
             self.hidden
                 .ctx
                 .db

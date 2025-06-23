@@ -9,6 +9,7 @@ pub struct ComponentTrait {
     pub trait_name: Ident,
     pub component_name: Ident,
     pub component_ty_name: Ident,
+    pub mut_getter_fn_name: Ident,
     pub getter_fn_name: Ident,
     pub update_fn_name: Ident,
     pub delete_fn_name: Ident,
@@ -23,6 +24,7 @@ impl ComponentTrait {
             component_name: ntp.name.to_owned(),
             trait_name: format_ident!("__{}__Trait", ntp.name),
             component_ty_name: c.ty_name.to_owned(),
+            mut_getter_fn_name: format_ident!("{}_mut", ntp.name),
             getter_fn_name: ntp.name.to_owned(),
             update_fn_name: format_ident!("update_{}", ntp.name),
             delete_fn_name: format_ident!("delete_{}", ntp.name),
@@ -36,6 +38,7 @@ impl ToTokens for ComponentTrait {
             component_name: _,
             trait_name,
             component_ty_name,
+            mut_getter_fn_name,
             getter_fn_name,
             update_fn_name,
             delete_fn_name,
@@ -43,6 +46,7 @@ impl ToTokens for ComponentTrait {
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
           pub trait #trait_name: Sized {
+            fn #mut_getter_fn_name(&mut self) -> &mut #component_ty_name;
             fn #getter_fn_name(&self) -> &#component_ty_name;
             fn #update_fn_name(self) -> Self;
             fn #delete_fn_name(self);

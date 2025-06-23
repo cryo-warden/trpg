@@ -98,6 +98,7 @@ impl ToTokens for ReplacementComponentTraitForWithComponentStructImpl {
         let gen_trait::ComponentTrait {
             ref trait_name,
             ref component_ty_name,
+            ref mut_getter_fn_name,
             ref getter_fn_name,
             ref update_fn_name,
             ref delete_fn_name,
@@ -111,6 +112,9 @@ impl ToTokens for ReplacementComponentTraitForWithComponentStructImpl {
         } = self.option_component_trait;
         tokens.extend(quote! {
           impl<T: #option_trait_name> #trait_name for #struct_name<T> {
+            fn #mut_getter_fn_name(&mut self) -> &mut #component_ty_name {
+              &mut self.#component_name
+            }
             fn #getter_fn_name(&self) -> &#component_ty_name {
               &self.#component_name
             }
@@ -148,6 +152,7 @@ impl ToTokens for ComponentTraitForWithComponentStructImpl {
         let gen_trait::ComponentTrait {
             ref trait_name,
             ref component_ty_name,
+            ref mut_getter_fn_name,
             ref getter_fn_name,
             ref update_fn_name,
             ref delete_fn_name,
@@ -155,6 +160,9 @@ impl ToTokens for ComponentTraitForWithComponentStructImpl {
         } = self.component_trait;
         tokens.extend(quote! {
           impl<T: #trait_name> #trait_name for #struct_name<T> {
+            fn #mut_getter_fn_name(&mut self) -> &mut #component_ty_name {
+              self.value.#mut_getter_fn_name()
+            }
             fn #getter_fn_name(&self) -> &#component_ty_name {
               self.value.#getter_fn_name()
             }

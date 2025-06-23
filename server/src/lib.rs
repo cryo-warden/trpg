@@ -3,9 +3,8 @@ use std::cmp::{max, min};
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
 use entity::{
-    action_options_components, action_state_components, attack_components, baseline_components,
-    entities, entity_deactivation_timer_components, entity_observations,
-    entity_prominence_components, ep_components, hp_components, location_components,
+    action_options_components, baseline_components, entities, entity_deactivation_timer_components,
+    entity_observations, ep_components, hp_components, location_components,
     player_controller_components, queued_action_state_components, target_components,
     total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
     traits_stat_block_dirty_flag_components, unrealized_map_components, Entity, EntityHandle,
@@ -15,7 +14,12 @@ use event::{early_events, late_events, middle_events, observable_events, EntityE
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
 
-use crate::entity::{MapGenerator, Option__action_state__Trait, Option__rng_seed__Trait};
+use crate::entity::{
+    ActionStateComponent, EntityProminenceComponent, MapGenerator, Option__action_state__Trait,
+    Option__attack__Trait, Option__entity_deactivation_timer__Trait, Option__hp__Trait,
+    Option__rng_seed__Trait, __action_state__Trait, __entity_deactivation_timer__Trait,
+    __entity_prominence__Trait,
+};
 
 mod action;
 mod appearance;
@@ -179,10 +183,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(e) => {
-            ctx.db
-                .entity_deactivation_timer_components()
-                .entity_id()
-                .delete(e.entity_id);
+            e.delete_entity_deactivation_timer();
             log::debug!(
                 "Reconnected {} to {} and removed deactivation timer.",
                 ctx.sender,
@@ -274,7 +275,7 @@ pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String>
 pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
-            p.delete_target();
+            p.delete_target_component();
             Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
@@ -415,7 +416,8 @@ pub fn shift_queued_action_system(ctx: &ReducerContext) {
 }
 
 pub fn action_system(ctx: &ReducerContext) {
-    for mut action_state in ctx.db.action_state_components().iter() {
+    for mut e in ActionStateComponent::iter_action_state(ctx) {
+        let action_state = e.action_state();
         let entity_id = action_state.entity_id;
         let action_handle = ActionHandle::from_id(ctx, action_state.action_id);
 
@@ -431,20 +433,9 @@ pub fn action_system(ctx: &ReducerContext) {
                     );
                 }
                 ActionEffect::Attack(damage) => {
-                    let attack = ctx
-                        .db
-                        .attack_components()
-                        .entity_id()
-                        .find(entity_id)
-                        .map(|c| c.attack)
-                        .unwrap_or(0);
-                    let target_defense = ctx
-                        .db
-                        .hp_components()
-                        .entity_id()
-                        .find(action_state.target_entity_id)
-                        .map(|c| c.defense)
-                        .unwrap_or(0);
+                    let attack = e.attack().map(|c| c.attack).unwrap_or(0);
+                    let t = EntityHandle::from_id(ctx, action_state.target_entity_id);
+                    let target_defense = t.hp().map(|c| c.defense).unwrap_or(0);
                     EntityEvent::emit_middle(
                         ctx,
                         entity_id,
@@ -474,21 +465,16 @@ pub fn action_system(ctx: &ReducerContext) {
             }
         }
 
+        let action_state = e.action_state_mut();
         action_state.sequence_index += 1;
         let new_sequence_index = action_state.sequence_index;
 
-        ctx.db
-            .action_state_components()
-            .entity_id()
-            .update(action_state);
+        let with_action_state = e.update_action_state();
 
         let effect = action_handle.effect(new_sequence_index);
         if effect.is_none() {
             // TODO Emit event for finished action.
-            ctx.db
-                .action_state_components()
-                .entity_id()
-                .delete(entity_id);
+            with_action_state.delete_action_state();
         }
     }
 }
@@ -509,7 +495,7 @@ pub fn target_validation_system(ctx: &ReducerContext) {
         };
 
         if !is_valid {
-            e.delete_target();
+            e.delete_target_component();
         }
     }
 }
@@ -542,8 +528,8 @@ pub fn action_option_system(ctx: &ReducerContext) {
 }
 
 pub fn entity_prominence_system(ctx: &ReducerContext) {
-    for p in ctx.db.entity_prominence_components().iter() {
-        ctx.db.entity_prominence_components().delete(p);
+    for p in EntityProminenceComponent::iter_entity_prominence(ctx) {
+        p.delete_entity_prominence();
     }
     for entity in ctx.db.entities().iter() {
         EntityHandle::from_id(ctx, entity.id).generate_prominence();
@@ -551,10 +537,10 @@ pub fn entity_prominence_system(ctx: &ReducerContext) {
 }
 
 pub fn entity_deactivation_system(ctx: &ReducerContext) {
-    for t in ctx.db.entity_deactivation_timer_components().iter() {
-        if t.timestamp.le(&ctx.timestamp) {
-            EntityHandle::from_id(ctx, t.entity_id).deactivate();
-            ctx.db.entity_deactivation_timer_components().delete(t);
+    for t in TimerComponent::iter_entity_deactivation_timer(ctx) {
+        if t.entity_deactivation_timer().timestamp.le(&ctx.timestamp) {
+            t.delete_entity_deactivation_timer();
+            // EntityHandle::from_id(ctx, t.entity_id).deactivate(); // WIP Move deactivation into a new macro-generated trait.
         }
     }
 }
