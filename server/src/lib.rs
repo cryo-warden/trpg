@@ -2,23 +2,23 @@ use std::cmp::{max, min};
 
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
-use component::{
+use entity::{
     action_options_components, action_state_components, attack_components, baseline_components,
-    entity_deactivation_timer_components, entity_prominence_components, ep_components,
-    hp_components, location_components, observer_components, player_controller_components,
-    queued_action_state_components, realized_map_components, target_components,
+    entities, entity_deactivation_timer_components, entity_observations,
+    entity_prominence_components, ep_components, hp_components, location_components,
+    player_controller_components, queued_action_state_components, target_components,
     total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
-    traits_stat_block_dirty_flag_components, MapComponent, MapLayout, ObserverComponent,
-    TimerComponent,
+    traits_stat_block_dirty_flag_components, unrealized_map_components, Entity, EntityHandle,
+    EntityObservations, InactiveEntityHandle, MapComponent, MapLayout, TimerComponent,
 };
-use entity::{entities, Entity, EntityHandle, InactiveEntityHandle};
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
 
+use crate::entity::{MapGenerator, Option__rng_seed__Trait};
+
 mod action;
 mod appearance;
-mod component;
 mod entity;
 mod event;
 mod stat_block;
@@ -140,15 +140,22 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     // TODO Move map logic to EntityHandle.
     // TODO Realize and unrealize maps.
     let map = EntityHandle::new(ctx).set_rng_seed(0);
-    let map_component = ctx.db.realized_map_components().insert(MapComponent {
-        entity_id: map.entity_id,
-        loop_count: 0, // TODO Add loops.
-        main_room_count: 10,
-        map_layout: MapLayout::Path,
-        map_theme_id: 0, // TODO Add map_themes table.
-        extra_room_count: 10,
-    });
-    let map_result = map_component.generate(ctx);
+    let map_handle = ctx
+        .db
+        .unrealized_map_components()
+        .insert(MapComponent {
+            entity_id: map.entity_id,
+            loop_count: 0, // TODO Add loops.
+            main_room_count: 10,
+            map_layout: MapLayout::Path,
+            map_theme_id: 0, // TODO Add map_themes table.
+            extra_room_count: 10,
+        })
+        .into_unrealized_map_handle(ctx);
+    let map_result = map_handle
+        .with_rng_seed()
+        .ok_or("Failed to retrieve RNG seed component.")?
+        .generate(ctx);
 
     EntityHandle::new(ctx).set_name("allegiance1");
     let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
@@ -282,7 +289,7 @@ pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
         .identity()
         .find(ctx.sender)
     {
-        ctx.db.observer_components().entity_id().delete(p.entity_id);
+        ctx.db.entity_observations().entity_id().delete(p.entity_id);
         Ok(())
     } else {
         Err("Cannot consume observer events without a player controller component.".to_string())
@@ -339,7 +346,7 @@ pub fn observation_system(ctx: &ReducerContext) {
                     .find(l.entity_id)
                     .is_some()
                 {
-                    ctx.db.observer_components().insert(ObserverComponent {
+                    ctx.db.entity_observations().insert(EntityObservations {
                         entity_id: l.entity_id,
                         observable_event_id: o.id,
                     });

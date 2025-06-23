@@ -40,7 +40,7 @@ export const componentQueries = [
   "select * from ep_components",
   "select * from hp_components",
   "select * from location_components",
-  "select * from observer_components",
+  "select * from entity_observations",
   "select * from player_controller_components",
   "select * from queued_action_state_components",
   "select * from target_components",

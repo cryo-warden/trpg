@@ -1,28 +1,236 @@
 use spacetimedb::{
     rand::{rngs::StdRng, RngCore, SeedableRng},
-    table, Identity, ReducerContext, SpacetimeType, Table,
+    table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
 };
 
+// use crate::appearance::AppearanceFeatureContext;
 use crate::{
     action::{actions, ActionType},
-    component::{
-        action_hotkeys_components, action_options_components, action_state_components,
-        actions_components, allegiance_components, appearance_features_components,
-        attack_components, baseline_components, entity_deactivation_timer_components,
-        entity_prominence_components, ep_components, hp_components, location_components,
-        location_map_components, name_components, observer_components, path_components,
-        player_controller_components, queued_action_state_components, rng_seed_components,
-        target_components, total_stat_block_dirty_flag_components, traits_components,
-        traits_stat_block_cache_components, traits_stat_block_dirty_flag_components, ActionHotkey,
-        ActionHotkeysComponent, ActionOption, ActionOptionsComponent, ActionStateComponent,
-        ActionsComponent, AllegianceComponent, AppearanceFeaturesComponent, AttackComponent,
-        BaselineComponent, EntityProminenceComponent, EpComponent, FlagComponent, HpComponent,
-        LocationComponent, LocationMapComponent, NameComponent, PathComponent,
-        PlayerControllerComponent, RngSeedComponent, StatBlockCacheComponent, TargetComponent,
-        TraitsComponent,
-    },
+    appearance::AppearanceFeatureContext,
     stat_block::{baselines, traits, StatBlock},
 };
+
+use ecs::{entity, EntityHandleHidden};
+
+type EntityId = u64;
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct ActionHotkey {
+    pub action_id: u64,
+    pub character_code: u32,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct ActionOption {
+    pub action_id: u64,
+    pub target_entity_id: EntityId,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum MapLayout {
+    Path,
+    Hub,
+}
+
+entity! {
+  #[derive(Debug, Clone)]
+  struct_attrs
+
+  entity Entity entity_id: EntityId tables(entities);
+
+  component NameComponent [(name, name_components)] {
+    #[unique]
+    pub name: String,
+  }
+
+  component LocationComponent [(location, location_components)] {
+    #[index(btree)]
+    pub location_entity_id: EntityId,
+  }
+
+  component PathComponent [(path, path_components)] {
+    #[index(btree)]
+    pub destination_entity_id: EntityId,
+  }
+
+  component AllegianceComponent [(allegiance, allegiance_components)] {
+    #[index(btree)]
+    pub allegiance_entity_id: EntityId,
+  }
+
+  component BaselineComponent [(baseline, baseline_components)] {
+    pub baseline_id: u64,
+  }
+
+  component TraitsComponent [(traits, traits_components)] {
+    pub trait_ids: Vec<u64>,
+  }
+
+  // TODO Add StatBlock caches for equipment and status effects.
+  component StatBlockCacheComponent [
+    (traits_stat_block_cache, traits_stat_block_cache_components)
+  ] {
+    pub stat_block: StatBlock,
+  }
+
+  // TODO Equipment and Status Effects
+  component FlagComponent [
+    (traits_stat_block_dirty_flag, traits_stat_block_dirty_flag_components),
+    (total_stat_block_dirty_flag, total_stat_block_dirty_flag_components),
+  ] {}
+
+  component AttackComponent [(attack, attack_components)] {
+    pub attack: i32,
+  }
+
+  component HpComponent [(hp, hp_components)] {
+    pub hp: i32,
+    pub mhp: i32,
+    pub defense: i32,
+    pub accumulated_damage: i32,
+    pub accumulated_healing: i32,
+  }
+
+  component EpComponent [(ep, ep_components)] {
+    pub ep: i32,
+    pub mep: i32,
+  }
+
+  component PlayerControllerComponent [(player_controller, player_controller_components)] {
+    #[unique]
+    pub identity: Identity,
+  }
+
+  component TargetComponent [(target, target_components)] {
+    pub target_entity_id: EntityId,
+  }
+
+  component ActionStateComponent [
+    (action_state, action_state_components),
+    (queued_action_state, queued_action_state_components),
+  ] {
+    pub target_entity_id: EntityId,
+    pub action_id: u64,
+    pub sequence_index: i32,
+  }
+
+  component ActionsComponent [(actions, actions_components)] {
+    pub action_ids: Vec<u64>,
+  }
+
+  component ActionHotkeysComponent [(action_hotkeys, action_hotkeys_components)] {
+    pub action_hotkeys: Vec<ActionHotkey>,
+  }
+
+  component ActionOptionsComponent [(action_options, action_options_components)] {
+    pub action_options: Vec<ActionOption>,
+  }
+
+  component EntityProminenceComponent [(entity_prominence, entity_prominence_components)] {
+    pub prominence: i32,
+  }
+
+  component TimerComponent [(entity_deactivation_timer, entity_deactivation_timer_components)] {
+    pub timestamp: Timestamp,
+  }
+
+  component RngSeedComponent [(rng_seed, rng_seed_components)] {
+    pub rng_seed: u64,
+  }
+
+  component LocationMapComponent [(location_map, location_map_components)] {
+    pub map_entity_id: EntityId,
+  }
+
+  component MapComponent [
+    (realized_map, realized_map_components),
+    (unrealized_map, unrealized_map_components),
+  ] {
+    pub map_theme_id: u64,
+    pub map_layout: MapLayout,
+    pub extra_room_count: u8,
+    pub main_room_count: u8,
+    pub loop_count: u8,
+  }
+
+  component AppearanceFeaturesComponent [(appearance_features, appearance_features_components)] {
+    pub appearance_feature_ids: Vec<u64>,
+  }
+}
+
+#[table(name = entity_observations, public)]
+#[derive(Debug, Clone)]
+pub struct EntityObservations {
+    #[index(btree)]
+    pub entity_id: u64,
+    #[index(btree)]
+    pub observable_event_id: u64,
+}
+
+pub trait GetRng {
+    fn get_rng(&self) -> StdRng;
+}
+
+impl<T: __rng_seed__Trait> GetRng for T {
+    fn get_rng(&self) -> StdRng {
+        StdRng::seed_from_u64(self.rng_seed().rng_seed)
+    }
+}
+
+pub struct MapGenerationResult {
+    pub room_ids: Vec<u64>,
+}
+
+pub trait MapGenerator {
+    fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult;
+}
+
+// WIP Add a trait for `entity_id()`.
+impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
+    fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
+        let af_ctx = AppearanceFeatureContext::new(ctx);
+        let map = self.unrealized_map();
+        let mut rng = self.get_rng();
+        let total_room_count = map.extra_room_count + map.main_room_count;
+        let room_handles: Vec<EntityHandle> = (0..total_room_count)
+            .map(|_| {
+                EntityHandle::new(ctx)
+                    .set_appearance_feature_ids(af_ctx.by_texts(&["room"]))
+                    .set_location_map(0) // WIP self.entity_id()
+            })
+            .collect();
+
+        for i in 0..(map.main_room_count as usize - 1) {
+            let a = &room_handles[i];
+            let b = &room_handles[i + 1];
+            EntityHandle::new(ctx)
+                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
+                .add_location(a.entity_id)
+                .add_path(b.entity_id);
+            EntityHandle::new(ctx)
+                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
+                .add_location(b.entity_id)
+                .add_path(a.entity_id);
+        }
+
+        for i in (map.main_room_count as u32)..(total_room_count as u32) {
+            let a = &room_handles[i as usize];
+            let b = &room_handles[(rng.next_u32() % i) as usize];
+            EntityHandle::new(ctx)
+                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
+                .add_location(a.entity_id)
+                .add_path(b.entity_id);
+            EntityHandle::new(ctx)
+                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
+                .add_location(b.entity_id)
+                .add_path(a.entity_id);
+        }
+
+        MapGenerationResult {
+            room_ids: room_handles.iter().map(|h| h.entity_id).collect(),
+        }
+    }
+}
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ComponentSet {
@@ -53,14 +261,6 @@ pub struct IdentityInactiveEntity {
     pub component_set: ComponentSet,
 }
 
-#[table(name = entities, public)]
-#[derive(Debug, Clone)]
-pub struct Entity {
-    #[primary_key]
-    #[auto_inc]
-    pub id: u64,
-}
-
 impl Entity {
     pub fn new_player(ctx: &ReducerContext) -> Result<EntityHandle, String> {
         Ok(EntityHandle::new(ctx)
@@ -68,11 +268,13 @@ impl Entity {
             .set_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
                     .ok_or("Cannot find starting allegiance.")?
+                    .value // WIP just make an `#id_name()` function trait
                     .entity_id,
             )
             .add_location(
                 EntityHandle::from_name(ctx, "room1")
                     .ok_or("Cannot find starting room.")?
+                    .value
                     .entity_id,
             )
             .set_baseline("human")
@@ -175,23 +377,17 @@ impl<'a> InactiveEntityHandle<'a> {
 
         // TODO Assign location from callsite instead?
         match EntityHandle::from_name(self.ctx, "room1") {
-            Some(l) => e.add_location(l.entity_id),
+            Some(l) => e.add_location(l.value.entity_id),
             None => e,
         }
     }
 }
 
-pub struct EntityHandle<'a> {
-    pub ctx: &'a ReducerContext,
-    pub entity_id: u64,
-}
-
-#[allow(dead_code)]
 impl<'a> EntityHandle<'a> {
     pub fn insert_id(ctx: &'a ReducerContext, id: u64) -> Self {
         let entity = ctx.db.entities().insert(Entity { id });
         Self {
-            ctx,
+            hidden: EntityHandleHidden { ctx },
             entity_id: entity.id,
         }
     }
@@ -201,7 +397,10 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
-        Self { ctx, entity_id }
+        Self {
+            hidden: EntityHandleHidden { ctx },
+            entity_id,
+        }
     }
 
     pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
@@ -210,57 +409,37 @@ impl<'a> EntityHandle<'a> {
             .identity()
             .find(ctx.sender)
             .map(|p| Self {
-                ctx,
+                hidden: EntityHandleHidden { ctx },
                 entity_id: p.entity_id,
             })
     }
 
-    pub fn from_name(ctx: &'a ReducerContext, name: &str) -> Option<Self> {
+    pub fn from_name(
+        ctx: &'a ReducerContext,
+        name: &str,
+    ) -> Option<With__name__Component<EntityHandle<'a>>> {
         ctx.db
             .name_components()
             .name()
             .find(name.to_string())
-            .map(|n| Self {
-                ctx,
-                entity_id: n.entity_id,
-            })
+            .map(|n| n.into_name_handle(ctx))
     }
 
     pub fn generate_prominence(self) -> Self {
         let mut prominence = 0;
-        if self
-            .ctx
-            .db
-            .path_components()
-            .entity_id()
-            .find(self.entity_id)
-            .is_some()
-        {
+        if self.path().is_some() {
             prominence |= 1 << 8;
         }
         // TODO Add other controller types.
-        if self
-            .ctx
-            .db
-            .player_controller_components()
-            .entity_id()
-            .find(self.entity_id)
-            .is_some()
-        {
+        if self.player_controller().is_some() {
             prominence |= 1 << 7;
         }
-        if self
-            .ctx
-            .db
-            .hp_components()
-            .entity_id()
-            .find(self.entity_id)
-            .is_some()
-        {
+        if self.hp().is_some() {
             prominence |= 1 << 6;
         }
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .entity_prominence_components()
             .insert(EntityProminenceComponent {
@@ -272,171 +451,149 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn delete(self) {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .actions_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .action_hotkeys_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .action_options_components()
             .entity_id()
             .delete(self.entity_id);
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .action_state_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .queued_action_state_components()
             .entity_id()
             .delete(self.entity_id);
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .allegiance_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .ep_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .hp_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .location_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .name_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .path_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .player_controller_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .target_components()
             .entity_id()
             .delete(self.entity_id);
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .entity_prominence_components()
             .entity_id()
             .delete(self.entity_id);
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
-            .observer_components()
+            .entity_observations()
             .entity_id()
             .delete(self.entity_id);
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .entity_deactivation_timer_components()
             .entity_id()
             .delete(self.entity_id);
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .baseline_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .traits_components()
             .entity_id()
             .delete(self.entity_id);
 
-        self.ctx.db.entities().id().delete(self.entity_id);
+        self.hidden.ctx.db.entities().id().delete(self.entity_id);
         log::debug!("Deleted entity {}.", self.entity_id);
     }
 
     pub fn deactivate(self) {
         let component_set = ComponentSet {
             entity_id: self.entity_id,
-            actions_component: self
-                .ctx
-                .db
-                .actions_components()
-                .entity_id()
-                .find(self.entity_id),
-            action_hotkeys_component: self
-                .ctx
-                .db
-                .action_hotkeys_components()
-                .entity_id()
-                .find(self.entity_id),
-            allegiance_component: self
-                .ctx
-                .db
-                .allegiance_components()
-                .entity_id()
-                .find(self.entity_id),
-            hp_component: self.ctx.db.hp_components().entity_id().find(self.entity_id),
-            ep_component: self.ctx.db.ep_components().entity_id().find(self.entity_id),
-            player_controller_component: self
-                .ctx
-                .db
-                .player_controller_components()
-                .entity_id()
-                .find(self.entity_id),
-            baseline_component: self
-                .ctx
-                .db
-                .baseline_components()
-                .entity_id()
-                .find(self.entity_id),
-            traits_component: self
-                .ctx
-                .db
-                .traits_components()
-                .entity_id()
-                .find(self.entity_id),
+            actions_component: Option__actions__Trait::actions(&self),
+            action_hotkeys_component: self.action_hotkeys(),
+            allegiance_component: Option__allegiance__Trait::allegiance(&self),
+            hp_component: self.hp(),
+            ep_component: self.ep(),
+            player_controller_component: self.player_controller(),
+            baseline_component: self.baseline(),
+            traits_component: self.traits(),
         };
-        if let Some(p) = self
-            .ctx
-            .db
-            .player_controller_components()
-            .entity_id()
-            .find(self.entity_id)
-        {
-            self.ctx
+        if let Some(p) = self.player_controller() {
+            self.hidden
+                .ctx
                 .db
                 .identity_inactive_entities()
                 .insert(IdentityInactiveEntity {
                     identity: p.identity,
                     component_set,
                 });
-        } else if let Some(n) = self
-            .ctx
-            .db
-            .name_components()
-            .entity_id()
-            .find(self.entity_id)
-        {
-            self.ctx
+        } else if let Some(n) = self.name() {
+            self.hidden
+                .ctx
                 .db
                 .named_inactive_entities()
                 .insert(NamedInactiveEntity {
@@ -449,7 +606,7 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_name(self, name: &str) -> Self {
-        self.ctx.db.name_components().insert(NameComponent {
+        self.hidden.ctx.db.name_components().insert(NameComponent {
             entity_id: self.entity_id,
             name: name.to_string(),
         });
@@ -457,35 +614,28 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_target(self, target_entity_id: u64) -> Self {
-        match self
-            .ctx
-            .db
-            .target_components()
-            .entity_id()
-            .find(self.entity_id)
-        {
-            None => {
-                self.ctx.db.target_components().insert(TargetComponent {
+        if Option__target__Trait::target(&self).is_some() {
+            self.update_target(TargetComponent {
+                entity_id: self.entity_id,
+                target_entity_id,
+            });
+        } else {
+            self.hidden
+                .ctx
+                .db
+                .target_components()
+                .insert(TargetComponent {
                     entity_id: self.entity_id,
                     target_entity_id,
                 });
-            }
-            Some(_) => {
-                self.ctx
-                    .db
-                    .target_components()
-                    .entity_id()
-                    .update(TargetComponent {
-                        entity_id: self.entity_id,
-                        target_entity_id,
-                    });
-            }
         }
+
         self
     }
 
     pub fn delete_target(self) -> Self {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .target_components()
             .entity_id()
@@ -494,7 +644,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn target(&self) -> Option<u64> {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .target_components()
             .entity_id()
@@ -503,15 +654,20 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn add_location(self, location_entity_id: u64) -> Self {
-        self.ctx.db.location_components().insert(LocationComponent {
-            entity_id: self.entity_id,
-            location_entity_id,
-        });
+        self.hidden
+            .ctx
+            .db
+            .location_components()
+            .insert(LocationComponent {
+                entity_id: self.entity_id,
+                location_entity_id,
+            });
         self
     }
 
     pub fn location(&self) -> Option<u64> {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .location_components()
             .entity_id()
@@ -521,6 +677,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn set_location_map(self, map_entity_id: u64) -> Self {
         match self
+            .hidden
             .ctx
             .db
             .location_map_components()
@@ -528,7 +685,8 @@ impl<'a> EntityHandle<'a> {
             .find(self.entity_id)
         {
             None => {
-                self.ctx
+                self.hidden
+                    .ctx
                     .db
                     .location_map_components()
                     .insert(LocationMapComponent {
@@ -538,7 +696,12 @@ impl<'a> EntityHandle<'a> {
             }
             Some(mut c) => {
                 c.map_entity_id = map_entity_id;
-                self.ctx.db.location_map_components().entity_id().update(c);
+                self.hidden
+                    .ctx
+                    .db
+                    .location_map_components()
+                    .entity_id()
+                    .update(c);
             }
         }
         self
@@ -546,6 +709,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn set_rng_seed(self, rng_seed: u64) -> Self {
         match self
+            .hidden
             .ctx
             .db
             .rng_seed_components()
@@ -554,37 +718,29 @@ impl<'a> EntityHandle<'a> {
         {
             Some(mut c) => {
                 c.rng_seed = rng_seed;
-                self.ctx.db.rng_seed_components().entity_id().update(c);
+                self.hidden
+                    .ctx
+                    .db
+                    .rng_seed_components()
+                    .entity_id()
+                    .update(c);
             }
             None => {
-                self.ctx.db.rng_seed_components().insert(RngSeedComponent {
-                    entity_id: self.entity_id,
-                    rng_seed,
-                });
+                self.hidden
+                    .ctx
+                    .db
+                    .rng_seed_components()
+                    .insert(RngSeedComponent {
+                        entity_id: self.entity_id,
+                        rng_seed,
+                    });
             }
         }
         self
     }
 
-    pub fn get_rng(&self) -> StdRng {
-        let c = match self
-            .ctx
-            .db
-            .rng_seed_components()
-            .entity_id()
-            .find(self.entity_id)
-        {
-            Some(s) => s,
-            None => self.ctx.db.rng_seed_components().insert(RngSeedComponent {
-                entity_id: self.entity_id,
-                rng_seed: self.ctx.rng().next_u64(),
-            }),
-        };
-        StdRng::seed_from_u64(c.rng_seed)
-    }
-
     pub fn add_path(self, destination_entity_id: u64) -> Self {
-        self.ctx.db.path_components().insert(PathComponent {
+        self.hidden.ctx.db.path_components().insert(PathComponent {
             entity_id: self.entity_id,
             destination_entity_id,
         });
@@ -592,7 +748,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn has_path(&self) -> bool {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .path_components()
             .entity_id()
@@ -600,17 +757,9 @@ impl<'a> EntityHandle<'a> {
             .is_some()
     }
 
-    pub fn contents(&self) -> impl Iterator<Item = u64> {
-        self.ctx
-            .db
-            .location_components()
-            .location_entity_id()
-            .filter(self.entity_id)
-            .map(|l| l.entity_id)
-    }
-
     pub fn set_allegiance(self, allegiance_entity_id: u64) -> Self {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .allegiance_components()
             .insert(AllegianceComponent {
@@ -621,7 +770,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn allegiance(&self) -> Option<u64> {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .allegiance_components()
             .entity_id()
@@ -636,39 +786,16 @@ impl<'a> EntityHandle<'a> {
 
         match self.allegiance() {
             None => false,
-            Some(a) => match EntityHandle::from_id(self.ctx, other_entity_id).allegiance() {
+            Some(a) => match EntityHandle::from_id(self.hidden.ctx, other_entity_id).allegiance() {
                 None => false,
                 Some(o) => a == o,
             },
         }
     }
 
-    pub fn add_action(self, name: &str) -> Self {
-        if let Some(action) = self.ctx.db.actions().name().find(name.to_string()) {
-            if let Some(mut c) = self
-                .ctx
-                .db
-                .actions_components()
-                .entity_id()
-                .find(self.entity_id)
-            {
-                c.action_ids.push(action.id);
-                self.ctx.db.actions_components().entity_id().update(c);
-            } else {
-                self.ctx.db.actions_components().insert(ActionsComponent {
-                    entity_id: self.entity_id,
-                    action_ids: vec![action.id],
-                });
-            }
-        } else {
-            log::debug!("Cannot find action \"{}\" to add.", name);
-        }
-
-        self
-    }
-
     pub fn set_actions(self, action_ids: Vec<u64>) -> Self {
         match self
+            .hidden
             .ctx
             .db
             .actions_components()
@@ -676,21 +803,31 @@ impl<'a> EntityHandle<'a> {
             .find(self.entity_id)
         {
             None => {
-                self.ctx.db.actions_components().insert(ActionsComponent {
-                    entity_id: self.entity_id,
-                    action_ids,
-                });
+                self.hidden
+                    .ctx
+                    .db
+                    .actions_components()
+                    .insert(ActionsComponent {
+                        entity_id: self.entity_id,
+                        action_ids,
+                    });
             }
             Some(mut c) => {
                 c.action_ids = action_ids;
-                self.ctx.db.actions_components().entity_id().update(c);
+                self.hidden
+                    .ctx
+                    .db
+                    .actions_components()
+                    .entity_id()
+                    .update(c);
             }
         }
         self
     }
 
     pub fn actions(&self) -> Vec<u64> {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .actions_components()
             .entity_id()
@@ -700,11 +837,15 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_baseline(self, name: &str) -> Self {
-        if let Some(b) = self.ctx.db.baselines().name().find(name.to_string()) {
-            self.ctx.db.baseline_components().insert(BaselineComponent {
-                entity_id: self.entity_id,
-                baseline_id: b.id,
-            });
+        if let Some(b) = self.hidden.ctx.db.baselines().name().find(name.to_string()) {
+            self.hidden
+                .ctx
+                .db
+                .baseline_components()
+                .insert(BaselineComponent {
+                    entity_id: self.entity_id,
+                    baseline_id: b.id,
+                });
 
             self.trigger_total_stat_block_dirty_flag()
         } else {
@@ -713,8 +854,9 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn add_trait(self, name: &str) -> Self {
-        if let Some(t) = self.ctx.db.traits().name().find(name.to_string()) {
+        if let Some(t) = self.hidden.ctx.db.traits().name().find(name.to_string()) {
             if let Some(mut c) = self
+                .hidden
                 .ctx
                 .db
                 .traits_components()
@@ -722,12 +864,16 @@ impl<'a> EntityHandle<'a> {
                 .find(self.entity_id)
             {
                 c.trait_ids.push(t.id);
-                self.ctx.db.traits_components().entity_id().update(c);
+                self.hidden.ctx.db.traits_components().entity_id().update(c);
             } else {
-                self.ctx.db.traits_components().insert(TraitsComponent {
-                    entity_id: self.entity_id,
-                    trait_ids: vec![t.id],
-                });
+                self.hidden
+                    .ctx
+                    .db
+                    .traits_components()
+                    .insert(TraitsComponent {
+                        entity_id: self.entity_id,
+                        trait_ids: vec![t.id],
+                    });
             }
 
             self.trigger_traits_stat_block_dirty_flag()
@@ -738,6 +884,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u64>) -> Self {
         if let Some(mut c) = self
+            .hidden
             .ctx
             .db
             .appearance_features_components()
@@ -745,25 +892,26 @@ impl<'a> EntityHandle<'a> {
             .find(self.entity_id)
         {
             c.appearance_feature_ids = appearance_feature_ids;
-            self.ctx
+            self.hidden
+                .ctx
                 .db
                 .appearance_features_components()
                 .entity_id()
                 .update(c);
         } else {
-            self.ctx
-                .db
-                .appearance_features_components()
-                .insert(AppearanceFeaturesComponent {
+            self.hidden.ctx.db.appearance_features_components().insert(
+                AppearanceFeaturesComponent {
                     entity_id: self.entity_id,
                     appearance_feature_ids,
-                });
+                },
+            );
         }
         self
     }
 
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .total_stat_block_dirty_flag_components()
             .entity_id()
@@ -780,7 +928,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn trigger_traits_stat_block_dirty_flag(self) -> Self {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .traits_stat_block_dirty_flag_components()
             .insert(FlagComponent {
@@ -789,7 +938,8 @@ impl<'a> EntityHandle<'a> {
         self
     }
     pub fn trigger_total_stat_block_dirty_flag(self) -> Self {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .total_stat_block_dirty_flag_components()
             .insert(FlagComponent {
@@ -800,6 +950,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn set_traits_stat_block_cache(self, stat_block: StatBlock) -> Self {
         if let Some(mut c) = self
+            .hidden
             .ctx
             .db
             .traits_stat_block_cache_components()
@@ -807,13 +958,15 @@ impl<'a> EntityHandle<'a> {
             .find(self.entity_id)
         {
             c.stat_block = stat_block;
-            self.ctx
+            self.hidden
+                .ctx
                 .db
                 .traits_stat_block_cache_components()
                 .entity_id()
                 .update(c);
         } else {
-            self.ctx
+            self.hidden
+                .ctx
                 .db
                 .traits_stat_block_cache_components()
                 .insert(StatBlockCacheComponent {
@@ -822,7 +975,8 @@ impl<'a> EntityHandle<'a> {
                 });
         }
 
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .traits_stat_block_dirty_flag_components()
             .entity_id()
@@ -833,6 +987,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn set_attack(self, attack: i32) -> Self {
         match self
+            .hidden
             .ctx
             .db
             .attack_components()
@@ -840,23 +995,34 @@ impl<'a> EntityHandle<'a> {
             .find(self.entity_id)
         {
             None => {
-                self.ctx.db.attack_components().insert(AttackComponent {
-                    entity_id: self.entity_id,
-                    attack,
-                });
+                self.hidden
+                    .ctx
+                    .db
+                    .attack_components()
+                    .insert(AttackComponent {
+                        entity_id: self.entity_id,
+                        attack,
+                    });
             }
             Some(mut c) => {
                 c.attack = attack;
-                self.ctx.db.attack_components().entity_id().update(c);
+                self.hidden.ctx.db.attack_components().entity_id().update(c);
             }
         }
         self
     }
 
     pub fn set_mhp(self, mhp: i32) -> Self {
-        match self.ctx.db.hp_components().entity_id().find(self.entity_id) {
+        match self
+            .hidden
+            .ctx
+            .db
+            .hp_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
             None => {
-                self.ctx.db.hp_components().insert(HpComponent {
+                self.hidden.ctx.db.hp_components().insert(HpComponent {
                     entity_id: self.entity_id,
                     mhp,
                     hp: mhp,
@@ -867,16 +1033,28 @@ impl<'a> EntityHandle<'a> {
             }
             Some(mut hp_component) => {
                 hp_component.mhp = mhp;
-                self.ctx.db.hp_components().entity_id().update(hp_component);
+                self.hidden
+                    .ctx
+                    .db
+                    .hp_components()
+                    .entity_id()
+                    .update(hp_component);
             }
         }
         self
     }
 
     pub fn set_defense(self, defense: i32) -> Self {
-        match self.ctx.db.hp_components().entity_id().find(self.entity_id) {
+        match self
+            .hidden
+            .ctx
+            .db
+            .hp_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
             None => {
-                self.ctx.db.hp_components().insert(HpComponent {
+                self.hidden.ctx.db.hp_components().insert(HpComponent {
                     entity_id: self.entity_id,
                     mhp: 0,
                     hp: 0,
@@ -887,14 +1065,20 @@ impl<'a> EntityHandle<'a> {
             }
             Some(mut hp_component) => {
                 hp_component.defense = defense;
-                self.ctx.db.hp_components().entity_id().update(hp_component);
+                self.hidden
+                    .ctx
+                    .db
+                    .hp_components()
+                    .entity_id()
+                    .update(hp_component);
             }
         }
         self
     }
 
     pub fn has_hp(&self) -> bool {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .hp_components()
             .entity_id()
@@ -903,9 +1087,16 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_mep(self, mep: i32) -> Self {
-        match self.ctx.db.ep_components().entity_id().find(self.entity_id) {
+        match self
+            .hidden
+            .ctx
+            .db
+            .ep_components()
+            .entity_id()
+            .find(self.entity_id)
+        {
             None => {
-                self.ctx.db.ep_components().insert(EpComponent {
+                self.hidden.ctx.db.ep_components().insert(EpComponent {
                     entity_id: self.entity_id,
                     mep,
                     ep: mep,
@@ -913,10 +1104,15 @@ impl<'a> EntityHandle<'a> {
             }
             Some(mut ep_component) => {
                 ep_component.mep = mep;
-                self.ctx.db.ep_components().entity_id().update(ep_component);
+                self.hidden
+                    .ctx
+                    .db
+                    .ep_components()
+                    .entity_id()
+                    .update(ep_component);
             }
         }
-        self.ctx.db.ep_components().insert(EpComponent {
+        self.hidden.ctx.db.ep_components().insert(EpComponent {
             entity_id: self.entity_id,
             mep,
             ep: mep,
@@ -926,6 +1122,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn add_action_option(self, action_id: u64, target_entity_id: u64) -> Self {
         match self
+            .hidden
             .ctx
             .db
             .action_options_components()
@@ -933,7 +1130,8 @@ impl<'a> EntityHandle<'a> {
             .find(self.entity_id)
         {
             None => {
-                self.ctx
+                self.hidden
+                    .ctx
                     .db
                     .action_options_components()
                     .insert(ActionOptionsComponent {
@@ -949,7 +1147,8 @@ impl<'a> EntityHandle<'a> {
                     action_id,
                     target_entity_id,
                 });
-                self.ctx
+                self.hidden
+                    .ctx
                     .db
                     .action_options_components()
                     .entity_id()
@@ -960,12 +1159,14 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_queued_action_state(self, action_id: u64, target_entity_id: u64) -> Self {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .queued_action_state_components()
             .entity_id()
             .delete(self.entity_id);
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .queued_action_state_components()
             .insert(ActionStateComponent {
@@ -979,18 +1180,21 @@ impl<'a> EntityHandle<'a> {
 
     pub fn shift_queued_action_state(self) -> Self {
         if let Some(queued_action_state) = self
+            .hidden
             .ctx
             .db
             .queued_action_state_components()
             .entity_id()
             .find(self.entity_id)
         {
-            self.ctx
+            self.hidden
+                .ctx
                 .db
                 .queued_action_state_components()
                 .entity_id()
                 .delete(self.entity_id);
-            self.ctx
+            self.hidden
+                .ctx
                 .db
                 .action_state_components()
                 .insert(queued_action_state);
@@ -1000,7 +1204,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn action_state_component(&self) -> Option<ActionStateComponent> {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .action_state_components()
             .entity_id()
@@ -1008,7 +1213,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn add_player_controller(self, identity: Identity) -> Self {
-        self.ctx
+        self.hidden
+            .ctx
             .db
             .player_controller_components()
             .insert(PlayerControllerComponent {
@@ -1019,32 +1225,29 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_hotkey(self, name: &str, character: char) -> Self {
-        let action_id = if let Some(action) = self.ctx.db.actions().name().find(name.to_string()) {
-            action.id
-        } else {
-            return self;
-        };
+        let action_id =
+            if let Some(action) = self.hidden.ctx.db.actions().name().find(name.to_string()) {
+                action.id
+            } else {
+                return self;
+            };
         let character_code = character as u32;
-        if let Some(mut a) = self
-            .ctx
-            .db
-            .action_hotkeys_components()
-            .entity_id()
-            .find(self.entity_id)
-        {
+        if let Some(mut a) = self.action_hotkeys() {
             a.action_hotkeys
                 .retain(|h| h.action_id != action_id && h.character_code != character_code);
             a.action_hotkeys.push(ActionHotkey {
                 action_id,
                 character_code,
             });
-            self.ctx
+            self.hidden
+                .ctx
                 .db
                 .action_hotkeys_components()
                 .entity_id()
                 .update(a);
         } else {
-            self.ctx
+            self.hidden
+                .ctx
                 .db
                 .action_hotkeys_components()
                 .insert(ActionHotkeysComponent {
@@ -1059,8 +1262,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
-        if let Some(a) = self.ctx.db.actions().id().find(action_id) {
-            let o = EntityHandle::from_id(self.ctx, other_entity_id);
+        if let Some(a) = self.hidden.ctx.db.actions().id().find(action_id) {
+            let o = EntityHandle::from_id(self.hidden.ctx, other_entity_id);
             match a.action_type {
                 ActionType::Attack => o.has_hp() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.has_hp() && self.is_ally(other_entity_id),

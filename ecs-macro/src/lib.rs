@@ -99,8 +99,9 @@ impl Parse for Tables {
 impl ToTokens for Tables {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Tables(tables) = self;
+        // TODO Make the `public` controllable in the macro.
         tokens.extend(quote! {
-          #( #[spacetimedb::table(name = #tables)] )*
+          #( #[spacetimedb::table(name = #tables, public)] )*
         })
     }
 }
@@ -650,14 +651,14 @@ mod gen_impl {
             } = self.entity_handle_struct;
             tokens.extend(quote! {
               impl #struct_name {
-                fn #into_handle_fn_name(self, ctx: &spacetimedb::ReducerContext) -> #with_component_struct_name<#entity_handle_struct> {
+                pub fn #into_handle_fn_name(self, ctx: &spacetimedb::ReducerContext) -> #with_component_struct_name<#entity_handle_struct> {
                   let entity_id = self.entity_id;
                   #with_component_struct_name {
                     #component_name: self,
                     value: #entity_handle_struct { entity_id, hidden: ecs::EntityHandleHidden { ctx } },
                   }
                 }
-                fn #iter_fn_name(ctx: &spacetimedb::ReducerContext) -> impl Iterator<Item = #with_component_struct_name<#entity_handle_struct>> {
+                pub fn #iter_fn_name(ctx: &spacetimedb::ReducerContext) -> impl Iterator<Item = #with_component_struct_name<#entity_handle_struct>> {
                   spacetimedb::Table::iter(ctx.db.#table_name()).map(|c| c.#into_handle_fn_name(ctx))
                 }
               }
