@@ -40,29 +40,28 @@ impl ToTokens for ComponentStructImpl {
             ..
         } = self;
         let gen_struct::ComponentStruct {
-            ref component_struct,
-            ..
-        } = self.component_struct;
+            component_struct, ..
+        } = &self.component_struct;
         let gen_struct::WithComponentStruct {
-            ref with_component_struct,
-            ref component,
+            with_component_struct,
+            component,
             ..
-        } = self.with_component_struct;
+        } = &self.with_component_struct;
         let gen_struct::EntityHandleStruct {
-            ref entity_handle_struct,
+            entity_handle_struct,
             ..
-        } = self.entity_handle_struct;
+        } = &self.entity_handle_struct;
         tokens.extend(quote! {
           impl #component_struct {
-            pub fn #into_handle_fn(self, ctx: &spacetimedb::ReducerContext) -> #with_component_struct<#entity_handle_struct> {
+            pub fn #into_handle_fn(self, ctx: &::spacetimedb::ReducerContext) -> #with_component_struct<#entity_handle_struct> {
               let entity_id = self.entity_id;
               #with_component_struct {
                 #component: self,
                 value: #entity_handle_struct { entity_id, hidden: ecs::EntityHandleHidden { ctx } },
               }
             }
-            pub fn #iter_fn(ctx: &spacetimedb::ReducerContext) -> impl Iterator<Item = #with_component_struct<#entity_handle_struct>> {
-              spacetimedb::Table::iter(ctx.db.#table()).map(|c| c.#into_handle_fn(ctx))
+            pub fn #iter_fn(ctx: &::spacetimedb::ReducerContext) -> impl Iterator<Item = #with_component_struct<#entity_handle_struct>> {
+              ::spacetimedb::Table::iter(ctx.db.#table()).map(|c| c.#into_handle_fn(ctx))
             }
           }
         });
@@ -92,23 +91,23 @@ impl ReplacementComponentTraitForWithComponentStructImpl {
 impl ToTokens for ReplacementComponentTraitForWithComponentStructImpl {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_struct::WithComponentStruct {
-            ref with_component_struct,
-            ref component,
+            with_component_struct,
+            component,
             ..
-        } = self.with_component_struct;
+        } = &self.with_component_struct;
         let gen_trait::ComponentTrait {
-            ref component_trait,
-            ref component_ty,
-            ref mut_getter_fn,
-            ref getter_fn,
-            ref update_fn,
+            component_trait,
+            component_ty,
+            mut_getter_fn,
+            getter_fn,
+            update_fn,
             ..
-        } = self.component_trait;
+        } = &self.component_trait;
         let gen_trait::OptionComponentTrait {
-            ref option_component_trait,
-            update_fn: ref option_update_fn,
+            option_component_trait,
+            update_fn: option_update_fn,
             ..
-        } = self.option_component_trait;
+        } = &self.option_component_trait;
         tokens.extend(quote! {
           impl<T: #option_component_trait> #component_trait for #with_component_struct<T> {
             fn #mut_getter_fn(&mut self) -> &mut #component_ty {
@@ -149,19 +148,19 @@ impl ReplacementComponentDeleteTraitForWithComponentStructImpl {
 impl ToTokens for ReplacementComponentDeleteTraitForWithComponentStructImpl {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_struct::WithComponentStruct {
-            ref with_component_struct,
+            with_component_struct,
             ..
-        } = self.with_component_struct;
+        } = &self.with_component_struct;
         let gen_trait::ComponentDeleteTrait {
-            ref component_delete_trait,
-            ref delete_fn,
+            component_delete_trait,
+            delete_fn,
             ..
-        } = self.component_delete_trait;
+        } = &self.component_delete_trait;
         let gen_trait::OptionComponentTrait {
-            ref option_component_trait,
-            delete_fn: ref option_delete_fn,
+            option_component_trait,
+            delete_fn: option_delete_fn,
             ..
-        } = self.option_component_trait;
+        } = &self.option_component_trait;
         tokens.extend(quote! {
           impl<T: #option_component_trait> #component_delete_trait<T> for #with_component_struct<T> {
             fn #delete_fn(mut self) -> T {
@@ -190,17 +189,17 @@ impl ComponentTraitForWithComponentStructImpl {
 impl ToTokens for ComponentTraitForWithComponentStructImpl {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_struct::WithComponentStruct {
-            ref with_component_struct,
+            with_component_struct,
             ..
-        } = self.with_component_struct;
+        } = &self.with_component_struct;
         let gen_trait::ComponentTrait {
-            ref component_trait,
-            ref component_ty,
-            ref mut_getter_fn,
-            ref getter_fn,
-            ref update_fn,
+            component_trait,
+            component_ty,
+            mut_getter_fn,
+            getter_fn,
+            update_fn,
             ..
-        } = self.component_trait;
+        } = &self.component_trait;
         tokens.extend(quote! {
           impl<T: #component_trait> #component_trait for #with_component_struct<T> {
             fn #mut_getter_fn(&mut self) -> &mut #component_ty {
@@ -238,15 +237,15 @@ impl ComponentDeleteTraitForWithComponentStructImpl {
 impl ToTokens for ComponentDeleteTraitForWithComponentStructImpl {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_struct::WithComponentStruct {
-            ref with_component_struct,
-            ref component,
+            with_component_struct,
+            component,
             ..
-        } = self.with_component_struct;
+        } = &self.with_component_struct;
         let gen_trait::ComponentDeleteTrait {
-            ref component_delete_trait,
-            ref delete_fn,
+            component_delete_trait,
+            delete_fn,
             ..
-        } = self.component_delete_trait;
+        } = &self.component_delete_trait;
         tokens.extend(quote! {
         impl<T: #component_delete_trait<U>, U: Sized> #component_delete_trait<#with_component_struct<U>> for #with_component_struct<T> {
           fn #delete_fn(mut self) -> #with_component_struct<U> {
@@ -280,27 +279,32 @@ impl OptionComponentTraitForWithComponentStructImpl {
 impl ToTokens for OptionComponentTraitForWithComponentStructImpl {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_struct::WithComponentStruct {
-            ref with_component_struct,
+            with_component_struct,
             ..
-        } = self.with_component_struct;
+        } = &self.with_component_struct;
         let gen_trait::OptionComponentTrait {
-            ref option_component_trait,
-            ref component_ty,
-            ref getter_fn,
-            ref update_fn,
-            ref delete_fn,
+            option_component_trait,
+            component,
+            component_ty,
+            getter_fn,
+            insert_fn,
+            update_fn,
+            delete_fn,
             ..
-        } = self.option_component_trait;
+        } = &self.option_component_trait;
         tokens.extend(quote! {
           impl<T: #option_component_trait> #option_component_trait for #with_component_struct<T> {
             fn #getter_fn(&self) -> ::core::option::Option<#component_ty> {
               self.value.#getter_fn()
             }
-            fn #update_fn(&self, value: #component_ty) -> #component_ty {
-              self.value.#update_fn(value)
+            fn #insert_fn(&self, #component: #component_ty) -> #component_ty {
+              self.value.#insert_fn(#component)
+            }
+            fn #update_fn(&self, #component: #component_ty) -> #component_ty {
+              self.value.#update_fn(#component)
             }
             fn #delete_fn(&self) {
-              self.value.#delete_fn()
+              self.value.#delete_fn();
             }
           }
         });
@@ -310,7 +314,6 @@ impl ToTokens for OptionComponentTraitForWithComponentStructImpl {
 pub struct OptionComponentTraitForEntityHandleStructImpl {
     pub entity_handle_struct: gen_struct::EntityHandleStruct,
     pub option_component_trait: gen_trait::OptionComponentTrait,
-    pub table: Ident,
 }
 
 impl OptionComponentTraitForEntityHandleStructImpl {
@@ -321,7 +324,6 @@ impl OptionComponentTraitForEntityHandleStructImpl {
         Self {
             entity_handle_struct: ehs.to_owned(),
             option_component_trait: oct.to_owned(),
-            table: oct.table.to_owned(),
         }
     }
 }
@@ -329,29 +331,34 @@ impl OptionComponentTraitForEntityHandleStructImpl {
 impl ToTokens for OptionComponentTraitForEntityHandleStructImpl {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_struct::EntityHandleStruct {
-            ref id,
-            ref entity_handle_struct,
+            id,
+            entity_handle_struct,
             ..
-        } = self.entity_handle_struct;
+        } = &self.entity_handle_struct;
         let gen_trait::OptionComponentTrait {
-            ref option_component_trait,
-            ref component_ty,
-            ref getter_fn,
-            ref update_fn,
-            ref delete_fn,
+            option_component_trait,
+            component,
+            component_ty,
+            getter_fn,
+            insert_fn,
+            update_fn,
+            delete_fn,
+            table,
             ..
-        } = self.option_component_trait;
-        let table = &self.table;
+        } = &self.option_component_trait;
         tokens.extend(quote! {
           impl<'a> #option_component_trait for #entity_handle_struct<'a> {
             fn #getter_fn(&self) -> ::core::option::Option<#component_ty> {
-              self.hidden.ctx.db.#table().#id().find(self.#id)
+              ::spacetimedb::UniqueColumn::find(&self.hidden.ctx.db.#table().#id(), self.#id)
             }
-            fn #update_fn(&self, value: #component_ty) -> #component_ty {
-              self.hidden.ctx.db.#table().#id().update(value)
+            fn #insert_fn(&self, #component: #component_ty) -> #component_ty {
+              ::spacetimedb::Table::insert(self.hidden.ctx.db.#table(), #component)
+            }
+            fn #update_fn(&self, #component: #component_ty) -> #component_ty {
+              ::spacetimedb::UniqueColumn::update(&self.hidden.ctx.db.#table().#id(), #component)
             }
             fn #delete_fn(&self) {
-              self.hidden.ctx.db.#table().#id().delete(self.#id);
+              ::spacetimedb::UniqueColumn::delete(&self.hidden.ctx.db.#table().#id(), self.#id);
             }
           }
         });

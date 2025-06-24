@@ -3,13 +3,12 @@ use std::cmp::{max, min};
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
 use entity::{
-    action_options_components, baseline_components, entities, entity_deactivation_timer_components,
-    entity_observations, ep_components, hp_components, location_components,
-    player_controller_components, queued_action_state_components, target_components,
+    baseline_components, entities, entity_observations, ep_components, hp_components,
+    location_components, player_controller_components, queued_action_state_components,
     total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
-    traits_stat_block_dirty_flag_components, unrealized_map_components, ActionStateComponent,
-    Entity, EntityHandle, EntityObservations, EntityProminenceComponent, InactiveEntityHandle,
-    MapComponent, MapGenerator, MapLayout, Option__action_state__Trait, Option__attack__Trait,
+    traits_stat_block_dirty_flag_components, ActionStateComponent, Entity, EntityHandle,
+    EntityObservations, EntityProminenceComponent, InactiveEntityHandle, MapComponent,
+    MapGenerator, MapLayout, Option__action_state__Trait, Option__attack__Trait,
     Option__entity_deactivation_timer__Trait, Option__hp__Trait, Option__rng_seed__Trait,
     TimerComponent, __action_state__DeleteTrait, __action_state__Trait,
     __entity_deactivation_timer__DeleteTrait, __entity_deactivation_timer__Trait,
@@ -18,6 +17,11 @@ use entity::{
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
+
+use crate::entity::{
+    Option__location__Trait, Option__unrealized_map__Trait, RngSeedComponent, TargetComponent,
+    __target__DeleteTrait, __target__Trait,
+};
 
 mod action;
 mod appearance;
@@ -139,25 +143,23 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
                 .mhp(5),
         );
 
-    // TODO Move map logic to EntityHandle.
     // TODO Realize and unrealize maps.
-    let map = EntityHandle::new(ctx).set_rng_seed(0);
-    let map_handle = ctx
-        .db
-        .unrealized_map_components()
-        .insert(MapComponent {
-            entity_id: map.entity_id,
+    let map = EntityHandle::new(ctx);
+    let entity_id = map.entity_id;
+    let map = map
+        .upsert_rng_seed(RngSeedComponent {
+            entity_id,
+            rng_seed: 0,
+        })
+        .upsert_unrealized_map(MapComponent {
+            entity_id,
             loop_count: 0, // TODO Add loops.
             main_room_count: 10,
             map_layout: MapLayout::Path,
             map_theme_id: 0, // TODO Add map_themes table.
             extra_room_count: 10,
-        })
-        .into_unrealized_map_handle(ctx);
-    let map_result = map_handle
-        .with_rng_seed()
-        .ok_or("Failed to retrieve RNG seed component.")?
-        .generate(ctx);
+        });
+    let map_result = map.generate(ctx);
 
     EntityHandle::new(ctx).set_name("allegiance1");
     let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
@@ -210,25 +212,17 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
             log::debug!("Disconnected {} but cannot find any player.", ctx.sender);
         }
         Some(e) => {
-            if ctx
-                .db
-                .entity_deactivation_timer_components()
-                .entity_id()
-                .find(e.entity_id)
-                .is_none()
-            {
+            if e.entity_deactivation_timer().is_none() {
                 match ctx
                     .timestamp
                     .checked_add(TimeDuration::from_micros(30000000))
                 {
                     None => {}
                     Some(timestamp) => {
-                        ctx.db
-                            .entity_deactivation_timer_components()
-                            .insert(TimerComponent {
-                                entity_id: e.entity_id,
-                                timestamp,
-                            });
+                        e.insert_entity_deactivation_timer(TimerComponent {
+                            entity_id: e.entity_id,
+                            timestamp,
+                        });
                         log::debug!(
                             "Disconnected {} from player {} and set deactivation timer.",
                             ctx.sender,
@@ -478,51 +472,50 @@ pub fn action_system(ctx: &ReducerContext) {
 }
 
 pub fn target_validation_system(ctx: &ReducerContext) {
-    for target_component in ctx.db.target_components().iter() {
-        let e = EntityHandle::from_id(ctx, target_component.entity_id);
-        let t = EntityHandle::from_id(ctx, target_component.target_entity_id);
-        let is_valid = match t.location_id() {
+    for e in TargetComponent::iter_target(ctx) {
+        let t = EntityHandle::from_id(ctx, e.target().target_entity_id);
+        let is_valid = match t.location() {
             None => false,
             Some(tl) => {
-                tl == e.entity_id
-                    || match e.location_id() {
+                tl.location_entity_id == e.target().entity_id // WIP Make entity_id() trait.
+                    || match e.location() {
                         None => false,
-                        Some(el) => tl == el,
+                        Some(el) => tl.location_entity_id == el.location_entity_id,
                     }
             }
         };
 
         if !is_valid {
-            e.delete_target_component();
+            e.delete_target();
         }
     }
 }
 
-pub fn action_option_system(ctx: &ReducerContext) {
-    for action_option_component in ctx.db.action_options_components().iter() {
-        ctx.db
-            .action_options_components()
-            .delete(action_option_component);
-    }
-    for location_component in ctx.db.location_components().iter() {
-        let mut e = EntityHandle::from_id(ctx, location_component.entity_id);
-        for other_entity_id in match e.target_id() {
-            None => vec![e.entity_id],
-            Some(target) => {
-                if e.entity_id == target {
-                    vec![e.entity_id]
-                } else {
-                    vec![e.entity_id, target]
-                }
-            }
-        } {
-            for action_id in e.action_ids() {
-                if e.can_target_other(other_entity_id, action_id) {
-                    e = e.add_action_option(action_id, other_entity_id);
-                }
-            }
-        }
-    }
+pub fn action_option_system(_ctx: &ReducerContext) {
+    // for action_option_component in ctx.db.action_options_components().iter() {
+    //     ctx.db
+    //         .action_options_components()
+    //         .delete(action_option_component);
+    // }
+    // for e in LocationComponent::iter_location(ctx) {
+    //     for other_entity_id in match e.target() {
+    //         None => vec![e.location().entity_id], // WIP entity_id()
+    //         Some(target) => {
+    //             if e.location().entity_id == target.target_entity_id {
+    //                 vec![e.location().entity_id]
+    //             } else {
+    //                 vec![e.location().entity_id, target.target_entity_id]
+    //             }
+    //         }
+    //     } {
+    //         for _action_id in e.actions().iter().flat_map(|a| &a.action_ids) {
+    //             // WIP Take methods out of EntityHandle and onto component traits.
+    //             // if e.can_target_other(other_entity_id, action_id) {
+    //             //     e = e.add_action_option(action_id, other_entity_id);
+    //             // }
+    //         }
+    //     }
+    // }
 }
 
 pub fn entity_prominence_system(ctx: &ReducerContext) {

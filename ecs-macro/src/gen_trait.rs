@@ -92,7 +92,9 @@ pub struct OptionComponentTrait {
     pub table: Ident,
     pub with_component_struct: Ident,
     pub with_fn: Ident,
+    pub upsert_fn: Ident,
     pub getter_fn: Ident,
+    pub insert_fn: Ident,
     pub update_fn: Ident,
     pub delete_fn: Ident,
 }
@@ -110,7 +112,9 @@ impl OptionComponentTrait {
             table: ctp.table.to_owned(),
             with_component_struct: wcs.with_component_struct.to_owned(),
             with_fn: format_ident!("with_{}", ctp.component),
+            upsert_fn: format_ident!("upsert_{}", ctp.component),
             getter_fn: ctp.component.to_owned(),
+            insert_fn: format_ident!("insert_{}", ctp.component),
             update_fn: format_ident!("update_{}", ctp.component),
             delete_fn: format_ident!("delete_{}", ctp.component),
         }
@@ -126,7 +130,9 @@ impl ToTokens for OptionComponentTrait {
             table: _,
             with_component_struct,
             with_fn,
+            upsert_fn,
             getter_fn,
+            insert_fn,
             update_fn,
             delete_fn,
         } = self;
@@ -134,13 +140,25 @@ impl ToTokens for OptionComponentTrait {
           #[allow(non_camel_case_types)]
           pub trait #option_component_trait: Sized {
             fn #with_fn(self) -> ::core::option::Option<#with_component_struct<Self>> {
-              Some(#with_component_struct {
+              ::core::option::Option::Some(#with_component_struct {
                 #component: self.#getter_fn()?,
                 value: self,
               })
             }
+            fn #upsert_fn(self, #component: #component_ty) -> #with_component_struct<Self> {
+              let #component = if ::core::option::Option::is_some(&self.#getter_fn()) {
+                self.#update_fn(#component)
+              } else {
+                self.#insert_fn(#component)
+              };
+              #with_component_struct {
+                #component,
+                value: self,
+              }
+            }
             fn #getter_fn(&self) -> ::core::option::Option<#component_ty>;
-            fn #update_fn(&self, value: #component_ty) -> #component_ty;
+            fn #insert_fn(&self, #component: #component_ty) -> #component_ty;
+            fn #update_fn(&self, #component: #component_ty) -> #component_ty;
             fn #delete_fn(&self);
           }
         })

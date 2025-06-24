@@ -88,7 +88,7 @@ impl ToTokens for Tables {
         let Tables(tables) = self;
         // TODO Make the `public` controllable in the macro.
         tokens.extend(quote! {
-          #( #[spacetimedb::table(name = #tables, public)] )*
+          #( #[::spacetimedb::table(name = #tables, public)] )*
         })
     }
 }
