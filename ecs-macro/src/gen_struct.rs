@@ -16,21 +16,21 @@ pub struct EntityStruct {
 
 impl EntityStruct {
     pub fn new(
-        a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
-        ewa: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
+        struct_attrs: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
+        entity_declaration: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
     ) -> Self {
         Self {
-            attrs: a.attrs.to_joined(&ewa.attrs),
-            tables: ewa.value.tables.to_owned(),
-            entity_struct: ewa.value.entity.to_owned(),
-            id_ty: ewa.value.id_ty.to_owned(),
+            attrs: struct_attrs.attrs.to_joined(&entity_declaration.attrs),
+            tables: entity_declaration.value.tables.to_owned(),
+            entity_struct: entity_declaration.value.entity.to_owned(),
+            id_ty: entity_declaration.value.id_ty.to_owned(),
         }
     }
 }
 
 impl ToTokens for EntityStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let EntityStruct {
+        let Self {
             attrs,
             tables,
             entity_struct,
@@ -79,6 +79,14 @@ impl ComponentStruct {
             fields: cwa.value.fields.to_owned(),
         }
     }
+
+    pub fn new_vec(
+        a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
+        cds: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+        ewa: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
+    ) -> Vec<Self> {
+        cds.iter().map(|cwa| Self::new(a, cwa, ewa)).collect()
+    }
 }
 
 impl ToTokens for ComponentStruct {
@@ -113,21 +121,21 @@ pub struct EntityHandleStruct {
 
 impl EntityHandleStruct {
     pub fn new(
-        a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
-        ewa: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
+        struct_attrs: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
+        entity_declaration: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
     ) -> Self {
         Self {
-            attrs: a.attrs.to_owned(),
-            entity_handle_struct: format_ident!("{}Handle", ewa.value.entity),
-            id: ewa.value.id.to_owned(),
-            id_ty: ewa.value.id_ty.to_owned(),
+            attrs: struct_attrs.attrs.to_owned(),
+            entity_handle_struct: format_ident!("{}Handle", entity_declaration.value.entity),
+            id: entity_declaration.value.id.to_owned(),
+            id_ty: entity_declaration.value.id_ty.to_owned(),
         }
     }
 }
 
 impl ToTokens for EntityHandleStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let EntityHandleStruct {
+        let Self {
             attrs,
             entity_handle_struct,
             id,
@@ -164,6 +172,20 @@ impl WithComponentStruct {
             component_ty: cwa.value.component_ty.to_owned(),
         }
     }
+
+    pub fn new_vec(
+        a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
+        cds: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+    ) -> Vec<Self> {
+        cds.iter()
+            .flat_map(|d| {
+                d.value
+                    .component_table_pairs
+                    .iter()
+                    .map(|ctp| Self::new(a, ctp, d))
+            })
+            .collect()
+    }
 }
 
 impl ToTokens for WithComponentStruct {
@@ -182,5 +204,53 @@ impl ToTokens for WithComponentStruct {
             value: T,
           }
         })
+    }
+}
+
+pub struct EntityStructs {
+    pub entity_struct: EntityStruct,
+    pub component_structs: Vec<ComponentStruct>,
+    pub entity_handle_struct: EntityHandleStruct,
+    pub with_component_structs: Vec<WithComponentStruct>,
+}
+
+impl EntityStructs {
+    pub fn new(entity_macro_input: &macro_input::EntityMacroInput) -> Self {
+        let macro_input::EntityMacroInput {
+            entity_declaration,
+            component_declarations,
+            struct_attrs,
+        } = entity_macro_input;
+
+        let entity_struct = EntityStruct::new(&struct_attrs, &entity_declaration);
+        let component_structs =
+            ComponentStruct::new_vec(&struct_attrs, &component_declarations, &entity_declaration);
+        let entity_handle_struct = EntityHandleStruct::new(&struct_attrs, &entity_declaration);
+        let with_component_structs =
+            WithComponentStruct::new_vec(&struct_attrs, &component_declarations);
+
+        Self {
+            entity_struct,
+            component_structs,
+            entity_handle_struct,
+            with_component_structs,
+        }
+    }
+}
+
+impl ToTokens for EntityStructs {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            entity_struct,
+            component_structs,
+            entity_handle_struct,
+            with_component_structs,
+        } = self;
+        tokens.extend(quote! {
+          #entity_struct
+          #(#component_structs)*
+          #entity_handle_struct
+          #(#with_component_structs)*
+        });
     }
 }

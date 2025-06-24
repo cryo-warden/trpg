@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
-use syn::Ident;
+use syn::{Error, Ident, Result};
 
-use crate::{gen_struct, gen_trait, macro_input};
+use crate::{fundamental, gen_struct, gen_trait, macro_input};
 
 pub struct ComponentStructImpl {
     pub component_struct: gen_struct::ComponentStruct,
@@ -28,6 +28,36 @@ impl ComponentStructImpl {
             iter_fn: format_ident!("iter_{}", ctp.component),
             into_handle_fn: format_ident!("into_{}_handle", ctp.component),
         }
+    }
+
+    pub fn new_vec(
+        component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
+        component_structs: &Vec<gen_struct::ComponentStruct>,
+        entity_handle_struct: &gen_struct::EntityHandleStruct,
+    ) -> Result<Vec<Self>> {
+        component_declarations
+            .iter()
+            .flat_map(|d| {
+                d.value.component_table_pairs.iter().map(|ctp| {
+                    let wcs = with_component_structs
+                        .iter()
+                        .find(|wcs| wcs.component == ctp.component)
+                        .ok_or(Error::new(
+                            ctp.component.span(),
+                            "Cannot find the corresponding with-component struct.",
+                        ))?;
+                    let cs = component_structs
+                        .iter()
+                        .find(|cs| cs.component_struct == wcs.component_ty)
+                        .ok_or(Error::new(
+                            ctp.component.span(),
+                            "Cannot find the corresponding component struct.",
+                        ))?;
+                    Ok(Self::new(ctp, cs, wcs, entity_handle_struct))
+                })
+            })
+            .collect()
     }
 }
 
@@ -86,6 +116,33 @@ impl ReplacementComponentTraitForWithComponentStructImpl {
             option_component_trait: oct.to_owned(),
         }
     }
+
+    pub fn new_vec(
+        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
+        component_traits: &Vec<gen_trait::ComponentTrait>,
+        option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
+    ) -> Result<Vec<Self>> {
+        with_component_structs
+            .iter()
+            .map(|wcs| {
+                let ct = component_traits
+                    .iter()
+                    .find(|ct| ct.component == wcs.component)
+                    .ok_or(Error::new(
+                        wcs.component.span(),
+                        "Cannot find the corresponding component trait.",
+                    ))?;
+                let oct = option_component_traits
+                    .iter()
+                    .find(|ct| ct.component == wcs.component)
+                    .ok_or(Error::new(
+                        wcs.component.span(),
+                        "Cannot find the corresponding option component trait.",
+                    ))?;
+                Ok(Self::new(wcs, ct, oct))
+            })
+            .collect()
+    }
 }
 
 impl ToTokens for ReplacementComponentTraitForWithComponentStructImpl {
@@ -143,6 +200,33 @@ impl ReplacementComponentDeleteTraitForWithComponentStructImpl {
             option_component_trait: oct.to_owned(),
         }
     }
+
+    pub fn new_vec(
+        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
+        component_delete_traits: &Vec<gen_trait::ComponentDeleteTrait>,
+        option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
+    ) -> Result<Vec<Self>> {
+        with_component_structs
+            .iter()
+            .map(|wcs| {
+                let cdt = component_delete_traits
+                    .iter()
+                    .find(|cdt| cdt.component == wcs.component)
+                    .ok_or(Error::new(
+                        wcs.component.span(),
+                        "Cannot find the corresponding component delete trait.",
+                    ))?;
+                let oct = option_component_traits
+                    .iter()
+                    .find(|ct| ct.component == wcs.component)
+                    .ok_or(Error::new(
+                        wcs.component.span(),
+                        "Cannot find the corresponding option component trait.",
+                    ))?;
+                Ok(Self::new(wcs, cdt, oct))
+            })
+            .collect()
+    }
 }
 
 impl ToTokens for ReplacementComponentDeleteTraitForWithComponentStructImpl {
@@ -183,6 +267,21 @@ impl ComponentTraitForWithComponentStructImpl {
             with_component_struct: wcs.to_owned(),
             component_trait: ct.to_owned(),
         }
+    }
+
+    pub fn new_vec(
+        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
+        component_traits: &Vec<gen_trait::ComponentTrait>,
+    ) -> Vec<Self> {
+        with_component_structs
+            .iter()
+            .flat_map(|wcs| {
+                component_traits
+                    .iter()
+                    .filter(|ct| ct.component != wcs.component)
+                    .map(|ct| Self::new(wcs, ct))
+            })
+            .collect()
     }
 }
 
@@ -232,6 +331,21 @@ impl ComponentDeleteTraitForWithComponentStructImpl {
             component_delete_trait: cdt.to_owned(),
         }
     }
+
+    pub fn new_vec(
+        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
+        component_delete_traits: &Vec<gen_trait::ComponentDeleteTrait>,
+    ) -> Vec<Self> {
+        with_component_structs
+            .iter()
+            .flat_map(|wcs| {
+                component_delete_traits
+                    .iter()
+                    .filter(|ct| ct.component != wcs.component)
+                    .map(|cdt| Self::new(wcs, cdt))
+            })
+            .collect()
+    }
 }
 
 impl ToTokens for ComponentDeleteTraitForWithComponentStructImpl {
@@ -273,6 +387,21 @@ impl OptionComponentTraitForWithComponentStructImpl {
             with_component_struct: wcs.to_owned(),
             option_component_trait: oct.to_owned(),
         }
+    }
+
+    pub fn new_vec(
+        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
+        option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
+    ) -> Vec<Self> {
+        with_component_structs
+            .iter()
+            .flat_map(|wcs| {
+                option_component_traits
+                    .iter()
+                    .filter(|oct| oct.component != wcs.component)
+                    .map(|oct| Self::new(wcs, oct))
+            })
+            .collect()
     }
 }
 
@@ -326,6 +455,16 @@ impl OptionComponentTraitForEntityHandleStructImpl {
             option_component_trait: oct.to_owned(),
         }
     }
+
+    pub fn new_vec(
+        entity_handle_struct: &gen_struct::EntityHandleStruct,
+        option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
+    ) -> Vec<Self> {
+        option_component_traits
+            .iter()
+            .map(|oct| Self::new(entity_handle_struct, oct))
+            .collect()
+    }
 }
 
 impl ToTokens for OptionComponentTraitForEntityHandleStructImpl {
@@ -377,6 +516,15 @@ impl OptionComponentIterTraitImpl {
             option_component_trait: ocit.option_component_trait.to_owned(),
         }
     }
+
+    pub fn new_vec(
+        option_component_iter_traits: &Vec<gen_trait::OptionComponentIterTrait>,
+    ) -> Vec<Self> {
+        option_component_iter_traits
+            .iter()
+            .map(|ocit| Self::new(ocit))
+            .collect()
+    }
 }
 
 impl ToTokens for OptionComponentIterTraitImpl {
@@ -387,6 +535,131 @@ impl ToTokens for OptionComponentIterTraitImpl {
         } = self;
         tokens.extend(quote! {
           impl<T: #option_component_trait, U: Iterator<Item = T>> #option_component_iter_trait<T> for U {}
+        });
+    }
+}
+
+pub struct EntityImpls {
+    component_struct_impls: Vec<ComponentStructImpl>,
+    replacement_component_trait_for_with_component_struct_impls:
+        Vec<ReplacementComponentTraitForWithComponentStructImpl>,
+    replacement_component_delete_trait_for_with_component_struct_impls:
+        Vec<ReplacementComponentDeleteTraitForWithComponentStructImpl>,
+    component_trait_for_with_component_struct_impls: Vec<ComponentTraitForWithComponentStructImpl>,
+    component_delete_trait_for_with_component_struct_impls:
+        Vec<ComponentDeleteTraitForWithComponentStructImpl>,
+    option_component_trait_for_with_component_struct_impls:
+        Vec<OptionComponentTraitForWithComponentStructImpl>,
+    option_component_trait_for_entity_handle_struct_impls:
+        Vec<OptionComponentTraitForEntityHandleStructImpl>,
+    option_component_iter_trait_impls: Vec<OptionComponentIterTraitImpl>,
+}
+
+impl EntityImpls {
+    pub fn new(
+        entity_macro_input: &macro_input::EntityMacroInput,
+        entity_structs: &gen_struct::EntityStructs,
+        entity_traits: &gen_trait::EntityTraits,
+    ) -> Result<Self> {
+        let macro_input::EntityMacroInput {
+            component_declarations,
+            ..
+        } = entity_macro_input;
+        let gen_struct::EntityStructs {
+            component_structs,
+            with_component_structs,
+            entity_handle_struct,
+            ..
+        } = entity_structs;
+        let gen_trait::EntityTraits {
+            component_traits,
+            component_delete_traits,
+            option_component_traits,
+            option_component_iter_traits,
+        } = entity_traits;
+
+        let component_struct_impls = ComponentStructImpl::new_vec(
+            component_declarations,
+            with_component_structs,
+            component_structs,
+            entity_handle_struct,
+        )?;
+
+        let replacement_component_trait_for_with_component_struct_impls =
+            ReplacementComponentTraitForWithComponentStructImpl::new_vec(
+                with_component_structs,
+                component_traits,
+                option_component_traits,
+            )?;
+
+        let replacement_component_delete_trait_for_with_component_struct_impls =
+            ReplacementComponentDeleteTraitForWithComponentStructImpl::new_vec(
+                with_component_structs,
+                component_delete_traits,
+                option_component_traits,
+            )?;
+
+        let component_trait_for_with_component_struct_impls =
+            ComponentTraitForWithComponentStructImpl::new_vec(
+                with_component_structs,
+                component_traits,
+            );
+
+        let component_delete_trait_for_with_component_struct_impls =
+            ComponentDeleteTraitForWithComponentStructImpl::new_vec(
+                with_component_structs,
+                component_delete_traits,
+            );
+
+        let option_component_trait_for_with_component_struct_impls =
+            OptionComponentTraitForWithComponentStructImpl::new_vec(
+                with_component_structs,
+                option_component_traits,
+            );
+
+        let option_component_trait_for_entity_handle_struct_impls =
+            OptionComponentTraitForEntityHandleStructImpl::new_vec(
+                entity_handle_struct,
+                option_component_traits,
+            );
+
+        let option_component_iter_trait_impls =
+            OptionComponentIterTraitImpl::new_vec(option_component_iter_traits);
+
+        Ok(Self {
+            component_struct_impls,
+            replacement_component_trait_for_with_component_struct_impls,
+            replacement_component_delete_trait_for_with_component_struct_impls,
+            component_trait_for_with_component_struct_impls,
+            component_delete_trait_for_with_component_struct_impls,
+            option_component_trait_for_with_component_struct_impls,
+            option_component_trait_for_entity_handle_struct_impls,
+            option_component_iter_trait_impls,
+        })
+    }
+}
+
+impl ToTokens for EntityImpls {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            component_struct_impls,
+            replacement_component_trait_for_with_component_struct_impls,
+            replacement_component_delete_trait_for_with_component_struct_impls,
+            component_trait_for_with_component_struct_impls,
+            component_delete_trait_for_with_component_struct_impls,
+            option_component_trait_for_with_component_struct_impls,
+            option_component_trait_for_entity_handle_struct_impls,
+            option_component_iter_trait_impls,
+        } = self;
+        tokens.extend(quote! {
+          #(#component_struct_impls)*
+          #(#replacement_component_trait_for_with_component_struct_impls)*
+          #(#replacement_component_delete_trait_for_with_component_struct_impls)*
+          #(#component_trait_for_with_component_struct_impls)*
+          #(#component_delete_trait_for_with_component_struct_impls)*
+          #(#option_component_trait_for_with_component_struct_impls)*
+          #(#option_component_trait_for_entity_handle_struct_impls)*
+          #(#option_component_iter_trait_impls)*
         });
     }
 }
