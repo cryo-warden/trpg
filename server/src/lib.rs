@@ -20,7 +20,7 @@ use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContex
 
 use crate::entity::{
     Option__location__Trait, Option__unrealized_map__Trait, RngSeedComponent, TargetComponent,
-    __target__DeleteTrait, __target__Trait,
+    TriggerFlag, __target__DeleteTrait, __target__Trait,
 };
 
 mod action;

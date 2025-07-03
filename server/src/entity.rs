@@ -34,7 +34,7 @@ pub enum MapLayout {
 
 entity! {
   #[derive(Debug, Clone)]
-  struct_attrs
+  struct_attrs;
 
   entity Entity entity_id: EntityId tables(entities);
 
@@ -268,14 +268,12 @@ impl Entity {
             .set_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
                     .ok_or("Cannot find starting allegiance.")?
-                    .value // WIP just make an `#id()` function trait
-                    .entity_id,
+                    .entity_id(),
             )
             .add_location(
                 EntityHandle::from_name(ctx, "room1")
                     .ok_or("Cannot find starting room.")?
-                    .value
-                    .entity_id,
+                    .entity_id(),
             )
             .set_baseline("human")
             .add_trait("admin")
@@ -291,6 +289,19 @@ impl Entity {
 pub struct InactiveEntityHandle<'a> {
     pub ctx: &'a ReducerContext,
     pub component_set: ComponentSet,
+}
+
+pub trait TriggerFlag {
+    fn trigger_total_stat_block_dirty_flag(self) -> Self;
+}
+
+impl<T: Sized + WithEntityId + Option__total_stat_block_dirty_flag__Trait> TriggerFlag for T {
+    fn trigger_total_stat_block_dirty_flag(self) -> Self {
+        self.insert_total_stat_block_dirty_flag(FlagComponent {
+            entity_id: self.entity_id(),
+        });
+        self
+    }
 }
 
 #[allow(dead_code)]
@@ -377,7 +388,7 @@ impl<'a> InactiveEntityHandle<'a> {
 
         // TODO Assign location from callsite instead?
         match EntityHandle::from_name(self.ctx, "room1") {
-            Some(l) => e.add_location(l.value.entity_id),
+            Some(l) => e.add_location(l.entity_id()),
             None => e,
         }
     }
@@ -478,7 +489,7 @@ impl<'a> EntityHandle<'a> {
         log::debug!("Deleted entity {}.", self.entity_id);
     }
 
-    // WIP Move into a new macro-gen trait. First make trait for entity_id(), then make struct for all components as options, then finally make traits for delete and deactivate that automatically apply to anything with all the OPTION component traits or any wrapper which contains something that implements the traits.
+    // WIP Move into a new macro-gen trait. First make EntityBlob struct holding all components as options, then finally make traits for delete and deactivate that automatically apply to anything with all the OPTION component traits or any wrapper which contains something that implements the traits.
     #[allow(dead_code)]
     pub fn deactivate(self) {
         let component_set = ComponentSet {
@@ -617,8 +628,8 @@ impl<'a> EntityHandle<'a> {
                 entity_id,
                 baseline_id: b.id,
             })
-            .value
             .trigger_total_stat_block_dirty_flag()
+            .value
         } else {
             self
         }
@@ -666,12 +677,6 @@ impl<'a> EntityHandle<'a> {
 
     pub fn trigger_traits_stat_block_dirty_flag(self) -> Self {
         self.insert_traits_stat_block_dirty_flag(FlagComponent {
-            entity_id: self.entity_id,
-        });
-        self
-    }
-    pub fn trigger_total_stat_block_dirty_flag(self) -> Self {
-        self.insert_total_stat_block_dirty_flag(FlagComponent {
             entity_id: self.entity_id,
         });
         self

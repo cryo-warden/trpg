@@ -16,6 +16,7 @@ impl fundamental::AddAttrs for StructAttrsDeclaration {}
 impl Parse for StructAttrsDeclaration {
     fn parse(input: ParseStream) -> Result<Self> {
         input.parse::<kw::struct_attrs>()?;
+        input.parse::<Token![;]>()?;
         Ok(StructAttrsDeclaration)
     }
 }

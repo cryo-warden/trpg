@@ -3,14 +3,14 @@
 use ecs_macro::entity;
 
 mod ecs {
-    pub use crate::EntityHandleHidden;
+    pub use crate::*;
 }
 
 type EntityId = u64;
 
 entity! {
   #[derive(Clone, Debug)]
-  struct_attrs
+  struct_attrs;
 
   entity Entity entity_id: EntityId tables(entities);
 

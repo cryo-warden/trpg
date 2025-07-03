@@ -98,6 +98,52 @@ impl ToTokens for ComponentStructImpl {
     }
 }
 
+pub struct WithEntityIdTraitForWithComponentStructImpl {
+    pub with_component_struct: gen_struct::WithComponentStruct,
+    pub with_entity_id_trait: gen_trait::WithEntityIdTrait,
+}
+
+impl WithEntityIdTraitForWithComponentStructImpl {
+    pub fn new(wcs: &gen_struct::WithComponentStruct, weit: &gen_trait::WithEntityIdTrait) -> Self {
+        Self {
+            with_component_struct: wcs.to_owned(),
+            with_entity_id_trait: weit.to_owned(),
+        }
+    }
+
+    pub fn new_vec(
+        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
+        weit: &gen_trait::WithEntityIdTrait,
+    ) -> Vec<Self> {
+        with_component_structs
+            .iter()
+            .map(|wcs| Self::new(wcs, weit))
+            .collect()
+    }
+}
+
+impl ToTokens for WithEntityIdTraitForWithComponentStructImpl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let gen_struct::WithComponentStruct {
+            with_component_struct,
+            ..
+        } = &self.with_component_struct;
+        let gen_trait::WithEntityIdTrait {
+            with_entity_id_trait,
+            id_fn,
+            id_ty,
+            ..
+        } = &self.with_entity_id_trait;
+        tokens.extend(quote! {
+          impl<T: #with_entity_id_trait> #with_entity_id_trait for #with_component_struct<T> {
+            fn #id_fn(&self) -> #id_ty {
+              self.value.#id_fn()
+            }
+          }
+        });
+    }
+}
+
 pub struct ReplacementComponentTraitForWithComponentStructImpl {
     pub with_component_struct: gen_struct::WithComponentStruct,
     pub component_trait: gen_trait::ComponentTrait,
@@ -539,8 +585,47 @@ impl ToTokens for OptionComponentIterTraitImpl {
     }
 }
 
+pub struct WithEntityIdTraitForEntityHandleStructImpl {
+    pub with_component_struct: gen_struct::EntityHandleStruct,
+    pub with_entity_id_trait: gen_trait::WithEntityIdTrait,
+}
+
+impl WithEntityIdTraitForEntityHandleStructImpl {
+    pub fn new(wcs: &gen_struct::EntityHandleStruct, weit: &gen_trait::WithEntityIdTrait) -> Self {
+        Self {
+            with_component_struct: wcs.to_owned(),
+            with_entity_id_trait: weit.to_owned(),
+        }
+    }
+}
+
+impl ToTokens for WithEntityIdTraitForEntityHandleStructImpl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let gen_struct::EntityHandleStruct {
+            entity_handle_struct,
+            id,
+            ..
+        } = &self.with_component_struct;
+        let gen_trait::WithEntityIdTrait {
+            with_entity_id_trait,
+            id_fn,
+            id_ty,
+            ..
+        } = &self.with_entity_id_trait;
+        tokens.extend(quote! {
+          impl #with_entity_id_trait for #entity_handle_struct<'_> {
+            fn #id_fn(&self) -> #id_ty {
+              self.#id
+            }
+          }
+        });
+    }
+}
+
 pub struct EntityImpls {
     component_struct_impls: Vec<ComponentStructImpl>,
+    with_entity_id_trait_for_with_component_struct_impls:
+        Vec<WithEntityIdTraitForWithComponentStructImpl>,
     replacement_component_trait_for_with_component_struct_impls:
         Vec<ReplacementComponentTraitForWithComponentStructImpl>,
     replacement_component_delete_trait_for_with_component_struct_impls:
@@ -553,6 +638,7 @@ pub struct EntityImpls {
     option_component_trait_for_entity_handle_struct_impls:
         Vec<OptionComponentTraitForEntityHandleStructImpl>,
     option_component_iter_trait_impls: Vec<OptionComponentIterTraitImpl>,
+    with_entity_id_trait_for_entity_handle_struct_impl: WithEntityIdTraitForEntityHandleStructImpl,
 }
 
 impl EntityImpls {
@@ -574,6 +660,7 @@ impl EntityImpls {
         let gen_trait::EntityTraits {
             component_traits,
             component_delete_traits,
+            with_entity_id_trait,
             option_component_traits,
             option_component_iter_traits,
         } = entity_traits;
@@ -584,6 +671,12 @@ impl EntityImpls {
             component_structs,
             entity_handle_struct,
         )?;
+
+        let with_entity_id_trait_for_with_component_struct_impls =
+            WithEntityIdTraitForWithComponentStructImpl::new_vec(
+                with_component_structs,
+                with_entity_id_trait,
+            );
 
         let replacement_component_trait_for_with_component_struct_impls =
             ReplacementComponentTraitForWithComponentStructImpl::new_vec(
@@ -626,8 +719,15 @@ impl EntityImpls {
         let option_component_iter_trait_impls =
             OptionComponentIterTraitImpl::new_vec(option_component_iter_traits);
 
+        let with_entity_id_trait_for_entity_handle_struct_impl =
+            WithEntityIdTraitForEntityHandleStructImpl::new(
+                entity_handle_struct,
+                with_entity_id_trait,
+            );
+
         Ok(Self {
             component_struct_impls,
+            with_entity_id_trait_for_with_component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
             replacement_component_delete_trait_for_with_component_struct_impls,
             component_trait_for_with_component_struct_impls,
@@ -635,6 +735,7 @@ impl EntityImpls {
             option_component_trait_for_with_component_struct_impls,
             option_component_trait_for_entity_handle_struct_impls,
             option_component_iter_trait_impls,
+            with_entity_id_trait_for_entity_handle_struct_impl,
         })
     }
 }
@@ -643,6 +744,7 @@ impl ToTokens for EntityImpls {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             component_struct_impls,
+            with_entity_id_trait_for_with_component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
             replacement_component_delete_trait_for_with_component_struct_impls,
             component_trait_for_with_component_struct_impls,
@@ -650,9 +752,11 @@ impl ToTokens for EntityImpls {
             option_component_trait_for_with_component_struct_impls,
             option_component_trait_for_entity_handle_struct_impls,
             option_component_iter_trait_impls,
+            with_entity_id_trait_for_entity_handle_struct_impl,
         } = self;
         tokens.extend(quote! {
           #(#component_struct_impls)*
+          #(#with_entity_id_trait_for_with_component_struct_impls)*
           #(#replacement_component_trait_for_with_component_struct_impls)*
           #(#replacement_component_delete_trait_for_with_component_struct_impls)*
           #(#component_trait_for_with_component_struct_impls)*
@@ -660,6 +764,7 @@ impl ToTokens for EntityImpls {
           #(#option_component_trait_for_with_component_struct_impls)*
           #(#option_component_trait_for_entity_handle_struct_impls)*
           #(#option_component_iter_trait_impls)*
+          #with_entity_id_trait_for_entity_handle_struct_impl
         });
     }
 }
