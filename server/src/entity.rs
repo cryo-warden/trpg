@@ -194,7 +194,7 @@ impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
         let total_room_count = map.extra_room_count + map.main_room_count;
         let room_handles: Vec<EntityHandle> = (0..total_room_count)
             .map(|_| {
-                EntityHandle::new(ctx)
+                Entity::new(ctx)
                     .set_appearance_feature_ids(af_ctx.by_texts(&["room"]))
                     .set_location_map(0) // WIP self.entity_id()
             })
@@ -203,11 +203,11 @@ impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
         for i in 0..(map.main_room_count as usize - 1) {
             let a = &room_handles[i];
             let b = &room_handles[i + 1];
-            EntityHandle::new(ctx)
+            Entity::new(ctx)
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(a.entity_id)
                 .add_path(b.entity_id);
-            EntityHandle::new(ctx)
+            Entity::new(ctx)
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(b.entity_id)
                 .add_path(a.entity_id);
@@ -216,11 +216,11 @@ impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
         for i in (map.main_room_count as u32)..(total_room_count as u32) {
             let a = &room_handles[i as usize];
             let b = &room_handles[(rng.next_u32() % i) as usize];
-            EntityHandle::new(ctx)
+            Entity::new(ctx)
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(a.entity_id)
                 .add_path(b.entity_id);
-            EntityHandle::new(ctx)
+            Entity::new(ctx)
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(b.entity_id)
                 .add_path(a.entity_id);
@@ -263,7 +263,7 @@ pub struct IdentityInactiveEntity {
 
 impl Entity {
     pub fn new_player(ctx: &ReducerContext) -> Result<EntityHandle, String> {
-        Ok(EntityHandle::new(ctx)
+        Ok(Entity::new(ctx)
             .add_player_controller(ctx.sender)
             .set_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
@@ -403,26 +403,14 @@ impl<'a> EntityHandle<'a> {
         }
     }
 
-    pub fn new(ctx: &'a ReducerContext) -> Self {
-        Self::insert_id(ctx, 0)
-    }
-
-    pub fn from_id(ctx: &'a ReducerContext, entity_id: u64) -> Self {
-        Self {
-            hidden: EntityHandleHidden { ctx },
-            entity_id,
-        }
-    }
-
-    pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
+    pub fn from_player_identity(
+        ctx: &'a ReducerContext,
+    ) -> Option<With__player_controller__Component<EntityHandle<'a>>> {
         ctx.db
             .player_controller_components()
             .identity()
             .find(ctx.sender)
-            .map(|p| Self {
-                hidden: EntityHandleHidden { ctx },
-                entity_id: p.entity_id,
-            })
+            .map(|p| p.into_player_controller_handle(ctx))
     }
 
     pub fn from_name(
@@ -569,6 +557,7 @@ impl<'a> EntityHandle<'a> {
     pub fn add_path(self, destination_entity_id: u64) -> Self {
         let entity_id = self.entity_id;
         self.upsert_path(PathComponent {
+            // WIP Make entity_id private and move component construction into macro functions.
             entity_id,
             destination_entity_id,
         })
@@ -597,14 +586,13 @@ impl<'a> EntityHandle<'a> {
             return true;
         }
 
-        match self.allegiance_id() {
-            None => false,
-            Some(a) => {
-                match EntityHandle::from_id(self.hidden.ctx, other_entity_id).allegiance_id() {
-                    None => false,
-                    Some(o) => a == o,
-                }
-            }
+        if let (Some(a), Some(o)) = (
+            self.allegiance_id(),
+            Entity::find(other_entity_id, self.hidden.ctx).allegiance_id(),
+        ) {
+            a == o
+        } else {
+            false
         }
     }
 
@@ -826,7 +814,7 @@ impl<'a> EntityHandle<'a> {
 
     pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
         if let Some(a) = self.hidden.ctx.db.actions().id().find(action_id) {
-            let o = EntityHandle::from_id(self.hidden.ctx, other_entity_id);
+            let o = Entity::find(other_entity_id, self.hidden.ctx);
             match a.action_type {
                 ActionType::Attack => o.has_hp() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.has_hp() && self.is_ally(other_entity_id),

@@ -4,6 +4,62 @@ use syn::{Error, Ident, Result};
 
 use crate::{fundamental, gen_struct, gen_trait, macro_input};
 
+pub struct EntityStructImpl {
+    pub entity_struct: gen_struct::EntityStruct,
+    pub entity_handle_struct: gen_struct::EntityHandleStruct,
+    pub new_fn: Ident,
+    pub find_fn: Ident,
+}
+
+impl EntityStructImpl {
+    pub fn new(es: &gen_struct::EntityStruct, ehs: &gen_struct::EntityHandleStruct) -> Self {
+        Self {
+            entity_struct: es.to_owned(),
+            entity_handle_struct: ehs.to_owned(),
+            new_fn: format_ident!("new"),
+            find_fn: format_ident!("find"),
+        }
+    }
+}
+
+impl ToTokens for EntityStructImpl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            new_fn, find_fn, ..
+        } = self;
+        let gen_struct::EntityStruct {
+            entity_struct,
+            tables: fundamental::Tables(tables),
+            ..
+        } = &self.entity_struct;
+        // WIP Make entity table singular.
+        let table = tables.first().unwrap();
+        let gen_struct::EntityHandleStruct {
+            entity_handle_struct,
+            id,
+            id_ty,
+            ..
+        } = &self.entity_handle_struct;
+        tokens.extend(quote! {
+          impl #entity_struct {
+            pub fn #new_fn(ctx: &::spacetimedb::ReducerContext) -> #entity_handle_struct {
+              let entity = ::spacetimedb::Table::insert(ctx.db.#table(), Self { id: 0 });
+              #entity_handle_struct {
+                #id: entity.id,
+                hidden: ecs::EntityHandleHidden{ ctx }
+              }
+            }
+            pub fn #find_fn(#id: #id_ty, ctx: &::spacetimedb::ReducerContext) -> #entity_handle_struct {
+              #entity_handle_struct {
+                #id,
+                hidden: ecs::EntityHandleHidden{ ctx }
+              }
+            }
+          }
+        });
+    }
+}
+
 pub struct ComponentStructImpl {
     pub component_struct: gen_struct::ComponentStruct,
     pub with_component_struct: gen_struct::WithComponentStruct,
@@ -636,6 +692,7 @@ impl ToTokens for WithEntityHandleTraitForEntityHandleStructImpl {
 }
 
 pub struct EntityImpls {
+    entity_struct_impl: EntityStructImpl,
     component_struct_impls: Vec<ComponentStructImpl>,
     with_entity_id_trait_for_with_component_struct_impls:
         Vec<WithEntityHandleTraitForWithComponentStructImpl>,
@@ -666,6 +723,7 @@ impl EntityImpls {
             ..
         } = entity_macro_input;
         let gen_struct::EntityStructs {
+            entity_struct,
             component_structs,
             with_component_structs,
             entity_handle_struct,
@@ -678,6 +736,8 @@ impl EntityImpls {
             option_component_traits,
             option_component_iter_traits,
         } = entity_traits;
+
+        let entity_struct_impl = EntityStructImpl::new(entity_struct, entity_handle_struct);
 
         let component_struct_impls = ComponentStructImpl::new_vec(
             component_declarations,
@@ -740,6 +800,7 @@ impl EntityImpls {
             );
 
         Ok(Self {
+            entity_struct_impl,
             component_struct_impls,
             with_entity_id_trait_for_with_component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
@@ -757,6 +818,7 @@ impl EntityImpls {
 impl ToTokens for EntityImpls {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
+            entity_struct_impl,
             component_struct_impls,
             with_entity_id_trait_for_with_component_struct_impls,
             replacement_component_trait_for_with_component_struct_impls,
@@ -769,16 +831,17 @@ impl ToTokens for EntityImpls {
             with_entity_id_trait_for_entity_handle_struct_impl,
         } = self;
         tokens.extend(quote! {
-          #(#component_struct_impls)*
-          #(#with_entity_id_trait_for_with_component_struct_impls)*
-          #(#replacement_component_trait_for_with_component_struct_impls)*
-          #(#replacement_component_delete_trait_for_with_component_struct_impls)*
-          #(#component_trait_for_with_component_struct_impls)*
-          #(#component_delete_trait_for_with_component_struct_impls)*
-          #(#option_component_trait_for_with_component_struct_impls)*
-          #(#option_component_trait_for_entity_handle_struct_impls)*
-          #(#option_component_iter_trait_impls)*
-          #with_entity_id_trait_for_entity_handle_struct_impl
+            #entity_struct_impl
+            #(#component_struct_impls)*
+            #(#with_entity_id_trait_for_with_component_struct_impls)*
+            #(#replacement_component_trait_for_with_component_struct_impls)*
+            #(#replacement_component_delete_trait_for_with_component_struct_impls)*
+            #(#component_trait_for_with_component_struct_impls)*
+            #(#component_delete_trait_for_with_component_struct_impls)*
+            #(#option_component_trait_for_with_component_struct_impls)*
+            #(#option_component_trait_for_entity_handle_struct_impls)*
+            #(#option_component_iter_trait_impls)*
+            #with_entity_id_trait_for_entity_handle_struct_impl
         });
     }
 }

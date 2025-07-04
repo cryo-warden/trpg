@@ -144,7 +144,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         );
 
     // TODO Realize and unrealize maps.
-    let map = EntityHandle::new(ctx);
+    let map = Entity::new(ctx);
     let entity_id = map.entity_id();
     let map = map
         .upsert_rng_seed(RngSeedComponent {
@@ -161,11 +161,11 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         });
     let map_result = map.generate(ctx);
 
-    EntityHandle::new(ctx).set_name("allegiance1");
-    let allegiance2 = EntityHandle::new(ctx).set_name("allegiance2");
-    let room = EntityHandle::from_id(ctx, map_result.room_ids[0]).set_name("room1");
+    Entity::new(ctx).set_name("allegiance1");
+    let allegiance2 = Entity::new(ctx).set_name("allegiance2");
+    let room = Entity::find(map_result.room_ids[0], ctx).set_name("room1");
     for _ in 0..5 {
-        EntityHandle::new(ctx)
+        Entity::new(ctx)
             .set_allegiance(allegiance2.entity_id())
             .set_baseline("slime")
             .add_location(room.entity_id());
@@ -239,8 +239,9 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
 pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
-            if p.can_target_other(target_entity_id, action_id) {
-                p.set_queued_action_state(action_id, target_entity_id);
+            if p.to_handle().can_target_other(target_entity_id, action_id) {
+                p.into_handle()
+                    .set_queued_action_state(action_id, target_entity_id);
                 Ok(())
             } else {
                 Err("Invalid target for the given action.".to_string())
@@ -254,7 +255,7 @@ pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Resul
 pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
-            p.set_target(target_entity_id);
+            p.into_handle().set_target(target_entity_id);
             // TODO Only update for the given player and target.
             action_option_system(ctx);
             Ok(())
@@ -267,7 +268,7 @@ pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String>
 pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
-            p.delete_target_component();
+            p.into_handle().delete_target_component();
             Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
@@ -291,7 +292,7 @@ pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Result<(), String> {
-    EntityHandle::from_id(ctx, entity_id).add_trait(trait_name);
+    Entity::find(entity_id, ctx).add_trait(trait_name);
 
     Ok(())
 }
@@ -391,7 +392,7 @@ pub fn ep_system(ctx: &ReducerContext) {
 
 pub fn shift_queued_action_system(ctx: &ReducerContext) {
     for q in ctx.db.queued_action_state_components().iter() {
-        let e = EntityHandle::from_id(ctx, q.entity_id);
+        let e = Entity::find(q.entity_id, ctx);
         if e.action_state().is_none() {
             let e = e.shift_queued_action_state();
             if let Some(a) = e.action_state() {
@@ -426,7 +427,7 @@ pub fn action_system(ctx: &ReducerContext) {
                 }
                 ActionEffect::Attack(damage) => {
                     let attack = e.attack().map(|c| c.attack).unwrap_or(0);
-                    let t = EntityHandle::from_id(ctx, action_state.target_entity_id);
+                    let t = Entity::find(action_state.target_entity_id, ctx);
                     let target_defense = t.hp().map(|c| c.defense).unwrap_or(0);
                     EntityEvent::emit_middle(
                         ctx,
@@ -473,7 +474,7 @@ pub fn action_system(ctx: &ReducerContext) {
 
 pub fn target_validation_system(ctx: &ReducerContext) {
     for e in TargetComponent::iter_target(ctx) {
-        let t = EntityHandle::from_id(ctx, e.target().target_entity_id);
+        let t = Entity::find(e.target().target_entity_id, ctx);
         let is_valid = match t.location() {
             None => false,
             Some(tl) => {
@@ -523,7 +524,7 @@ pub fn entity_prominence_system(ctx: &ReducerContext) {
         p.delete_entity_prominence();
     }
     for entity in ctx.db.entities().iter() {
-        EntityHandle::from_id(ctx, entity.id).generate_prominence();
+        Entity::find(entity.id, ctx).generate_prominence();
     }
 }
 
@@ -531,7 +532,7 @@ pub fn entity_deactivation_system(ctx: &ReducerContext) {
     for t in TimerComponent::iter_entity_deactivation_timer(ctx) {
         if t.entity_deactivation_timer().timestamp.le(&ctx.timestamp) {
             t.delete_entity_deactivation_timer();
-            // EntityHandle::from_id(ctx, t.entity_id).deactivate(); // WIP Move deactivation into a new macro-generated trait.
+            // Entity::find(t.entity_id, ctx).deactivate(); // WIP Move deactivation into a new macro-generated trait.
         }
     }
 }
@@ -547,7 +548,7 @@ pub fn entity_stats_system(ctx: &ReducerContext) {
                 }
             }
 
-            EntityHandle::from_id(ctx, f.entity_id)
+            Entity::find(f.entity_id, ctx)
                 .set_traits_stat_block_cache(stat_block)
                 .trigger_total_stat_block_dirty_flag();
         }
@@ -573,7 +574,7 @@ pub fn entity_stats_system(ctx: &ReducerContext) {
             stat_block.add(t.stat_block);
         }
 
-        EntityHandle::from_id(ctx, f.entity_id).apply_stat_block(stat_block);
+        Entity::find(f.entity_id, ctx).apply_stat_block(stat_block);
     }
 }
 
