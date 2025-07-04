@@ -295,7 +295,7 @@ pub trait TriggerFlag {
     fn trigger_total_stat_block_dirty_flag(self) -> Self;
 }
 
-impl<T: Sized + WithEntityId + Option__total_stat_block_dirty_flag__Trait> TriggerFlag for T {
+impl<'a, T: WithEntityHandle<'a> + Option__total_stat_block_dirty_flag__Trait> TriggerFlag for T {
     fn trigger_total_stat_block_dirty_flag(self) -> Self {
         self.insert_total_stat_block_dirty_flag(FlagComponent {
             entity_id: self.entity_id(),

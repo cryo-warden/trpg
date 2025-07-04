@@ -5,6 +5,43 @@ use syn::{Error, Ident, Result};
 use crate::{fundamental, gen_struct, macro_input};
 
 #[derive(Clone)]
+pub struct WithEntityHandleTrait {
+    pub with_entity_handle_trait: Ident,
+    pub entity_handle_struct: Ident,
+    pub id_fn: Ident,
+    pub id_ty: Ident,
+}
+
+impl WithEntityHandleTrait {
+    pub fn new(ehs: &gen_struct::EntityHandleStruct) -> Self {
+        Self {
+            with_entity_handle_trait: format_ident!("With{}", ehs.entity_handle_struct),
+            entity_handle_struct: ehs.entity_handle_struct.to_owned(),
+            id_fn: ehs.id.to_owned(),
+            id_ty: ehs.id_ty.to_owned(),
+        }
+    }
+}
+
+impl ToTokens for WithEntityHandleTrait {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            with_entity_handle_trait,
+            entity_handle_struct,
+            id_fn,
+            id_ty,
+        } = self;
+        tokens.extend(quote! {
+          pub trait #with_entity_handle_trait<'a> {
+              fn #id_fn(&self) -> #id_ty;
+              fn to_handle(&self) -> &#entity_handle_struct<'a>;
+              fn into_handle(self) -> #entity_handle_struct<'a>;
+          }
+        })
+    }
+}
+
+#[derive(Clone)]
 pub struct ComponentTrait {
     pub component_trait: Ident,
     pub component: Ident,
@@ -271,40 +308,8 @@ impl ToTokens for OptionComponentIterTrait {
     }
 }
 
-#[derive(Clone)]
-pub struct WithEntityIdTrait {
-    pub with_entity_id_trait: Ident,
-    pub id_fn: Ident,
-    pub id_ty: Ident,
-}
-
-impl WithEntityIdTrait {
-    pub fn new(ehs: &gen_struct::EntityHandleStruct) -> Self {
-        Self {
-            with_entity_id_trait: format_ident!("With{}", ehs.id_ty),
-            id_fn: ehs.id.to_owned(),
-            id_ty: ehs.id_ty.to_owned(),
-        }
-    }
-}
-
-impl ToTokens for WithEntityIdTrait {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            with_entity_id_trait,
-            id_fn,
-            id_ty,
-        } = self;
-        tokens.extend(quote! {
-          pub trait #with_entity_id_trait {
-              fn #id_fn(&self) -> #id_ty;
-          }
-        })
-    }
-}
-
 pub struct EntityTraits {
-    pub with_entity_id_trait: WithEntityIdTrait,
+    pub with_entity_id_trait: WithEntityHandleTrait,
     pub component_traits: Vec<ComponentTrait>,
     pub component_delete_traits: Vec<ComponentDeleteTrait>,
     pub option_component_traits: Vec<OptionComponentTrait>,
@@ -326,7 +331,7 @@ impl EntityTraits {
             ..
         } = entity_structs;
 
-        let with_entity_id_trait = WithEntityIdTrait::new(entity_handle_struct);
+        let with_entity_id_trait = WithEntityHandleTrait::new(entity_handle_struct);
 
         let component_traits = ComponentTrait::new_vec(component_declarations);
         let component_delete_traits = ComponentDeleteTrait::new_vec(component_declarations);
