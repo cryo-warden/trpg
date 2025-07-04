@@ -20,7 +20,7 @@ use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContex
 
 use crate::entity::{
     Option__location__Trait, Option__unrealized_map__Trait, RngSeedComponent, TargetComponent,
-    TriggerFlag, __target__DeleteTrait, __target__Trait,
+    TriggerFlag, WithEntityHandle, __target__DeleteTrait, __target__Trait,
 };
 
 mod action;
@@ -145,7 +145,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
     // TODO Realize and unrealize maps.
     let map = EntityHandle::new(ctx);
-    let entity_id = map.entity_id;
+    let entity_id = map.entity_id();
     let map = map
         .upsert_rng_seed(RngSeedComponent {
             entity_id,
@@ -166,9 +166,9 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     let room = EntityHandle::from_id(ctx, map_result.room_ids[0]).set_name("room1");
     for _ in 0..5 {
         EntityHandle::new(ctx)
-            .set_allegiance(allegiance2.entity_id)
+            .set_allegiance(allegiance2.entity_id())
             .set_baseline("slime")
-            .add_location(room.entity_id);
+            .add_location(room.entity_id());
     }
 
     ctx.db.system_timers().insert(SystemTimer {
@@ -187,17 +187,17 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
             log::debug!(
                 "Reconnected {} to {} and removed deactivation timer.",
                 ctx.sender,
-                e.entity_id
+                e.entity_id()
             );
         }
         None => match InactiveEntityHandle::from_player_identity(ctx) {
             Some(h) => {
                 let e = h.activate();
-                log::debug!("Reactivated {} to {}.", ctx.sender, e.entity_id);
+                log::debug!("Reactivated {} to {}.", ctx.sender, e.entity_id());
             }
             None => {
                 let e = Entity::new_player(ctx)?;
-                log::debug!("Connected {} to new player {}.", ctx.sender, e.entity_id);
+                log::debug!("Connected {} to new player {}.", ctx.sender, e.entity_id());
             }
         },
     }
@@ -220,13 +220,13 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
                     None => {}
                     Some(timestamp) => {
                         e.insert_entity_deactivation_timer(TimerComponent {
-                            entity_id: e.entity_id,
+                            entity_id: e.entity_id(),
                             timestamp,
                         });
                         log::debug!(
                             "Disconnected {} from player {} and set deactivation timer.",
                             ctx.sender,
-                            e.entity_id
+                            e.entity_id()
                         );
                     }
                 }

@@ -145,7 +145,7 @@ impl ToTokens for EntityHandleStruct {
           #attrs
           pub struct #entity_handle_struct<'a> {
             hidden: ecs::EntityHandleHidden<'a>,
-            pub #id: #id_ty,
+            #id: #id_ty,
           }
         })
     }

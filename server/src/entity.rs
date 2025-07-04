@@ -540,7 +540,7 @@ impl<'a> EntityHandle<'a> {
             entity_id,
             target_entity_id,
         })
-        .value
+        .into_handle()
     }
 
     pub fn delete_target_component(self) -> Self {
@@ -554,7 +554,7 @@ impl<'a> EntityHandle<'a> {
             entity_id,
             location_entity_id,
         })
-        .value
+        .into_handle()
     }
 
     pub fn set_location_map(self, map_entity_id: u64) -> Self {
@@ -563,7 +563,7 @@ impl<'a> EntityHandle<'a> {
             entity_id,
             map_entity_id,
         })
-        .value
+        .into_handle()
     }
 
     pub fn add_path(self, destination_entity_id: u64) -> Self {
@@ -572,7 +572,7 @@ impl<'a> EntityHandle<'a> {
             entity_id,
             destination_entity_id,
         })
-        .value
+        .into_handle()
     }
 
     pub fn has_path(&self) -> bool {
@@ -585,7 +585,7 @@ impl<'a> EntityHandle<'a> {
             entity_id,
             allegiance_entity_id,
         })
-        .value
+        .into_handle()
     }
 
     pub fn allegiance_id(&self) -> Option<u64> {
@@ -629,7 +629,7 @@ impl<'a> EntityHandle<'a> {
                 baseline_id: b.id,
             })
             .trigger_total_stat_block_dirty_flag()
-            .value
+            .into_handle()
         } else {
             self
         }
@@ -659,7 +659,7 @@ impl<'a> EntityHandle<'a> {
             entity_id,
             appearance_feature_ids,
         })
-        .value
+        .into_handle()
     }
 
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
@@ -689,13 +689,13 @@ impl<'a> EntityHandle<'a> {
             entity_id,
             stat_block,
         })
-        .value
+        .into_handle()
     }
 
     pub fn set_attack(self, attack: i32) -> Self {
         let entity_id = self.entity_id;
         self.upsert_attack(AttackComponent { entity_id, attack })
-            .value
+            .into_handle()
     }
 
     pub fn set_mhp(self, mhp: i32) -> Self {
