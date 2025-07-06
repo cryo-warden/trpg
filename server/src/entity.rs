@@ -10,7 +10,7 @@ use crate::{
     stat_block::{baselines, traits, StatBlock},
 };
 
-use ecs::{entity, EntityHandleHidden};
+use ecs::{entity, WithEcs};
 
 type EntityId = u64;
 
@@ -186,7 +186,7 @@ pub trait MapGenerator {
 }
 
 // WIP Add a trait for `entity_id()`.
-impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
+impl<'a, T: WithEntityHandle<'a> + __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
     fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
         let af_ctx = AppearanceFeatureContext::new(ctx);
         let map = self.unrealized_map();
@@ -194,7 +194,8 @@ impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
         let total_room_count = map.extra_room_count + map.main_room_count;
         let room_handles: Vec<EntityHandle> = (0..total_room_count)
             .map(|_| {
-                Entity::new(ctx)
+                ctx.ecs()
+                    .new()
                     .set_appearance_feature_ids(af_ctx.by_texts(&["room"]))
                     .set_location_map(0) // WIP self.entity_id()
             })
@@ -203,11 +204,13 @@ impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
         for i in 0..(map.main_room_count as usize - 1) {
             let a = &room_handles[i];
             let b = &room_handles[i + 1];
-            Entity::new(ctx)
+            ctx.ecs()
+                .new()
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(a.entity_id)
                 .add_path(b.entity_id);
-            Entity::new(ctx)
+            ctx.ecs()
+                .new()
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(b.entity_id)
                 .add_path(a.entity_id);
@@ -216,11 +219,13 @@ impl<T: __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
         for i in (map.main_room_count as u32)..(total_room_count as u32) {
             let a = &room_handles[i as usize];
             let b = &room_handles[(rng.next_u32() % i) as usize];
-            Entity::new(ctx)
+            ctx.ecs()
+                .new()
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(a.entity_id)
                 .add_path(b.entity_id);
-            Entity::new(ctx)
+            ctx.ecs()
+                .new()
                 .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
                 .add_location(b.entity_id)
                 .add_path(a.entity_id);
@@ -263,7 +268,9 @@ pub struct IdentityInactiveEntity {
 
 impl Entity {
     pub fn new_player(ctx: &ReducerContext) -> Result<EntityHandle, String> {
-        Ok(Entity::new(ctx)
+        Ok(ctx
+            .ecs()
+            .new()
             .add_player_controller(ctx.sender)
             .set_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
@@ -398,8 +405,8 @@ impl<'a> EntityHandle<'a> {
     pub fn insert_id(ctx: &'a ReducerContext, id: u64) -> Self {
         let entity = ctx.db.entities().insert(Entity { id });
         Self {
-            hidden: EntityHandleHidden { ctx },
             entity_id: entity.id,
+            ecs: ctx.ecs(),
         }
     }
 
@@ -466,14 +473,13 @@ impl<'a> EntityHandle<'a> {
         self.delete_baseline();
         self.delete_traits();
 
-        self.hidden
-            .ctx
+        self.ecs
             .db
             .entity_observations()
             .entity_id()
             .delete(self.entity_id);
 
-        self.hidden.ctx.db.entities().id().delete(self.entity_id);
+        self.ecs.db.entities().id().delete(self.entity_id);
         log::debug!("Deleted entity {}.", self.entity_id);
     }
 
@@ -492,8 +498,7 @@ impl<'a> EntityHandle<'a> {
             traits_component: self.traits(),
         };
         if let Some(p) = self.player_controller() {
-            self.hidden
-                .ctx
+            self.ecs
                 .db
                 .identity_inactive_entities()
                 .insert(IdentityInactiveEntity {
@@ -501,8 +506,7 @@ impl<'a> EntityHandle<'a> {
                     component_set,
                 });
         } else if let Some(n) = self.name() {
-            self.hidden
-                .ctx
+            self.ecs
                 .db
                 .named_inactive_entities()
                 .insert(NamedInactiveEntity {
@@ -588,7 +592,7 @@ impl<'a> EntityHandle<'a> {
 
         if let (Some(a), Some(o)) = (
             self.allegiance_id(),
-            Entity::find(other_entity_id, self.hidden.ctx).allegiance_id(),
+            self.ecs.find(other_entity_id).allegiance_id(),
         ) {
             a == o
         } else {
@@ -610,7 +614,7 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_baseline(self, name: &str) -> Self {
-        if let Some(b) = self.hidden.ctx.db.baselines().name().find(name.to_string()) {
+        if let Some(b) = self.ecs.db.baselines().name().find(name.to_string()) {
             let entity_id = self.entity_id;
             self.upsert_baseline(BaselineComponent {
                 entity_id,
@@ -624,7 +628,7 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn add_trait(self, name: &str) -> Self {
-        if let Some(t) = self.hidden.ctx.db.traits().name().find(name.to_string()) {
+        if let Some(t) = self.ecs.db.traits().name().find(name.to_string()) {
             if let Some(mut c) = self.traits() {
                 c.trait_ids.push(t.id);
                 self.update_traits(c);
@@ -785,12 +789,11 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn set_hotkey(self, name: &str, character: char) -> Self {
-        let action_id =
-            if let Some(action) = self.hidden.ctx.db.actions().name().find(name.to_string()) {
-                action.id
-            } else {
-                return self;
-            };
+        let action_id = if let Some(action) = self.ecs.db.actions().name().find(name.to_string()) {
+            action.id
+        } else {
+            return self;
+        };
         let character_code = character as u32;
         if let Some(mut a) = self.action_hotkeys() {
             a.action_hotkeys
@@ -813,8 +816,8 @@ impl<'a> EntityHandle<'a> {
     }
 
     pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
-        if let Some(a) = self.hidden.ctx.db.actions().id().find(action_id) {
-            let o = Entity::find(other_entity_id, self.hidden.ctx);
+        if let Some(a) = self.ecs.db.actions().id().find(action_id) {
+            let o = self.ecs.find(other_entity_id);
             match a.action_type {
                 ActionType::Attack => o.has_hp() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.has_hp() && self.is_ally(other_entity_id),

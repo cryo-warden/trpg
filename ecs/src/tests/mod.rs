@@ -2,6 +2,8 @@
 
 use ecs_macro::entity;
 
+use crate::WithEcs;
+
 mod ecs {
     pub use crate::*;
 }
@@ -46,7 +48,7 @@ impl<'a> EntityHandle<'a> {
 fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     let e = EntityHandle {
         entity_id: 0,
-        hidden: ecs::EntityHandleHidden { ctx },
+        ecs: ctx.ecs(),
     };
     LocationComponent::new().into_location_handle(ctx);
     EntityHandle::peek();

@@ -5,6 +5,70 @@ use syn::{Error, Ident, Result};
 use crate::{fundamental, gen_struct, macro_input};
 
 #[derive(Clone)]
+pub struct NewEntityHandleTrait {
+    pub new_entity_handle_trait: Ident,
+    pub entity_handle_struct: Ident,
+}
+
+impl NewEntityHandleTrait {
+    pub fn new(ehs: &gen_struct::EntityHandleStruct) -> Self {
+        Self {
+            new_entity_handle_trait: format_ident!("New{}", ehs.entity_handle_struct),
+            entity_handle_struct: ehs.entity_handle_struct.to_owned(),
+        }
+    }
+}
+
+impl ToTokens for NewEntityHandleTrait {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            new_entity_handle_trait,
+            entity_handle_struct,
+        } = self;
+        tokens.extend(quote! {
+          pub trait #new_entity_handle_trait<'a> {
+              fn new(self) -> #entity_handle_struct<'a>;
+          }
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct FindEntityHandleTrait {
+    pub find_entity_handle_trait: Ident,
+    pub entity_handle_struct: Ident,
+    pub id: Ident,
+    pub id_ty: Ident,
+}
+
+impl FindEntityHandleTrait {
+    pub fn new(ehs: &gen_struct::EntityHandleStruct) -> Self {
+        Self {
+            find_entity_handle_trait: format_ident!("Find{}", ehs.entity_handle_struct),
+            entity_handle_struct: ehs.entity_handle_struct.to_owned(),
+            id: ehs.id.to_owned(),
+            id_ty: ehs.id_ty.to_owned(),
+        }
+    }
+}
+
+impl ToTokens for FindEntityHandleTrait {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            find_entity_handle_trait,
+            entity_handle_struct,
+            id,
+            id_ty,
+        } = self;
+        tokens.extend(quote! {
+          pub trait #find_entity_handle_trait<'a> {
+              fn find(self, #id: #id_ty) -> #entity_handle_struct<'a>;
+          }
+        })
+    }
+}
+
+#[derive(Clone)]
 pub struct WithEntityHandleTrait {
     pub with_entity_handle_trait: Ident,
     pub entity_handle_struct: Ident,
@@ -309,6 +373,8 @@ impl ToTokens for OptionComponentIterTrait {
 }
 
 pub struct EntityTraits {
+    pub new_entity_handle_trait: NewEntityHandleTrait,
+    pub find_entity_handle_trait: FindEntityHandleTrait,
     pub with_entity_id_trait: WithEntityHandleTrait,
     pub component_traits: Vec<ComponentTrait>,
     pub component_delete_traits: Vec<ComponentDeleteTrait>,
@@ -331,6 +397,10 @@ impl EntityTraits {
             ..
         } = entity_structs;
 
+        let new_entity_handle_trait = NewEntityHandleTrait::new(entity_handle_struct);
+
+        let find_entity_handle_trait = FindEntityHandleTrait::new(entity_handle_struct);
+
         let with_entity_id_trait = WithEntityHandleTrait::new(entity_handle_struct);
 
         let component_traits = ComponentTrait::new_vec(component_declarations);
@@ -341,6 +411,8 @@ impl EntityTraits {
             OptionComponentIterTrait::new_vec(&option_component_traits, with_component_structs)?;
 
         Ok(Self {
+            new_entity_handle_trait,
+            find_entity_handle_trait,
             with_entity_id_trait,
             component_traits,
             component_delete_traits,
@@ -353,6 +425,8 @@ impl EntityTraits {
 impl ToTokens for EntityTraits {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
+            new_entity_handle_trait,
+            find_entity_handle_trait,
             with_entity_id_trait,
             component_traits,
             component_delete_traits,
@@ -360,6 +434,8 @@ impl ToTokens for EntityTraits {
             option_component_iter_traits,
         } = self;
         tokens.extend(quote! {
+          #new_entity_handle_trait
+          #find_entity_handle_trait
           #with_entity_id_trait
           #(#component_traits)*
           #(#component_delete_traits)*

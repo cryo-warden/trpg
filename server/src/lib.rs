@@ -2,6 +2,7 @@ use std::cmp::{max, min};
 
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
+use ecs::WithEcs;
 use entity::{
     baseline_components, entities, entity_observations, ep_components, hp_components,
     location_components, player_controller_components, queued_action_state_components,
@@ -19,8 +20,9 @@ use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuratio
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
 
 use crate::entity::{
-    Option__location__Trait, Option__unrealized_map__Trait, RngSeedComponent, TargetComponent,
-    TriggerFlag, WithEntityHandle, __target__DeleteTrait, __target__Trait,
+    FindEntityHandle, NewEntityHandle, Option__location__Trait, Option__unrealized_map__Trait,
+    RngSeedComponent, TargetComponent, TriggerFlag, WithEntityHandle, __target__DeleteTrait,
+    __target__Trait,
 };
 
 mod action;
@@ -144,7 +146,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         );
 
     // TODO Realize and unrealize maps.
-    let map = Entity::new(ctx);
+    let map = ctx.ecs().new();
     let entity_id = map.entity_id();
     let map = map
         .upsert_rng_seed(RngSeedComponent {
@@ -161,11 +163,12 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         });
     let map_result = map.generate(ctx);
 
-    Entity::new(ctx).set_name("allegiance1");
-    let allegiance2 = Entity::new(ctx).set_name("allegiance2");
-    let room = Entity::find(map_result.room_ids[0], ctx).set_name("room1");
+    ctx.ecs().new().set_name("allegiance1");
+    let allegiance2 = ctx.ecs().new().set_name("allegiance2");
+    let room = ctx.ecs().find(map_result.room_ids[0]).set_name("room1");
     for _ in 0..5 {
-        Entity::new(ctx)
+        ctx.ecs()
+            .new()
             .set_allegiance(allegiance2.entity_id())
             .set_baseline("slime")
             .add_location(room.entity_id());
@@ -292,7 +295,7 @@ pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Result<(), String> {
-    Entity::find(entity_id, ctx).add_trait(trait_name);
+    ctx.ecs().find(entity_id).add_trait(trait_name);
 
     Ok(())
 }
@@ -392,7 +395,7 @@ pub fn ep_system(ctx: &ReducerContext) {
 
 pub fn shift_queued_action_system(ctx: &ReducerContext) {
     for q in ctx.db.queued_action_state_components().iter() {
-        let e = Entity::find(q.entity_id, ctx);
+        let e = ctx.ecs().find(q.entity_id);
         if e.action_state().is_none() {
             let e = e.shift_queued_action_state();
             if let Some(a) = e.action_state() {
@@ -427,7 +430,7 @@ pub fn action_system(ctx: &ReducerContext) {
                 }
                 ActionEffect::Attack(damage) => {
                     let attack = e.attack().map(|c| c.attack).unwrap_or(0);
-                    let t = Entity::find(action_state.target_entity_id, ctx);
+                    let t = ctx.ecs().find(action_state.target_entity_id);
                     let target_defense = t.hp().map(|c| c.defense).unwrap_or(0);
                     EntityEvent::emit_middle(
                         ctx,
@@ -474,7 +477,7 @@ pub fn action_system(ctx: &ReducerContext) {
 
 pub fn target_validation_system(ctx: &ReducerContext) {
     for e in TargetComponent::iter_target(ctx) {
-        let t = Entity::find(e.target().target_entity_id, ctx);
+        let t = ctx.ecs().find(e.target().target_entity_id);
         let is_valid = match t.location() {
             None => false,
             Some(tl) => {
@@ -524,15 +527,16 @@ pub fn entity_prominence_system(ctx: &ReducerContext) {
         p.delete_entity_prominence();
     }
     for entity in ctx.db.entities().iter() {
-        Entity::find(entity.id, ctx).generate_prominence();
+        ctx.ecs().find(entity.id).generate_prominence();
     }
 }
 
 pub fn entity_deactivation_system(ctx: &ReducerContext) {
     for t in TimerComponent::iter_entity_deactivation_timer(ctx) {
         if t.entity_deactivation_timer().timestamp.le(&ctx.timestamp) {
+            let entity_id = t.entity_id();
             t.delete_entity_deactivation_timer();
-            // Entity::find(t.entity_id, ctx).deactivate(); // WIP Move deactivation into a new macro-generated trait.
+            ctx.ecs().find(entity_id).deactivate(); // WIP Move deactivation into a new macro-generated trait.
         }
     }
 }
@@ -548,7 +552,8 @@ pub fn entity_stats_system(ctx: &ReducerContext) {
                 }
             }
 
-            Entity::find(f.entity_id, ctx)
+            ctx.ecs()
+                .find(f.entity_id)
                 .set_traits_stat_block_cache(stat_block)
                 .trigger_total_stat_block_dirty_flag();
         }
@@ -574,7 +579,7 @@ pub fn entity_stats_system(ctx: &ReducerContext) {
             stat_block.add(t.stat_block);
         }
 
-        Entity::find(f.entity_id, ctx).apply_stat_block(stat_block);
+        ctx.ecs().find(f.entity_id).apply_stat_block(stat_block);
     }
 }
 
