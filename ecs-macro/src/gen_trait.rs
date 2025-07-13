@@ -5,6 +5,38 @@ use syn::{Error, Ident, Result};
 use crate::{fundamental, gen_struct, macro_input};
 
 #[derive(Clone)]
+pub struct NewEntityBlobTrait {
+    pub new_entity_blob_trait: Ident,
+    pub entity_blob_struct: gen_struct::EntityBlobStruct,
+}
+
+impl NewEntityBlobTrait {
+    pub fn new(ebs: &gen_struct::EntityBlobStruct) -> Self {
+        Self {
+            new_entity_blob_trait: format_ident!("New{}", ebs.entity_blob_struct),
+            entity_blob_struct: ebs.to_owned(),
+        }
+    }
+}
+
+impl ToTokens for NewEntityBlobTrait {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            new_entity_blob_trait,
+            entity_blob_struct:
+                gen_struct::EntityBlobStruct {
+                    entity_blob_struct, ..
+                },
+        } = self;
+        tokens.extend(quote! {
+          pub trait #new_entity_blob_trait {
+              fn new_blob(&self) -> #entity_blob_struct;
+          }
+        })
+    }
+}
+
+#[derive(Clone)]
 pub struct NewEntityHandleTrait {
     pub new_entity_handle_trait: Ident,
     pub entity_handle_struct: Ident,
@@ -135,11 +167,10 @@ impl ComponentTrait {
     ) -> Vec<Self> {
         component_declarations
             .iter()
-            .flat_map(|cd| {
-                cd.value
-                    .component_table_pairs
+            .flat_map(|cdwa| {
+                cdwa.component_table_pairs
                     .iter()
-                    .map(|ctp| Self::new(ctp, &cd.value))
+                    .map(move |ctp| Self::new(ctp, cdwa))
             })
             .collect()
     }
@@ -187,12 +218,7 @@ impl ComponentDeleteTrait {
     ) -> Vec<Self> {
         component_declarations
             .iter()
-            .flat_map(|d| {
-                d.value
-                    .component_table_pairs
-                    .iter()
-                    .map(|ctp| Self::new(ctp))
-            })
+            .flat_map(|dwa| dwa.component_table_pairs.iter().map(|ctp| Self::new(ctp)))
             .collect()
     }
 }
@@ -255,8 +281,8 @@ impl OptionComponentTrait {
     ) -> Result<Vec<Self>> {
         component_declarations
             .iter()
-            .flat_map(|d| {
-                d.value.component_table_pairs.iter().map(|ctp| {
+            .flat_map(|cdwa| {
+                cdwa.component_table_pairs.iter().map(|ctp| {
                     let wcs = with_component_structs
                         .iter()
                         .find(|wcs| wcs.component == ctp.component)
@@ -264,7 +290,7 @@ impl OptionComponentTrait {
                             ctp.component.span(),
                             "Cannot find the corresponding with-component struct.",
                         ))?;
-                    Ok(Self::new(ctp, &d.value, wcs))
+                    Ok(Self::new(ctp, cdwa, wcs))
                 })
             })
             .collect()
@@ -373,9 +399,10 @@ impl ToTokens for OptionComponentIterTrait {
 }
 
 pub struct EntityTraits {
+    pub new_entity_blob_trait: NewEntityBlobTrait,
     pub new_entity_handle_trait: NewEntityHandleTrait,
     pub find_entity_handle_trait: FindEntityHandleTrait,
-    pub with_entity_id_trait: WithEntityHandleTrait,
+    pub with_entity_handle_trait: WithEntityHandleTrait,
     pub component_traits: Vec<ComponentTrait>,
     pub component_delete_traits: Vec<ComponentDeleteTrait>,
     pub option_component_traits: Vec<OptionComponentTrait>,
@@ -394,8 +421,11 @@ impl EntityTraits {
         let gen_struct::EntityStructs {
             with_component_structs,
             entity_handle_struct,
+            entity_blob_struct,
             ..
         } = entity_structs;
+
+        let new_entity_blob_trait = NewEntityBlobTrait::new(entity_blob_struct);
 
         let new_entity_handle_trait = NewEntityHandleTrait::new(entity_handle_struct);
 
@@ -411,9 +441,10 @@ impl EntityTraits {
             OptionComponentIterTrait::new_vec(&option_component_traits, with_component_structs)?;
 
         Ok(Self {
+            new_entity_blob_trait,
             new_entity_handle_trait,
             find_entity_handle_trait,
-            with_entity_id_trait,
+            with_entity_handle_trait: with_entity_id_trait,
             component_traits,
             component_delete_traits,
             option_component_traits,
@@ -425,15 +456,17 @@ impl EntityTraits {
 impl ToTokens for EntityTraits {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
+            new_entity_blob_trait,
             new_entity_handle_trait,
             find_entity_handle_trait,
-            with_entity_id_trait,
+            with_entity_handle_trait: with_entity_id_trait,
             component_traits,
             component_delete_traits,
             option_component_traits,
             option_component_iter_traits,
         } = self;
         tokens.extend(quote! {
+          #new_entity_blob_trait
           #new_entity_handle_trait
           #find_entity_handle_trait
           #with_entity_id_trait

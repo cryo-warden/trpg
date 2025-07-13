@@ -38,7 +38,7 @@ impl ComponentStruct {
         component_declarations
             .iter()
             .flat_map(|d| {
-                d.value.component_table_pairs.iter().map(|ctp| {
+                d.component_table_pairs.iter().map(|ctp| {
                     let wcs = with_component_structs
                         .iter()
                         .find(|wcs| wcs.component == ctp.component)

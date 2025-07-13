@@ -5,27 +5,27 @@ use syn::Result;
 
 pub struct WithComponentStruct {
     pub with_component_struct: gen_struct::WithComponentStruct,
-    pub with_entity_handle_trait: gen_trait::WithEntityHandleTrait,
+    pub new_entity_blob_trait: gen_trait::NewEntityBlobTrait,
 }
 
 impl WithComponentStruct {
     pub fn new(
         wcs: &gen_struct::WithComponentStruct,
-        weht: &gen_trait::WithEntityHandleTrait,
+        nebt: &gen_trait::NewEntityBlobTrait,
     ) -> Self {
         Self {
             with_component_struct: wcs.to_owned(),
-            with_entity_handle_trait: weht.to_owned(),
+            new_entity_blob_trait: nebt.to_owned(),
         }
     }
 
     pub fn new_vec(
         with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-        weht: &gen_trait::WithEntityHandleTrait,
+        nebt: &gen_trait::NewEntityBlobTrait,
     ) -> Vec<Self> {
         with_component_structs
             .iter()
-            .map(|wcs| Self::new(wcs, weht))
+            .map(|wcs| Self::new(wcs, nebt))
             .collect()
     }
 }
@@ -36,23 +36,17 @@ impl ToTokens for WithComponentStruct {
             with_component_struct,
             ..
         } = &self.with_component_struct;
-        let gen_trait::WithEntityHandleTrait {
-            with_entity_handle_trait,
-            entity_handle_struct,
-            id_fn,
-            id_ty,
-            ..
-        } = &self.with_entity_handle_trait;
+        let gen_trait::NewEntityBlobTrait {
+            new_entity_blob_trait,
+            entity_blob_struct:
+                gen_struct::EntityBlobStruct {
+                    entity_blob_struct, ..
+                },
+        } = &self.new_entity_blob_trait;
         tokens.extend(quote! {
-          impl<'a, T: #with_entity_handle_trait<'a>> #with_entity_handle_trait<'a> for #with_component_struct<T> {
-              fn #id_fn(&self) -> #id_ty {
-                self.to_handle().#id_fn()
-              }
-              fn to_handle(&self) -> &#entity_handle_struct<'a> {
-                self.value.to_handle()
-              }
-              fn into_handle(self) -> #entity_handle_struct<'a> {
-                self.value.into_handle()
+          impl<T: #new_entity_blob_trait> #new_entity_blob_trait for #with_component_struct<T> {
+              fn new_blob(&self) -> #entity_blob_struct {
+                self.value.new_blob()
               }
           }
         });
@@ -60,18 +54,15 @@ impl ToTokens for WithComponentStruct {
 }
 
 pub struct EntityHandleStruct {
-    pub with_component_struct: gen_struct::EntityHandleStruct,
-    pub with_entity_id_trait: gen_trait::WithEntityHandleTrait,
+    pub entity_handle_struct: gen_struct::EntityHandleStruct,
+    pub new_entity_blob_trait: gen_trait::NewEntityBlobTrait,
 }
 
 impl EntityHandleStruct {
-    pub fn new(
-        wcs: &gen_struct::EntityHandleStruct,
-        weit: &gen_trait::WithEntityHandleTrait,
-    ) -> Self {
+    pub fn new(wcs: &gen_struct::EntityHandleStruct, nebt: &gen_trait::NewEntityBlobTrait) -> Self {
         Self {
-            with_component_struct: wcs.to_owned(),
-            with_entity_id_trait: weit.to_owned(),
+            entity_handle_struct: wcs.to_owned(),
+            new_entity_blob_trait: nebt.to_owned(),
         }
     }
 }
@@ -82,18 +73,30 @@ impl ToTokens for EntityHandleStruct {
             entity_handle_struct,
             id,
             ..
-        } = &self.with_component_struct;
-        let gen_trait::WithEntityHandleTrait {
-            with_entity_handle_trait: with_entity_id_trait,
-            id_fn,
-            id_ty,
-            ..
-        } = &self.with_entity_id_trait;
+        } = &self.entity_handle_struct;
+        let gen_trait::NewEntityBlobTrait {
+            new_entity_blob_trait,
+            entity_blob_struct,
+        } = &self.new_entity_blob_trait;
+        let fields = entity_blob_struct.component_fields.iter().map(
+            |gen_struct::entity_blob_struct::EntityBlobComponentField(ctp, _)| {
+                let macro_input::ComponentTablePair { component, .. } = ctp;
+                quote! {
+                  #component: self.#component()
+                }
+            },
+        );
+        let gen_struct::EntityBlobStruct {
+            entity_blob_struct, ..
+        } = entity_blob_struct;
         tokens.extend(quote! {
-          impl<'a> #with_entity_id_trait<'a> for #entity_handle_struct<'a> {
-              fn #id_fn(&self) -> #id_ty { self.#id }
-              fn to_handle(&self) -> &Self { self }
-              fn into_handle(self) -> Self { self }
+          impl<'a> #new_entity_blob_trait for #entity_handle_struct<'a> {
+              fn new_blob(&self) -> #entity_blob_struct {
+                  #entity_blob_struct {
+                    #id: self.#id,
+                    #(#fields,)*
+                  }
+              }
           }
         });
     }
@@ -117,15 +120,15 @@ impl Impl {
             ..
         } = entity_structs;
         let gen_trait::EntityTraits {
-            with_entity_handle_trait: with_entity_id_trait,
+            new_entity_blob_trait,
             ..
         } = entity_traits;
 
         let with_component_structs =
-            WithComponentStruct::new_vec(with_component_structs, with_entity_id_trait);
+            WithComponentStruct::new_vec(with_component_structs, new_entity_blob_trait);
 
         let entity_handle_struct =
-            EntityHandleStruct::new(entity_handle_struct, with_entity_id_trait);
+            EntityHandleStruct::new(entity_handle_struct, new_entity_blob_trait);
 
         Ok(Self {
             with_component_structs,

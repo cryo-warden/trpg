@@ -7,6 +7,7 @@ mod component_delete_trait_impl;
 mod component_struct_impl;
 mod component_trait_impl;
 mod find_entity_handle_trait_impl;
+mod new_entity_blob_trait_impl;
 mod new_entity_handle_trait_impl;
 mod option_component_iter_trait_impl;
 mod option_component_trait_impl;
@@ -18,6 +19,7 @@ pub struct EntityImpls {
     component_trait_impl: component_trait_impl::Impl,
     find_entity_handle_trait_impl: find_entity_handle_trait_impl::Impl,
     new_entity_handle_trait_impl: new_entity_handle_trait_impl::Impl,
+    new_entity_blob_trait_impl: new_entity_blob_trait_impl::Impl,
     option_component_trait_impl: option_component_trait_impl::Impl,
     option_component_iter_trait_impl: option_component_iter_trait_impl::Impl,
     with_entity_handle_trait_impl: with_entity_handle_trait_impl::Impl,
@@ -53,6 +55,12 @@ impl EntityImpls {
             entity_traits,
         )?;
 
+        let new_entity_blob_trait_impl = new_entity_blob_trait_impl::Impl::new(
+            entity_macro_input,
+            entity_structs,
+            entity_traits,
+        )?;
+
         let option_component_trait_impl = option_component_trait_impl::Impl::new(
             entity_macro_input,
             entity_structs,
@@ -77,6 +85,7 @@ impl EntityImpls {
             component_trait_impl,
             find_entity_handle_trait_impl,
             new_entity_handle_trait_impl,
+            new_entity_blob_trait_impl,
             option_component_trait_impl,
             option_component_iter_trait_impl: option_component_iter_trait_impls,
             with_entity_handle_trait_impl,
@@ -92,6 +101,7 @@ impl ToTokens for EntityImpls {
             component_trait_impl,
             find_entity_handle_trait_impl,
             new_entity_handle_trait_impl,
+            new_entity_blob_trait_impl,
             option_component_trait_impl,
             option_component_iter_trait_impl,
             with_entity_handle_trait_impl,
@@ -102,6 +112,7 @@ impl ToTokens for EntityImpls {
             #component_trait_impl
             #find_entity_handle_trait_impl
             #new_entity_handle_trait_impl
+            #new_entity_blob_trait_impl
             #option_component_trait_impl
             #option_component_iter_trait_impl
             #with_entity_handle_trait_impl

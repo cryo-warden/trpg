@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::kw;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
@@ -34,7 +36,14 @@ impl ToTokens for Attributes {
 
 pub struct WithAttrs<T> {
     pub attrs: Attributes,
-    pub value: T,
+    value: T,
+}
+
+impl<T> Deref for WithAttrs<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
 }
 
 pub trait AddAttrs: Sized {

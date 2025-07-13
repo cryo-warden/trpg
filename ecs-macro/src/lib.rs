@@ -31,14 +31,14 @@ impl Parse for EntityMacro {
         } = &entity_macro_input;
 
         let mut component_set = HashSet::new();
-        for d in component_declarations {
-            if d.value.component_table_pairs.len() < 1 {
+        for cdwa in component_declarations {
+            if cdwa.component_table_pairs.len() < 1 {
                 return Err(Error::new(
-                    d.value.component_ty.span(),
+                    cdwa.component_ty.span(),
                     "Must provide at least one component name.",
                 ));
             }
-            for ctp in &d.value.component_table_pairs {
+            for ctp in &cdwa.component_table_pairs {
                 if component_set.contains(&ctp.component) {
                     return Err(Error::new(
                         ctp.component.span(),

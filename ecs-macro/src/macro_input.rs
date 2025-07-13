@@ -110,7 +110,7 @@ impl Parse for EntityMacroInput {
                 let entity = input.parse::<EntityDeclaration>()?.add_attrs(attrs);
                 if entity_declarations.len() > 0 {
                     return Err(Error::new(
-                        entity.value.entity.span(),
+                        entity.entity.span(),
                         "Only one entity declaration is allowed.",
                     ));
                 }
