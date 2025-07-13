@@ -1,4 +1,4 @@
-use crate::{gen_struct, gen_trait};
+use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{Error, Result};
@@ -143,6 +143,57 @@ impl ToTokens for PassthroughWithComponentStruct {
               self
             }
           }
+        });
+    }
+}
+
+pub struct Impl {
+    replacement_with_component_structs: Vec<ReplacementWithComponentStruct>,
+    passthrough_with_component_structs: Vec<PassthroughWithComponentStruct>,
+}
+
+impl Impl {
+    pub fn new(
+        entity_macro_input: &macro_input::EntityMacroInput,
+        entity_structs: &gen_struct::EntityStructs,
+        entity_traits: &gen_trait::EntityTraits,
+    ) -> Result<Self> {
+        let _ = entity_macro_input;
+        let gen_struct::EntityStructs {
+            with_component_structs,
+            ..
+        } = entity_structs;
+        let gen_trait::EntityTraits {
+            component_traits,
+            option_component_traits,
+            ..
+        } = entity_traits;
+
+        let replacement_with_component_structs = ReplacementWithComponentStruct::new_vec(
+            with_component_structs,
+            component_traits,
+            option_component_traits,
+        )?;
+
+        let passthrough_with_component_structs =
+            PassthroughWithComponentStruct::new_vec(with_component_structs, component_traits);
+
+        Ok(Self {
+            replacement_with_component_structs,
+            passthrough_with_component_structs,
+        })
+    }
+}
+
+impl ToTokens for Impl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            replacement_with_component_structs,
+            passthrough_with_component_structs,
+        } = self;
+        tokens.extend(quote! {
+            #(#replacement_with_component_structs)*
+            #(#passthrough_with_component_structs)*
         });
     }
 }

@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, macro_input};
+use crate::{fundamental, gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{Error, Ident, Result};
@@ -93,6 +93,48 @@ impl ToTokens for ComponentStruct {
               ::spacetimedb::Table::iter(ctx.db.#table()).map(|c| c.#into_handle_fn(ctx))
             }
           }
+        });
+    }
+}
+
+pub struct Impl {
+    component_structs: Vec<ComponentStruct>,
+}
+
+impl Impl {
+    pub fn new(
+        entity_macro_input: &macro_input::EntityMacroInput,
+        entity_structs: &gen_struct::EntityStructs,
+        entity_traits: &gen_trait::EntityTraits,
+    ) -> Result<Self> {
+        let macro_input::EntityMacroInput {
+            component_declarations,
+            ..
+        } = entity_macro_input;
+        let gen_struct::EntityStructs {
+            component_structs,
+            with_component_structs,
+            entity_handle_struct,
+            ..
+        } = entity_structs;
+        let _ = entity_traits;
+
+        let component_structs = ComponentStruct::new_vec(
+            component_declarations,
+            with_component_structs,
+            component_structs,
+            entity_handle_struct,
+        )?;
+
+        Ok(Self { component_structs })
+    }
+}
+
+impl ToTokens for Impl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self { component_structs } = self;
+        tokens.extend(quote! {
+            #(#component_structs)*
         });
     }
 }

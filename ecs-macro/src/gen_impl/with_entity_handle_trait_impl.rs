@@ -1,6 +1,7 @@
-use crate::{gen_struct, gen_trait};
+use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use syn::Result;
 
 pub struct WithComponentStruct {
     pub with_component_struct: gen_struct::WithComponentStruct,
@@ -94,6 +95,54 @@ impl ToTokens for EntityHandleStruct {
               fn to_handle(&self) -> &Self { self }
               fn into_handle(self) -> Self { self }
           }
+        });
+    }
+}
+
+pub struct Impl {
+    with_component_structs: Vec<WithComponentStruct>,
+    entity_handle_struct: EntityHandleStruct,
+}
+
+impl Impl {
+    pub fn new(
+        entity_macro_input: &macro_input::EntityMacroInput,
+        entity_structs: &gen_struct::EntityStructs,
+        entity_traits: &gen_trait::EntityTraits,
+    ) -> Result<Self> {
+        let _ = entity_macro_input;
+        let gen_struct::EntityStructs {
+            with_component_structs,
+            entity_handle_struct,
+            ..
+        } = entity_structs;
+        let gen_trait::EntityTraits {
+            with_entity_id_trait,
+            ..
+        } = entity_traits;
+
+        let with_component_structs =
+            WithComponentStruct::new_vec(with_component_structs, with_entity_id_trait);
+
+        let entity_handle_struct =
+            EntityHandleStruct::new(entity_handle_struct, with_entity_id_trait);
+
+        Ok(Self {
+            with_component_structs,
+            entity_handle_struct,
+        })
+    }
+}
+
+impl ToTokens for Impl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            with_component_structs,
+            entity_handle_struct,
+        } = self;
+        tokens.extend(quote! {
+            #(#with_component_structs)*
+            #entity_handle_struct
         });
     }
 }

@@ -1,6 +1,7 @@
-use crate::{gen_struct, gen_trait};
+use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use syn::Result;
 
 pub struct PassthroughWithComponentStruct {
     pub with_component_struct: gen_struct::WithComponentStruct,
@@ -129,6 +130,56 @@ impl ToTokens for EntityHandleStruct {
               ::spacetimedb::UniqueColumn::delete(&self.ecs.db.#table().#id(), self.#id);
             }
           }
+        });
+    }
+}
+
+pub struct Impl {
+    with_component_structs: Vec<PassthroughWithComponentStruct>,
+    entity_handle_structs: Vec<EntityHandleStruct>,
+}
+
+impl Impl {
+    pub fn new(
+        entity_macro_input: &macro_input::EntityMacroInput,
+        entity_structs: &gen_struct::EntityStructs,
+        entity_traits: &gen_trait::EntityTraits,
+    ) -> Result<Self> {
+        let _ = entity_macro_input;
+        let gen_struct::EntityStructs {
+            with_component_structs,
+            entity_handle_struct,
+            ..
+        } = entity_structs;
+        let gen_trait::EntityTraits {
+            option_component_traits,
+            ..
+        } = entity_traits;
+
+        let with_component_structs = PassthroughWithComponentStruct::new_vec(
+            with_component_structs,
+            option_component_traits,
+        );
+
+        let entity_handle_structs =
+            EntityHandleStruct::new_vec(entity_handle_struct, option_component_traits);
+
+        Ok(Self {
+            with_component_structs,
+            entity_handle_structs,
+        })
+    }
+}
+
+impl ToTokens for Impl {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            with_component_structs,
+            entity_handle_structs,
+        } = self;
+        tokens.extend(quote! {
+            #(#with_component_structs)*
+            #(#entity_handle_structs)*
         });
     }
 }
