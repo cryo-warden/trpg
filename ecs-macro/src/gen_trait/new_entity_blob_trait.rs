@@ -10,11 +10,11 @@ pub struct NewEntityBlobTrait {
 }
 
 impl NewEntityBlobTrait {
-    pub fn new(ebs: &gen_struct::EntityBlobStruct) -> Self {
-        Self {
+    pub fn new(ebs: Option<&gen_struct::EntityBlobStruct>) -> Option<Self> {
+        ebs.map(|ebs| Self {
             new_entity_blob_trait: format_ident!("New{}", ebs.entity_blob_struct),
             entity_blob_struct: ebs.to_owned(),
-        }
+        })
     }
 }
 

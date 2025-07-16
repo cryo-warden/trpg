@@ -25,7 +25,7 @@ pub use with_entity_handle_trait::WithEntityHandleTrait;
 
 pub struct EntityTraits {
     pub delete_entity_trait: DeleteEntityTrait,
-    pub new_entity_blob_trait: NewEntityBlobTrait,
+    pub new_entity_blob_trait: Option<NewEntityBlobTrait>,
     pub new_entity_handle_trait: NewEntityHandleTrait,
     pub find_entity_handle_trait: FindEntityHandleTrait,
     pub with_entity_handle_trait: WithEntityHandleTrait,
@@ -50,6 +50,7 @@ impl EntityTraits {
             entity_blob_struct,
             ..
         } = entity_structs;
+        let entity_blob_struct = entity_blob_struct.as_ref();
 
         let new_entity_blob_trait = NewEntityBlobTrait::new(entity_blob_struct);
 

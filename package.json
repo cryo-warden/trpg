@@ -5,9 +5,10 @@
     "list": "cat ./package.json | jq -r '.scripts'",
     "dev": "cd ./web-trpg && bun run dev",
     "lint": "cd ./web-trpg && bun run lint",
-    "check-server": "cd ./server && cargo check",
-    "check-ecs": "cd ./ecs && cargo check && cargo test",
+    "check-ecs": "cd ./ecs && cargo check",
+    "test-ecs": "cd ./ecs && cargo test",
     "check-ecs-macro": "cd ./ecs-macro && cargo check",
+    "check-server": "cd ./server && cargo check",
     "dev-publish": "spacetime publish --project-path ../server trpg --delete-data --yes",
     "stdb-generate": "cd ./web-trpg && bun run stdb-generate"
   }

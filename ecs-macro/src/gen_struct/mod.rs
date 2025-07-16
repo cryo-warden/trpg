@@ -18,24 +18,30 @@ pub struct EntityStructs {
     pub entity_struct: EntityStruct,
     pub component_structs: Vec<ComponentStruct>,
     pub entity_handle_struct: EntityHandleStruct,
-    pub entity_blob_struct: EntityBlobStruct,
+    pub entity_blob_struct: Option<EntityBlobStruct>,
     pub with_component_structs: Vec<WithComponentStruct>,
 }
 
 impl EntityStructs {
     pub fn new(entity_macro_input: &macro_input::EntityMacroInput) -> Self {
         let macro_input::EntityMacroInput {
+            blob_declaration,
             entity_declaration,
             component_declarations,
             struct_attrs,
-        } = entity_macro_input;
+        } = &entity_macro_input;
+        let blob_declaration = blob_declaration.as_ref();
 
-        let entity_struct = EntityStruct::new(&struct_attrs, &entity_declaration);
+        let entity_struct = EntityStruct::new(struct_attrs, entity_declaration);
         let component_structs =
-            ComponentStruct::new_vec(&struct_attrs, &component_declarations, &entity_declaration);
-        let entity_handle_struct = EntityHandleStruct::new(&struct_attrs, &entity_declaration);
-        let entity_blob_struct =
-            EntityBlobStruct::new(&struct_attrs, &entity_declaration, &component_declarations);
+            ComponentStruct::new_vec(struct_attrs, component_declarations, entity_declaration);
+        let entity_handle_struct = EntityHandleStruct::new(struct_attrs, entity_declaration);
+        let entity_blob_struct = EntityBlobStruct::new(
+            struct_attrs,
+            blob_declaration,
+            entity_declaration,
+            component_declarations,
+        );
         let with_component_structs =
             WithComponentStruct::new_vec(&struct_attrs, &component_declarations);
 

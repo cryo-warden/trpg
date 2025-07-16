@@ -38,6 +38,8 @@ entity! {
 
   entity Entity entity_id: EntityId in entities;
 
+  blob in entity_blobs;
+
   component NameComponent [name in name_components] {
     #[unique]
     pub name: String,

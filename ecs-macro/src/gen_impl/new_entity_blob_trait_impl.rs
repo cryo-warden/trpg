@@ -21,11 +21,14 @@ impl WithComponentStruct {
 
     pub fn new_vec(
         with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-        nebt: &gen_trait::NewEntityBlobTrait,
+        nebt: Option<&gen_trait::NewEntityBlobTrait>,
     ) -> Vec<Self> {
-        with_component_structs
-            .iter()
-            .map(|wcs| Self::new(wcs, nebt))
+        nebt.iter()
+            .flat_map(|nebt| {
+                with_component_structs
+                    .iter()
+                    .map(|wcs| Self::new(wcs, nebt))
+            })
             .collect()
     }
 }
@@ -59,11 +62,14 @@ pub struct EntityHandleStruct {
 }
 
 impl EntityHandleStruct {
-    pub fn new(wcs: &gen_struct::EntityHandleStruct, nebt: &gen_trait::NewEntityBlobTrait) -> Self {
-        Self {
+    pub fn new(
+        wcs: &gen_struct::EntityHandleStruct,
+        nebt: Option<&gen_trait::NewEntityBlobTrait>,
+    ) -> Option<Self> {
+        nebt.map(|nebt| Self {
             entity_handle_struct: wcs.to_owned(),
             new_entity_blob_trait: nebt.to_owned(),
-        }
+        })
     }
 }
 
@@ -104,7 +110,7 @@ impl ToTokens for EntityHandleStruct {
 
 pub struct Impl {
     with_component_structs: Vec<WithComponentStruct>,
-    entity_handle_struct: EntityHandleStruct,
+    entity_handle_struct: Option<EntityHandleStruct>,
 }
 
 impl Impl {
@@ -123,6 +129,7 @@ impl Impl {
             new_entity_blob_trait,
             ..
         } = entity_traits;
+        let new_entity_blob_trait = new_entity_blob_trait.as_ref();
 
         let with_component_structs =
             WithComponentStruct::new_vec(with_component_structs, new_entity_blob_trait);

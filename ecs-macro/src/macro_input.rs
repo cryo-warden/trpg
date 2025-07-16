@@ -91,10 +91,28 @@ impl Parse for EntityDeclaration {
         })
     }
 }
+
+pub struct BlobDeclaration {
+    pub table: Ident,
+}
+
+impl fundamental::AddAttrs for BlobDeclaration {}
+
+impl Parse for BlobDeclaration {
+    fn parse(input: ParseStream) -> Result<Self> {
+        input.parse::<kw::blob>()?;
+        input.parse::<Token![in]>()?;
+        let table = input.parse()?;
+        input.parse::<Token![;]>()?;
+        Ok(Self { table })
+    }
+}
+
 pub struct EntityMacroInput {
     pub entity_declaration: fundamental::WithAttrs<EntityDeclaration>,
     pub component_declarations: Vec<fundamental::WithAttrs<ComponentDeclaration>>,
     pub struct_attrs: fundamental::WithAttrs<StructAttrsDeclaration>,
+    pub blob_declaration: Option<fundamental::WithAttrs<BlobDeclaration>>,
 }
 
 impl Parse for EntityMacroInput {
@@ -102,6 +120,7 @@ impl Parse for EntityMacroInput {
         let mut entity_declarations = vec![];
         let mut component_declarations = vec![];
         let mut struct_attrses = vec![];
+        let mut blob_declarations = vec![];
         while !input.is_empty() {
             let attrs = input.parse()?;
             let la = input.lookahead1();
@@ -126,6 +145,18 @@ impl Parse for EntityMacroInput {
                     ));
                 }
                 struct_attrses.push(input.parse::<StructAttrsDeclaration>()?.add_attrs(attrs));
+            } else if la.peek(kw::component) {
+                component_declarations
+                    .push(input.parse::<ComponentDeclaration>()?.add_attrs(attrs));
+            } else if la.peek(kw::blob) {
+                if blob_declarations.len() > 0 {
+                    let blob = input.parse::<kw::blob>()?;
+                    return Err(Error::new(
+                        blob.span(),
+                        "Only one blob declaration is allowed.",
+                    ));
+                }
+                blob_declarations.push(input.parse::<BlobDeclaration>()?.add_attrs(attrs));
             } else {
                 return Err(la.error());
             }
@@ -144,6 +175,7 @@ impl Parse for EntityMacroInput {
             entity_declaration: entity_declarations.remove(0),
             component_declarations,
             struct_attrs: struct_attrses.remove(0),
+            blob_declaration: blob_declarations.into_iter().nth(0),
         })
     }
 }
