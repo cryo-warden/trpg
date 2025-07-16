@@ -3,7 +3,7 @@ use crate::{
     kw,
 };
 use syn::{
-    Error, Ident, Result, Token, bracketed, parenthesized,
+    Error, Ident, Result, Token, bracketed,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
@@ -29,11 +29,9 @@ pub struct ComponentTablePair {
 
 impl Parse for ComponentTablePair {
     fn parse(input: ParseStream) -> Result<Self> {
-        let content;
-        parenthesized!(content in input);
-        let component = content.parse()?;
-        content.parse::<Token![,]>()?;
-        let table = content.parse()?;
+        let component = input.parse()?;
+        input.parse::<Token![in]>()?;
+        let table = input.parse()?;
         Ok(Self { component, table })
     }
 }
@@ -70,7 +68,7 @@ pub struct EntityDeclaration {
     pub entity: Ident,
     pub id: Ident,
     pub id_ty: Ident,
-    pub tables: fundamental::Tables,
+    pub table: Ident,
 }
 
 impl fundamental::AddAttrs for EntityDeclaration {}
@@ -82,13 +80,14 @@ impl Parse for EntityDeclaration {
         let id = input.parse()?;
         input.parse::<Token![:]>()?;
         let id_ty = input.parse()?;
-        let tables = input.parse()?;
+        input.parse::<Token![in]>()?;
+        let table = input.parse()?;
         input.parse::<Token![;]>()?;
         Ok(Self {
             entity,
             id,
             id_ty,
-            tables,
+            table,
         })
     }
 }

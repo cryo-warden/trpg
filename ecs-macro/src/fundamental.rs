@@ -1,10 +1,9 @@
 use std::ops::Deref;
 
-use crate::kw;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{
-    Attribute, Field, Ident, Result, Token, braced, parenthesized,
+    Attribute, Field, Ident, Result, Token, braced,
     parse::{Parse, ParseStream},
 };
 
@@ -77,6 +76,26 @@ impl ToTokens for Fields {
 }
 
 #[derive(Clone)]
+pub struct Table(pub Ident);
+
+impl Deref for Table {
+    type Target = Ident;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ToTokens for Table {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Table(table) = self;
+        // TODO Make the `public` controllable.
+        tokens.extend(quote! {
+          #[::spacetimedb::table(name = #table, public)]
+        })
+    }
+}
+
+#[derive(Clone)]
 pub struct Tables(pub Vec<Ident>);
 
 impl Deref for Tables {
@@ -86,25 +105,12 @@ impl Deref for Tables {
     }
 }
 
-impl Parse for Tables {
-    fn parse(input: ParseStream) -> Result<Self> {
-        input.parse::<kw::tables>()?;
-        let content;
-        parenthesized!(content in input);
-        let tables = content
-            .parse_terminated(Ident::parse, Token![,])?
-            .into_iter()
-            .collect();
-        Ok(Tables(tables))
-    }
-}
-
 impl ToTokens for Tables {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Tables(tables) = self;
-        // TODO Make the `public` controllable in the macro.
+        let tables = tables.iter().map(|t| Table(t.to_owned()));
         tokens.extend(quote! {
-          #( #[::spacetimedb::table(name = #tables, public)] )*
+          #(#tables)*
         })
     }
 }

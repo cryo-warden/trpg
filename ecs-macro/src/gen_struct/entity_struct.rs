@@ -6,7 +6,7 @@ use syn::Ident;
 #[derive(Clone)]
 pub struct EntityStruct {
     pub attrs: fundamental::Attributes,
-    pub tables: fundamental::Tables,
+    pub table: Ident,
     pub entity_struct: Ident,
     pub id_ty: Ident,
 }
@@ -18,7 +18,7 @@ impl EntityStruct {
     ) -> Self {
         Self {
             attrs: struct_attrs.attrs.to_joined(&entity_declaration.attrs),
-            tables: entity_declaration.tables.to_owned(),
+            table: entity_declaration.table.to_owned(),
             entity_struct: entity_declaration.entity.to_owned(),
             id_ty: entity_declaration.id_ty.to_owned(),
         }
@@ -29,10 +29,11 @@ impl ToTokens for EntityStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             attrs,
-            tables,
+            table,
             entity_struct,
             id_ty,
         } = self;
+        let tables = fundamental::Tables(vec![table.to_owned()]);
         tokens.extend(quote! {
           #attrs
           #tables

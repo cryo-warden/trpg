@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, gen_trait, macro_input};
+use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::Result;
@@ -32,11 +32,9 @@ impl ToTokens for EcsStruct {
         } = &self.new_entity_handle_trait;
         let gen_struct::EntityStruct {
             entity_struct,
-            tables: fundamental::Tables(tables),
+            table,
             ..
         } = &self.entity_struct;
-        // WIP Make entity table singular.
-        let table = tables.first().unwrap();
         let gen_struct::EntityHandleStruct { id, .. } = &self.entity_handle_struct;
         tokens.extend(quote! {
           impl<'a> #new_entity_handle_trait<'a> for ecs::Ecs<'a> {

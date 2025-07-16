@@ -36,54 +36,54 @@ entity! {
   #[derive(Debug, Clone)]
   struct_attrs;
 
-  entity Entity entity_id: EntityId tables(entities);
+  entity Entity entity_id: EntityId in entities;
 
-  component NameComponent [(name, name_components)] {
+  component NameComponent [name in name_components] {
     #[unique]
     pub name: String,
   }
 
-  component LocationComponent [(location, location_components)] {
+  component LocationComponent [location in location_components] {
     #[index(btree)]
     pub location_entity_id: EntityId,
   }
 
-  component PathComponent [(path, path_components)] {
+  component PathComponent [path in path_components] {
     #[index(btree)]
     pub destination_entity_id: EntityId,
   }
 
-  component AllegianceComponent [(allegiance, allegiance_components)] {
+  component AllegianceComponent [allegiance in allegiance_components] {
     #[index(btree)]
     pub allegiance_entity_id: EntityId,
   }
 
-  component BaselineComponent [(baseline, baseline_components)] {
+  component BaselineComponent [baseline in baseline_components] {
     pub baseline_id: u64,
   }
 
-  component TraitsComponent [(traits, traits_components)] {
+  component TraitsComponent [traits in traits_components] {
     pub trait_ids: Vec<u64>,
   }
 
   // TODO Add StatBlock caches for equipment and status effects.
   component StatBlockCacheComponent [
-    (traits_stat_block_cache, traits_stat_block_cache_components)
+    traits_stat_block_cache in traits_stat_block_cache_components
   ] {
     pub stat_block: StatBlock,
   }
 
   // TODO Equipment and Status Effects
   component FlagComponent [
-    (traits_stat_block_dirty_flag, traits_stat_block_dirty_flag_components),
-    (total_stat_block_dirty_flag, total_stat_block_dirty_flag_components),
+    traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
+    total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
   ] {}
 
-  component AttackComponent [(attack, attack_components)] {
+  component AttackComponent [attack in attack_components] {
     pub attack: i32,
   }
 
-  component HpComponent [(hp, hp_components)] {
+  component HpComponent [hp in hp_components] {
     pub hp: i32,
     pub mhp: i32,
     pub defense: i32,
@@ -91,60 +91,60 @@ entity! {
     pub accumulated_healing: i32,
   }
 
-  component EpComponent [(ep, ep_components)] {
+  component EpComponent [ep in ep_components] {
     pub ep: i32,
     pub mep: i32,
   }
 
-  component PlayerControllerComponent [(player_controller, player_controller_components)] {
+  component PlayerControllerComponent [player_controller in player_controller_components] {
     #[unique]
     pub identity: Identity,
   }
 
-  component TargetComponent [(target, target_components)] {
+  component TargetComponent [target in target_components] {
     pub target_entity_id: EntityId,
   }
 
   component ActionStateComponent [
-    (action_state, action_state_components),
-    (queued_action_state, queued_action_state_components),
+    action_state in action_state_components,
+    queued_action_state in queued_action_state_components,
   ] {
     pub target_entity_id: EntityId,
     pub action_id: u64,
     pub sequence_index: i32,
   }
 
-  component ActionsComponent [(actions, actions_components)] {
+  component ActionsComponent [actions in actions_components] {
     pub action_ids: Vec<u64>,
   }
 
-  component ActionHotkeysComponent [(action_hotkeys, action_hotkeys_components)] {
+  component ActionHotkeysComponent [action_hotkeys in action_hotkeys_components] {
     pub action_hotkeys: Vec<ActionHotkey>,
   }
 
-  component ActionOptionsComponent [(action_options, action_options_components)] {
+  component ActionOptionsComponent [action_options in action_options_components] {
     pub action_options: Vec<ActionOption>,
   }
 
-  component EntityProminenceComponent [(entity_prominence, entity_prominence_components)] {
+  component EntityProminenceComponent [entity_prominence in entity_prominence_components] {
     pub prominence: i32,
   }
 
-  component TimerComponent [(entity_deactivation_timer, entity_deactivation_timer_components)] {
+  component TimerComponent [entity_deactivation_timer in entity_deactivation_timer_components] {
     pub timestamp: Timestamp,
   }
 
-  component RngSeedComponent [(rng_seed, rng_seed_components)] {
+  component RngSeedComponent [rng_seed in rng_seed_components] {
     pub rng_seed: u64,
   }
 
-  component LocationMapComponent [(location_map, location_map_components)] {
+  component LocationMapComponent [location_map in location_map_components] {
     pub map_entity_id: EntityId,
   }
 
   component MapComponent [
-    (realized_map, realized_map_components),
-    (unrealized_map, unrealized_map_components),
+    realized_map in realized_map_components,
+    unrealized_map in unrealized_map_components,
   ] {
     pub map_theme_id: u64,
     pub map_layout: MapLayout,
@@ -153,7 +153,7 @@ entity! {
     pub loop_count: u8,
   }
 
-  component AppearanceFeaturesComponent [(appearance_features, appearance_features_components)] {
+  component AppearanceFeaturesComponent [appearance_features in appearance_features_components] {
     pub appearance_feature_ids: Vec<u64>,
   }
 }

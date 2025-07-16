@@ -14,18 +14,18 @@ entity! {
   #[derive(Clone, Debug)]
   struct_attrs;
 
-  entity Entity entity_id: EntityId tables(entities);
+  entity Entity entity_id: EntityId in entities;
 
   component LocationComponent [
-    (location, location_components),
-    (secondary_location, secondary_location_components),
+    location in location_components,
+    secondary_location in secondary_location_components,
   ] {
     pub location_entity_id: EntityId,
   }
 
   component PathComponent [
-    (path, path_components),
-    (excess_path, excess_path_components)
+    path in path_components,
+    excess_path in excess_path_components
   ] {
     pub destination_entity_id: EntityId,
   }

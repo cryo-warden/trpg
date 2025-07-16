@@ -1,7 +1,7 @@
 use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
-use syn::{Error, Result, spanned::Spanned};
+use syn::Result;
 
 pub struct WithEntityHandleTrait {
     pub delete_entity_trait: gen_trait::DeleteEntityTrait,
@@ -32,7 +32,7 @@ impl ToTokens for WithEntityHandleTrait {
             delete_entity_trait,
             ..
         } = &self.delete_entity_trait;
-        let gen_struct::EntityStruct { tables, .. } = &self.entity_struct;
+        let gen_struct::EntityStruct { table, .. } = &self.entity_struct;
         let gen_trait::WithEntityHandleTrait {
             with_entity_handle_trait,
             id_fn,
@@ -42,10 +42,6 @@ impl ToTokens for WithEntityHandleTrait {
             let gen_trait::OptionComponentTrait { delete_fn, .. } = &oct;
             quote! { handle.#delete_fn(); }
         });
-        let table = tables
-            .first()
-            .ok_or(Error::new(tables.span(), "Cannot find entity table."))
-            .unwrap(); // WIP Change to single table for entity.
         tokens.extend(quote! {
           impl<'a, T: #with_entity_handle_trait<'a>> #delete_entity_trait for T {
               fn delete(&self) {
