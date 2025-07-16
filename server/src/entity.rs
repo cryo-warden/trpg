@@ -311,19 +311,7 @@ impl<'a, T: WithEntityHandle<'a> + Option__total_stat_block_dirty_flag__Trait> T
     }
 }
 
-#[allow(dead_code)]
 impl<'a> InactiveEntityHandle<'a> {
-    pub fn from_prefab_name(ctx: &'a ReducerContext, prefab_name: &str) -> Option<Self> {
-        ctx.db
-            .named_inactive_entities()
-            .prefab_name()
-            .find(prefab_name.to_string())
-            .map(|i| Self {
-                ctx,
-                component_set: i.component_set,
-            })
-    }
-
     pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
         let result = ctx
             .db
@@ -450,72 +438,6 @@ impl<'a> EntityHandle<'a> {
         });
 
         self
-    }
-
-    // WIP Macro-generate a trait to delete entity and all components.
-    #[allow(dead_code)]
-    pub fn delete(self) {
-        self.delete_actions();
-        self.delete_action_hotkeys();
-        self.delete_action_options();
-        self.delete_action_state();
-        self.delete_queued_action_state();
-        self.delete_allegiance();
-        self.delete_ep();
-        self.delete_hp();
-        self.delete_location();
-        self.delete_name();
-        self.delete_path();
-        self.delete_player_controller();
-        self.delete_target();
-        self.delete_entity_prominence();
-        self.delete_entity_deactivation_timer();
-        self.delete_baseline();
-        self.delete_traits();
-
-        self.ecs
-            .db
-            .entity_observations()
-            .entity_id()
-            .delete(self.entity_id);
-
-        self.ecs.db.entities().id().delete(self.entity_id);
-        log::debug!("Deleted entity {}.", self.entity_id);
-    }
-
-    // WIP Move into a new macro-gen trait. First make EntityBlob struct holding all components as options, then finally make traits for delete and deactivate that automatically apply to anything with all the OPTION component traits or any wrapper which contains something that implements the traits.
-    #[allow(dead_code)]
-    pub fn deactivate(self) {
-        let component_set = ComponentSet {
-            entity_id: self.entity_id,
-            actions_component: self.actions(),
-            action_hotkeys_component: self.action_hotkeys(),
-            allegiance_component: self.allegiance(),
-            hp_component: self.hp(),
-            ep_component: self.ep(),
-            player_controller_component: self.player_controller(),
-            baseline_component: self.baseline(),
-            traits_component: self.traits(),
-        };
-        if let Some(p) = self.player_controller() {
-            self.ecs
-                .db
-                .identity_inactive_entities()
-                .insert(IdentityInactiveEntity {
-                    identity: p.identity,
-                    component_set,
-                });
-        } else if let Some(n) = self.name() {
-            self.ecs
-                .db
-                .named_inactive_entities()
-                .insert(NamedInactiveEntity {
-                    prefab_name: n.name,
-                    component_set,
-                });
-        }
-
-        self.delete();
     }
 
     pub fn set_name(self, name: &str) -> Self {

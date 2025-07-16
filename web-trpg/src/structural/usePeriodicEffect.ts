@@ -9,7 +9,7 @@ export const usePeriodicEffect = (
     const effect = createEffect();
 
     let isCancelled = false;
-    let timeout: Timer | null = null;
+    let timeout: number | null = null;
 
     const update = () => {
       if (isCancelled) {

@@ -79,6 +79,13 @@ impl ToTokens for Fields {
 #[derive(Clone)]
 pub struct Tables(pub Vec<Ident>);
 
+impl Deref for Tables {
+    type Target = Vec<Ident>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Parse for Tables {
     fn parse(input: ParseStream) -> Result<Self> {
         input.parse::<kw::tables>()?;

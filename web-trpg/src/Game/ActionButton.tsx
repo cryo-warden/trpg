@@ -31,7 +31,7 @@ export const ActionButton = ({
     }
 
     connection.reducers.act(actionId, finalTarget);
-  }, [playerEntity, finalTarget, actionId]);
+  }, [playerEntity, finalTarget, actionId, connection.reducers]);
 
   const actionName = useActionName(actionId);
   const actionStateComponent = useActionStateComponent(playerEntity);

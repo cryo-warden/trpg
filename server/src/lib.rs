@@ -20,9 +20,9 @@ use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuratio
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
 
 use crate::entity::{
-    FindEntityHandle, NewEntityHandle, Option__location__Trait, Option__unrealized_map__Trait,
-    RngSeedComponent, TargetComponent, TriggerFlag, WithEntityHandle, __target__DeleteTrait,
-    __target__Trait,
+    DeleteEntity, FindEntityHandle, NewEntityBlob, NewEntityHandle, Option__location__Trait,
+    Option__unrealized_map__Trait, RngSeedComponent, TargetComponent, TriggerFlag,
+    WithEntityHandle, __target__DeleteTrait, __target__Trait,
 };
 
 mod action;
@@ -536,7 +536,10 @@ pub fn entity_deactivation_system(ctx: &ReducerContext) {
         if t.entity_deactivation_timer().timestamp.le(&ctx.timestamp) {
             let entity_id = t.entity_id();
             t.delete_entity_deactivation_timer();
-            ctx.ecs().find(entity_id).deactivate(); // WIP Move deactivation into a new macro-generated trait.
+            let handle = ctx.ecs().find(entity_id);
+            let _ = handle.new_blob();
+            // WIP Complete deactivation by moving blob into a new entity_blobs table.
+            handle.delete();
         }
     }
 }

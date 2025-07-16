@@ -52,6 +52,7 @@ fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     };
     LocationComponent::new().into_location_handle(ctx);
     EntityHandle::peek();
+    ctx.ecs().new().delete();
     let e = e.with_path()?.with_location()?.with_secondary_location()?;
     for lp in LocationComponent::iter_location(ctx).with_path() {
         println!("{:?}", lp.path());
