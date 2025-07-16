@@ -32,15 +32,6 @@ entity! {
   }
 }
 
-impl LocationComponent {
-    pub fn new() -> Self {
-        Self {
-            entity_id: 0,
-            location_entity_id: 0,
-        }
-    }
-}
-
 impl<'a> EntityHandle<'a> {
     pub fn peek() {}
 }
@@ -51,7 +42,7 @@ fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
         entity_id: 0,
         ecs: ctx.ecs(),
     };
-    LocationComponent::new().into_location_handle(ctx);
+    LocationComponent::new(1).into_location_handle(ctx);
     EntityHandle::peek();
     ctx.ecs().new().delete();
     ctx.ecs().new().new_blob();

@@ -18,6 +18,13 @@ impl Attributes {
     }
 }
 
+impl Deref for Attributes {
+    type Target = Vec<Attribute>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 impl Parse for Attributes {
     fn parse(input: ParseStream) -> Result<Self> {
         Ok(Self(input.call(Attribute::parse_outer)?))
@@ -52,7 +59,14 @@ pub trait AddAttrs: Sized {
 }
 
 #[derive(Clone)]
-pub struct Fields(Vec<Field>);
+pub struct Fields(pub Vec<Field>);
+
+impl Deref for Fields {
+    type Target = Vec<Field>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl Parse for Fields {
     fn parse(input: ParseStream) -> Result<Self> {
