@@ -8,29 +8,37 @@ mod ecs {
     pub use crate::*;
 }
 
-type EntityId = u64;
+entity!(
+    type EntityId = u64;
 
-entity! {
-  #[derive(Clone, Debug)]
-  struct_attrs;
+    #[struct_attrs]
+    #[derive(Clone, Debug)]
+    struct StructAttrs;
 
-  entity Entity entity_id: EntityId in entities;
-  blob in entity_blobs;
+    #[entity(table = entities)]
+    pub struct Entity {
+        entity_id: EntityId,
+    }
 
-  component LocationComponent [
+    #[blob(table = entity_blobs)]
+    pub struct EntityBlob;
+
+    #[component(
     location in location_components,
     secondary_location in secondary_location_components,
-  ] {
-    pub location_entity_id: EntityId,
-  }
+  )]
+    pub struct LocationComponent {
+        pub location_entity_id: EntityId,
+    }
 
-  component PathComponent [
+    #[component(
     path in path_components,
     excess_path in excess_path_components
-  ] {
-    pub destination_entity_id: EntityId,
-  }
-}
+  )]
+    pub struct PathComponent {
+        pub destination_entity_id: EntityId,
+    }
+);
 
 impl<'a> EntityHandle<'a> {
     pub fn peek() {}

@@ -1,7 +1,7 @@
 use crate::{fundamental, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
-use syn::Ident;
+use syn::{Ident, Type};
 
 #[derive(Clone)]
 pub struct ComponentStruct {
@@ -9,7 +9,7 @@ pub struct ComponentStruct {
     pub tables: fundamental::Tables,
     pub component_struct: Ident,
     pub id: Ident,
-    pub id_ty: Ident,
+    pub id_ty: Type,
     pub component_fields: fundamental::Fields,
 }
 

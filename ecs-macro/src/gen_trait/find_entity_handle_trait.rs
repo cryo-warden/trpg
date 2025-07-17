@@ -1,14 +1,14 @@
 use crate::gen_struct;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
-use syn::Ident;
+use syn::{Ident, Type};
 
 #[derive(Clone)]
 pub struct FindEntityHandleTrait {
     pub find_entity_handle_trait: Ident,
     pub entity_handle_struct: Ident,
     pub id: Ident,
-    pub id_ty: Ident,
+    pub id_ty: Type,
 }
 
 impl FindEntityHandleTrait {

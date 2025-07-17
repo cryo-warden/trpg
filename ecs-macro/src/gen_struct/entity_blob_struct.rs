@@ -1,7 +1,7 @@
 use crate::{fundamental, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
-use syn::Ident;
+use syn::{Ident, Type};
 
 #[derive(Clone)]
 pub struct EntityBlobComponentField(pub macro_input::ComponentTablePair, pub Ident);
@@ -21,7 +21,7 @@ pub struct EntityBlobStruct {
     pub table: fundamental::Table,
     pub entity_blob_struct: Ident,
     pub id: Ident,
-    pub id_ty: Ident,
+    pub id_ty: Type,
     pub component_fields: Vec<EntityBlobComponentField>,
 }
 

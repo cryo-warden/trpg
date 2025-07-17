@@ -1,14 +1,14 @@
 use crate::{fundamental, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
-use syn::Ident;
+use syn::{Ident, Type};
 
 #[derive(Clone)]
 pub struct EntityStruct {
     pub attrs: fundamental::Attributes,
     pub table: Ident,
     pub entity_struct: Ident,
-    pub id_ty: Ident,
+    pub id_ty: Type,
 }
 
 impl EntityStruct {

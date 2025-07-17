@@ -9,154 +9,183 @@ use spacetimedb::{
     table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
 };
 
-// WIP Allow rustfmt to format this macro by converting it to valid Rust syntax, using attribute syntax for extra info.
-entity! {
-  #[derive(Debug, Clone)]
-  struct_attrs;
+entity!(
+    #[struct_attrs]
+    #[derive(Debug, Clone)]
+    struct StructAttrs;
 
-  type EntityId = u64;
+    type EntityId = u64;
 
-  entity Entity entity_id: EntityId in entities;
+    #[entity(table = entities)]
+    pub struct Entity {
+        entity_id: EntityId,
+    }
 
-  blob in entity_blobs;
+    #[blob(table = entity_blobs)]
+    pub struct EntityBlob;
 
-  component NameComponent [name in name_components] {
-    #[unique]
-    pub name: String,
-  }
+    #[component(name in name_components)]
+    struct NameComponent {
+        #[unique]
+        pub name: String,
+    }
 
-  component LocationComponent [location in location_components] {
-    #[index(btree)]
-    pub location_entity_id: EntityId,
-  }
+    #[component(location in location_components)]
+    struct LocationComponent {
+        #[index(btree)]
+        pub location_entity_id: EntityId,
+    }
 
-  component PathComponent [path in path_components] {
-    #[index(btree)]
-    pub destination_entity_id: EntityId,
-  }
+    #[component(path in path_components)]
+    struct PathComponent {
+        #[index(btree)]
+        pub destination_entity_id: EntityId,
+    }
 
-  component AllegianceComponent [allegiance in allegiance_components] {
-    #[index(btree)]
-    pub allegiance_entity_id: EntityId,
-  }
+    #[component(allegiance in allegiance_components)]
+    struct AllegianceComponent {
+        #[index(btree)]
+        pub allegiance_entity_id: EntityId,
+    }
 
-  component BaselineComponent [baseline in baseline_components] {
-    pub baseline_id: u64,
-  }
+    #[component(baseline in baseline_components)]
+    struct BaselineComponent {
+        pub baseline_id: u64,
+    }
 
-  component TraitsComponent [traits in traits_components] {
-    pub trait_ids: Vec<u64>,
-  }
+    #[component(traits in traits_components)]
+    struct TraitsComponent {
+        pub trait_ids: Vec<u64>,
+    }
 
-  // TODO Add StatBlock caches for equipment and status effects.
-  component StatBlockCacheComponent [
-    traits_stat_block_cache in traits_stat_block_cache_components
-  ] {
-    pub stat_block: StatBlock,
-  }
+    // TODO Add StatBlock caches for equipment and status effects.
+    #[component(
+    traits_stat_block_cache in traits_stat_block_cache_components,
+  )]
+    struct StatBlockCacheComponent {
+        pub stat_block: StatBlock,
+    }
 
-  // TODO Equipment and Status Effects
-  component FlagComponent [
+    // TODO Equipment and Status Effects
+    #[component(
     traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
     total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
-  ] {}
+  )]
+    struct FlagComponent {}
 
-  component AttackComponent [attack in attack_components] {
-    pub attack: i32,
-  }
+    #[component(attack in attack_components)]
+    struct AttackComponent {
+        pub attack: i32,
+    }
 
-  component HpComponent [hp in hp_components] {
-    pub hp: i32,
-    pub mhp: i32,
-    pub defense: i32,
-    pub accumulated_damage: i32,
-    pub accumulated_healing: i32,
-  }
+    #[component(hp in hp_components)]
+    struct HpComponent {
+        pub hp: i32,
+        pub mhp: i32,
+        pub defense: i32,
+        pub accumulated_damage: i32,
+        pub accumulated_healing: i32,
+    }
 
-  component EpComponent [ep in ep_components] {
-    pub ep: i32,
-    pub mep: i32,
-  }
+    #[component(ep in ep_components)]
+    struct EpComponent {
+        pub ep: i32,
+        pub mep: i32,
+    }
 
-  component PlayerControllerComponent [player_controller in player_controller_components] {
-    #[unique]
-    pub identity: Identity,
-  }
+    #[component(player_controller in player_controller_components)]
+    struct PlayerControllerComponent {
+        #[unique]
+        pub identity: Identity,
+    }
 
-  component TargetComponent [target in target_components] {
-    pub target_entity_id: EntityId,
-  }
+    #[component(target in target_components)]
+    struct TargetComponent {
+        pub target_entity_id: EntityId,
+    }
 
-  component ActionStateComponent [
+    #[component(
     action_state in action_state_components,
     queued_action_state in queued_action_state_components,
-  ] {
-    pub target_entity_id: EntityId,
-    pub action_id: u64,
-    pub sequence_index: i32,
-  }
+  )]
+    struct ActionStateComponent {
+        pub target_entity_id: EntityId,
+        pub action_id: u64,
+        pub sequence_index: i32,
+    }
 
-  component ActionsComponent [actions in actions_components] {
-    pub action_ids: Vec<u64>,
-  }
+    #[component(actions in actions_components)]
+    struct ActionsComponent {
+        pub action_ids: Vec<u64>,
+    }
 
-  #[derive(Debug, Clone, SpacetimeType)]
-  pub struct ActionHotkey {
-      pub action_id: u64,
-      pub character_code: u32,
-  }
+    #[derive(Debug, Clone, SpacetimeType)]
+    pub struct ActionHotkey {
+        pub action_id: u64,
+        pub character_code: u32,
+    }
 
-  component ActionHotkeysComponent [action_hotkeys in action_hotkeys_components] {
-    pub action_hotkeys: Vec<ActionHotkey>,
-  }
+    #[component(action_hotkeys in action_hotkeys_components)]
+    struct ActionHotkeysComponent {
+        pub action_hotkeys: Vec<ActionHotkey>,
+    }
 
-  #[derive(Debug, Clone, SpacetimeType)]
-  pub struct ActionOption {
-      pub action_id: u64,
-      pub target_entity_id: EntityId,
-  }
+    #[derive(Debug, Clone, SpacetimeType)]
+    pub struct ActionOption {
+        pub action_id: u64,
+        pub target_entity_id: EntityId,
+    }
 
-  component ActionOptionsComponent [action_options in action_options_components] {
-    pub action_options: Vec<ActionOption>,
-  }
+    #[component(action_options in action_options_components)]
+    struct ActionOptionsComponent {
+        pub action_options: Vec<ActionOption>,
+    }
 
-  component EntityProminenceComponent [entity_prominence in entity_prominence_components] {
-    pub prominence: i32,
-  }
+    #[component(entity_prominence in entity_prominence_components)]
+    struct EntityProminenceComponent {
+        pub prominence: i32,
+    }
 
-  component TimerComponent [entity_deactivation_timer in entity_deactivation_timer_components] {
-    pub timestamp: Timestamp,
-  }
+    #[component(
+    entity_deactivation_timer in entity_deactivation_timer_components
+  )]
+    struct TimerComponent {
+        pub timestamp: Timestamp,
+    }
 
-  component RngSeedComponent [rng_seed in rng_seed_components] {
-    pub rng_seed: u64,
-  }
+    #[component(rng_seed in rng_seed_components)]
+    struct RngSeedComponent {
+        pub rng_seed: u64,
+    }
 
-  component LocationMapComponent [location_map in location_map_components] {
-    pub map_entity_id: EntityId,
-  }
+    #[component(location_map in location_map_components)]
+    struct LocationMapComponent {
+        pub map_entity_id: EntityId,
+    }
 
-  #[derive(Debug, Clone, SpacetimeType)]
-  pub enum MapLayout {
-      Path,
-      Hub,
-  }
+    #[derive(Debug, Clone, SpacetimeType)]
+    pub enum MapLayout {
+        Path,
+        Hub,
+    }
 
-  component MapComponent [
+    #[component(
     realized_map in realized_map_components,
     unrealized_map in unrealized_map_components,
-  ] {
-    pub map_theme_id: u64,
-    pub map_layout: MapLayout,
-    pub extra_room_count: u8,
-    pub main_room_count: u8,
-    pub loop_count: u8,
-  }
+   )]
+    struct MapComponent {
+        pub map_theme_id: u64,
+        pub map_layout: MapLayout,
+        pub extra_room_count: u8,
+        pub main_room_count: u8,
+        pub loop_count: u8,
+    }
 
-  component AppearanceFeaturesComponent [appearance_features in appearance_features_components] {
-    pub appearance_feature_ids: Vec<u64>,
-  }
-}
+    #[component(appearance_features in appearance_features_components)]
+    struct AppearanceFeaturesComponent {
+        pub appearance_feature_ids: Vec<u64>,
+    }
+);
 
 #[table(name = entity_observations, public)]
 #[derive(Debug, Clone)]
