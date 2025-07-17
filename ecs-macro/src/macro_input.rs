@@ -1,12 +1,17 @@
-use crate::{
-    fundamental::{self, AddAttrs},
-    kw,
-};
+use crate::fundamental::{self, AddAttrs};
 use syn::{
     Error, Ident, Item, Result, Token, bracketed,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
+
+mod kw {
+    use syn::custom_keyword;
+    custom_keyword!(struct_attrs);
+    custom_keyword!(component);
+    custom_keyword!(entity);
+    custom_keyword!(blob);
+}
 
 #[derive(Clone)]
 pub struct StructAttrsDeclaration;

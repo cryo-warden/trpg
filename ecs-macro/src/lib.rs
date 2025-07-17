@@ -13,7 +13,6 @@ mod fundamental;
 mod gen_impl;
 mod gen_struct;
 mod gen_trait;
-mod kw;
 mod macro_input;
 
 impl ToTokens for fundamental::WithAttrs<Item> {
