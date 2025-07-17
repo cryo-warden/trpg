@@ -40,6 +40,7 @@ impl ToTokens for Attributes {
     }
 }
 
+#[derive(Clone)]
 pub struct WithAttrs<T> {
     pub attrs: Attributes,
     value: T,

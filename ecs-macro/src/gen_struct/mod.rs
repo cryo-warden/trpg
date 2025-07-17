@@ -29,6 +29,7 @@ impl EntityStructs {
             entity_declaration,
             component_declarations,
             struct_attrs,
+            ..
         } = &entity_macro_input;
         let blob_declaration = blob_declaration.as_ref();
 

@@ -3,7 +3,7 @@ use crate::{
     kw,
 };
 use syn::{
-    Error, Ident, Result, Token, bracketed,
+    Error, Ident, Item, Result, Token, bracketed,
     parse::{Parse, ParseStream},
     spanned::Spanned,
 };
@@ -108,7 +108,10 @@ impl Parse for BlobDeclaration {
     }
 }
 
+impl fundamental::AddAttrs for Item {}
+
 pub struct EntityMacroInput {
+    pub items: Vec<fundamental::WithAttrs<Item>>,
     pub entity_declaration: fundamental::WithAttrs<EntityDeclaration>,
     pub component_declarations: Vec<fundamental::WithAttrs<ComponentDeclaration>>,
     pub struct_attrs: fundamental::WithAttrs<StructAttrsDeclaration>,
@@ -117,6 +120,7 @@ pub struct EntityMacroInput {
 
 impl Parse for EntityMacroInput {
     fn parse(input: ParseStream) -> Result<Self> {
+        let mut items = vec![];
         let mut entity_declarations = vec![];
         let mut component_declarations = vec![];
         let mut struct_attrses = vec![];
@@ -158,7 +162,8 @@ impl Parse for EntityMacroInput {
                 }
                 blob_declarations.push(input.parse::<BlobDeclaration>()?.add_attrs(attrs));
             } else {
-                return Err(la.error());
+                let item: Item = input.parse()?;
+                items.push(item.add_attrs(attrs));
             }
         }
 
@@ -172,6 +177,7 @@ impl Parse for EntityMacroInput {
         struct_attrses.push(StructAttrsDeclaration.add_attrs(fundamental::Attributes(vec![])));
 
         Ok(EntityMacroInput {
+            items,
             entity_declaration: entity_declarations.remove(0),
             component_declarations,
             struct_attrs: struct_attrses.remove(0),

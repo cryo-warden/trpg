@@ -1,40 +1,20 @@
-use spacetimedb::{
-    rand::{rngs::StdRng, RngCore, SeedableRng},
-    table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
-};
-
-// use crate::appearance::AppearanceFeatureContext;
 use crate::{
     action::{actions, ActionType},
     appearance::AppearanceFeatureContext,
     stat_block::{baselines, traits, StatBlock},
 };
-
 use ecs::{entity, Ecs, WithEcs};
+use spacetimedb::{
+    rand::{rngs::StdRng, RngCore, SeedableRng},
+    table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
+};
 
-type EntityId = u64;
-
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct ActionHotkey {
-    pub action_id: u64,
-    pub character_code: u32,
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct ActionOption {
-    pub action_id: u64,
-    pub target_entity_id: EntityId,
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
-pub enum MapLayout {
-    Path,
-    Hub,
-}
-
+// WIP Allow rustfmt to format this macro by converting it to valid Rust syntax, using attribute syntax for extra info.
 entity! {
   #[derive(Debug, Clone)]
   struct_attrs;
+
+  type EntityId = u64;
 
   entity Entity entity_id: EntityId in entities;
 
@@ -120,8 +100,20 @@ entity! {
     pub action_ids: Vec<u64>,
   }
 
+  #[derive(Debug, Clone, SpacetimeType)]
+  pub struct ActionHotkey {
+      pub action_id: u64,
+      pub character_code: u32,
+  }
+
   component ActionHotkeysComponent [action_hotkeys in action_hotkeys_components] {
     pub action_hotkeys: Vec<ActionHotkey>,
+  }
+
+  #[derive(Debug, Clone, SpacetimeType)]
+  pub struct ActionOption {
+      pub action_id: u64,
+      pub target_entity_id: EntityId,
   }
 
   component ActionOptionsComponent [action_options in action_options_components] {
@@ -142,6 +134,12 @@ entity! {
 
   component LocationMapComponent [location_map in location_map_components] {
     pub map_entity_id: EntityId,
+  }
+
+  #[derive(Debug, Clone, SpacetimeType)]
+  pub enum MapLayout {
+      Path,
+      Hub,
   }
 
   component MapComponent [
