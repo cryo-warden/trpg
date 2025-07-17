@@ -10,7 +10,7 @@ use crate::{
     stat_block::{baselines, traits, StatBlock},
 };
 
-use ecs::{entity, WithEcs};
+use ecs::{entity, Ecs, WithEcs};
 
 type EntityId = u64;
 
@@ -187,7 +187,46 @@ pub trait MapGenerator {
     fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult;
 }
 
-// WIP Add a trait for `entity_id()`.
+pub trait EcsExtension<'a> {
+    fn new_room(
+        self,
+        appearance_feature_ids: Vec<u64>,
+        location_map_entity_id: u64,
+    ) -> EntityHandle<'a>;
+    fn new_path(
+        self,
+        appearance_feature_ids: Vec<u64>,
+        location_entity_id: u64,
+        destination_entity_id: u64,
+    ) -> EntityHandle<'a>;
+}
+
+impl<'a> EcsExtension<'a> for Ecs<'a> {
+    fn new_room(
+        self,
+        appearance_feature_ids: Vec<u64>,
+        location_map_entity_id: u64,
+    ) -> EntityHandle<'a> {
+        self.new()
+            .upsert_new_appearance_features(appearance_feature_ids)
+            .upsert_new_location_map(location_map_entity_id)
+            .into_handle()
+    }
+
+    fn new_path(
+        self,
+        appearance_feature_ids: Vec<u64>,
+        location_entity_id: u64,
+        destination_entity_id: u64,
+    ) -> EntityHandle<'a> {
+        self.new()
+            .upsert_new_appearance_features(appearance_feature_ids)
+            .upsert_new_location(location_entity_id)
+            .upsert_new_path(destination_entity_id)
+            .into_handle()
+    }
+}
+
 impl<'a, T: WithEntityHandle<'a> + __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
     fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
         let af_ctx = AppearanceFeatureContext::new(ctx);
@@ -197,9 +236,7 @@ impl<'a, T: WithEntityHandle<'a> + __unrealized_map__Trait + __rng_seed__Trait> 
         let room_handles: Vec<EntityHandle> = (0..total_room_count)
             .map(|_| {
                 ctx.ecs()
-                    .new()
-                    .set_appearance_feature_ids(af_ctx.by_texts(&["room"]))
-                    .set_location_map(0) // WIP self.entity_id()
+                    .new_room(af_ctx.by_texts(&["room"]), self.entity_id())
             })
             .collect();
 
@@ -207,30 +244,18 @@ impl<'a, T: WithEntityHandle<'a> + __unrealized_map__Trait + __rng_seed__Trait> 
             let a = &room_handles[i];
             let b = &room_handles[i + 1];
             ctx.ecs()
-                .new()
-                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
-                .add_location(a.entity_id)
-                .add_path(b.entity_id);
+                .new_path(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id);
             ctx.ecs()
-                .new()
-                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
-                .add_location(b.entity_id)
-                .add_path(a.entity_id);
+                .new_path(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id);
         }
 
         for i in (map.main_room_count as u32)..(total_room_count as u32) {
             let a = &room_handles[i as usize];
             let b = &room_handles[(rng.next_u32() % i) as usize];
             ctx.ecs()
-                .new()
-                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
-                .add_location(a.entity_id)
-                .add_path(b.entity_id);
+                .new_path(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id);
             ctx.ecs()
-                .new()
-                .set_appearance_feature_ids(af_ctx.by_texts(&["path"]))
-                .add_location(b.entity_id)
-                .add_path(a.entity_id);
+                .new_path(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id);
         }
 
         MapGenerationResult {
@@ -273,17 +298,18 @@ impl Entity {
         Ok(ctx
             .ecs()
             .new()
-            .add_player_controller(ctx.sender)
-            .set_allegiance(
+            .upsert_new_player_controller(ctx.sender)
+            .upsert_new_allegiance(
                 EntityHandle::from_name(ctx, "allegiance1")
                     .ok_or("Cannot find starting allegiance.")?
                     .entity_id(),
             )
-            .add_location(
+            .upsert_new_location(
                 EntityHandle::from_name(ctx, "room1")
                     .ok_or("Cannot find starting room.")?
                     .entity_id(),
             )
+            .into_handle()
             .set_baseline("human")
             .add_trait("admin")
             .add_trait("mobile")
@@ -298,19 +324,6 @@ impl Entity {
 pub struct InactiveEntityHandle<'a> {
     pub ctx: &'a ReducerContext,
     pub component_set: ComponentSet,
-}
-
-pub trait TriggerFlag {
-    fn trigger_total_stat_block_dirty_flag(self) -> Self;
-}
-
-impl<'a, T: WithEntityHandle<'a> + Option__total_stat_block_dirty_flag__Trait> TriggerFlag for T {
-    fn trigger_total_stat_block_dirty_flag(self) -> Self {
-        self.insert_total_stat_block_dirty_flag(FlagComponent {
-            entity_id: self.entity_id(),
-        });
-        self
-    }
 }
 
 impl<'a> InactiveEntityHandle<'a> {
@@ -382,12 +395,7 @@ impl<'a> InactiveEntityHandle<'a> {
                     entity_id: e.entity_id,
                 });
         }
-
-        // TODO Assign location from callsite instead?
-        match EntityHandle::from_name(self.ctx, "room1") {
-            Some(l) => e.add_location(l.entity_id()),
-            None => e,
-        }
+        e
     }
 }
 
@@ -434,75 +442,21 @@ impl<'a> EntityHandle<'a> {
             prominence |= 1 << 6;
         }
 
-        self.insert_entity_prominence(EntityProminenceComponent {
-            entity_id: self.entity_id,
-            prominence,
-        });
-
+        self.insert_new_entity_prominence(prominence);
         self
     }
 
     pub fn set_name(self, name: &str) -> Self {
-        self.insert_name(NameComponent {
-            entity_id: self.entity_id,
-            name: name.to_string(),
-        });
-        self
+        self.upsert_new_name(name.to_string()).into_handle()
     }
 
     pub fn set_target(self, target_entity_id: u64) -> Self {
-        let entity_id = self.entity_id;
-        self.upsert_target(TargetComponent {
-            entity_id,
-            target_entity_id,
-        })
-        .into_handle()
-    }
-
-    pub fn delete_target_component(self) -> Self {
-        self.delete_target();
-        self
-    }
-
-    pub fn add_location(self, location_entity_id: u64) -> Self {
-        let entity_id = self.entity_id;
-        self.upsert_location(LocationComponent {
-            entity_id,
-            location_entity_id,
-        })
-        .into_handle()
-    }
-
-    pub fn set_location_map(self, map_entity_id: u64) -> Self {
-        let entity_id = self.entity_id;
-        self.upsert_location_map(LocationMapComponent {
-            entity_id,
-            map_entity_id,
-        })
-        .into_handle()
-    }
-
-    pub fn add_path(self, destination_entity_id: u64) -> Self {
-        let entity_id = self.entity_id;
-        self.upsert_path(PathComponent {
-            // WIP Make entity_id private and move component construction into macro functions.
-            entity_id,
-            destination_entity_id,
-        })
-        .into_handle()
-    }
-
-    pub fn has_path(&self) -> bool {
-        self.path().is_some()
+        self.upsert_new_target(target_entity_id).into_handle()
     }
 
     pub fn set_allegiance(self, allegiance_entity_id: u64) -> Self {
-        let entity_id = self.entity_id;
-        self.upsert_allegiance(AllegianceComponent {
-            entity_id,
-            allegiance_entity_id,
-        })
-        .into_handle()
+        self.upsert_new_allegiance(allegiance_entity_id)
+            .into_handle()
     }
 
     pub fn allegiance_id(&self) -> Option<u64> {
@@ -529,23 +483,16 @@ impl<'a> EntityHandle<'a> {
             c.action_ids = action_ids;
             self.update_actions(c);
         } else {
-            self.insert_actions(ActionsComponent {
-                entity_id: self.entity_id,
-                action_ids,
-            });
+            self.insert_new_actions(action_ids);
         }
         self
     }
 
     pub fn set_baseline(self, name: &str) -> Self {
         if let Some(b) = self.ecs.db.baselines().name().find(name.to_string()) {
-            let entity_id = self.entity_id;
-            self.upsert_baseline(BaselineComponent {
-                entity_id,
-                baseline_id: b.id,
-            })
-            .trigger_total_stat_block_dirty_flag()
-            .into_handle()
+            self.upsert_new_baseline(b.id)
+                .upsert_new_total_stat_block_dirty_flag()
+                .into_handle()
         } else {
             self
         }
@@ -563,19 +510,15 @@ impl<'a> EntityHandle<'a> {
                 });
             }
 
-            self.trigger_traits_stat_block_dirty_flag()
+            self.upsert_new_traits_stat_block_dirty_flag().into_handle()
         } else {
             self
         }
     }
 
     pub fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u64>) -> Self {
-        let entity_id = self.entity_id;
-        self.upsert_appearance_features(AppearanceFeaturesComponent {
-            entity_id,
-            appearance_feature_ids,
-        })
-        .into_handle()
+        self.upsert_new_appearance_features(appearance_feature_ids)
+            .into_handle()
     }
 
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
@@ -591,27 +534,14 @@ impl<'a> EntityHandle<'a> {
             .set_appearance_feature_ids(stat_block.appearance_feature_ids)
     }
 
-    pub fn trigger_traits_stat_block_dirty_flag(self) -> Self {
-        self.insert_traits_stat_block_dirty_flag(FlagComponent {
-            entity_id: self.entity_id,
-        });
-        self
-    }
-
     pub fn set_traits_stat_block_cache(self, stat_block: StatBlock) -> Self {
-        let entity_id = self.entity_id;
         self.delete_traits_stat_block_dirty_flag();
-        self.upsert_traits_stat_block_cache(StatBlockCacheComponent {
-            entity_id,
-            stat_block,
-        })
-        .into_handle()
+        self.upsert_new_traits_stat_block_cache(stat_block)
+            .into_handle()
     }
 
     pub fn set_attack(self, attack: i32) -> Self {
-        let entity_id = self.entity_id;
-        self.upsert_attack(AttackComponent { entity_id, attack })
-            .into_handle()
+        self.upsert_new_attack(attack).into_handle()
     }
 
     pub fn set_mhp(self, mhp: i32) -> Self {
@@ -619,14 +549,7 @@ impl<'a> EntityHandle<'a> {
             hp.mhp = mhp;
             self.update_hp(hp);
         } else {
-            self.insert_hp(HpComponent {
-                entity_id: self.entity_id,
-                mhp,
-                hp: mhp,
-                defense: 0,
-                accumulated_damage: 0,
-                accumulated_healing: 0,
-            });
+            self.insert_new_hp(mhp, mhp, 0, 0, 0);
         }
         self
     }
@@ -636,20 +559,9 @@ impl<'a> EntityHandle<'a> {
             hp_component.defense = defense;
             self.update_hp(hp_component);
         } else {
-            self.insert_hp(HpComponent {
-                entity_id: self.entity_id,
-                mhp: 0,
-                hp: 0,
-                defense,
-                accumulated_damage: 0,
-                accumulated_healing: 0,
-            });
+            self.insert_new_hp(0, 0, defense, 0, 0);
         }
         self
-    }
-
-    pub fn has_hp(&self) -> bool {
-        self.hp().is_some()
     }
 
     pub fn set_mep(self, mep: i32) -> Self {
@@ -657,11 +569,7 @@ impl<'a> EntityHandle<'a> {
             ep_component.mep = mep;
             self.update_ep(ep_component);
         } else {
-            self.insert_ep(EpComponent {
-                entity_id: self.entity_id,
-                mep,
-                ep: mep,
-            });
+            self.insert_new_ep(mep, mep);
         }
         self
     }
@@ -704,14 +612,6 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn add_player_controller(self, identity: Identity) -> Self {
-        self.insert_player_controller(PlayerControllerComponent {
-            entity_id: self.entity_id,
-            identity,
-        });
-        self
-    }
-
     pub fn set_hotkey(self, name: &str, character: char) -> Self {
         let action_id = if let Some(action) = self.ecs.db.actions().name().find(name.to_string()) {
             action.id
@@ -728,13 +628,10 @@ impl<'a> EntityHandle<'a> {
             });
             self.update_action_hotkeys(a);
         } else {
-            self.insert_action_hotkeys(ActionHotkeysComponent {
-                entity_id: self.entity_id,
-                action_hotkeys: vec![ActionHotkey {
-                    action_id,
-                    character_code,
-                }],
-            });
+            self.insert_new_action_hotkeys(vec![ActionHotkey {
+                action_id,
+                character_code,
+            }]);
         }
         self
     }
@@ -743,11 +640,11 @@ impl<'a> EntityHandle<'a> {
         if let Some(a) = self.ecs.db.actions().id().find(action_id) {
             let o = self.ecs.find(other_entity_id);
             match a.action_type {
-                ActionType::Attack => o.has_hp() && !self.is_ally(other_entity_id),
-                ActionType::Buff => o.has_hp() && self.is_ally(other_entity_id),
+                ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
+                ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),
                 ActionType::Equip => true,     // WIP
                 ActionType::Inventory => true, // WIP
-                ActionType::Move => o.has_path(),
+                ActionType::Move => o.path().is_some(),
             }
         } else {
             false

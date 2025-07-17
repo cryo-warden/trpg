@@ -43,6 +43,14 @@ fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
         ecs: ctx.ecs(),
     };
     LocationComponent::new(1).into_location_handle(ctx);
+    assert_eq!(
+        ctx.ecs()
+            .new()
+            .upsert_new_location(2)
+            .location
+            .location_entity_id,
+        2
+    );
     EntityHandle::peek();
     ctx.ecs().new().delete();
     ctx.ecs().new().new_blob();

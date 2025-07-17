@@ -120,10 +120,12 @@ impl ToTokens for EntityHandleStruct {
             fn #getter_fn(&self) -> ::core::option::Option<#component_ty> {
               ::spacetimedb::UniqueColumn::find(&self.ecs.db.#table().#id(), self.#id)
             }
-            fn #insert_fn(&self, #component: #component_ty) -> #component_ty {
+            fn #insert_fn(&self, mut #component: #component_ty) -> #component_ty {
+              #component.#id = self.#id;
               ::spacetimedb::Table::insert(self.ecs.db.#table(), #component)
             }
-            fn #update_fn(&self, #component: #component_ty) -> #component_ty {
+            fn #update_fn(&self, mut #component: #component_ty) -> #component_ty {
+              #component.#id = self.#id;
               ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component)
             }
             fn #delete_fn(&self) {

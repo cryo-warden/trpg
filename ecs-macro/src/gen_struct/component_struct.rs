@@ -10,7 +10,7 @@ pub struct ComponentStruct {
     pub component_struct: Ident,
     pub id: Ident,
     pub id_ty: Ident,
-    pub fields: fundamental::Fields,
+    pub component_fields: fundamental::Fields,
 }
 
 impl ComponentStruct {
@@ -30,7 +30,7 @@ impl ComponentStruct {
             component_struct: cwa.component_ty.to_owned(),
             id: ewa.id.to_owned(),
             id_ty: ewa.id_ty.to_owned(),
-            fields: cwa.fields.to_owned(),
+            component_fields: cwa.fields.to_owned(),
         }
     }
 
@@ -51,7 +51,7 @@ impl ToTokens for ComponentStruct {
             component_struct,
             id,
             id_ty,
-            fields,
+            component_fields,
         } = self;
         tokens.extend(quote! {
           #attrs
@@ -59,7 +59,7 @@ impl ToTokens for ComponentStruct {
           pub struct #component_struct {
             #[primary_key]
             pub #id: #id_ty,
-            #fields
+            #component_fields
           }
         });
     }

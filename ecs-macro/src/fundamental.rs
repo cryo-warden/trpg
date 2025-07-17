@@ -90,6 +90,48 @@ impl ToTokens for Fields {
 }
 
 #[derive(Clone)]
+pub struct FieldArgs(pub Fields);
+
+impl Deref for FieldArgs {
+    type Target = Fields;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ToTokens for FieldArgs {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let field_args = self.iter().map(|Field { ident, ty, .. }| {
+            quote! { #ident: #ty }
+        });
+        tokens.extend(quote! {
+          #(#field_args,)*
+        })
+    }
+}
+
+#[derive(Clone)]
+pub struct FieldNames(pub Fields);
+
+impl Deref for FieldNames {
+    type Target = Fields;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ToTokens for FieldNames {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let field_names = self.iter().map(|Field { ident, .. }| {
+            quote! { #ident }
+        });
+        tokens.extend(quote! {
+          #(#field_names,)*
+        })
+    }
+}
+
+#[derive(Clone)]
 pub struct Table(pub Ident);
 
 impl Deref for Table {

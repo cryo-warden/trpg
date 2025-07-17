@@ -1,7 +1,7 @@
 use crate::{fundamental, gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
-use syn::{Error, Field, Ident, Result};
+use syn::{Error, Ident, Result};
 
 pub struct ComponentTableMethods {
     pub with_component_struct: gen_struct::WithComponentStruct,
@@ -80,6 +80,8 @@ impl ToTokens for ComponentTableMethods {
 
 pub struct ComponentStruct {
     pub component_struct: gen_struct::ComponentStruct,
+    pub new_field_args: fundamental::FieldArgs,
+    pub new_field_names: fundamental::FieldNames,
     pub component_table_methods: Vec<ComponentTableMethods>,
 }
 
@@ -92,6 +94,8 @@ impl ComponentStruct {
     ) -> Result<Self> {
         Ok(Self {
             component_struct: cs.to_owned(),
+            new_field_args: fundamental::FieldArgs(cs.component_fields.to_owned()),
+            new_field_names: fundamental::FieldNames(cs.component_fields.to_owned()),
             component_table_methods: ComponentTableMethods::new_vec(ctps, wcss, ehs)?,
         })
     }
@@ -126,28 +130,20 @@ impl ComponentStruct {
 impl ToTokens for ComponentStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
+            component_struct,
             component_table_methods,
-            ..
+            new_field_args,
+            new_field_names,
         } = &self;
         let gen_struct::ComponentStruct {
             component_struct,
             id,
-            fields,
             ..
-        } = &self.component_struct;
-        let new_field_args = fields.iter().map(|Field { ident, ty, .. }| {
-            quote! { #ident: #ty }
-        });
-        let new_fields = fields.iter().map(|Field { ident, .. }| {
-            quote! { #ident }
-        });
+        } = component_struct;
         tokens.extend(quote! {
           impl #component_struct {
-            pub fn new( #( #new_field_args, )* ) -> Self {
-              Self {
-                #id: 0,
-                #(#new_fields, )*
-              }
+            pub fn new(#new_field_args) -> Self {
+              Self { #id: 0, #new_field_names }
             }
             #(#component_table_methods)*
           }

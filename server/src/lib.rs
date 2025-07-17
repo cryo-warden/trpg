@@ -3,27 +3,10 @@ use std::cmp::{max, min};
 use action::{ActionContext, ActionEffect, ActionHandle, ActionType};
 use appearance::AppearanceFeatureContext;
 use ecs::WithEcs;
-use entity::{
-    baseline_components, entities, entity_observations, ep_components, hp_components,
-    location_components, player_controller_components, queued_action_state_components,
-    total_stat_block_dirty_flag_components, traits_components, traits_stat_block_cache_components,
-    traits_stat_block_dirty_flag_components, ActionStateComponent, Entity, EntityHandle,
-    EntityObservations, EntityProminenceComponent, InactiveEntityHandle, MapComponent,
-    MapGenerator, MapLayout, Option__action_state__Trait, Option__attack__Trait,
-    Option__entity_deactivation_timer__Trait, Option__hp__Trait, Option__rng_seed__Trait,
-    TimerComponent, __action_state__DeleteTrait, __action_state__Trait,
-    __entity_deactivation_timer__DeleteTrait, __entity_deactivation_timer__Trait,
-    __entity_prominence__DeleteTrait,
-};
+use entity::*;
 use event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType};
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{baselines, traits, StatBlock, StatBlockBuilder, StatBlockContext};
-
-use crate::entity::{
-    DeleteEntity, FindEntityHandle, NewEntityBlob, NewEntityHandle, Option__location__Trait,
-    Option__unrealized_map__Trait, RngSeedComponent, TargetComponent, TriggerFlag,
-    WithEntityHandle, __target__DeleteTrait, __target__Trait,
-};
 
 mod action;
 mod appearance;
@@ -146,21 +129,12 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         );
 
     // TODO Realize and unrealize maps.
-    let map = ctx.ecs().new();
-    let entity_id = map.entity_id();
-    let map = map
-        .upsert_rng_seed(RngSeedComponent {
-            entity_id,
-            rng_seed: 0,
-        })
-        .upsert_unrealized_map(MapComponent {
-            entity_id,
-            loop_count: 0, // TODO Add loops.
-            main_room_count: 10,
-            map_layout: MapLayout::Path,
-            map_theme_id: 0, // TODO Add map_themes table.
-            extra_room_count: 10,
-        });
+    let map = ctx
+        .ecs()
+        .new()
+        .upsert_new_rng_seed(0)
+        // TODO Add map_themes table.
+        .upsert_new_unrealized_map(0, MapLayout::Path, 0, 10, 10);
     let map_result = map.generate(ctx);
 
     ctx.ecs().new().set_name("allegiance1");
@@ -171,7 +145,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
             .new()
             .set_allegiance(allegiance2.entity_id())
             .set_baseline("slime")
-            .add_location(room.entity_id());
+            .upsert_new_location(room.entity_id());
     }
 
     ctx.db.system_timers().insert(SystemTimer {
@@ -222,10 +196,7 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
                 {
                     None => {}
                     Some(timestamp) => {
-                        e.insert_entity_deactivation_timer(TimerComponent {
-                            entity_id: e.entity_id(),
-                            timestamp,
-                        });
+                        e.insert_new_entity_deactivation_timer(timestamp);
                         log::debug!(
                             "Disconnected {} from player {} and set deactivation timer.",
                             ctx.sender,
@@ -271,7 +242,7 @@ pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String>
 pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
     match EntityHandle::from_player_identity(ctx) {
         Some(p) => {
-            p.into_handle().delete_target_component();
+            p.into_handle().delete_target();
             Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
@@ -303,11 +274,10 @@ pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Resu
 #[reducer]
 pub fn damage(ctx: &ReducerContext, entity_id: u64, damage: i32) -> Result<(), String> {
     let mut hp = ctx
-        .db
-        .hp_components()
-        .entity_id()
+        .ecs()
         .find(entity_id)
-        .ok_or("Cannot find entity.")?;
+        .hp()
+        .ok_or("Cannot find entity with hp.")?;
     hp.accumulated_damage += damage;
     ctx.db.hp_components().entity_id().update(hp);
 
@@ -324,25 +294,14 @@ pub struct SystemTimer {
 
 pub fn observation_system(ctx: &ReducerContext) {
     for o in ctx.db.observable_events().iter() {
-        if let Some(l) = ctx
-            .db
-            .location_components()
-            .entity_id()
-            .find(o.target_entity_id)
-        {
+        if let Some(l) = ctx.ecs().find(o.target_entity_id).with_location() {
             for l in ctx
                 .db
                 .location_components()
                 .location_entity_id()
-                .filter(l.location_entity_id)
+                .filter(l.location().location_entity_id)
             {
-                if ctx
-                    .db
-                    .player_controller_components()
-                    .entity_id()
-                    .find(l.entity_id)
-                    .is_some()
-                {
+                if ctx.ecs().find(l.entity_id).player_controller().is_some() {
                     ctx.db.entity_observations().insert(EntityObservations {
                         entity_id: l.entity_id,
                         observable_event_id: o.id,
@@ -558,7 +517,7 @@ pub fn entity_stats_system(ctx: &ReducerContext) {
             ctx.ecs()
                 .find(f.entity_id)
                 .set_traits_stat_block_cache(stat_block)
-                .trigger_total_stat_block_dirty_flag();
+                .upsert_new_total_stat_block_dirty_flag();
         }
     }
 
