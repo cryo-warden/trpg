@@ -1,4 +1,6 @@
 use crate::fundamental::{self, AddAttrs};
+use proc_macro2::Span;
+use quote::ToTokens;
 use syn::{
     Attribute, Error, Ident, Item, ItemStruct, Result, Token, Type,
     parse::{Parse, ParseStream},
@@ -8,9 +10,6 @@ use syn::{
 mod kw {
     use syn::custom_keyword;
     custom_keyword!(table);
-    custom_keyword!(struct_attrs);
-    custom_keyword!(component);
-    custom_keyword!(blob);
 }
 
 fn try_extract_attr(
@@ -35,12 +34,25 @@ pub struct StructAttrsDeclaration;
 
 impl fundamental::AddAttrs for StructAttrsDeclaration {}
 
+impl Default for StructAttrsDeclaration {
+    fn default() -> Self {
+        Self
+    }
+}
+
 impl TryFrom<ItemStruct> for fundamental::WithAttrs<StructAttrsDeclaration> {
     type Error = syn::Error;
     fn try_from(value: ItemStruct) -> syn::Result<Self> {
         let (_, attrs) = try_extract_attr("struct_attrs", value.attrs.clone(), &value)?;
 
         Ok(StructAttrsDeclaration.add_attrs(attrs))
+    }
+}
+
+/// Implement Spanned for StructAttrsDeclaration
+impl ToTokens for StructAttrsDeclaration {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let _ = tokens;
     }
 }
 
@@ -90,6 +102,14 @@ impl TryFrom<ItemStruct> for fundamental::WithAttrs<ComponentDeclaration> {
     }
 }
 
+/// Implement Spanned for ComponentDeclaration
+impl ToTokens for ComponentDeclaration {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let Self { component_ty, .. } = self;
+        component_ty.to_tokens(tokens);
+    }
+}
+
 pub struct EntityDeclaration {
     pub entity: Ident,
     pub id: Ident,
@@ -135,6 +155,14 @@ impl TryFrom<ItemStruct> for fundamental::WithAttrs<EntityDeclaration> {
     }
 }
 
+/// Implement Spanned for EntityDeclaration
+impl ToTokens for EntityDeclaration {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let Self { entity, .. } = self;
+        entity.to_tokens(tokens);
+    }
+}
+
 pub struct BlobDeclaration {
     pub table: Ident,
 }
@@ -161,6 +189,14 @@ impl TryFrom<ItemStruct> for fundamental::WithAttrs<BlobDeclaration> {
     }
 }
 
+/// Implement Spanned for BlobDeclaration
+impl ToTokens for BlobDeclaration {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let Self { table } = self;
+        table.to_tokens(tokens);
+    }
+}
+
 impl fundamental::AddAttrs for Item {}
 
 pub struct EntityMacroInput {
@@ -169,6 +205,32 @@ pub struct EntityMacroInput {
     pub component_declarations: Vec<fundamental::WithAttrs<ComponentDeclaration>>,
     pub struct_attrs: fundamental::WithAttrs<StructAttrsDeclaration>,
     pub blob_declaration: Option<fundamental::WithAttrs<BlobDeclaration>>,
+}
+
+trait HasAttr {
+    fn has_attr(&self, key: &str) -> bool;
+}
+
+impl HasAttr for ItemStruct {
+    fn has_attr(&self, key: &str) -> bool {
+        self.attrs.iter().any(|attr| attr.path().is_ident(key))
+    }
+}
+
+fn validate_unary_vec<T: ToTokens>(name: &str, vec: &Vec<T>) -> Result<()> {
+    if vec.len() <= 1 {
+        Ok(())
+    } else {
+        Err(Error::new(
+            Spanned::span(vec.into_iter()
+                .nth(1)
+                .ok_or(
+                  Error::new(Span::call_site(),
+                  format!("Impossible! Couldn't get second elemnt in vec with more than one element (name = {}).", name)))?
+                 ),
+            format!("Only one {} may be specified.", name),
+        ))
+    }
 }
 
 impl Parse for EntityMacroInput {
@@ -183,57 +245,37 @@ impl Parse for EntityMacroInput {
             let item: Item = input.parse()?;
             match item {
                 Item::Struct(item_struct) => {
-                    if item_struct
-                        .attrs
-                        .iter()
-                        .any(|attr| attr.path().is_ident("component"))
-                    {
+                    if item_struct.has_attr("component") {
                         component_declarations.push(item_struct.try_into()?);
-                    } else if item_struct
-                        .attrs
-                        .iter()
-                        .any(|attr| attr.path().is_ident("entity"))
-                    {
+                    } else if item_struct.has_attr("entity") {
                         entity_declarations.push(item_struct.try_into()?);
-                    } else if item_struct
-                        .attrs
-                        .iter()
-                        .any(|attr| attr.path().is_ident("struct_attrs"))
-                    {
+                    } else if item_struct.has_attr("struct_attrs") {
                         struct_attrses.push(item_struct.try_into()?);
-                    } else if item_struct
-                        .attrs
-                        .iter()
-                        .any(|attr| attr.path().is_ident("blob"))
-                    {
+                    } else if item_struct.has_attr("blob") {
                         blob_declarations.push(item_struct.try_into()?);
                     } else {
-                        items.push(
-                            Item::Struct(item_struct).add_attrs(fundamental::Attributes(vec![])),
-                        );
+                        items.push(Item::Struct(item_struct).add_empty_attrs());
                     }
                 }
                 _ => {
-                    items.push(item.add_attrs(fundamental::Attributes(vec![])));
+                    items.push(item.add_empty_attrs());
                 }
             }
         }
 
-        if entity_declarations.len() < 1 {
-            return Err(Error::new(
-                input.span(),
-                "An entity declaration must be specified.",
-            ));
-        }
-
-        struct_attrses.push(StructAttrsDeclaration.add_attrs(fundamental::Attributes(vec![])));
+        validate_unary_vec("entity_declaration", &entity_declarations)?;
+        validate_unary_vec("struct_attrs", &struct_attrses)?;
+        validate_unary_vec("blob_declaration", &blob_declarations)?;
 
         Ok(EntityMacroInput {
             items,
-            entity_declaration: entity_declarations.remove(0),
+            entity_declaration: entity_declarations.into_iter().next().ok_or(Error::new(
+                input.span(),
+                "An entity declaration must be specified.",
+            ))?,
             component_declarations,
-            struct_attrs: struct_attrses.remove(0),
-            blob_declaration: blob_declarations.into_iter().nth(0),
+            struct_attrs: struct_attrses.into_iter().next().unwrap_or_default(),
+            blob_declaration: blob_declarations.into_iter().next(),
         })
     }
 }

@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
-use std::{collections::HashSet, ops::Deref};
+use std::collections::HashSet;
 use syn::{
     Error, Item, Result,
     parse::{Parse, ParseStream},
@@ -14,17 +14,6 @@ mod gen_impl;
 mod gen_struct;
 mod gen_trait;
 mod macro_input;
-
-impl ToTokens for fundamental::WithAttrs<Item> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let fundamental::WithAttrs { attrs, .. } = self;
-        let value = self.deref();
-        tokens.extend(quote! {
-            #attrs
-            #value
-        });
-    }
-}
 
 struct EntityMacro {
     items: Vec<fundamental::WithAttrs<Item>>,

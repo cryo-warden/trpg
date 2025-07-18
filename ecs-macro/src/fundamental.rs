@@ -53,9 +53,28 @@ impl<T> Deref for WithAttrs<T> {
     }
 }
 
+impl<T: Default> Default for WithAttrs<T> {
+    fn default() -> Self {
+        Self {
+            attrs: Attributes(vec![]),
+            value: T::default(),
+        }
+    }
+}
+
+impl<T: ToTokens> ToTokens for WithAttrs<T> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.attrs.to_tokens(tokens);
+        self.value.to_tokens(tokens);
+    }
+}
+
 pub trait AddAttrs: Sized {
     fn add_attrs(self, attrs: Attributes) -> WithAttrs<Self> {
         WithAttrs { attrs, value: self }
+    }
+    fn add_empty_attrs(self) -> WithAttrs<Self> {
+        self.add_attrs(Attributes(vec![]))
     }
 }
 
