@@ -1,4 +1,4 @@
-use crate::{fundamental, macro_input};
+use crate::{macro_input, rc_slice::RcSlice};
 pub use component_struct::ComponentStruct;
 pub use entity_blob_struct::{EntityBlobComponentField, EntityBlobStruct};
 pub use entity_handle_struct::EntityHandleStruct;
@@ -15,10 +15,10 @@ mod with_component_struct;
 #[derive(ToTokens)]
 pub struct EntityStructs {
     pub entity_struct: EntityStruct,
-    pub component_structs: fundamental::TokensVec<ComponentStruct>,
+    pub component_structs: RcSlice<ComponentStruct>,
     pub entity_handle_struct: EntityHandleStruct,
     pub entity_blob_struct: Option<EntityBlobStruct>,
-    pub with_component_structs: fundamental::TokensVec<WithComponentStruct>,
+    pub with_component_structs: RcSlice<WithComponentStruct>,
 }
 
 impl EntityStructs {

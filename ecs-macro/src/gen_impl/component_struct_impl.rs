@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, gen_trait, macro_input};
+use crate::{fundamental, gen_struct, gen_trait, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
@@ -19,9 +19,7 @@ impl ComponentStruct {
         }
     }
 
-    pub fn new_vec(
-        component_structs: &Vec<gen_struct::ComponentStruct>,
-    ) -> fundamental::TokensVec<Self> {
+    pub fn new_vec(component_structs: &RcSlice<gen_struct::ComponentStruct>) -> RcSlice<Self> {
         component_structs.iter().map(|cs| Self::new(cs)).collect()
     }
 }
@@ -50,7 +48,7 @@ impl ToTokens for ComponentStruct {
 
 #[derive(ToTokens)]
 pub struct Impl {
-    component_structs: fundamental::TokensVec<ComponentStruct>,
+    component_structs: RcSlice<ComponentStruct>,
 }
 
 impl Impl {

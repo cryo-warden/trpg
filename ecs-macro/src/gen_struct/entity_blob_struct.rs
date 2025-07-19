@@ -1,4 +1,4 @@
-use crate::{fundamental, macro_input};
+use crate::{RcSlice, fundamental, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{Ident, Type};
@@ -22,7 +22,7 @@ pub struct EntityBlobStruct {
     pub entity_blob_struct: Ident,
     pub id: Ident,
     pub id_ty: Type,
-    pub component_fields: Vec<EntityBlobComponentField>,
+    pub component_fields: RcSlice<EntityBlobComponentField>,
 }
 
 impl EntityBlobStruct {
@@ -30,7 +30,7 @@ impl EntityBlobStruct {
         struct_attrs: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
         blob_declaration: Option<&fundamental::WithAttrs<macro_input::BlobDeclaration>>,
         entity_declaration: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
-        component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+        component_declarations: &RcSlice<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
     ) -> Option<Self> {
         blob_declaration.map(|blob_declaration| Self {
             attrs: struct_attrs.attrs.to_owned(),
@@ -60,6 +60,7 @@ impl ToTokens for EntityBlobStruct {
             id_ty,
             component_fields,
         } = self;
+        let component_fields = component_fields.iter();
         tokens.extend(quote! {
           #attrs
           #table

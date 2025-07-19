@@ -60,17 +60,17 @@ entity!(
 
     // TODO Add StatBlock caches for equipment and status effects.
     #[component(
-    traits_stat_block_cache in traits_stat_block_cache_components,
-  )]
+      traits_stat_block_cache in traits_stat_block_cache_components,
+    )]
     struct StatBlockCacheComponent {
         pub stat_block: StatBlock,
     }
 
     // TODO Equipment and Status Effects
     #[component(
-    traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
-    total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
-  )]
+      traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
+      total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
+    )]
     struct FlagComponent {}
 
     #[component(attack in attack_components)]
@@ -105,9 +105,9 @@ entity!(
     }
 
     #[component(
-    action_state in action_state_components,
-    queued_action_state in queued_action_state_components,
-  )]
+      action_state in action_state_components,
+      queued_action_state in queued_action_state_components,
+    )]
     struct ActionStateComponent {
         pub target_entity_id: EntityId,
         pub action_id: u64,
@@ -147,8 +147,8 @@ entity!(
     }
 
     #[component(
-    entity_deactivation_timer in entity_deactivation_timer_components
-  )]
+      entity_deactivation_timer in entity_deactivation_timer_components
+    )]
     struct TimerComponent {
         pub timestamp: Timestamp,
     }
@@ -170,9 +170,9 @@ entity!(
     }
 
     #[component(
-    realized_map in realized_map_components,
-    unrealized_map in unrealized_map_components,
-  )]
+      realized_map in realized_map_components,
+      unrealized_map in unrealized_map_components,
+    )]
     struct MapComponent {
         pub map_theme_id: u64,
         pub map_layout: MapLayout,
@@ -544,13 +544,11 @@ impl<'a> EntityHandle<'a> {
     pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
         self.delete_total_stat_block_dirty_flag();
 
-        let mut action_ids = stat_block.additive_action_ids.clone();
-        action_ids.retain(|id| !stat_block.subtractive_action_ids.contains(id));
         self.set_attack(stat_block.attack)
             .set_mhp(stat_block.mhp)
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
-            .set_actions(action_ids)
+            .set_actions(stat_block.action_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids)
     }
 

@@ -27,36 +27,31 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
     let a_ctx = ActionContext::new(ctx);
 
-    a_ctx
-        .new_handle("quick_move", ActionType::Move)
+    { a_ctx.new_handle("quick_move", ActionType::Move) }
         .add_appearance(
             "Quick Move",
             "{0:sentence:subject} moved quickly toward {1:object}.",
         )
         .add_move();
-    a_ctx
-        .new_handle("divine_heal", ActionType::Buff)
+    { a_ctx.new_handle("divine_heal", ActionType::Buff) }
         .add_appearance(
             "Divine Heal",
             "{0:sentence:subject} began to focus a beam of pure lifeforce onto {1:object}.",
         )
         .add_heal(500);
-    a_ctx
-        .new_handle("move", ActionType::Move)
+    { a_ctx.new_handle("move", ActionType::Move) }
         .add_appearance("Move", "{0:sentence:subject} moved toward {1:object}.")
         .add_rest()
         .add_rest()
         .add_move()
         .add_rest();
-    a_ctx
-        .new_handle("bop", ActionType::Attack)
+    { a_ctx.new_handle("bop", ActionType::Attack) }
         .add_appearance("Bop", "{0:sentence:subject} wound up to bop {1:object}.")
         .add_rest()
         .add_rest()
         .add_attack(1)
         .add_rest();
-    a_ctx
-        .new_handle("boppity_bop", ActionType::Attack)
+    { a_ctx.new_handle("boppity_bop", ActionType::Attack) }
         .add_appearance(
             "Boppity Bop",
             "{0:sentence:subject} wound up to boppity-bop {1:object}.",
@@ -88,17 +83,15 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         )
         .insert_trait(
             "admin",
-            &StatBlockBuilder::default()
-                .additive_action_ids(a_ctx.by_names(&["quick_move", "divine_heal"])),
+            &StatBlockBuilder::default().action_ids(a_ctx.by_names(&["quick_move", "divine_heal"])),
         )
         .insert_trait(
             "mobile",
-            &StatBlockBuilder::default().additive_action_ids(a_ctx.by_names(&["move"])),
+            &StatBlockBuilder::default().action_ids(a_ctx.by_names(&["move"])),
         )
         .insert_trait(
             "bopper",
-            &StatBlockBuilder::default()
-                .additive_action_ids(a_ctx.by_names(&["bop", "boppity_bop"])),
+            &StatBlockBuilder::default().action_ids(a_ctx.by_names(&["bop", "boppity_bop"])),
         )
         .insert_trait(
             "tiny",
@@ -128,10 +121,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         );
 
     // TODO Realize and unrealize maps.
-    let map = ctx
-        .ecs()
-        .new()
-        .upsert_new_rng_seed(0)
+    let map = { ctx.ecs().new().upsert_new_rng_seed(0) }
         // TODO Add map_themes table.
         .upsert_new_unrealized_map(0, MapLayout::Path, 0, 10, 10);
     let map_result = map.generate(ctx);
@@ -140,9 +130,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     let allegiance2 = ctx.ecs().new().set_name("allegiance2");
     let room = ctx.ecs().find(map_result.room_ids[0]).set_name("room1");
     for _ in 0..5 {
-        ctx.ecs()
-            .new()
-            .set_allegiance(allegiance2.entity_id())
+        { ctx.ecs().new().set_allegiance(allegiance2.entity_id()) }
             .set_baseline("slime")
             .upsert_new_location(room.entity_id());
     }
@@ -250,9 +238,7 @@ pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer]
 pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
-    if let Some(p) = ctx
-        .db
-        .player_controller_components()
+    if let Some(p) = { ctx.db.player_controller_components() }
         .identity()
         .find(ctx.sender)
     {
@@ -272,11 +258,7 @@ pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Resu
 
 #[reducer]
 pub fn damage(ctx: &ReducerContext, entity_id: u64, damage: i32) -> Result<(), String> {
-    let mut hp = ctx
-        .ecs()
-        .find(entity_id)
-        .hp()
-        .ok_or("Cannot find entity with hp.")?;
+    let mut hp = { ctx.ecs().find(entity_id).hp() }.ok_or("Cannot find entity with hp.")?;
     hp.accumulated_damage += damage;
     ctx.db.hp_components().entity_id().update(hp);
 
@@ -294,6 +276,7 @@ pub struct SystemTimer {
 #[reducer]
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
     let ecs = ctx.ecs();
+
     action_system(ecs);
     event_resolve_system(ecs);
     hp_system(ecs);

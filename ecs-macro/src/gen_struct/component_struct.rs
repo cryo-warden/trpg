@@ -1,4 +1,4 @@
-use crate::{fundamental, macro_input};
+use crate::{fundamental, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use syn::{Ident, Type};
@@ -20,7 +20,7 @@ impl ComponentStruct {
         ewa: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
     ) -> Self {
         Self {
-            attrs: a.attrs.to_joined(&cwa.attrs),
+            attrs: a.attrs.concat(&cwa.attrs),
             tables: fundamental::Tables(
                 cwa.component_table_pairs
                     .iter()
@@ -36,9 +36,9 @@ impl ComponentStruct {
 
     pub fn new_vec(
         a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
-        cds: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+        cds: &RcSlice<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
         ewa: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
-    ) -> fundamental::TokensVec<Self> {
+    ) -> RcSlice<Self> {
         cds.iter().map(|cwa| Self::new(a, cwa, ewa)).collect()
     }
 }

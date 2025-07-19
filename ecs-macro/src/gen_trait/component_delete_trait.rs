@@ -1,4 +1,4 @@
-use crate::{fundamental, macro_input};
+use crate::{fundamental, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
@@ -20,8 +20,8 @@ impl ComponentDeleteTrait {
     }
 
     pub fn new_vec(
-        component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
-    ) -> fundamental::TokensVec<Self> {
+        component_declarations: &RcSlice<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+    ) -> RcSlice<Self> {
         component_declarations
             .iter()
             .flat_map(|dwa| dwa.component_table_pairs.iter().map(|ctp| Self::new(ctp)))

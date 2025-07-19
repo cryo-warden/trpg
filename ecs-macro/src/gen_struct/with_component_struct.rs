@@ -1,4 +1,4 @@
-use crate::{fundamental, macro_input};
+use crate::{fundamental, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
@@ -27,8 +27,8 @@ impl WithComponentStruct {
 
     pub fn new_vec(
         a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
-        cds: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
-    ) -> fundamental::TokensVec<Self> {
+        cds: &RcSlice<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+    ) -> RcSlice<Self> {
         cds.iter()
             .flat_map(|d| {
                 d.component_table_pairs

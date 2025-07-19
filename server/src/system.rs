@@ -11,9 +11,7 @@ use std::cmp::{max, min};
 pub fn observation_system(ecs: Ecs) {
     for o in ecs.db.observable_events().iter() {
         if let Some(l) = ecs.find(o.target_entity_id).with_location() {
-            for l in ecs
-                .db
-                .location_components()
+            for l in { ecs.db.location_components() }
                 .location_entity_id()
                 .filter(l.location().location_entity_id)
             {
@@ -223,7 +221,7 @@ pub fn entity_stats_system(ecs: Ecs) {
             let mut stat_block = StatBlock::default();
             for id in &c.traits().trait_ids {
                 if let Some(t) = ecs.db.traits().id().find(id) {
-                    stat_block.add(&t.stat_block);
+                    stat_block += &t.stat_block;
                 }
             }
 
@@ -235,14 +233,12 @@ pub fn entity_stats_system(ecs: Ecs) {
 
     for f in ecs.iter_total_stat_block_dirty_flag() {
         log::debug!("Entity {} is computing total stat block.", f.entity_id());
-        let mut stat_block = f
-            .baseline()
+        let mut stat_block = { f.baseline() }
             .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
-            .map(|b| b.stat_block)
-            .unwrap_or_else(|| StatBlock::default());
+            .map_or_else(|| StatBlock::default(), |b| b.stat_block);
 
         if let Some(t) = f.traits_stat_block_cache() {
-            stat_block.add(&t.stat_block);
+            stat_block += &t.stat_block;
         }
 
         f.into_handle().apply_stat_block(stat_block);

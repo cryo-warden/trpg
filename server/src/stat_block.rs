@@ -1,3 +1,5 @@
+use std::ops::AddAssign;
+
 use derive_builder::Builder;
 use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
 
@@ -8,24 +10,18 @@ pub struct StatBlock {
     pub mhp: i32,
     pub defense: i32,
     pub mep: i32,
-    pub additive_action_ids: Vec<u64>,
-    pub subtractive_action_ids: Vec<u64>,
+    pub action_ids: Vec<u64>,
     pub appearance_feature_ids: Vec<u64>,
 }
 
-#[allow(dead_code)]
-impl StatBlock {
-    pub fn add(&mut self, other: &StatBlock) {
+impl AddAssign<&Self> for StatBlock {
+    fn add_assign(&mut self, other: &Self) {
         self.attack += other.attack;
         self.mhp += other.mhp;
         self.defense += other.defense;
         self.mep += other.mep;
-        if other.additive_action_ids.len() > 0 {
-            self.additive_action_ids.extend(&other.additive_action_ids);
-        }
-        if other.subtractive_action_ids.len() > 0 {
-            self.subtractive_action_ids
-                .extend(&other.subtractive_action_ids);
+        if other.action_ids.len() > 0 {
+            self.action_ids.extend(&other.action_ids);
         }
         if other.appearance_feature_ids.len() > 0 {
             self.appearance_feature_ids

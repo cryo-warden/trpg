@@ -17,7 +17,7 @@ impl EntityStruct {
         entity_declaration: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
     ) -> Self {
         Self {
-            attrs: struct_attrs.attrs.to_joined(&entity_declaration.attrs),
+            attrs: struct_attrs.attrs.concat(&entity_declaration.attrs),
             table: entity_declaration.table.to_owned(),
             entity_struct: entity_declaration.entity.to_owned(),
             id_ty: entity_declaration.id_ty.to_owned(),

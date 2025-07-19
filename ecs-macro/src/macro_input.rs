@@ -1,4 +1,7 @@
-use crate::fundamental::{self, AddAttrs};
+use crate::{
+    RcSlice,
+    fundamental::{self, AddAttrs},
+};
 use proc_macro2::Span;
 use quote::ToTokens;
 use syn::{
@@ -25,8 +28,7 @@ fn try_extract_attr(
             format!("Failed to find the `{}` attribute.", key),
         ))?;
     let attr = attrs.remove(position);
-    let attrs = fundamental::Attributes(attrs);
-    Ok((attr, attrs))
+    Ok((attr, attrs.into()))
 }
 
 #[derive(Clone)]
@@ -200,9 +202,9 @@ impl ToTokens for BlobDeclaration {
 impl fundamental::AddAttrs for Item {}
 
 pub struct EntityMacroInput {
-    pub items: fundamental::TokensVec<Item>,
+    pub items: RcSlice<Item>,
     pub entity_declaration: fundamental::WithAttrs<EntityDeclaration>,
-    pub component_declarations: Vec<fundamental::WithAttrs<ComponentDeclaration>>,
+    pub component_declarations: RcSlice<fundamental::WithAttrs<ComponentDeclaration>>,
     pub struct_attrs: fundamental::WithAttrs<StructAttrsDeclaration>,
     pub blob_declaration: Option<fundamental::WithAttrs<BlobDeclaration>>,
 }
@@ -217,12 +219,12 @@ impl HasAttr for ItemStruct {
     }
 }
 
-fn validate_unary_vec<T: ToTokens>(name: &str, vec: &Vec<T>) -> Result<()> {
-    if vec.len() <= 1 {
+fn validate_unary_slice<T: ToTokens>(name: &str, items: &[T]) -> Result<()> {
+    if items.len() <= 1 {
         Ok(())
     } else {
         Err(Error::new(
-            Spanned::span(vec.into_iter()
+            Spanned::span(items.into_iter()
                 .nth(1)
                 .ok_or(
                   Error::new(Span::call_site(),
@@ -263,9 +265,9 @@ impl Parse for EntityMacroInput {
             }
         }
 
-        validate_unary_vec("entity_declaration", &entity_declarations)?;
-        validate_unary_vec("struct_attrs", &struct_attrses)?;
-        validate_unary_vec("blob_declaration", &blob_declarations)?;
+        validate_unary_slice("entity_declaration", &entity_declarations)?;
+        validate_unary_slice("struct_attrs", &struct_attrses)?;
+        validate_unary_slice("blob_declaration", &blob_declarations)?;
 
         Ok(EntityMacroInput {
             items: items.into_iter().collect(),
@@ -273,7 +275,7 @@ impl Parse for EntityMacroInput {
                 input.span(),
                 "An entity declaration must be specified.",
             ))?,
-            component_declarations,
+            component_declarations: component_declarations.into(),
             struct_attrs: struct_attrses.into_iter().next().unwrap_or_default(),
             blob_declaration: blob_declarations.into_iter().next(),
         })

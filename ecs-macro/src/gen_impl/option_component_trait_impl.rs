@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, gen_trait, macro_input};
+use crate::{gen_struct, gen_trait, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
@@ -21,9 +21,9 @@ impl PassthroughWithComponentStruct {
     }
 
     pub fn new_vec(
-        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-        option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
-    ) -> fundamental::TokensVec<Self> {
+        with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
+        option_component_traits: &RcSlice<gen_trait::OptionComponentTrait>,
+    ) -> RcSlice<Self> {
         with_component_structs
             .iter()
             .flat_map(|wcs| {
@@ -89,8 +89,8 @@ impl EntityHandleStruct {
 
     pub fn new_vec(
         entity_handle_struct: &gen_struct::EntityHandleStruct,
-        option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
-    ) -> fundamental::TokensVec<Self> {
+        option_component_traits: &RcSlice<gen_trait::OptionComponentTrait>,
+    ) -> RcSlice<Self> {
         option_component_traits
             .iter()
             .map(|oct| Self::new(entity_handle_struct, oct))
@@ -139,8 +139,8 @@ impl ToTokens for EntityHandleStruct {
 
 #[derive(ToTokens)]
 pub struct Impl {
-    with_component_structs: fundamental::TokensVec<PassthroughWithComponentStruct>,
-    entity_handle_structs: fundamental::TokensVec<EntityHandleStruct>,
+    with_component_structs: RcSlice<PassthroughWithComponentStruct>,
+    entity_handle_structs: RcSlice<EntityHandleStruct>,
 }
 
 impl Impl {

@@ -1,28 +1,26 @@
-use crate::{fundamental, gen_struct, gen_trait, macro_input};
+use crate::{gen_struct, gen_trait, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
 use syn::Result;
 
-pub struct Ecs {
+pub struct EcsStruct {
     pub into_component_handle_trait: gen_trait::IntoComponentHandleTrait,
 }
 
-impl Ecs {
+impl EcsStruct {
     pub fn new(icht: &gen_trait::IntoComponentHandleTrait) -> Self {
         Self {
             into_component_handle_trait: icht.to_owned(),
         }
     }
 
-    pub fn new_vec(
-        ichts: &Vec<gen_trait::IntoComponentHandleTrait>,
-    ) -> fundamental::TokensVec<Self> {
+    pub fn new_vec(ichts: &RcSlice<gen_trait::IntoComponentHandleTrait>) -> RcSlice<Self> {
         ichts.iter().map(|icht| Self::new(icht)).collect()
     }
 }
 
-impl ToTokens for Ecs {
+impl ToTokens for EcsStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_trait::IntoComponentHandleTrait {
             into_component_handle_trait,
@@ -57,7 +55,7 @@ impl ToTokens for Ecs {
 
 #[derive(ToTokens)]
 pub struct Impl {
-    ecs: fundamental::TokensVec<Ecs>,
+    ecs_structs: RcSlice<EcsStruct>,
 }
 
 impl Impl {
@@ -73,8 +71,8 @@ impl Impl {
             ..
         } = entity_traits;
 
-        let ecs = Ecs::new_vec(into_component_handle_traits);
+        let ecs_structs = EcsStruct::new_vec(into_component_handle_traits);
 
-        Ok(Self { ecs })
+        Ok(Self { ecs_structs })
     }
 }

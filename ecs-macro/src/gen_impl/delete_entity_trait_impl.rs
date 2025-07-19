@@ -1,4 +1,4 @@
-use crate::{gen_struct, gen_trait, macro_input};
+use crate::{RcSlice, gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
@@ -8,7 +8,7 @@ pub struct WithEntityHandleTrait {
     pub delete_entity_trait: gen_trait::DeleteEntityTrait,
     pub entity_struct: gen_struct::EntityStruct,
     pub with_entity_handle_trait: gen_trait::WithEntityHandleTrait,
-    pub option_component_traits: Vec<gen_trait::OptionComponentTrait>,
+    pub option_component_traits: RcSlice<gen_trait::OptionComponentTrait>,
 }
 
 impl WithEntityHandleTrait {
@@ -16,7 +16,7 @@ impl WithEntityHandleTrait {
         delete_entity_trait: &gen_trait::DeleteEntityTrait,
         entity_struct: &gen_struct::EntityStruct,
         with_entity_handle_trait: &gen_trait::WithEntityHandleTrait,
-        option_component_traits: &[gen_trait::OptionComponentTrait],
+        option_component_traits: &RcSlice<gen_trait::OptionComponentTrait>,
     ) -> Self {
         Self {
             delete_entity_trait: delete_entity_trait.to_owned(),

@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, macro_input};
+use crate::{fundamental, gen_struct, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{Ident, Result};
@@ -30,10 +30,10 @@ impl IterComponentTrait {
     }
 
     pub fn new_vec(
-        component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
-        wcss: &Vec<gen_struct::WithComponentStruct>,
+        component_declarations: &RcSlice<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+        wcss: &RcSlice<gen_struct::WithComponentStruct>,
         ehs: &gen_struct::EntityHandleStruct,
-    ) -> Result<fundamental::TokensVec<Self>> {
+    ) -> Result<RcSlice<Self>> {
         component_declarations
             .iter()
             .flat_map(|cdwa| {

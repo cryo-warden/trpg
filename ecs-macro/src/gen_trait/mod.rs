@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, macro_input};
+use crate::{gen_struct, macro_input, rc_slice::RcSlice};
 pub use component_delete_trait::ComponentDeleteTrait;
 pub use component_trait::ComponentTrait;
 pub use delete_entity_trait::DeleteEntityTrait;
@@ -9,6 +9,8 @@ pub use new_entity_blob_trait::NewEntityBlobTrait;
 pub use new_entity_handle_trait::NewEntityHandleTrait;
 pub use option_component_iter_trait::OptionComponentIterTrait;
 pub use option_component_trait::OptionComponentTrait;
+pub use option_get_component_trait::OptionGetComponentTrait;
+pub use option_with_component_trait::OptionWithComponentTrait;
 use structmeta::ToTokens;
 use syn::Result;
 pub use with_entity_handle_trait::WithEntityHandleTrait;
@@ -23,6 +25,8 @@ mod new_entity_blob_trait;
 mod new_entity_handle_trait;
 mod option_component_iter_trait;
 mod option_component_trait;
+mod option_get_component_trait;
+mod option_with_component_trait;
 mod with_entity_handle_trait;
 
 #[derive(ToTokens)]
@@ -31,13 +35,15 @@ pub struct EntityTraits {
     pub new_entity_blob_trait: Option<NewEntityBlobTrait>,
     pub new_entity_handle_trait: NewEntityHandleTrait,
     pub find_entity_handle_trait: FindEntityHandleTrait,
-    pub into_component_handle_traits: fundamental::TokensVec<IntoComponentHandleTrait>,
-    pub iter_component_traits: fundamental::TokensVec<IterComponentTrait>,
+    pub into_component_handle_traits: RcSlice<IntoComponentHandleTrait>,
+    pub iter_component_traits: RcSlice<IterComponentTrait>,
     pub with_entity_handle_trait: WithEntityHandleTrait,
-    pub component_traits: fundamental::TokensVec<ComponentTrait>,
-    pub component_delete_traits: fundamental::TokensVec<ComponentDeleteTrait>,
-    pub option_component_traits: fundamental::TokensVec<OptionComponentTrait>,
-    pub option_component_iter_traits: fundamental::TokensVec<OptionComponentIterTrait>,
+    pub component_traits: RcSlice<ComponentTrait>,
+    pub component_delete_traits: RcSlice<ComponentDeleteTrait>,
+    pub option_get_component_traits: RcSlice<OptionGetComponentTrait>,
+    pub option_with_component_traits: RcSlice<OptionWithComponentTrait>,
+    pub option_component_traits: RcSlice<OptionComponentTrait>,
+    pub option_component_iter_traits: RcSlice<OptionComponentIterTrait>,
 }
 
 impl EntityTraits {
@@ -78,6 +84,9 @@ impl EntityTraits {
             with_component_structs,
             entity_handle_struct,
         )?;
+        let option_get_component_traits = OptionGetComponentTrait::new_vec(component_declarations);
+        let option_with_component_traits =
+            OptionWithComponentTrait::new_vec(component_declarations, with_component_structs)?;
 
         Ok(Self {
             delete_entity_trait,
@@ -91,6 +100,8 @@ impl EntityTraits {
             component_delete_traits,
             option_component_traits,
             option_component_iter_traits,
+            option_get_component_traits,
+            option_with_component_traits,
         })
     }
 }

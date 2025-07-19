@@ -1,33 +1,43 @@
-use std::ops::Deref;
-
+use crate::RcSlice;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use std::ops::Deref;
 use syn::{
     Attribute, Field, Ident, Result, Token, braced,
     parse::{Parse, ParseStream},
 };
 
 #[derive(Clone)]
-pub struct Attributes(pub Vec<Attribute>);
+pub struct Attributes(RcSlice<Attribute>);
 
 impl Attributes {
-    pub fn to_joined(&self, other: &Self) -> Self {
-        let mut new_attrs = self.0.to_owned();
-        new_attrs.extend(other.0.to_owned().into_iter());
-        Self(new_attrs)
+    pub fn concat(&self, other: &Self) -> Self {
+        Attributes(self.0.concat(&other.0))
     }
 }
 
 impl Deref for Attributes {
-    type Target = Vec<Attribute>;
+    type Target = RcSlice<Attribute>;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
+impl Default for Attributes {
+    fn default() -> Self {
+        Attributes(Default::default())
+    }
+}
+
+impl From<Vec<Attribute>> for Attributes {
+    fn from(value: Vec<Attribute>) -> Self {
+        Attributes(value.into())
+    }
+}
+
 impl Parse for Attributes {
     fn parse(input: ParseStream) -> Result<Self> {
-        Ok(Self(input.call(Attribute::parse_outer)?))
+        Ok(Self(input.call(Attribute::parse_outer)?.into()))
     }
 }
 
@@ -56,7 +66,7 @@ impl<T> Deref for WithAttrs<T> {
 impl<T: Default> Default for WithAttrs<T> {
     fn default() -> Self {
         Self {
-            attrs: Attributes(vec![]),
+            attrs: Default::default(),
             value: T::default(),
         }
     }
@@ -185,27 +195,5 @@ impl ToTokens for Tables {
         tokens.extend(quote! {
           #(#tables)*
         })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct TokensVec<T>(pub Vec<T>);
-
-impl<T> Deref for TokensVec<T> {
-    type Target = Vec<T>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<T: ToTokens> ToTokens for TokensVec<T> {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        self.iter().for_each(|v| v.to_tokens(tokens));
-    }
-}
-
-impl<T> FromIterator<T> for TokensVec<T> {
-    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        Self(iter.into_iter().collect())
     }
 }

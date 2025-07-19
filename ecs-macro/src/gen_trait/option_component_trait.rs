@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, macro_input};
+use crate::{fundamental, gen_struct, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{Error, Ident, Result};
@@ -50,9 +50,9 @@ impl OptionComponentTrait {
     }
 
     pub fn new_vec(
-        component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
-        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-    ) -> Result<fundamental::TokensVec<Self>> {
+        component_declarations: &RcSlice<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+        with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
+    ) -> Result<RcSlice<Self>> {
         component_declarations
             .iter()
             .flat_map(|cdwa| {

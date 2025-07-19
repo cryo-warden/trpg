@@ -9,15 +9,18 @@ use syn::{
     parse_macro_input,
 };
 
+use crate::rc_slice::RcSlice;
+
 mod fundamental;
 mod gen_impl;
 mod gen_struct;
 mod gen_trait;
 mod macro_input;
+mod rc_slice;
 
 #[derive(ToTokens)]
 struct EntityMacro {
-    items: fundamental::TokensVec<Item>,
+    items: RcSlice<Item>,
     entity_structs: gen_struct::EntityStructs,
     entity_traits: gen_trait::EntityTraits,
     entity_impls: gen_impl::EntityImpls,

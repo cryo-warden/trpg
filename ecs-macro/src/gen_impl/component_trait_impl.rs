@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, gen_trait, macro_input};
+use crate::{gen_struct, gen_trait, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
@@ -24,10 +24,10 @@ impl ReplacementWithComponentStruct {
     }
 
     pub fn new_vec(
-        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-        component_traits: &Vec<gen_trait::ComponentTrait>,
-        option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
-    ) -> Result<fundamental::TokensVec<Self>> {
+        with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
+        component_traits: &RcSlice<gen_trait::ComponentTrait>,
+        option_component_traits: &RcSlice<gen_trait::OptionComponentTrait>,
+    ) -> Result<RcSlice<Self>> {
         with_component_structs
             .iter()
             .map(|wcs| {
@@ -102,9 +102,9 @@ impl PassthroughWithComponentStruct {
     }
 
     pub fn new_vec(
-        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-        component_traits: &Vec<gen_trait::ComponentTrait>,
-    ) -> fundamental::TokensVec<Self> {
+        with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
+        component_traits: &RcSlice<gen_trait::ComponentTrait>,
+    ) -> RcSlice<Self> {
         with_component_structs
             .iter()
             .flat_map(|wcs| {
@@ -150,8 +150,8 @@ impl ToTokens for PassthroughWithComponentStruct {
 
 #[derive(ToTokens)]
 pub struct Impl {
-    replacement_with_component_structs: fundamental::TokensVec<ReplacementWithComponentStruct>,
-    passthrough_with_component_structs: fundamental::TokensVec<PassthroughWithComponentStruct>,
+    replacement_with_component_structs: RcSlice<ReplacementWithComponentStruct>,
+    passthrough_with_component_structs: RcSlice<PassthroughWithComponentStruct>,
 }
 
 impl Impl {
