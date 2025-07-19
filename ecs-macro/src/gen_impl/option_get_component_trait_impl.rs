@@ -6,28 +6,28 @@ use syn::Result;
 
 pub struct PassthroughWithComponentStruct {
     pub with_component_struct: gen_struct::WithComponentStruct,
-    pub option_component_trait: gen_trait::OptionComponentTrait,
+    pub option_get_component_trait: gen_trait::OptionGetComponentTrait,
 }
 
 impl PassthroughWithComponentStruct {
     pub fn new(
         wcs: &gen_struct::WithComponentStruct,
-        oct: &gen_trait::OptionComponentTrait,
+        ogct: &gen_trait::OptionGetComponentTrait,
     ) -> Self {
         Self {
+            option_get_component_trait: ogct.to_owned(),
             with_component_struct: wcs.to_owned(),
-            option_component_trait: oct.to_owned(),
         }
     }
 
     pub fn new_vec(
         with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
-        option_component_traits: &RcSlice<gen_trait::OptionComponentTrait>,
+        option_get_component_traits: &RcSlice<gen_trait::OptionGetComponentTrait>,
     ) -> RcSlice<Self> {
         with_component_structs
             .iter()
             .flat_map(|wcs| {
-                option_component_traits
+                option_get_component_traits
                     .iter()
                     .filter(|oct| oct.component != wcs.component)
                     .map(|oct| Self::new(wcs, oct))
@@ -42,25 +42,16 @@ impl ToTokens for PassthroughWithComponentStruct {
             with_component_struct,
             ..
         } = &self.with_component_struct;
-        let gen_trait::OptionComponentTrait {
-            option_component_trait,
-            component,
+        let gen_trait::OptionGetComponentTrait {
+            option_get_component_trait,
             component_ty,
-            insert_fn,
-            update_fn,
-            delete_fn,
+            getter_fn,
             ..
-        } = &self.option_component_trait;
+        } = &self.option_get_component_trait;
         tokens.extend(quote! {
-          impl<T: #option_component_trait> #option_component_trait for #with_component_struct<T> {
-            fn #insert_fn(&self, #component: #component_ty) -> #component_ty {
-              self.value.#insert_fn(#component)
-            }
-            fn #update_fn(&self, #component: #component_ty) -> #component_ty {
-              self.value.#update_fn(#component)
-            }
-            fn #delete_fn(&self) {
-              self.value.#delete_fn();
+          impl<T: #option_get_component_trait> #option_get_component_trait for #with_component_struct<T> {
+            fn #getter_fn(&self) -> ::core::option::Option<#component_ty> {
+              #option_get_component_trait::#getter_fn(&self.value)
             }
           }
         });
@@ -69,25 +60,25 @@ impl ToTokens for PassthroughWithComponentStruct {
 
 pub struct EntityHandleStruct {
     pub entity_handle_struct: gen_struct::EntityHandleStruct,
-    pub option_component_trait: gen_trait::OptionComponentTrait,
+    pub option_get_component_trait: gen_trait::OptionGetComponentTrait,
 }
 
 impl EntityHandleStruct {
     pub fn new(
         ehs: &gen_struct::EntityHandleStruct,
-        oct: &gen_trait::OptionComponentTrait,
+        oct: &gen_trait::OptionGetComponentTrait,
     ) -> Self {
         Self {
             entity_handle_struct: ehs.to_owned(),
-            option_component_trait: oct.to_owned(),
+            option_get_component_trait: oct.to_owned(),
         }
     }
 
     pub fn new_vec(
         entity_handle_struct: &gen_struct::EntityHandleStruct,
-        option_component_traits: &RcSlice<gen_trait::OptionComponentTrait>,
+        option_get_component_traits: &RcSlice<gen_trait::OptionGetComponentTrait>,
     ) -> RcSlice<Self> {
-        option_component_traits
+        option_get_component_traits
             .iter()
             .map(|oct| Self::new(entity_handle_struct, oct))
             .collect()
@@ -101,28 +92,17 @@ impl ToTokens for EntityHandleStruct {
             entity_handle_struct,
             ..
         } = &self.entity_handle_struct;
-        let gen_trait::OptionComponentTrait {
-            option_component_trait,
-            component,
+        let gen_trait::OptionGetComponentTrait {
+            option_get_component_trait,
             component_ty,
-            insert_fn,
-            update_fn,
-            delete_fn,
             table,
+            getter_fn,
             ..
-        } = &self.option_component_trait;
+        } = &self.option_get_component_trait;
         tokens.extend(quote! {
-          impl<'a> #option_component_trait for #entity_handle_struct<'a> {
-            fn #insert_fn(&self, mut #component: #component_ty) -> #component_ty {
-              #component.#id = self.#id;
-              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component)
-            }
-            fn #update_fn(&self, mut #component: #component_ty) -> #component_ty {
-              #component.#id = self.#id;
-              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component)
-            }
-            fn #delete_fn(&self) {
-              ::spacetimedb::UniqueColumn::delete(&self.ecs.db.#table().#id(), self.#id);
+          impl<'a> #option_get_component_trait for #entity_handle_struct<'a> {
+            fn #getter_fn(&self) -> ::core::option::Option<#component_ty> {
+              ::spacetimedb::UniqueColumn::find(&self.ecs.db.#table().#id(), self.#id)
             }
           }
         });
@@ -148,17 +128,17 @@ impl Impl {
             ..
         } = entity_structs;
         let gen_trait::EntityTraits {
-            option_component_traits,
+            option_get_component_traits,
             ..
         } = entity_traits;
 
         let with_component_structs = PassthroughWithComponentStruct::new_vec(
             with_component_structs,
-            option_component_traits,
+            option_get_component_traits,
         );
 
         let entity_handle_structs =
-            EntityHandleStruct::new_vec(entity_handle_struct, option_component_traits);
+            EntityHandleStruct::new_vec(entity_handle_struct, option_get_component_traits);
 
         Ok(Self {
             with_component_structs,

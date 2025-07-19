@@ -5,7 +5,7 @@ use syn::{Error, Ident, Result};
 
 #[derive(Clone)]
 pub struct OptionWithComponentTrait {
-    pub with_component_trait: Ident,
+    pub option_with_component_trait: Ident,
     #[allow(unused)]
     pub component: Ident,
     #[allow(unused)]
@@ -21,7 +21,7 @@ impl OptionWithComponentTrait {
         wcs: &gen_struct::WithComponentStruct,
     ) -> Self {
         Self {
-            with_component_trait: format_ident!("OptionWith__{}__Trait", ctp.component),
+            option_with_component_trait: format_ident!("OptionWith__{}__Trait", ctp.component),
             component: ctp.component.to_owned(),
             component_ty: cd.component_ty.to_owned(),
             with_component_struct: wcs.with_component_struct.to_owned(),
@@ -54,7 +54,7 @@ impl OptionWithComponentTrait {
 impl ToTokens for OptionWithComponentTrait {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            with_component_trait: option_with_component_trait,
+            option_with_component_trait,
             with_component_struct,
             with_fn,
             ..
@@ -62,7 +62,8 @@ impl ToTokens for OptionWithComponentTrait {
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
           pub trait #option_with_component_trait: Sized {
-            fn #with_fn(self) -> ::core::option::Option<#with_component_struct<Self>>;
+            type Output;
+            fn #with_fn(self) -> ::core::option::Option<#with_component_struct<Self::Output>>;
           }
         })
     }

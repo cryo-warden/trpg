@@ -72,8 +72,6 @@ impl EntityTraits {
         let component_delete_traits = ComponentDeleteTrait::new_vec(component_declarations);
         let option_component_traits =
             OptionComponentTrait::new_vec(component_declarations, with_component_structs)?;
-        let option_component_iter_traits =
-            OptionComponentIterTrait::new_vec(&option_component_traits, with_component_structs)?;
         let iter_component_traits = IterComponentTrait::new_vec(
             component_declarations,
             with_component_structs,
@@ -87,6 +85,8 @@ impl EntityTraits {
         let option_get_component_traits = OptionGetComponentTrait::new_vec(component_declarations);
         let option_with_component_traits =
             OptionWithComponentTrait::new_vec(component_declarations, with_component_structs)?;
+        let option_component_iter_traits =
+            OptionComponentIterTrait::new_vec(&option_with_component_traits);
 
         Ok(Self {
             delete_entity_trait,

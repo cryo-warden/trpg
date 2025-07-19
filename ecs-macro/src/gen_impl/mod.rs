@@ -13,6 +13,8 @@ mod new_entity_blob_trait_impl;
 mod new_entity_handle_trait_impl;
 mod option_component_iter_trait_impl;
 mod option_component_trait_impl;
+mod option_get_component_trait_impl;
+mod option_with_component_trait_impl;
 mod with_entity_handle_trait_impl;
 
 #[derive(ToTokens)]
@@ -28,6 +30,8 @@ pub struct EntityImpls {
     new_entity_blob_trait_impl: new_entity_blob_trait_impl::Impl,
     option_component_trait_impl: option_component_trait_impl::Impl,
     option_component_iter_trait_impl: option_component_iter_trait_impl::Impl,
+    option_get_component_trait_impl: option_get_component_trait_impl::Impl,
+    option_with_component_trait_impl: option_with_component_trait_impl::Impl,
     with_entity_handle_trait_impl: with_entity_handle_trait_impl::Impl,
 }
 
@@ -83,6 +87,16 @@ impl EntityImpls {
             entity_structs,
             entity_traits,
         )?;
+        let option_get_component_trait_impl = option_get_component_trait_impl::Impl::new(
+            entity_macro_input,
+            entity_structs,
+            entity_traits,
+        )?;
+        let option_with_component_trait_impl = option_with_component_trait_impl::Impl::new(
+            entity_macro_input,
+            entity_structs,
+            entity_traits,
+        )?;
         let with_entity_handle_trait_impl = with_entity_handle_trait_impl::Impl::new(
             entity_macro_input,
             entity_structs,
@@ -101,6 +115,8 @@ impl EntityImpls {
             new_entity_blob_trait_impl,
             option_component_trait_impl,
             option_component_iter_trait_impl,
+            option_get_component_trait_impl,
+            option_with_component_trait_impl,
             with_entity_handle_trait_impl,
         })
     }

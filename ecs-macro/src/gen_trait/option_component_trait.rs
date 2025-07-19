@@ -6,13 +6,13 @@ use syn::{Error, Ident, Result};
 #[derive(Clone)]
 pub struct OptionComponentTrait {
     pub option_component_trait: Ident,
+    pub option_get_component_trait: Ident,
     pub component_field_args: fundamental::FieldArgs,
     pub component_field_names: fundamental::FieldNames,
     pub component: Ident,
     pub component_ty: Ident,
     pub table: Ident,
     pub with_component_struct: Ident,
-    pub with_fn: Ident,
     pub upsert_fn: Ident,
     pub upsert_new_fn: Ident,
     pub getter_fn: Ident,
@@ -31,16 +31,17 @@ impl OptionComponentTrait {
     ) -> Self {
         Self {
             option_component_trait: format_ident!("Option__{}__Trait", ctp.component),
+            // WIP Use original trait instead of duplicating name logic.
+            option_get_component_trait: format_ident!("OptionGet__{}__Trait", ctp.component),
+            getter_fn: ctp.component.to_owned(),
             component_field_args: fundamental::FieldArgs(cd.fields.to_owned()),
             component_field_names: fundamental::FieldNames(cd.fields.to_owned()),
             component: ctp.component.to_owned(),
             component_ty: cd.component_ty.to_owned(),
             table: ctp.table.to_owned(),
             with_component_struct: wcs.with_component_struct.to_owned(),
-            with_fn: format_ident!("with_{}", ctp.component),
             upsert_fn: format_ident!("upsert_{}", ctp.component),
             upsert_new_fn: format_ident!("upsert_new_{}", ctp.component),
-            getter_fn: ctp.component.to_owned(),
             insert_fn: format_ident!("insert_{}", ctp.component),
             update_fn: format_ident!("update_{}", ctp.component),
             delete_fn: format_ident!("delete_{}", ctp.component),
@@ -75,13 +76,13 @@ impl ToTokens for OptionComponentTrait {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             option_component_trait,
+            option_get_component_trait,
             component_field_args,
             component_field_names,
             component,
             component_ty,
             table: _,
             with_component_struct,
-            with_fn,
             upsert_fn,
             upsert_new_fn,
             getter_fn,
@@ -93,13 +94,7 @@ impl ToTokens for OptionComponentTrait {
         } = self;
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
-          pub trait #option_component_trait: Sized {
-            fn #with_fn(self) -> ::core::option::Option<#with_component_struct<Self>> {
-              ::core::option::Option::Some(#with_component_struct {
-                #component: self.#getter_fn()?,
-                value: self,
-              })
-            }
+          pub trait #option_component_trait: Sized + #option_get_component_trait {
             fn #upsert_fn(self, #component: #component_ty) -> #with_component_struct<Self> {
               let #component = if ::core::option::Option::is_some(&self.#getter_fn()) {
                 self.#update_fn(#component)
@@ -114,7 +109,6 @@ impl ToTokens for OptionComponentTrait {
             fn #upsert_new_fn(self, #component_field_args) -> #with_component_struct<Self> {
               self.#upsert_fn(#component_ty::new(#component_field_names))
             }
-            fn #getter_fn(&self) -> ::core::option::Option<#component_ty>;
             fn #insert_fn(&self, #component: #component_ty) -> #component_ty;
             fn #update_fn(&self, #component: #component_ty) -> #component_ty;
             fn #delete_fn(&self);

@@ -59,7 +59,10 @@ fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     EntityHandle::peek();
     ctx.ecs().new().delete();
     ctx.ecs().new().new_blob();
-    let e = e.with_path()?.with_location()?.with_secondary_location()?;
+    e.location();
+    e.path();
+    e.secondary_location();
+    let e = e.with_path().with_location().with_secondary_location();
     for lp in ctx.ecs().iter_location().with_path() {
         println!("{:?}", lp.path());
     }
@@ -75,9 +78,6 @@ fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
         println!("{:?}", pl.excess_path());
         println!("{:?}", pl.secondary_location());
     }
-    e.location();
-    e.path();
-    e.secondary_location();
     LocationComponent::clone;
     Some(())
 }

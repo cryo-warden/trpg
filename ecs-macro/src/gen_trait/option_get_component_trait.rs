@@ -5,10 +5,11 @@ use syn::Ident;
 
 #[derive(Clone)]
 pub struct OptionGetComponentTrait {
-    pub option_component_trait: Ident,
+    pub option_get_component_trait: Ident,
     #[allow(unused)]
     pub component: Ident,
     pub component_ty: Ident,
+    pub table: Ident,
     pub getter_fn: Ident,
 }
 
@@ -18,9 +19,10 @@ impl OptionGetComponentTrait {
         cd: &macro_input::ComponentDeclaration,
     ) -> Self {
         Self {
-            option_component_trait: format_ident!("OptionGet__{}__Trait", ctp.component),
+            option_get_component_trait: format_ident!("OptionGet__{}__Trait", ctp.component),
             component: ctp.component.to_owned(),
             component_ty: cd.component_ty.to_owned(),
+            table: ctp.table.to_owned(),
             getter_fn: ctp.component.to_owned(),
         }
     }
@@ -42,14 +44,14 @@ impl OptionGetComponentTrait {
 impl ToTokens for OptionGetComponentTrait {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
-            option_component_trait,
+            option_get_component_trait,
             component_ty,
             getter_fn,
             ..
         } = self;
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
-          pub trait #option_component_trait: Sized {
+          pub trait #option_get_component_trait {
             fn #getter_fn(&self) -> ::core::option::Option<#component_ty>;
           }
         })
