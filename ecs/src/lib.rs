@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 pub use ecs_macro::entity;
 use spacetimedb::ReducerContext;
 
@@ -5,8 +7,7 @@ mod tests;
 
 #[derive(Clone, Copy)]
 pub struct Ecs<'a> {
-    pub db: &'a spacetimedb::Local,
-    pub sender: spacetimedb::Identity,
+    pub ctx: &'a spacetimedb::ReducerContext,
 }
 
 impl<'a> ::std::fmt::Debug for Ecs<'a> {
@@ -16,9 +17,16 @@ impl<'a> ::std::fmt::Debug for Ecs<'a> {
     }
 }
 
+impl Deref for Ecs<'_> {
+    type Target = spacetimedb::ReducerContext;
+    fn deref(&self) -> &Self::Target {
+        self.ctx
+    }
+}
+
 impl<'a> Ecs<'a> {
-    pub fn db(&self) -> &'a spacetimedb::Local {
-        self.db
+    pub fn db(&'a self) -> &'a spacetimedb::Local {
+        &self.db
     }
 }
 
@@ -28,9 +36,6 @@ pub trait WithEcs {
 
 impl WithEcs for ReducerContext {
     fn ecs(&self) -> Ecs {
-        Ecs {
-            db: &self.db,
-            sender: self.sender,
-        }
+        Ecs { ctx: self }
     }
 }

@@ -15,7 +15,7 @@ pub struct StatBlock {
 
 #[allow(dead_code)]
 impl StatBlock {
-    pub fn add(&mut self, other: StatBlock) {
+    pub fn add(&mut self, other: &StatBlock) {
         self.attack += other.attack;
         self.mhp += other.mhp;
         self.defense += other.defense;

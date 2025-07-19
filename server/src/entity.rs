@@ -594,24 +594,24 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    // pub fn add_action_option(self, action_id: u64, target_entity_id: u64) -> Self {
-    //     if let Some(mut a) = self.action_options() {
-    //         a.action_options.push(ActionOption {
-    //             action_id,
-    //             target_entity_id,
-    //         });
-    //         self.update_action_options(a);
-    //     } else {
-    //         self.insert_action_options(ActionOptionsComponent {
-    //             entity_id: self.entity_id,
-    //             action_options: vec![ActionOption {
-    //                 action_id,
-    //                 target_entity_id,
-    //             }],
-    //         });
-    //     }
-    //     self
-    // }
+    pub fn add_action_option(self, action_id: u64, target_entity_id: u64) -> Self {
+        if let Some(mut a) = self.action_options() {
+            a.action_options.push(ActionOption {
+                action_id,
+                target_entity_id,
+            });
+            self.update_action_options(a);
+        } else {
+            self.insert_action_options(ActionOptionsComponent {
+                entity_id: self.entity_id,
+                action_options: vec![ActionOption {
+                    action_id,
+                    target_entity_id,
+                }],
+            });
+        }
+        self
+    }
 
     pub fn set_queued_action_state(self, action_id: u64, target_entity_id: u64) -> Self {
         self.delete_queued_action_state();

@@ -1,3 +1,4 @@
+use ecs::Ecs;
 use spacetimedb::{table, ReducerContext, SpacetimeType, Table, Timestamp};
 
 use crate::{
@@ -73,7 +74,7 @@ impl EntityEvent {
         });
     }
 
-    pub fn resolve(&self, ctx: &ReducerContext) {
+    pub fn resolve(&self, ecs: Ecs) {
         let target_entity_id = self.target_entity_id;
         log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
         match self.event_type {
@@ -82,10 +83,10 @@ impl EntityEvent {
                 ActionEffect::Buff(_) => {} // WIP
                 ActionEffect::Rest => {}
                 ActionEffect::Move => {
-                    match ctx.db.path_components().entity_id().find(target_entity_id) {
+                    match ecs.db.path_components().entity_id().find(target_entity_id) {
                         None => {}
                         Some(path_component) => {
-                            match ctx
+                            match ecs
                                 .db
                                 .location_components()
                                 .entity_id()
@@ -95,7 +96,7 @@ impl EntityEvent {
                                 Some(mut location_component) => {
                                     location_component.location_entity_id =
                                         path_component.destination_entity_id;
-                                    ctx.db
+                                    ecs.db
                                         .location_components()
                                         .entity_id()
                                         .update(location_component);
@@ -105,22 +106,22 @@ impl EntityEvent {
                     }
                 }
                 ActionEffect::Attack(damage) => {
-                    let target_hp = ctx.db.hp_components().entity_id().find(target_entity_id);
+                    let target_hp = ecs.db.hp_components().entity_id().find(target_entity_id);
                     match target_hp {
                         None => {}
                         Some(mut target_hp) => {
                             target_hp.accumulated_damage += damage;
-                            ctx.db.hp_components().entity_id().update(target_hp);
+                            ecs.db.hp_components().entity_id().update(target_hp);
                         }
                     }
                 }
                 ActionEffect::Heal(heal) => {
-                    let target_hp = ctx.db.hp_components().entity_id().find(target_entity_id);
+                    let target_hp = ecs.db.hp_components().entity_id().find(target_entity_id);
                     match target_hp {
                         None => {}
                         Some(mut target_hp) => {
                             target_hp.accumulated_healing += heal;
-                            ctx.db.hp_components().entity_id().update(target_hp);
+                            ecs.db.hp_components().entity_id().update(target_hp);
                         }
                     }
                 }
@@ -133,6 +134,6 @@ impl EntityEvent {
 
         let mut observable_event = self.to_owned();
         observable_event.id = 0;
-        ctx.db.observable_events().insert(observable_event);
+        ecs.db.observable_events().insert(observable_event);
     }
 }
