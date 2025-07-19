@@ -1,6 +1,7 @@
-use crate::{gen_struct, gen_trait, macro_input};
+use crate::{fundamental, gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use structmeta::ToTokens;
 use syn::Result;
 
 pub struct WithComponentStruct {
@@ -22,7 +23,7 @@ impl WithComponentStruct {
     pub fn new_vec(
         with_component_structs: &Vec<gen_struct::WithComponentStruct>,
         nebt: Option<&gen_trait::NewEntityBlobTrait>,
-    ) -> Vec<Self> {
+    ) -> fundamental::TokensVec<Self> {
         nebt.iter()
             .flat_map(|nebt| {
                 with_component_structs
@@ -85,11 +86,9 @@ impl ToTokens for EntityHandleStruct {
             entity_blob_struct,
         } = &self.new_entity_blob_trait;
         let fields = entity_blob_struct.component_fields.iter().map(
-            |gen_struct::entity_blob_struct::EntityBlobComponentField(ctp, _)| {
+            |gen_struct::EntityBlobComponentField(ctp, _)| {
                 let macro_input::ComponentTablePair { component, .. } = ctp;
-                quote! {
-                  #component: self.#component()
-                }
+                quote! { #component: self.#component() }
             },
         );
         let gen_struct::EntityBlobStruct {
@@ -108,8 +107,9 @@ impl ToTokens for EntityHandleStruct {
     }
 }
 
+#[derive(ToTokens)]
 pub struct Impl {
-    with_component_structs: Vec<WithComponentStruct>,
+    with_component_structs: fundamental::TokensVec<WithComponentStruct>,
     entity_handle_struct: Option<EntityHandleStruct>,
 }
 
@@ -141,18 +141,5 @@ impl Impl {
             with_component_structs,
             entity_handle_struct,
         })
-    }
-}
-
-impl ToTokens for Impl {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            with_component_structs,
-            entity_handle_struct,
-        } = self;
-        tokens.extend(quote! {
-            #(#with_component_structs)*
-            #entity_handle_struct
-        });
     }
 }

@@ -30,7 +30,7 @@ impl ComponentTrait {
 
     pub fn new_vec(
         component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
-    ) -> Vec<Self> {
+    ) -> fundamental::TokensVec<Self> {
         component_declarations
             .iter()
             .flat_map(|cdwa| {

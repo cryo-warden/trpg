@@ -1,25 +1,24 @@
-use crate::macro_input;
-use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
-
-pub mod component_struct;
-pub mod entity_blob_struct;
-pub mod entity_handle_struct;
-pub mod entity_struct;
-pub mod with_component_struct;
-
+use crate::{fundamental, macro_input};
 pub use component_struct::ComponentStruct;
-pub use entity_blob_struct::EntityBlobStruct;
+pub use entity_blob_struct::{EntityBlobComponentField, EntityBlobStruct};
 pub use entity_handle_struct::EntityHandleStruct;
 pub use entity_struct::EntityStruct;
+use structmeta::ToTokens;
 pub use with_component_struct::WithComponentStruct;
 
+mod component_struct;
+mod entity_blob_struct;
+mod entity_handle_struct;
+mod entity_struct;
+mod with_component_struct;
+
+#[derive(ToTokens)]
 pub struct EntityStructs {
     pub entity_struct: EntityStruct,
-    pub component_structs: Vec<ComponentStruct>,
+    pub component_structs: fundamental::TokensVec<ComponentStruct>,
     pub entity_handle_struct: EntityHandleStruct,
     pub entity_blob_struct: Option<EntityBlobStruct>,
-    pub with_component_structs: Vec<WithComponentStruct>,
+    pub with_component_structs: fundamental::TokensVec<WithComponentStruct>,
 }
 
 impl EntityStructs {
@@ -53,24 +52,5 @@ impl EntityStructs {
             entity_blob_struct,
             with_component_structs,
         }
-    }
-}
-
-impl ToTokens for EntityStructs {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            entity_struct,
-            component_structs,
-            entity_handle_struct,
-            entity_blob_struct,
-            with_component_structs,
-        } = self;
-        tokens.extend(quote! {
-          #entity_struct
-          #(#component_structs)*
-          #entity_handle_struct
-          #entity_blob_struct
-          #(#with_component_structs)*
-        });
     }
 }

@@ -172,7 +172,7 @@ entity!(
     #[component(
     realized_map in realized_map_components,
     unrealized_map in unrealized_map_components,
-   )]
+  )]
     struct MapComponent {
         pub map_theme_id: u64,
         pub map_layout: MapLayout,
@@ -226,6 +226,9 @@ pub trait EcsExtension<'a> {
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> EntityHandle<'a>;
+    fn from_player_identity(self) -> Option<With__player_controller__Component<EntityHandle<'a>>>;
+    fn from_name(self, name: &str) -> Option<With__name__Component<EntityHandle<'a>>>;
+    fn new_player(self) -> Result<EntityHandle<'a>, String>;
 }
 
 impl<'a> EcsExtension<'a> for Ecs<'a> {
@@ -239,7 +242,6 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .upsert_new_location_map(location_map_entity_id)
             .into_handle()
     }
-
     fn new_path(
         self,
         appearance_feature_ids: Vec<u64>,
@@ -251,6 +253,46 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .upsert_new_location(location_entity_id)
             .upsert_new_path(destination_entity_id)
             .into_handle()
+    }
+    fn from_player_identity(self) -> Option<With__player_controller__Component<EntityHandle<'a>>> {
+        self.db
+            .player_controller_components()
+            .identity()
+            .find(self.sender)
+            .map(|p| self.into_player_controller_handle(p))
+    }
+
+    fn from_name(self, name: &str) -> Option<With__name__Component<EntityHandle<'a>>> {
+        self.db
+            .name_components()
+            .name()
+            .find(name.to_string())
+            .map(|n| self.into_name_handle(n))
+    }
+
+    fn new_player(self) -> Result<EntityHandle<'a>, String> {
+        Ok(self
+            .new()
+            .upsert_new_player_controller(self.sender)
+            .upsert_new_allegiance(
+                self.from_name("allegiance1")
+                    .ok_or("Cannot find starting allegiance.")?
+                    .entity_id(),
+            )
+            .upsert_new_location(
+                self.from_name("room1")
+                    .ok_or("Cannot find starting room.")?
+                    .entity_id(),
+            )
+            .into_handle()
+            .set_baseline("human")
+            .add_trait("admin")
+            .add_trait("mobile")
+            .add_trait("bopper")
+            .set_hotkey("bop", 'b')
+            .set_hotkey("boppity_bop", 'v')
+            .set_hotkey("quick_move", 'm')
+            .set_hotkey("divine_heal", 'h'))
     }
 }
 
@@ -318,34 +360,6 @@ pub struct IdentityInactiveEntity {
     #[unique]
     pub identity: Identity,
     pub component_set: ComponentSet,
-}
-
-impl Entity {
-    pub fn new_player(ctx: &ReducerContext) -> Result<EntityHandle, String> {
-        Ok(ctx
-            .ecs()
-            .new()
-            .upsert_new_player_controller(ctx.sender)
-            .upsert_new_allegiance(
-                EntityHandle::from_name(ctx, "allegiance1")
-                    .ok_or("Cannot find starting allegiance.")?
-                    .entity_id(),
-            )
-            .upsert_new_location(
-                EntityHandle::from_name(ctx, "room1")
-                    .ok_or("Cannot find starting room.")?
-                    .entity_id(),
-            )
-            .into_handle()
-            .set_baseline("human")
-            .add_trait("admin")
-            .add_trait("mobile")
-            .add_trait("bopper")
-            .set_hotkey("bop", 'b')
-            .set_hotkey("boppity_bop", 'v')
-            .set_hotkey("quick_move", 'm')
-            .set_hotkey("divine_heal", 'h'))
-    }
 }
 
 pub struct InactiveEntityHandle<'a> {
@@ -433,27 +447,6 @@ impl<'a> EntityHandle<'a> {
             entity_id: entity.id,
             ecs: ctx.ecs(),
         }
-    }
-
-    pub fn from_player_identity(
-        ctx: &'a ReducerContext,
-    ) -> Option<With__player_controller__Component<EntityHandle<'a>>> {
-        ctx.db
-            .player_controller_components()
-            .identity()
-            .find(ctx.sender)
-            .map(|p| p.into_player_controller_handle(ctx))
-    }
-
-    pub fn from_name(
-        ctx: &'a ReducerContext,
-        name: &str,
-    ) -> Option<With__name__Component<EntityHandle<'a>>> {
-        ctx.db
-            .name_components()
-            .name()
-            .find(name.to_string())
-            .map(|n| n.into_name_handle(ctx))
     }
 
     pub fn generate_prominence(self) -> Self {

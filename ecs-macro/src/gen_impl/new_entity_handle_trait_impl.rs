@@ -1,6 +1,7 @@
 use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use structmeta::ToTokens;
 use syn::Result;
 
 pub struct EcsStruct {
@@ -50,6 +51,7 @@ impl ToTokens for EcsStruct {
     }
 }
 
+#[derive(ToTokens)]
 pub struct Impl {
     ecs_struct: EcsStruct,
 }
@@ -75,14 +77,5 @@ impl Impl {
             EcsStruct::new(new_entity_handle_trait, entity_struct, entity_handle_struct);
 
         Ok(Self { ecs_struct })
-    }
-}
-
-impl ToTokens for Impl {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { ecs_struct } = self;
-        tokens.extend(quote! {
-            #ecs_struct
-        });
     }
 }

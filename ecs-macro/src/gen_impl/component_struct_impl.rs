@@ -1,129 +1,28 @@
 use crate::{fundamental, gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
-use quote::{ToTokens, format_ident, quote};
-use syn::{Error, Ident, Result};
-
-pub struct ComponentTableMethods {
-    pub with_component_struct: gen_struct::WithComponentStruct,
-    pub entity_handle_struct: gen_struct::EntityHandleStruct,
-    pub table: Ident,
-    pub iter_fn: Ident,
-    pub into_handle_fn: Ident,
-}
-
-impl ComponentTableMethods {
-    pub fn new(
-        ctp: &macro_input::ComponentTablePair,
-        wcs: &gen_struct::WithComponentStruct,
-        ehs: &gen_struct::EntityHandleStruct,
-    ) -> Self {
-        Self {
-            with_component_struct: wcs.to_owned(),
-            entity_handle_struct: ehs.to_owned(),
-            table: ctp.table.to_owned(),
-            iter_fn: format_ident!("iter_{}", ctp.component),
-            into_handle_fn: format_ident!("into_{}_handle", ctp.component),
-        }
-    }
-
-    pub fn new_vec(
-        ctps: &Vec<macro_input::ComponentTablePair>,
-        wcss: &Vec<gen_struct::WithComponentStruct>,
-        ehs: &gen_struct::EntityHandleStruct,
-    ) -> Result<Vec<Self>> {
-        ctps.iter()
-            .map(|ctp| {
-                let wcs = wcss
-                    .iter()
-                    .find(|wcs| wcs.component == ctp.component)
-                    .ok_or(Error::new(
-                        ctp.component.span(),
-                        "Cannot find the corresponding with-component struct.",
-                    ))?;
-                Ok(Self::new(ctp, wcs, ehs))
-            })
-            .collect()
-    }
-}
-
-impl ToTokens for ComponentTableMethods {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            table,
-            iter_fn,
-            into_handle_fn,
-            ..
-        } = self;
-        let gen_struct::WithComponentStruct {
-            with_component_struct,
-            component,
-            ..
-        } = &self.with_component_struct;
-        let gen_struct::EntityHandleStruct {
-            entity_handle_struct,
-            ..
-        } = &self.entity_handle_struct;
-        tokens.extend(quote! {
-          pub fn #into_handle_fn(self, ctx: &::spacetimedb::ReducerContext) -> #with_component_struct<#entity_handle_struct> {
-            let entity_id = self.entity_id;
-            #with_component_struct {
-              #component: self,
-              value: #entity_handle_struct { entity_id, ecs: ecs::WithEcs::ecs(ctx) },
-            }
-          }
-          pub fn #iter_fn(ctx: &::spacetimedb::ReducerContext) -> impl Iterator<Item = #with_component_struct<#entity_handle_struct>> {
-            ::spacetimedb::Table::iter(ctx.db.#table()).map(|c| c.#into_handle_fn(ctx))
-          }
-        });
-    }
-}
+use quote::{ToTokens, quote};
+use structmeta::ToTokens;
+use syn::Result;
 
 pub struct ComponentStruct {
     pub component_struct: gen_struct::ComponentStruct,
     pub new_field_args: fundamental::FieldArgs,
     pub new_field_names: fundamental::FieldNames,
-    pub component_table_methods: Vec<ComponentTableMethods>,
 }
 
 impl ComponentStruct {
-    pub fn new(
-        ctps: &Vec<macro_input::ComponentTablePair>,
-        cs: &gen_struct::ComponentStruct,
-        wcss: &Vec<gen_struct::WithComponentStruct>,
-        ehs: &gen_struct::EntityHandleStruct,
-    ) -> Result<Self> {
-        Ok(Self {
+    pub fn new(cs: &gen_struct::ComponentStruct) -> Self {
+        Self {
             component_struct: cs.to_owned(),
             new_field_args: fundamental::FieldArgs(cs.component_fields.to_owned()),
             new_field_names: fundamental::FieldNames(cs.component_fields.to_owned()),
-            component_table_methods: ComponentTableMethods::new_vec(ctps, wcss, ehs)?,
-        })
+        }
     }
 
     pub fn new_vec(
-        component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
-        with_component_structs: &Vec<gen_struct::WithComponentStruct>,
         component_structs: &Vec<gen_struct::ComponentStruct>,
-        entity_handle_struct: &gen_struct::EntityHandleStruct,
-    ) -> Result<Vec<Self>> {
-        component_declarations
-            .iter()
-            .map(|d| {
-                let cs = component_structs
-                    .iter()
-                    .find(|cs| cs.component_struct == d.component_ty)
-                    .ok_or(Error::new(
-                        d.component_ty.span(),
-                        "Cannot find the corresponding component struct.",
-                    ))?;
-                Self::new(
-                    &d.component_table_pairs,
-                    cs,
-                    with_component_structs,
-                    entity_handle_struct,
-                )
-            })
-            .collect()
+    ) -> fundamental::TokensVec<Self> {
+        component_structs.iter().map(|cs| Self::new(cs)).collect()
     }
 }
 
@@ -131,7 +30,6 @@ impl ToTokens for ComponentStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Self {
             component_struct,
-            component_table_methods,
             new_field_args,
             new_field_names,
         } = &self;
@@ -145,14 +43,14 @@ impl ToTokens for ComponentStruct {
             pub fn new(#new_field_args) -> Self {
               Self { #id: 0, #new_field_names }
             }
-            #(#component_table_methods)*
           }
         });
     }
 }
 
+#[derive(ToTokens)]
 pub struct Impl {
-    component_structs: Vec<ComponentStruct>,
+    component_structs: fundamental::TokensVec<ComponentStruct>,
 }
 
 impl Impl {
@@ -161,34 +59,14 @@ impl Impl {
         entity_structs: &gen_struct::EntityStructs,
         entity_traits: &gen_trait::EntityTraits,
     ) -> Result<Self> {
-        let macro_input::EntityMacroInput {
-            component_declarations,
-            ..
-        } = entity_macro_input;
+        let _ = entity_macro_input;
         let gen_struct::EntityStructs {
-            component_structs,
-            with_component_structs,
-            entity_handle_struct,
-            ..
+            component_structs, ..
         } = entity_structs;
         let _ = entity_traits;
 
-        let component_structs = ComponentStruct::new_vec(
-            component_declarations,
-            with_component_structs,
-            component_structs,
-            entity_handle_struct,
-        )?;
+        let component_structs = ComponentStruct::new_vec(component_structs);
 
         Ok(Self { component_structs })
-    }
-}
-
-impl ToTokens for Impl {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { component_structs } = self;
-        tokens.extend(quote! {
-            #(#component_structs)*
-        });
     }
 }

@@ -158,7 +158,7 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
+    match ctx.ecs().from_player_identity() {
         Some(e) => {
             e.delete_entity_deactivation_timer();
             log::debug!(
@@ -173,7 +173,7 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
                 log::debug!("Reactivated {} to {}.", ctx.sender, e.entity_id());
             }
             None => {
-                let e = Entity::new_player(ctx)?;
+                let e = ctx.ecs().new_player()?;
                 log::debug!("Connected {} to new player {}.", ctx.sender, e.entity_id());
             }
         },
@@ -184,7 +184,7 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer(client_disconnected)]
 pub fn identity_disconnected(ctx: &ReducerContext) {
-    match EntityHandle::from_player_identity(ctx) {
+    match ctx.ecs().from_player_identity() {
         None => {
             log::debug!("Disconnected {} but cannot find any player.", ctx.sender);
         }
@@ -211,7 +211,7 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
 
 #[reducer]
 pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
+    match ctx.ecs().from_player_identity() {
         Some(p) => {
             if p.to_handle().can_target_other(target_entity_id, action_id) {
                 p.into_handle()
@@ -227,7 +227,7 @@ pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Resul
 
 #[reducer]
 pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
+    match ctx.ecs().from_player_identity() {
         Some(p) => {
             p.into_handle().set_target(target_entity_id);
             // TODO Only update for the given player and target.
@@ -240,9 +240,9 @@ pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String>
 
 #[reducer]
 pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
-    match EntityHandle::from_player_identity(ctx) {
+    match ctx.ecs().from_player_identity() {
         Some(p) => {
-            p.into_handle().delete_target();
+            p.delete_target();
             Ok(())
         }
         None => Err("Cannot find a player entity.".to_string()),
@@ -371,7 +371,7 @@ pub fn shift_queued_action_system(ctx: &ReducerContext) {
 }
 
 pub fn action_system(ctx: &ReducerContext) {
-    for mut e in ActionStateComponent::iter_action_state(ctx) {
+    for mut e in ctx.ecs().iter_action_state() {
         let action_state = e.action_state();
         let entity_id = action_state.entity_id;
         let action_handle = ActionHandle::from_id(ctx, action_state.action_id);
@@ -435,7 +435,7 @@ pub fn action_system(ctx: &ReducerContext) {
 }
 
 pub fn target_validation_system(ctx: &ReducerContext) {
-    for e in TargetComponent::iter_target(ctx) {
+    for e in ctx.ecs().iter_target() {
         let t = ctx.ecs().find(e.target().target_entity_id);
         let is_valid = match t.location() {
             None => false,
@@ -460,7 +460,7 @@ pub fn action_option_system(_ctx: &ReducerContext) {
     //         .action_options_components()
     //         .delete(action_option_component);
     // }
-    // for e in LocationComponent::iter_location(ctx) {
+    // for e in ctx.ecs().iter_location() {
     //     for other_entity_id in match e.target() {
     //         None => vec![e.location().entity_id], // WIP entity_id()
     //         Some(target) => {
@@ -482,7 +482,7 @@ pub fn action_option_system(_ctx: &ReducerContext) {
 }
 
 pub fn entity_prominence_system(ctx: &ReducerContext) {
-    for p in EntityProminenceComponent::iter_entity_prominence(ctx) {
+    for p in ctx.ecs().iter_entity_prominence() {
         p.delete_entity_prominence();
     }
     for entity in ctx.db.entities().iter() {
@@ -491,7 +491,7 @@ pub fn entity_prominence_system(ctx: &ReducerContext) {
 }
 
 pub fn entity_deactivation_system(ctx: &ReducerContext) {
-    for t in TimerComponent::iter_entity_deactivation_timer(ctx) {
+    for t in ctx.ecs().iter_entity_deactivation_timer() {
         if t.entity_deactivation_timer().timestamp.le(&ctx.timestamp) {
             let entity_id = t.entity_id();
             t.delete_entity_deactivation_timer();

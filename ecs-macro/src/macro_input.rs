@@ -200,7 +200,7 @@ impl ToTokens for BlobDeclaration {
 impl fundamental::AddAttrs for Item {}
 
 pub struct EntityMacroInput {
-    pub items: Vec<fundamental::WithAttrs<Item>>,
+    pub items: fundamental::TokensVec<Item>,
     pub entity_declaration: fundamental::WithAttrs<EntityDeclaration>,
     pub component_declarations: Vec<fundamental::WithAttrs<ComponentDeclaration>>,
     pub struct_attrs: fundamental::WithAttrs<StructAttrsDeclaration>,
@@ -254,11 +254,11 @@ impl Parse for EntityMacroInput {
                     } else if item_struct.has_attr("blob") {
                         blob_declarations.push(item_struct.try_into()?);
                     } else {
-                        items.push(Item::Struct(item_struct).add_empty_attrs());
+                        items.push(Item::Struct(item_struct));
                     }
                 }
                 _ => {
-                    items.push(item.add_empty_attrs());
+                    items.push(item);
                 }
             }
         }
@@ -268,7 +268,7 @@ impl Parse for EntityMacroInput {
         validate_unary_vec("blob_declaration", &blob_declarations)?;
 
         Ok(EntityMacroInput {
-            items,
+            items: items.into_iter().collect(),
             entity_declaration: entity_declarations.into_iter().next().ok_or(Error::new(
                 input.span(),
                 "An entity declaration must be specified.",

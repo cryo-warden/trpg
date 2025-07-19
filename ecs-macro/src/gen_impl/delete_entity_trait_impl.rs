@@ -1,6 +1,7 @@
 use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use structmeta::ToTokens;
 use syn::Result;
 
 pub struct WithEntityHandleTrait {
@@ -54,6 +55,7 @@ impl ToTokens for WithEntityHandleTrait {
     }
 }
 
+#[derive(ToTokens)]
 pub struct Impl {
     with_entity_handle_trait: WithEntityHandleTrait,
 }
@@ -83,14 +85,5 @@ impl Impl {
         Ok(Self {
             with_entity_handle_trait,
         })
-    }
-}
-
-impl ToTokens for Impl {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            with_entity_handle_trait,
-        } = self;
-        tokens.extend(quote! { #with_entity_handle_trait });
     }
 }

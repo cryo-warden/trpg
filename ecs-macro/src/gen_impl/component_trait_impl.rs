@@ -1,6 +1,7 @@
-use crate::{gen_struct, gen_trait, macro_input};
+use crate::{fundamental, gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use structmeta::ToTokens;
 use syn::{Error, Result};
 
 pub struct ReplacementWithComponentStruct {
@@ -26,7 +27,7 @@ impl ReplacementWithComponentStruct {
         with_component_structs: &Vec<gen_struct::WithComponentStruct>,
         component_traits: &Vec<gen_trait::ComponentTrait>,
         option_component_traits: &Vec<gen_trait::OptionComponentTrait>,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<fundamental::TokensVec<Self>> {
         with_component_structs
             .iter()
             .map(|wcs| {
@@ -103,7 +104,7 @@ impl PassthroughWithComponentStruct {
     pub fn new_vec(
         with_component_structs: &Vec<gen_struct::WithComponentStruct>,
         component_traits: &Vec<gen_trait::ComponentTrait>,
-    ) -> Vec<Self> {
+    ) -> fundamental::TokensVec<Self> {
         with_component_structs
             .iter()
             .flat_map(|wcs| {
@@ -147,9 +148,10 @@ impl ToTokens for PassthroughWithComponentStruct {
     }
 }
 
+#[derive(ToTokens)]
 pub struct Impl {
-    replacement_with_component_structs: Vec<ReplacementWithComponentStruct>,
-    passthrough_with_component_structs: Vec<PassthroughWithComponentStruct>,
+    replacement_with_component_structs: fundamental::TokensVec<ReplacementWithComponentStruct>,
+    passthrough_with_component_structs: fundamental::TokensVec<PassthroughWithComponentStruct>,
 }
 
 impl Impl {
@@ -182,18 +184,5 @@ impl Impl {
             replacement_with_component_structs,
             passthrough_with_component_structs,
         })
-    }
-}
-
-impl ToTokens for Impl {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            replacement_with_component_structs,
-            passthrough_with_component_structs,
-        } = self;
-        tokens.extend(quote! {
-            #(#replacement_with_component_structs)*
-            #(#passthrough_with_component_structs)*
-        });
     }
 }

@@ -38,7 +38,7 @@ impl ComponentStruct {
         a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
         cds: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
         ewa: &fundamental::WithAttrs<macro_input::EntityDeclaration>,
-    ) -> Vec<Self> {
+    ) -> fundamental::TokensVec<Self> {
         cds.iter().map(|cwa| Self::new(a, cwa, ewa)).collect()
     }
 }

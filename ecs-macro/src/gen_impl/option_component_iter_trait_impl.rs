@@ -1,6 +1,7 @@
-use crate::{gen_struct, gen_trait, macro_input};
+use crate::{fundamental, gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
+use structmeta::ToTokens;
 use syn::{Ident, Result};
 
 pub struct OptionComponentIterator {
@@ -18,7 +19,7 @@ impl OptionComponentIterator {
 
     pub fn new_vec(
         option_component_iter_traits: &Vec<gen_trait::OptionComponentIterTrait>,
-    ) -> Vec<Self> {
+    ) -> fundamental::TokensVec<Self> {
         option_component_iter_traits
             .iter()
             .map(|ocit| Self::new(ocit))
@@ -38,8 +39,9 @@ impl ToTokens for OptionComponentIterator {
     }
 }
 
+#[derive(ToTokens)]
 pub struct Impl {
-    option_component_iterators: Vec<OptionComponentIterator>,
+    option_component_iterators: fundamental::TokensVec<OptionComponentIterator>,
 }
 
 impl Impl {
@@ -61,16 +63,5 @@ impl Impl {
         Ok(Self {
             option_component_iterators,
         })
-    }
-}
-
-impl ToTokens for Impl {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            option_component_iterators,
-        } = self;
-        tokens.extend(quote! {
-            #(#option_component_iterators)*
-        });
     }
 }

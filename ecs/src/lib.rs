@@ -6,6 +6,7 @@ mod tests;
 #[derive(Clone, Copy)]
 pub struct Ecs<'a> {
     pub db: &'a spacetimedb::Local,
+    pub sender: spacetimedb::Identity,
 }
 
 impl<'a> ::std::fmt::Debug for Ecs<'a> {
@@ -27,6 +28,9 @@ pub trait WithEcs {
 
 impl WithEcs for ReducerContext {
     fn ecs(&self) -> Ecs {
-        Ecs { db: &self.db }
+        Ecs {
+            db: &self.db,
+            sender: self.sender,
+        }
     }
 }

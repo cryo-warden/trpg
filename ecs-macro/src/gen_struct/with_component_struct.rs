@@ -28,7 +28,7 @@ impl WithComponentStruct {
     pub fn new_vec(
         a: &fundamental::WithAttrs<macro_input::StructAttrsDeclaration>,
         cds: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
-    ) -> Vec<Self> {
+    ) -> fundamental::TokensVec<Self> {
         cds.iter()
             .flat_map(|d| {
                 d.component_table_pairs

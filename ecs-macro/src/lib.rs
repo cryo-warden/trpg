@@ -1,8 +1,8 @@
 extern crate proc_macro;
 
-use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
+use quote::quote;
 use std::collections::HashSet;
+use structmeta::ToTokens;
 use syn::{
     Error, Item, Result,
     parse::{Parse, ParseStream},
@@ -15,8 +15,9 @@ mod gen_struct;
 mod gen_trait;
 mod macro_input;
 
+#[derive(ToTokens)]
 struct EntityMacro {
-    items: Vec<fundamental::WithAttrs<Item>>,
+    items: fundamental::TokensVec<Item>,
     entity_structs: gen_struct::EntityStructs,
     entity_traits: gen_trait::EntityTraits,
     entity_impls: gen_impl::EntityImpls,
@@ -62,23 +63,6 @@ impl Parse for EntityMacro {
             entity_traits,
             entity_impls,
         })
-    }
-}
-
-impl ToTokens for EntityMacro {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self {
-            items,
-            entity_structs,
-            entity_traits,
-            entity_impls,
-        } = self;
-        tokens.extend(quote! {
-          #(#items)*
-          #entity_structs
-          #entity_traits
-          #entity_impls
-        });
     }
 }
 

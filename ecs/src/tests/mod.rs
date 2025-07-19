@@ -24,17 +24,17 @@ entity!(
     pub struct EntityBlob;
 
     #[component(
-    location in location_components,
-    secondary_location in secondary_location_components,
-  )]
+      location in location_components,
+      secondary_location in secondary_location_components,
+    )]
     pub struct LocationComponent {
         pub location_entity_id: EntityId,
     }
 
     #[component(
-    path in path_components,
-    excess_path in excess_path_components
-  )]
+      path in path_components,
+      excess_path in excess_path_components
+    )]
     pub struct PathComponent {
         pub destination_entity_id: EntityId,
     }
@@ -46,11 +46,8 @@ impl<'a> EntityHandle<'a> {
 
 #[allow(dead_code, unused_must_use, unused_variables, path_statements)]
 fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
-    let e = EntityHandle {
-        entity_id: 0,
-        ecs: ctx.ecs(),
-    };
-    LocationComponent::new(1).into_location_handle(ctx);
+    let e = ctx.ecs().find(0);
+    ctx.ecs().into_location_handle(LocationComponent::new(1));
     assert_eq!(
         ctx.ecs()
             .new()
@@ -63,10 +60,12 @@ fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     ctx.ecs().new().delete();
     ctx.ecs().new().new_blob();
     let e = e.with_path()?.with_location()?.with_secondary_location()?;
-    for lp in LocationComponent::iter_location(ctx).with_path() {
+    for lp in ctx.ecs().iter_location().with_path() {
         println!("{:?}", lp.path());
     }
-    for pl in PathComponent::iter_path(ctx)
+    for pl in ctx
+        .ecs()
+        .iter_path()
         .with_location()
         .with_excess_path()
         .with_secondary_location()

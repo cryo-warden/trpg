@@ -1,4 +1,4 @@
-use crate::{gen_struct, gen_trait::OptionComponentTrait};
+use crate::{fundamental, gen_struct, gen_trait::OptionComponentTrait};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{Error, Ident, Result};
@@ -24,7 +24,7 @@ impl OptionComponentIterTrait {
     pub fn new_vec(
         option_component_traits: &Vec<OptionComponentTrait>,
         with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<fundamental::TokensVec<Self>> {
         option_component_traits
             .iter()
             .map(|oct| {

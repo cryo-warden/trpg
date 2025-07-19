@@ -34,8 +34,8 @@ impl Parse for Attributes {
 impl ToTokens for Attributes {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let Attributes(attrs) = self;
-        tokens.extend(quote! {
-          #(#attrs)*
+        attrs.iter().for_each(|attr| {
+            attr.to_tokens(tokens);
         });
     }
 }
@@ -72,9 +72,6 @@ impl<T: ToTokens> ToTokens for WithAttrs<T> {
 pub trait AddAttrs: Sized {
     fn add_attrs(self, attrs: Attributes) -> WithAttrs<Self> {
         WithAttrs { attrs, value: self }
-    }
-    fn add_empty_attrs(self) -> WithAttrs<Self> {
-        self.add_attrs(Attributes(vec![]))
     }
 }
 
@@ -188,5 +185,27 @@ impl ToTokens for Tables {
         tokens.extend(quote! {
           #(#tables)*
         })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct TokensVec<T>(pub Vec<T>);
+
+impl<T> Deref for TokensVec<T> {
+    type Target = Vec<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<T: ToTokens> ToTokens for TokensVec<T> {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        self.iter().for_each(|v| v.to_tokens(tokens));
+    }
+}
+
+impl<T> FromIterator<T> for TokensVec<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self(iter.into_iter().collect())
     }
 }

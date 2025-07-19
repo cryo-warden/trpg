@@ -52,7 +52,7 @@ impl OptionComponentTrait {
     pub fn new_vec(
         component_declarations: &Vec<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
         with_component_structs: &Vec<gen_struct::WithComponentStruct>,
-    ) -> Result<Vec<Self>> {
+    ) -> Result<fundamental::TokensVec<Self>> {
         component_declarations
             .iter()
             .flat_map(|cdwa| {
