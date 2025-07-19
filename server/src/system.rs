@@ -46,33 +46,33 @@ pub fn event_resolve_system(ecs: Ecs) {
 }
 
 pub fn hp_system(ecs: Ecs) {
-    for mut hp_component in ecs.db.hp_components().iter() {
-        hp_component.hp = max(
+    for mut e in ecs.iter_hp() {
+        let hp = e.hp_mut();
+        hp.hp = max(
             0,
             min(
-                hp_component.mhp,
-                hp_component.hp + hp_component.accumulated_healing
-                    - hp_component.accumulated_damage,
+                hp.mhp,
+                hp.hp + hp.accumulated_healing - hp.accumulated_damage,
             ),
         );
-        hp_component.accumulated_healing = 0;
-        hp_component.accumulated_damage = 0;
-        ecs.db.hp_components().entity_id().update(hp_component);
+        hp.accumulated_healing = 0;
+        hp.accumulated_damage = 0;
+        e.update_hp();
     }
 }
 
 pub fn ep_system(ecs: Ecs) {
-    for mut ep_component in ecs.db.ep_components().iter() {
-        ep_component.ep = max(0, min(ep_component.mep, ep_component.ep));
-        ecs.db.ep_components().entity_id().update(ep_component);
+    for mut e in ecs.iter_ep() {
+        let ep = e.ep_mut();
+        ep.ep = max(0, min(ep.mep, ep.ep));
+        e.update_ep();
     }
 }
 
 pub fn shift_queued_action_system(ecs: Ecs) {
-    for q in ecs.db.queued_action_state_components().iter() {
-        let e = ecs.find(q.entity_id);
+    for e in ecs.iter_queued_action_state() {
         if e.action_state().is_none() {
-            let e = e.shift_queued_action_state();
+            let e = e.into_handle().shift_queued_action_state();
             if let Some(a) = e.action_state() {
                 ecs.db.observable_events().insert(EntityEvent {
                     id: 0,
@@ -171,10 +171,8 @@ pub fn target_validation_system(ecs: Ecs) {
 }
 
 pub fn action_option_system(ecs: Ecs) {
-    for action_option_component in ecs.db.action_options_components().iter() {
-        ecs.db
-            .action_options_components()
-            .delete(action_option_component);
+    for e in ecs.iter_action_options() {
+        e.delete_action_options();
     }
     for e in ecs.iter_location() {
         for other_entity_id in match e.target() {
@@ -209,13 +207,11 @@ pub fn entity_prominence_system(ecs: Ecs) {
 
 pub fn entity_deactivation_system(ecs: Ecs) {
     for t in ecs.iter_entity_deactivation_timer() {
-        if t.entity_deactivation_timer().timestamp.le(&ecs.timestamp) {
-            let entity_id = t.entity_id();
-            t.delete_entity_deactivation_timer();
-            let handle = ecs.find(entity_id);
-            let _ = handle.new_blob();
+        if t.entity_deactivation_timer().timestamp <= ecs.timestamp {
+            let t = t.delete_entity_deactivation_timer();
+            let _ = t.new_blob();
             // WIP Complete deactivation by moving blob into a new entity_blobs table.
-            handle.delete();
+            t.delete();
         }
     }
 }
@@ -240,14 +236,13 @@ pub fn entity_stats_system(ecs: Ecs) {
     for f in ecs.iter_total_stat_block_dirty_flag() {
         log::debug!("Entity {} is computing total stat block.", f.entity_id());
         let mut stat_block = f
-            .clone()
-            .with_baseline()
-            .and_then(|b| ecs.db.baselines().id().find(b.baseline().baseline_id))
+            .baseline()
+            .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
             .map(|b| b.stat_block)
             .unwrap_or_else(|| StatBlock::default());
 
-        if let Some(t) = f.clone().with_traits_stat_block_cache() {
-            stat_block.add(&t.traits_stat_block_cache().stat_block);
+        if let Some(t) = f.traits_stat_block_cache() {
+            stat_block.add(&t.stat_block);
         }
 
         f.into_handle().apply_stat_block(stat_block);
