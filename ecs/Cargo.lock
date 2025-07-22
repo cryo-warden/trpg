@@ -143,6 +143,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "custom-tools"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "structmeta",
+ "syn",
+]
+
+[[package]]
 name = "decorum"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -187,6 +197,7 @@ dependencies = [
 name = "ecs-macro"
 version = "0.1.0"
 dependencies = [
+ "custom-tools",
  "proc-macro2",
  "quote",
  "structmeta",
