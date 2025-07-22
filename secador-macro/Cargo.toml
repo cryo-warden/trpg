@@ -1,5 +1,5 @@
 [package]
-name = "ecs-macro"
+name = "secador-macro"
 version = "0.1.0"
 edition = "2024"
 
@@ -10,6 +10,4 @@ proc-macro = true
 proc-macro2 = "1.0.95"
 quote = "1.0.40"
 structmeta = "0.3.0"
-syn = { version = "2.0.103", features = ["full"] }
-custom-tools.workspace = true
-secador.workspace = true
+syn = { version = "2.0.103", features = ["fold", "full", "derive"] }
