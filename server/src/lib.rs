@@ -4,7 +4,7 @@ use ecs::WithEcs;
 use entity::*;
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{StatBlockBuilder, StatBlockContext};
-use system::*;
+use system::action_option_system;
 
 mod action;
 mod appearance;
@@ -275,6 +275,8 @@ pub struct SystemTimer {
 
 #[reducer]
 pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), String> {
+    use system::*;
+
     let ecs = ctx.ecs();
 
     action_system(ecs);

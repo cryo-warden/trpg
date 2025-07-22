@@ -1,0 +1,11 @@
+[package]
+name = "secador"
+version = "0.1.0"
+edition = "2024"
+description = "Stop repeating code"
+license = "MIT"
+repository = "https://github.com/cryo-warden/trpg/tree/master/secador"
+documentation = "https://docs.rs/secador"
+
+[dependencies]
+secador-macro.workspace = true
