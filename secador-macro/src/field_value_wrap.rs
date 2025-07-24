@@ -2,22 +2,16 @@ use quote::ToTokens;
 use syn::{
     FieldValue, Member, Result,
     parse::{Parse, ParseStream},
-    punctuated::Pair,
-    token::Comma,
 };
 
 use crate::seca::{Seca, TryToSeca};
 
-type FieldValuePair = Pair<FieldValue, Comma>;
 #[derive(Clone)]
-pub struct FieldValueWrap(pub FieldValuePair);
+pub struct FieldValueWrap(pub FieldValue);
 
 impl Parse for FieldValueWrap {
     fn parse(input: ParseStream) -> Result<Self> {
-        Ok(Self(FieldValuePair::Punctuated(
-            input.parse()?,
-            input.parse()?,
-        )))
+        Ok(Self(input.parse()?))
     }
 }
 
@@ -29,13 +23,12 @@ impl ToTokens for FieldValueWrap {
 
 impl TryToSeca for FieldValueWrap {
     fn seca(&self) -> Option<Seca> {
-        let value = self.0.value();
-        let ident = match value.member.clone() {
+        let ident = match self.0.member.clone() {
             Member::Named(ident) => Some(ident),
             _ => None,
         }?;
         (ident.to_string() == "__seca").then_some(())?;
-        let s = value.expr.to_token_stream().to_string();
+        let s = self.0.expr.to_token_stream().to_string();
         let i = s.strip_prefix("__")?;
         let count: usize = i.parse().ok()?;
         Some(Seca { count })

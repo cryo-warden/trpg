@@ -5,7 +5,7 @@ use syn::{
     fold::Fold,
     parenthesized,
     parse::{Parse, ParseStream},
-    punctuated::{Pair, Punctuated},
+    punctuated::Punctuated,
 };
 
 use crate::{
@@ -106,22 +106,14 @@ impl Fold for Dryer {
             Fields::Named(fields_named) => {
                 let nodes: Vec<_> = fields_named
                     .named
-                    .into_pairs()
                     .into_iter()
-                    .map(|p| {
-                        FieldWrap(match p {
-                            Pair::Punctuated(f, p) => Pair::Punctuated(self.fold_field(f), p),
-                            e => e,
-                        })
-                    })
+                    .map(|f| FieldWrap(self.fold_field(f)))
                     .collect();
 
                 let mut named = Punctuated::new();
                 for n in self.dry_nodes(nodes) {
-                    if let Pair::Punctuated(n, p) = n.0 {
-                        named.push_value(n);
-                        named.push_punct(p);
-                    }
+                    named.push_value(n.0);
+                    named.push_punct(Default::default());
                 }
 
                 ItemStruct {
@@ -140,22 +132,14 @@ impl Fold for Dryer {
     fn fold_expr_struct(&mut self, i: ExprStruct) -> ExprStruct {
         let nodes: Vec<_> = i
             .fields
-            .into_pairs()
             .into_iter()
-            .map(|p| {
-                FieldValueWrap(match p {
-                    Pair::Punctuated(f, p) => Pair::Punctuated(self.fold_field_value(f), p),
-                    p => p,
-                })
-            })
+            .map(|f| FieldValueWrap(self.fold_field_value(f)))
             .collect();
 
         let mut fields = Punctuated::new();
         for n in self.dry_nodes(nodes) {
-            if let Pair::Punctuated(n, p) = n.0 {
-                fields.push_value(n);
-                fields.push_punct(p);
-            }
+            fields.push_value(n.0);
+            fields.push_punct(Default::default());
         }
 
         ExprStruct {
