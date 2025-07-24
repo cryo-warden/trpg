@@ -3,15 +3,15 @@
 mod test1 {
     use secador_macro::secador;
 
-    struct Origin;
-
     secador!(
         (field, Type),
         [(happy, Happy), (sad, Sad), (mad, Mad), (glad, Glad),],
         {
+            mod origin;
             seca!(1);
             mod __field;
 
+            pub use origin::Origin;
             seca!(1);
             pub use __field::__Type;
 
@@ -28,14 +28,16 @@ mod test1 {
                 pub fn new_test(origin: Origin, __seca: __1, __field: __Type) -> Test {
                     Test {
                         __seca: __1,
-                        __field: __Type::init(origin),
+                        __field: __Type::init(&origin, __field),
                     }
                 }
             }
         }
     );
 
-    fn compiles(test: Test) {
+    #[test]
+    fn compiles() {
+        let test = Test::new_test(Origin, Happy, Sad, Mad, Glad);
         test.happy();
         test.sad();
         test.mad();

@@ -1,7 +1,7 @@
 use quote::ToTokens;
 use syn::{
-    Block, Error, ExprStruct, Fields, FieldsNamed, Ident, ItemImpl, ItemStruct, Result, Token,
-    bracketed,
+    Block, Error, ExprStruct, Fields, FieldsNamed, Ident, ItemImpl, ItemStruct, Result, Signature,
+    Token, bracketed,
     fold::Fold,
     parenthesized,
     parse::{Parse, ParseStream},
@@ -9,8 +9,8 @@ use syn::{
 };
 
 use crate::{
-    field_value_wrap::FieldValueWrap, field_wrap::FieldWrap, seca::TryToSeca,
-    substitution_tuple::SubstitutionTuple, substitutor::Substitutor,
+    field_value_wrap::FieldValueWrap, field_wrap::FieldWrap, fn_arg_wrap::FnArgWrap,
+    seca::TryToSeca, substitution_tuple::SubstitutionTuple, substitutor::Substitutor,
 };
 
 pub struct Dryer {
@@ -163,6 +163,21 @@ impl Fold for Dryer {
             attrs: self.fold_attributes(i.attrs),
             ..i
         }
+    }
+    fn fold_signature(&mut self, i: Signature) -> Signature {
+        let nodes: Vec<_> = i
+            .inputs
+            .into_iter()
+            .map(|f| FnArgWrap(self.fold_fn_arg(f)))
+            .collect();
+
+        let mut inputs = Punctuated::new();
+        for n in self.dry_nodes(nodes) {
+            inputs.push_value(n.0);
+            inputs.push_punct(Default::default());
+        }
+
+        Signature { inputs, ..i }
     }
 }
 
