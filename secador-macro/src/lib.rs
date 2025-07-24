@@ -6,6 +6,8 @@ use syn::parse_macro_input;
 use crate::secador_macro::SecadorMacro;
 
 mod dryer;
+mod field_value_wrap;
+mod field_wrap;
 mod path_ends_with;
 mod seca;
 mod secador_macro;

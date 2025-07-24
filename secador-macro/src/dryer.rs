@@ -1,12 +1,17 @@
 use quote::ToTokens;
 use syn::{
-    Block, Error, Ident, ItemImpl, Result, Token, bracketed,
+    Block, Error, ExprStruct, Fields, FieldsNamed, Ident, ItemImpl, ItemStruct, Result, Token,
+    bracketed,
     fold::Fold,
     parenthesized,
     parse::{Parse, ParseStream},
+    punctuated::{Pair, Punctuated},
 };
 
-use crate::{seca::IsSeca, substitution_tuple::SubstitutionTuple, substitutor::Substitutor};
+use crate::{
+    field_value_wrap::FieldValueWrap, field_wrap::FieldWrap, seca::TryToSeca,
+    substitution_tuple::SubstitutionTuple, substitutor::Substitutor,
+};
 
 pub struct Dryer {
     pub names: Vec<String>,
@@ -27,7 +32,7 @@ impl Dryer {
     pub fn dry_nodes<T, U>(&mut self, items: T) -> Vec<U>
     where
         T: IntoIterator<Item = U>,
-        U: IsSeca + Clone + Parse + ToTokens,
+        U: TryToSeca + Clone + Parse + ToTokens,
     {
         let mut items = items.into_iter();
         let mut results = vec![];
@@ -91,6 +96,71 @@ impl Fold for Dryer {
             .collect();
         ItemImpl {
             items: self.dry_nodes(nodes),
+            attrs: self.fold_attributes(i.attrs),
+            generics: self.fold_generics(i.generics),
+            ..i
+        }
+    }
+    fn fold_item_struct(&mut self, i: ItemStruct) -> ItemStruct {
+        match i.fields {
+            Fields::Named(fields_named) => {
+                let nodes: Vec<_> = fields_named
+                    .named
+                    .into_pairs()
+                    .into_iter()
+                    .map(|p| {
+                        FieldWrap(match p {
+                            Pair::Punctuated(f, p) => Pair::Punctuated(self.fold_field(f), p),
+                            e => e,
+                        })
+                    })
+                    .collect();
+
+                let mut named = Punctuated::new();
+                for n in self.dry_nodes(nodes) {
+                    if let Pair::Punctuated(n, p) = n.0 {
+                        named.push_value(n);
+                        named.push_punct(p);
+                    }
+                }
+
+                ItemStruct {
+                    fields: Fields::Named(FieldsNamed {
+                        named,
+                        ..fields_named
+                    }),
+                    attrs: self.fold_attributes(i.attrs),
+                    generics: self.fold_generics(i.generics),
+                    ..i
+                }
+            }
+            _ => i,
+        }
+    }
+    fn fold_expr_struct(&mut self, i: ExprStruct) -> ExprStruct {
+        let nodes: Vec<_> = i
+            .fields
+            .into_pairs()
+            .into_iter()
+            .map(|p| {
+                FieldValueWrap(match p {
+                    Pair::Punctuated(f, p) => Pair::Punctuated(self.fold_field_value(f), p),
+                    p => p,
+                })
+            })
+            .collect();
+
+        let mut fields = Punctuated::new();
+        for n in self.dry_nodes(nodes) {
+            if let Pair::Punctuated(n, p) = n.0 {
+                fields.push_value(n);
+                fields.push_punct(p);
+            }
+        }
+
+        ExprStruct {
+            fields,
+            attrs: self.fold_attributes(i.attrs),
             ..i
         }
     }

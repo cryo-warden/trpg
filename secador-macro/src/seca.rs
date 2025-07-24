@@ -6,21 +6,16 @@ pub struct Seca {
     pub count: usize,
 }
 
-pub trait IsSeca {
+pub trait TryToSeca {
     fn seca(&self) -> Option<Seca>;
 }
 
-impl<T: TryToMacro> IsSeca for T {
+impl<T: TryToMacro> TryToSeca for T {
     fn seca(&self) -> Option<Seca> {
-        if let Some(mac) = self.try_to_macro() {
-            if mac.path_ends_with("seca") {
-                if let Some(i) = &mac.parse_body_with(LitInt::parse).ok() {
-                    if let Some(count) = i.base10_parse().ok() {
-                        return Some(Seca { count });
-                    }
-                }
-            }
-        }
-        return None;
+        let mac = self.try_to_macro()?;
+        mac.path_ends_with("seca").then_some(())?;
+        let i = &mac.parse_body_with(LitInt::parse).ok()?;
+        let count = i.base10_parse().ok()?;
+        Some(Seca { count })
     }
 }
