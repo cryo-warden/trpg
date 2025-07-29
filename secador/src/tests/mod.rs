@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 mod test1 {
-    use secador_macro::secador;
+    use crate::secador;
 
     secador!(
         (field, Type),
@@ -45,34 +45,56 @@ mod test1 {
     }
 }
 
-// mod test2 {
-//     use secador_macro::secador;
+mod test2 {
+    use crate::secador;
 
-//     secador!(
-//         (field, Type, other_field, OtherType),
-//         [
-//             (happy, Happy, path, Path),
-//             (sad, Sad, way, Way),
-//             (mad, Mad, route, Route),
-//             (glad, Glad, direction, Direction),
-//         ],
-//         {
-//             seca!(1);
-//             mod __field;
+    secador!(
+        (field, Type, other_field, OtherType),
+        [
+            (happy, Happy, path, Path),
+            (sad, Sad, way, Way),
+            (mad, Mad, route, Route),
+            (glad, Glad, direction, Direction),
+        ],
+        {
+            seca!(1);
+            mod __field;
 
-//             pub struct Test {
-//                 __seca: __2,
-//                 __field: __Type,
-//                 __other_field: __OtherType,
-//             }
+            seca!(1);
+            pub use __field::__Type;
 
-//             pub fn new_test(__seca: __2, __field: __Type, __other_field: __OtherType) -> Test {
-//                 Test {
-//                     __seca: __2,
-//                     __field,
-//                     __other_field,
-//                 }
-//             }
-//         }
-//     );
-// }
+            seca!(1);
+            #[derive(Debug)]
+            pub struct __OtherType;
+
+            pub struct Test {
+                __seca: __2,
+                pub __field: __Type,
+                pub __other_field: __OtherType,
+            }
+
+            impl Test {
+                pub fn new_test(__seca: __2, __field: __Type, __other_field: __OtherType) -> Test {
+                    Test {
+                        __seca: __2,
+                        __field: __Type::init(__field),
+                        __other_field,
+                    }
+                }
+            }
+        }
+    );
+
+    #[test]
+    fn compiles() {
+        let test = Test::new_test(Happy, Path, Sad, Way, Mad, Route, Glad, Direction);
+        println!("{:?}", test.direction);
+        println!("{:?}", test.glad);
+        println!("{:?}", test.happy);
+        println!("{:?}", test.mad);
+        println!("{:?}", test.path);
+        println!("{:?}", test.route);
+        println!("{:?}", test.sad);
+        println!("{:?}", test.way);
+    }
+}

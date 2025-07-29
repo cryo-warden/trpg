@@ -19,6 +19,7 @@ dependencies = [
  "custom-tools",
  "proc-macro2",
  "quote",
+ "secador",
  "structmeta",
  "syn",
 ]
@@ -39,6 +40,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1885c039570dc00dcb4ff087a89e185fd56bae234ddc7f056a945bf36467248d"
 dependencies = [
  "proc-macro2",
+]
+
+[[package]]
+name = "secador"
+version = "0.1.0"
+dependencies = [
+ "secador-macro",
+]
+
+[[package]]
+name = "secador-macro"
+version = "0.1.0"
+dependencies = [
+ "custom-tools",
+ "proc-macro2",
+ "quote",
+ "structmeta",
+ "syn",
 ]
 
 [[package]]

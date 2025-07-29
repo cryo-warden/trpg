@@ -78,8 +78,6 @@ impl Dryer {
     }
 }
 
-// WIP Write a function which processes a Vec<Field> or Intoiterator<Item = Field>.
-// WIP Write a function which processes a sequence of field assignments.
 impl Fold for Dryer {
     fn fold_block(&mut self, i: Block) -> Block {
         let nodes: Vec<_> = i.stmts.into_iter().map(|s| self.fold_stmt(s)).collect();

@@ -5,6 +5,7 @@ use crate::{
     stat_block::{baselines, traits, StatBlock},
 };
 use ecs::Ecs;
+use secador::secador;
 use spacetimedb::Table;
 use std::cmp::{max, min};
 
@@ -27,20 +28,13 @@ pub fn observation_system(ecs: Ecs) {
 }
 
 pub fn event_resolve_system(ecs: Ecs) {
-    for event in ecs.db.early_events().iter() {
-        event.resolve(ecs);
-        ecs.db.early_events().id().delete(event.id);
-    }
-
-    for event in ecs.db.middle_events().iter() {
-        event.resolve(ecs);
-        ecs.db.middle_events().id().delete(event.id);
-    }
-
-    for event in ecs.db.late_events().iter() {
-        event.resolve(ecs);
-        ecs.db.late_events().id().delete(event.id);
-    }
+    secador!((table), [(early_events), (middle_events), (late_events)], {
+        seca!(1);
+        for event in ecs.db.__table().iter() {
+            event.resolve(ecs);
+            ecs.db.__table().id().delete(event.id);
+        }
+    });
 }
 
 pub fn hp_system(ecs: Ecs) {
@@ -95,7 +89,7 @@ pub fn action_system(ecs: Ecs) {
             match effect {
                 ActionEffect::Buff(_) => {
                     EntityEvent::emit_early(
-                        &ecs,
+                        ecs,
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
                         action_state.target_entity_id,
@@ -106,7 +100,7 @@ pub fn action_system(ecs: Ecs) {
                     let t = ecs.find(action_state.target_entity_id);
                     let target_defense = t.hp().map(|c| c.defense).unwrap_or(0);
                     EntityEvent::emit_middle(
-                        &ecs,
+                        ecs,
                         entity_id,
                         EventType::ActionEffect(ActionEffect::Attack(max(
                             0,
@@ -117,7 +111,7 @@ pub fn action_system(ecs: Ecs) {
                 }
                 ActionEffect::Heal(_) => {
                     EntityEvent::emit_middle(
-                        &ecs,
+                        ecs,
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
                         action_state.target_entity_id,
@@ -125,7 +119,7 @@ pub fn action_system(ecs: Ecs) {
                 }
                 _ => {
                     EntityEvent::emit_late(
-                        &ecs,
+                        ecs,
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
                         action_state.target_entity_id,

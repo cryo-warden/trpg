@@ -13,3 +13,4 @@ spacetimedb = "1.1.2"
 log = "0.4"
 derive_builder = "0.20.2"
 ecs = { path = "../ecs" }
+secador = { path = "../secador" }

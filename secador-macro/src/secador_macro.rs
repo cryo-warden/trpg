@@ -22,6 +22,7 @@ impl ToTokens for SecadorMacro {
 
 impl Parse for SecadorMacro {
     fn parse(input: ParseStream) -> Result<Self> {
+        // TODO Support a choice of multiple dryers.
         let mut dryer: Dryer = input.parse()?;
         input.parse::<Token![,]>()?;
         let block: Block = input.parse()?;
