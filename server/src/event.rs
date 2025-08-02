@@ -22,9 +22,8 @@ secador!(
         }
 
         #[table(name = observable_events, public)]
-        #[table(name = early_events)]
-        #[table(name = middle_events)]
-        #[table(name = late_events)]
+        #[seca(1)]
+        #[table(name = __table)]
         #[derive(Debug, Clone)]
         pub struct EntityEvent {
             #[primary_key]

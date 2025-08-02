@@ -1,7 +1,7 @@
 use quote::ToTokens;
 use syn::{
-    Block, Error, ExprStruct, Fields, FieldsNamed, Ident, ItemImpl, ItemStruct, Result, Signature,
-    Token, bracketed,
+    Attribute, Block, Error, ExprStruct, FieldsNamed, Ident, ItemImpl, Result, Signature, Token,
+    bracketed,
     fold::Fold,
     parenthesized,
     parse::{Parse, ParseStream},
@@ -10,7 +10,8 @@ use syn::{
 
 use crate::{
     field_value_wrap::FieldValueWrap, field_wrap::FieldWrap, fn_arg_wrap::FnArgWrap,
-    seca::TryToSeca, substitution_tuple::SubstitutionTuple, substitutor::Substitutor,
+    outer_attribute_wrap::OuterAttributeWrap, seca::TryToSeca,
+    substitution_tuple::SubstitutionTuple, substitutor::Substitutor,
 };
 
 pub struct Dryer {
@@ -99,33 +100,20 @@ impl Fold for Dryer {
             ..i
         }
     }
-    fn fold_item_struct(&mut self, i: ItemStruct) -> ItemStruct {
-        match i.fields {
-            Fields::Named(fields_named) => {
-                let nodes: Vec<_> = fields_named
-                    .named
-                    .into_iter()
-                    .map(|f| FieldWrap(self.fold_field(f)))
-                    .collect();
+    fn fold_fields_named(&mut self, i: syn::FieldsNamed) -> syn::FieldsNamed {
+        let nodes: Vec<_> = i
+            .named
+            .into_iter()
+            .map(|f| FieldWrap(self.fold_field(f)))
+            .collect();
 
-                let mut named = Punctuated::new();
-                for n in self.dry_nodes(nodes) {
-                    named.push_value(n.0);
-                    named.push_punct(Default::default());
-                }
-
-                ItemStruct {
-                    fields: Fields::Named(FieldsNamed {
-                        named,
-                        ..fields_named
-                    }),
-                    attrs: self.fold_attributes(i.attrs),
-                    generics: self.fold_generics(i.generics),
-                    ..i
-                }
-            }
-            _ => i,
+        let mut named = Punctuated::new();
+        for n in self.dry_nodes(nodes) {
+            named.push_value(n.0);
+            named.push_punct(Default::default());
         }
+
+        FieldsNamed { named, ..i }
     }
     fn fold_expr_struct(&mut self, i: ExprStruct) -> ExprStruct {
         let nodes: Vec<_> = i
@@ -160,6 +148,16 @@ impl Fold for Dryer {
         }
 
         Signature { inputs, ..i }
+    }
+    fn fold_attributes(&mut self, i: Vec<Attribute>) -> Vec<Attribute> {
+        let nodes: Vec<_> = i
+            .into_iter()
+            .map(|i| OuterAttributeWrap(self.fold_attribute(i)))
+            .collect();
+        self.dry_nodes(nodes)
+            .into_iter()
+            .map(|OuterAttributeWrap(attr)| attr)
+            .collect()
     }
 }
 

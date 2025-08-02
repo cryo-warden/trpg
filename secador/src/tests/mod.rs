@@ -98,3 +98,20 @@ mod test2 {
         println!("{:?}", test.way);
     }
 }
+
+mod test3 {
+    use crate::secador;
+
+    secador!((attr, arg), [(derive, Clone), (derive, Debug),], {
+        #[seca(1)]
+        #[__attr(__arg)]
+        pub struct Test(pub u64);
+    });
+
+    #[test]
+    fn compiles() {
+        let test = Test(12);
+        println!("{:?}", test.0.clone());
+        println!("{:?}", test.clone());
+    }
+}

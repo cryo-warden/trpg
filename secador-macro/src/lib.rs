@@ -9,6 +9,7 @@ mod dryer;
 mod field_value_wrap;
 mod field_wrap;
 mod fn_arg_wrap;
+mod outer_attribute_wrap;
 mod path_ends_with;
 mod seca;
 mod secador_macro;
