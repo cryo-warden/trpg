@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-mod test1 {
+mod test_single_line {
     use crate::secador;
 
     secador!(
@@ -45,7 +45,7 @@ mod test1 {
     }
 }
 
-mod test2 {
+mod test_multi_line {
     use crate::secador;
 
     secador!(
@@ -99,7 +99,7 @@ mod test2 {
     }
 }
 
-mod test3 {
+mod test_attr {
     use crate::secador;
 
     secador!((attr, arg), [(derive, Clone), (derive, Debug),], {

@@ -1,4 +1,4 @@
-use crate::tests::test1::Origin;
+use crate::tests::test_single_line::Origin;
 
 pub struct Sad;
 
