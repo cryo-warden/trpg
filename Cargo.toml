@@ -1,0 +1,12 @@
+[workspace]
+
+members = ["custom-tools", "secador-macro", "secador", "ecs-macro", "ecs", "server"]
+resolver = "3"
+
+[workspace.dependencies]
+
+custom-tools = { path = "custom-tools" }
+secador-macro = { path = "secador-macro" }
+secador = { path = "secador" }
+ecs-macro = { path = "ecs-macro" }
+ecs = { path = "ecs" }

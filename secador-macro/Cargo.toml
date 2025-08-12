@@ -11,4 +11,4 @@ proc-macro2 = "1.0.95"
 quote = "1.0.40"
 structmeta = "0.3.0"
 syn = { version = "2.0.103", features = ["fold", "full", "derive"] }
-custom-tools = { path = "../custom-tools" }
+custom-tools.workspace = true
