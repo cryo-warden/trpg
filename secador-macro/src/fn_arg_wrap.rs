@@ -22,7 +22,7 @@ impl ToTokens for FnArgWrap {
 }
 
 impl TryToSeca for FnArgWrap {
-    fn seca(&self) -> Option<Seca> {
+    fn seca(&self, name: &str) -> Option<Seca> {
         let value = match self.0.clone() {
             FnArg::Typed(typed) => Some(typed),
             _ => None,
@@ -31,7 +31,7 @@ impl TryToSeca for FnArgWrap {
             Pat::Ident(pat) => Some(pat.ident),
             _ => None,
         }?;
-        (ident.to_string() == "__seca").then_some(())?;
+        (ident.to_string().strip_prefix("__")? == name).then_some(())?;
         let s = value.ty.to_token_stream().to_string();
         let i = s.strip_prefix("__")?;
         let count: usize = i.parse().ok()?;

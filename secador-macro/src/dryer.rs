@@ -15,6 +15,7 @@ use crate::{
 };
 
 pub struct Dryer {
+    pub name: String,
     pub names: Vec<String>,
     pub table: Vec<SubstitutionTuple>,
     pub error: Option<Error>,
@@ -39,7 +40,7 @@ impl Dryer {
         let mut results = vec![];
         let mut error = self.error.clone();
         while let Some(curr) = items.next() {
-            if let Some(seca) = curr.seca() {
+            if let Some(seca) = curr.seca(&self.name) {
                 let sources: Vec<U> = (&mut items).take(seca.count).collect();
                 for substitutions in &self.table {
                     let substitutor = Substitutor {
@@ -163,6 +164,33 @@ impl Fold for Dryer {
 
 impl Parse for Dryer {
     fn parse(input: ParseStream) -> Result<Self> {
+        let ident: Ident = input.parse()?;
+        input.parse::<Token![!]>()?;
+
+        let result = Self {
+            name: ident.to_string(),
+            ..Default::default()
+        };
+
+        let content;
+        parenthesized!(content in input);
+        result.parse_args(&content)
+    }
+}
+
+impl Default for Dryer {
+    fn default() -> Self {
+        Self {
+            name: "seca".into(),
+            names: vec![],
+            table: vec![],
+            error: None,
+        }
+    }
+}
+
+impl Dryer {
+    pub fn parse_args(mut self, input: ParseStream) -> Result<Self> {
         let content;
         parenthesized!(content in input);
         let names = content
@@ -180,10 +208,9 @@ impl Parse for Dryer {
             .into_iter()
             .collect();
 
-        Ok(Self {
-            names,
-            table,
-            error: None,
-        })
+        self.names = names;
+        self.table = table;
+
+        Ok(self)
     }
 }

@@ -22,9 +22,9 @@ impl ToTokens for FieldWrap {
 }
 
 impl TryToSeca for FieldWrap {
-    fn seca(&self) -> Option<Seca> {
+    fn seca(&self, name: &str) -> Option<Seca> {
         let ident = self.0.ident.clone()?;
-        (ident.to_string() == "__seca").then_some(())?;
+        (ident.to_string().strip_prefix("__")? == name).then_some(())?;
         let s = self.0.ty.to_token_stream().to_string();
         let i = s.strip_prefix("__")?;
         let count: usize = i.parse().ok()?;

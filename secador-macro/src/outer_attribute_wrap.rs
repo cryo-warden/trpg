@@ -36,9 +36,9 @@ impl ToTokens for OuterAttributeWrap {
 }
 
 impl TryToSeca for OuterAttributeWrap {
-    fn seca(&self) -> Option<Seca> {
+    fn seca(&self, name: &str) -> Option<Seca> {
         let path_end = self.0.path().segments.last()?.ident.to_string();
-        if path_end != "seca" {
+        if path_end != name {
             return None;
         }
         let SecaAttributeArgs { count } = self.0.parse_args().ok()?;

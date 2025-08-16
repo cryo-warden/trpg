@@ -115,3 +115,26 @@ mod test_attr {
         println!("{:?}", test.clone());
     }
 }
+
+mod test_secador_multi {
+    use crate::secador_multi;
+
+    secador_multi!(
+        seca!((var, ty, init), [(A, u64, 8), (B, u32, 13),]), // Intentional extra comma.
+        custom_named_seca!((var, ty, init), [(Z, u64, 8), (Y, u32, 13)]),
+        {
+            seca!(1);
+            const __var: __ty = __init;
+            custom_named_seca!(1);
+            const __var: __ty = __init;
+
+            #[test]
+            fn compiles() {
+                let _ = A;
+                let _ = B;
+                let _ = Y;
+                let _ = Z;
+            }
+        }
+    );
+}
