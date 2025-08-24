@@ -471,7 +471,6 @@ dependencies = [
 name = "secador-macro"
 version = "0.1.0"
 dependencies = [
- "custom-tools",
  "proc-macro2",
  "quote",
  "structmeta",
