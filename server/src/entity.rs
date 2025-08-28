@@ -200,7 +200,7 @@ pub trait GetRng {
     fn get_rng(&self) -> StdRng;
 }
 
-impl<T: __rng_seed__Some> GetRng for T {
+impl<T: rng_seed_component::Some> GetRng for T {
     fn get_rng(&self) -> StdRng {
         StdRng::seed_from_u64(self.rng_seed().rng_seed)
     }
@@ -226,8 +226,10 @@ pub trait EcsExtension<'a> {
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> EntityHandle<'a>;
-    fn from_player_identity(self) -> Option<__player_controller__WithComponent<EntityHandle<'a>>>;
-    fn from_name(self, name: &str) -> Option<__name__WithComponent<EntityHandle<'a>>>;
+    fn from_player_identity(
+        self,
+    ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>>;
+    fn from_name(self, name: &str) -> Option<name_component::WithComponent<EntityHandle<'a>>>;
     fn new_player(self) -> Result<EntityHandle<'a>, String>;
 }
 
@@ -254,7 +256,9 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .upsert_new_path(destination_entity_id)
             .into_handle()
     }
-    fn from_player_identity(self) -> Option<__player_controller__WithComponent<EntityHandle<'a>>> {
+    fn from_player_identity(
+        self,
+    ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>> {
         self.db
             .player_controller_components()
             .identity()
@@ -262,7 +266,7 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .map(|p| self.into_player_controller_handle(p))
     }
 
-    fn from_name(self, name: &str) -> Option<__name__WithComponent<EntityHandle<'a>>> {
+    fn from_name(self, name: &str) -> Option<name_component::WithComponent<EntityHandle<'a>>> {
         self.db
             .name_components()
             .name()
@@ -296,7 +300,9 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
     }
 }
 
-impl<'a, T: WithEntityHandle<'a> + __unrealized_map__Some + __rng_seed__Some> MapGenerator for T {
+impl<'a, T: WithEntityHandle<'a> + unrealized_map_component::Some + rng_seed_component::Some>
+    MapGenerator for T
+{
     fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
         let af_ctx = AppearanceFeatureContext::new(ctx);
         let map = self.unrealized_map();

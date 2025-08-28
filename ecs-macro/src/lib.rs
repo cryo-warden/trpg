@@ -12,6 +12,7 @@ use syn::{
 use crate::rc_slice::RcSlice;
 
 mod fundamental;
+mod gen_component_mod;
 mod gen_impl;
 mod gen_struct;
 mod gen_trait;
@@ -24,6 +25,7 @@ struct EntityMacro {
     entity_structs: gen_struct::EntityStructs,
     entity_traits: gen_trait::EntityTraits,
     entity_impls: gen_impl::EntityImpls,
+    component_mods: RcSlice<gen_component_mod::ComponentMod>,
 }
 
 impl Parse for EntityMacro {
@@ -59,12 +61,18 @@ impl Parse for EntityMacro {
         let entity_traits = gen_trait::EntityTraits::new(&entity_macro_input, &entity_structs)?;
         let entity_impls =
             gen_impl::EntityImpls::new(&entity_macro_input, &entity_structs, &entity_traits)?;
+        let component_mods = gen_component_mod::ComponentMod::new_vec(
+            component_declarations,
+            &entity_structs,
+            &entity_traits,
+        );
 
         Ok(Self {
             items: items.to_owned(),
             entity_structs,
             entity_traits,
             entity_impls,
+            component_mods,
         })
     }
 }
