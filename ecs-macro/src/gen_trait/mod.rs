@@ -1,6 +1,5 @@
 use crate::{gen_struct, macro_input, rc_slice::RcSlice};
 pub use component_delete_trait::ComponentDeleteTrait;
-pub use component_trait::ComponentTrait;
 pub use delete_entity_trait::DeleteEntityTrait;
 pub use find_entity_handle_trait::FindEntityHandleTrait;
 pub use into_component_handle_trait::IntoComponentHandleTrait;
@@ -16,7 +15,6 @@ use syn::Result;
 pub use with_entity_handle_trait::WithEntityHandleTrait;
 
 mod component_delete_trait;
-mod component_trait;
 mod delete_entity_trait;
 mod find_entity_handle_trait;
 mod into_component_handle_trait;
@@ -38,7 +36,6 @@ pub struct EntityTraits {
     pub into_component_handle_traits: RcSlice<IntoComponentHandleTrait>,
     pub iter_component_traits: RcSlice<IterComponentTrait>,
     pub with_entity_handle_trait: WithEntityHandleTrait,
-    pub component_traits: RcSlice<ComponentTrait>,
     pub component_delete_traits: RcSlice<ComponentDeleteTrait>,
     pub option_get_component_traits: RcSlice<OptionGetComponentTrait>,
     pub option_with_component_traits: RcSlice<OptionWithComponentTrait>,
@@ -68,7 +65,6 @@ impl EntityTraits {
         let find_entity_handle_trait = FindEntityHandleTrait::new(entity_handle_struct);
         let with_entity_handle_trait = WithEntityHandleTrait::new(entity_handle_struct);
         let delete_entity_trait = DeleteEntityTrait::new();
-        let component_traits = ComponentTrait::new_vec(component_declarations);
         let component_delete_traits = ComponentDeleteTrait::new_vec(component_declarations);
         let option_component_traits =
             OptionComponentTrait::new_vec(component_declarations, with_component_structs)?;
@@ -96,7 +92,6 @@ impl EntityTraits {
             into_component_handle_traits,
             iter_component_traits,
             with_entity_handle_trait,
-            component_traits,
             component_delete_traits,
             option_component_traits,
             option_component_iter_traits,

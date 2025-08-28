@@ -1,4 +1,7 @@
-use crate::{gen_struct, gen_trait, macro_input, rc_slice::RcSlice};
+use crate::RcSlice;
+use crate::gen_component_module::component_module::ComponentModule;
+use crate::gen_component_module::component_trait as gen_component_trait;
+use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
@@ -6,37 +9,37 @@ use syn::{Error, Result};
 
 pub struct ReplacementWithComponentStruct {
     pub with_component_struct: gen_struct::WithComponentStruct,
-    pub component_trait: gen_trait::ComponentTrait,
+    pub component_module: ComponentModule,
     pub option_component_trait: gen_trait::OptionComponentTrait,
 }
 
 impl ReplacementWithComponentStruct {
     pub fn new(
         wcs: &gen_struct::WithComponentStruct,
-        ct: &gen_trait::ComponentTrait,
+        cm: &ComponentModule,
         oct: &gen_trait::OptionComponentTrait,
     ) -> Self {
         Self {
             with_component_struct: wcs.to_owned(),
-            component_trait: ct.to_owned(),
+            component_module: cm.to_owned(),
             option_component_trait: oct.to_owned(),
         }
     }
 
     pub fn new_vec(
         with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
-        component_traits: &RcSlice<gen_trait::ComponentTrait>,
+        component_modules: &RcSlice<ComponentModule>,
         option_component_traits: &RcSlice<gen_trait::OptionComponentTrait>,
     ) -> Result<RcSlice<Self>> {
         with_component_structs
             .iter()
             .map(|wcs| {
-                let ct = component_traits
+                let cm = component_modules
                     .iter()
-                    .find(|ct| ct.component == wcs.component)
+                    .find(|cm| cm.module_name == wcs.component)
                     .ok_or(Error::new(
                         wcs.component.span(),
-                        "Cannot find the corresponding component trait.",
+                        "Cannot find the corresponding component module.",
                     ))?;
                 let oct = option_component_traits
                     .iter()
@@ -45,7 +48,7 @@ impl ReplacementWithComponentStruct {
                         wcs.component.span(),
                         "Cannot find the corresponding option component trait.",
                     ))?;
-                Ok(Self::new(wcs, ct, oct))
+                Ok(Self::new(wcs, cm, oct))
             })
             .collect()
     }
@@ -58,21 +61,25 @@ impl ToTokens for ReplacementWithComponentStruct {
             component,
             ..
         } = &self.with_component_struct;
-        let gen_trait::ComponentTrait {
+        let ComponentModule {
+            module_name,
             component_trait,
+        } = &self.component_module;
+        let gen_component_trait::ComponentTrait {
+            component_trait: component_trait_ident,
             component_ty,
             mut_getter_fn,
             getter_fn,
             update_fn,
             ..
-        } = &self.component_trait;
+        } = component_trait;
         let gen_trait::OptionComponentTrait {
             option_component_trait,
             update_fn: option_update_fn,
             ..
         } = &self.option_component_trait;
         tokens.extend(quote! {
-          impl<T: #option_component_trait> #component_trait for #with_component_struct<T> {
+          impl<T: #option_component_trait> #module_name::#component_trait_ident for #with_component_struct<T> {
             fn #mut_getter_fn(&mut self) -> &mut #component_ty {
               &mut self.#component
             }
@@ -90,28 +97,28 @@ impl ToTokens for ReplacementWithComponentStruct {
 
 pub struct PassthroughWithComponentStruct {
     pub with_component_struct: gen_struct::WithComponentStruct,
-    pub component_trait: gen_trait::ComponentTrait,
+    pub component_module: ComponentModule,
 }
 
 impl PassthroughWithComponentStruct {
-    pub fn new(wcs: &gen_struct::WithComponentStruct, ct: &gen_trait::ComponentTrait) -> Self {
+    pub fn new(wcs: &gen_struct::WithComponentStruct, cm: &ComponentModule) -> Self {
         Self {
             with_component_struct: wcs.to_owned(),
-            component_trait: ct.to_owned(),
+            component_module: cm.to_owned(),
         }
     }
 
     pub fn new_vec(
         with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
-        component_traits: &RcSlice<gen_trait::ComponentTrait>,
+        component_modules: &RcSlice<ComponentModule>,
     ) -> RcSlice<Self> {
         with_component_structs
             .iter()
             .flat_map(|wcs| {
-                component_traits
+                component_modules
                     .iter()
-                    .filter(|ct| ct.component != wcs.component)
-                    .map(|ct| Self::new(wcs, ct))
+                    .filter(|cm| cm.module_name != wcs.component)
+                    .map(|cm| Self::new(wcs, cm))
             })
             .collect()
     }
@@ -123,16 +130,20 @@ impl ToTokens for PassthroughWithComponentStruct {
             with_component_struct,
             ..
         } = &self.with_component_struct;
-        let gen_trait::ComponentTrait {
+        let ComponentModule {
+            module_name,
             component_trait,
+        } = &self.component_module;
+        let gen_component_trait::ComponentTrait {
+            component_trait: component_trait_ident,
             component_ty,
             mut_getter_fn,
             getter_fn,
             update_fn,
             ..
-        } = &self.component_trait;
+        } = component_trait;
         tokens.extend(quote! {
-          impl<T: #component_trait> #component_trait for #with_component_struct<T> {
+          impl<T: #module_name::#component_trait_ident> #module_name::#component_trait_ident for #with_component_struct<T> {
             fn #mut_getter_fn(&mut self) -> &mut #component_ty {
               self.value.#mut_getter_fn()
             }
@@ -159,6 +170,7 @@ impl Impl {
         entity_macro_input: &macro_input::EntityMacroInput,
         entity_structs: &gen_struct::EntityStructs,
         entity_traits: &gen_trait::EntityTraits,
+        component_modules: &RcSlice<crate::gen_component_module::component_module::ComponentModule>,
     ) -> Result<Self> {
         let _ = entity_macro_input;
         let gen_struct::EntityStructs {
@@ -166,19 +178,18 @@ impl Impl {
             ..
         } = entity_structs;
         let gen_trait::EntityTraits {
-            component_traits,
             option_component_traits,
             ..
         } = entity_traits;
 
         let replacement_with_component_structs = ReplacementWithComponentStruct::new_vec(
             with_component_structs,
-            component_traits,
+            component_modules,
             option_component_traits,
         )?;
 
         let passthrough_with_component_structs =
-            PassthroughWithComponentStruct::new_vec(with_component_structs, component_traits);
+            PassthroughWithComponentStruct::new_vec(with_component_structs, component_modules);
 
         Ok(Self {
             replacement_with_component_structs,

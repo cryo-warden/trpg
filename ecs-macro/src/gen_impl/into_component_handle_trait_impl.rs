@@ -1,4 +1,5 @@
-use crate::{gen_struct, gen_trait, macro_input, rc_slice::RcSlice};
+use crate::RcSlice;
+use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
@@ -63,9 +64,12 @@ impl Impl {
         entity_macro_input: &macro_input::EntityMacroInput,
         entity_structs: &gen_struct::EntityStructs,
         entity_traits: &gen_trait::EntityTraits,
+        component_modules: &RcSlice<crate::gen_component_module::component_module::ComponentModule>,
     ) -> Result<Self> {
         let _ = entity_macro_input;
         let _ = entity_structs;
+        let _ = component_modules;
+
         let gen_trait::EntityTraits {
             into_component_handle_traits,
             ..

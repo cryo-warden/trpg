@@ -36,10 +36,11 @@ secador!(
                 entity_macro_input: &macro_input::EntityMacroInput,
                 entity_structs: &gen_struct::EntityStructs,
                 entity_traits: &gen_trait::EntityTraits,
+                component_modules: &crate::RcSlice<crate::gen_component_module::component_module::ComponentModule>,
             ) -> Result<Self> {
                 seca!(1);
                 let __impl_name =
-                    __impl_name::Impl::new(entity_macro_input, entity_structs, entity_traits)?;
+                    __impl_name::Impl::new(entity_macro_input, entity_structs, entity_traits, component_modules)?;
                 Ok(Self {
                     __seca: __1,
                     __impl_name,

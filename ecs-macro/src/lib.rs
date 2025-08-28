@@ -9,9 +9,11 @@ use syn::{
     parse_macro_input,
 };
 
+use crate::gen_component_module::component_module::ComponentModule;
 use crate::rc_slice::RcSlice;
 
 mod fundamental;
+mod gen_component_module;
 mod gen_impl;
 mod gen_struct;
 mod gen_trait;
@@ -24,6 +26,7 @@ struct EntityMacro {
     entity_structs: gen_struct::EntityStructs,
     entity_traits: gen_trait::EntityTraits,
     entity_impls: gen_impl::EntityImpls,
+    component_modules: RcSlice<ComponentModule>,
 }
 
 impl Parse for EntityMacro {
@@ -57,14 +60,27 @@ impl Parse for EntityMacro {
 
         let entity_structs = gen_struct::EntityStructs::new(&entity_macro_input);
         let entity_traits = gen_trait::EntityTraits::new(&entity_macro_input, &entity_structs)?;
-        let entity_impls =
-            gen_impl::EntityImpls::new(&entity_macro_input, &entity_structs, &entity_traits)?;
+        let component_modules = component_declarations
+            .iter()
+            .flat_map(|cdwa| {
+                cdwa.component_table_pairs
+                    .iter()
+                    .map(|ctp| ComponentModule::new(ctp.component.to_owned(), ctp, cdwa))
+            })
+            .collect();
+        let entity_impls = gen_impl::EntityImpls::new(
+            &entity_macro_input,
+            &entity_structs,
+            &entity_traits,
+            &component_modules,
+        )?;
 
         Ok(Self {
             items: items.to_owned(),
             entity_structs,
             entity_traits,
             entity_impls,
+            component_modules,
         })
     }
 }
