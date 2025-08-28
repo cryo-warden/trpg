@@ -31,7 +31,7 @@ impl OptionComponentTrait {
         wcs: &gen_struct::WithComponentStruct,
     ) -> Self {
         Self {
-            option_component_trait: format_ident!("Option__{}__Trait", ctp.component),
+            option_component_trait: format_ident!("__{}__Option", ctp.component),
             option_get_component_trait: ogct.option_get_component_trait.to_owned(),
             getter_fn: ctp.component.to_owned(),
             component_field_args: fundamental::FieldArgs(cd.fields.to_owned()),

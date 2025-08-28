@@ -18,7 +18,7 @@ impl IntoComponentHandleTrait {
         ehs: &gen_struct::EntityHandleStruct,
     ) -> Self {
         Self {
-            into_component_handle_trait: format_ident!("Into__{}__HandleTrait", ctp.component),
+            into_component_handle_trait: format_ident!("__{}__IntoHandle", ctp.component),
             into_handle_fn: format_ident!("into_{}_handle", ctp.component),
             with_component_struct: wcs.to_owned(),
             entity_handle_struct: ehs.to_owned(),

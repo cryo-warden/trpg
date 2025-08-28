@@ -13,7 +13,7 @@ pub struct ComponentDeleteTrait {
 impl ComponentDeleteTrait {
     pub fn new(ctp: &macro_input::ComponentTablePair) -> Self {
         Self {
-            component_delete_trait: format_ident!("__{}__DeleteTrait", ctp.component),
+            component_delete_trait: format_ident!("__{}__Delete", ctp.component),
             component: ctp.component.to_owned(),
             delete_fn: format_ident!("delete_{}", ctp.component),
         }

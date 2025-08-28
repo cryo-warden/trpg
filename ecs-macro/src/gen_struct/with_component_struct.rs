@@ -19,7 +19,7 @@ impl WithComponentStruct {
     ) -> Self {
         Self {
             attrs: a.attrs.to_owned(),
-            with_component_struct: format_ident!("With__{}__Component", ctp.component),
+            with_component_struct: format_ident!("__{}__WithComponent", ctp.component),
             component: ctp.component.to_owned(),
             component_ty: cwa.component_ty.to_owned(),
         }

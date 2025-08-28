@@ -19,7 +19,7 @@ impl OptionGetComponentTrait {
         cd: &macro_input::ComponentDeclaration,
     ) -> Self {
         Self {
-            option_get_component_trait: format_ident!("OptionGet__{}__Trait", ctp.component),
+            option_get_component_trait: format_ident!("__{}__OptionGet", ctp.component),
             component: ctp.component.to_owned(),
             component_ty: cd.component_ty.to_owned(),
             table: ctp.table.to_owned(),

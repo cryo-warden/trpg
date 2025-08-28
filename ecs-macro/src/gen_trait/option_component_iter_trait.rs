@@ -14,7 +14,7 @@ pub struct OptionComponentIterTrait {
 impl OptionComponentIterTrait {
     pub fn new(owct: &gen_trait::OptionWithComponentTrait) -> Self {
         Self {
-            option_component_iter_trait: format_ident!("Option__{}__IterTrait", owct.component),
+            option_component_iter_trait: format_ident!("__{}__OptionIter", owct.component),
             option_with_component_trait: owct.option_with_component_trait.to_owned(),
             with_component_struct: owct.with_component_struct.to_owned(),
             with_fn: owct.with_fn.to_owned(),

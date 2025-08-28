@@ -200,7 +200,7 @@ pub trait GetRng {
     fn get_rng(&self) -> StdRng;
 }
 
-impl<T: __rng_seed__Trait> GetRng for T {
+impl<T: __rng_seed__Some> GetRng for T {
     fn get_rng(&self) -> StdRng {
         StdRng::seed_from_u64(self.rng_seed().rng_seed)
     }
@@ -226,8 +226,8 @@ pub trait EcsExtension<'a> {
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> EntityHandle<'a>;
-    fn from_player_identity(self) -> Option<With__player_controller__Component<EntityHandle<'a>>>;
-    fn from_name(self, name: &str) -> Option<With__name__Component<EntityHandle<'a>>>;
+    fn from_player_identity(self) -> Option<__player_controller__WithComponent<EntityHandle<'a>>>;
+    fn from_name(self, name: &str) -> Option<__name__WithComponent<EntityHandle<'a>>>;
     fn new_player(self) -> Result<EntityHandle<'a>, String>;
 }
 
@@ -254,7 +254,7 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .upsert_new_path(destination_entity_id)
             .into_handle()
     }
-    fn from_player_identity(self) -> Option<With__player_controller__Component<EntityHandle<'a>>> {
+    fn from_player_identity(self) -> Option<__player_controller__WithComponent<EntityHandle<'a>>> {
         self.db
             .player_controller_components()
             .identity()
@@ -262,7 +262,7 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .map(|p| self.into_player_controller_handle(p))
     }
 
-    fn from_name(self, name: &str) -> Option<With__name__Component<EntityHandle<'a>>> {
+    fn from_name(self, name: &str) -> Option<__name__WithComponent<EntityHandle<'a>>> {
         self.db
             .name_components()
             .name()
@@ -296,7 +296,7 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
     }
 }
 
-impl<'a, T: WithEntityHandle<'a> + __unrealized_map__Trait + __rng_seed__Trait> MapGenerator for T {
+impl<'a, T: WithEntityHandle<'a> + __unrealized_map__Some + __rng_seed__Some> MapGenerator for T {
     fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
         let af_ctx = AppearanceFeatureContext::new(ctx);
         let map = self.unrealized_map();

@@ -21,7 +21,7 @@ impl OptionWithComponentTrait {
         wcs: &gen_struct::WithComponentStruct,
     ) -> Self {
         Self {
-            option_with_component_trait: format_ident!("OptionWith__{}__Trait", ctp.component),
+            option_with_component_trait: format_ident!("__{}__OptionWith", ctp.component),
             component: ctp.component.to_owned(),
             component_ty: cd.component_ty.to_owned(),
             with_component_struct: wcs.with_component_struct.to_owned(),

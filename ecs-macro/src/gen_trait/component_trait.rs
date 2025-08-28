@@ -19,7 +19,7 @@ impl ComponentTrait {
         c: &macro_input::ComponentDeclaration,
     ) -> Self {
         Self {
-            component_trait: format_ident!("__{}__Trait", ctp.component),
+            component_trait: format_ident!("__{}__Some", ctp.component),
             component: ctp.component.to_owned(),
             component_ty: c.component_ty.to_owned(),
             mut_getter_fn: format_ident!("{}_mut", ctp.component),

@@ -22,7 +22,7 @@ impl IterComponentTrait {
         Self {
             component: ctp.component.to_owned(),
             table: ctp.table.to_owned(),
-            iter_component_trait: format_ident!("Iter__{}__Trait", ctp.component),
+            iter_component_trait: format_ident!("__{}__Iter", ctp.component),
             iter_fn: format_ident!("iter_{}", ctp.component),
             with_component_struct: wcs.with_component_struct.to_owned(),
             entity_handle_struct: ehs.to_owned(),
