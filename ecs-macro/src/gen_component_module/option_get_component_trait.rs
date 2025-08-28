@@ -1,12 +1,11 @@
 use crate::{fundamental, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
-use quote::{ToTokens, format_ident};
+use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
 
 #[derive(Clone)]
 pub struct OptionGetComponentTrait {
     pub option_get_component_trait: Ident,
-    #[allow(unused)]
     pub component: Ident,
     pub component_ty: Ident,
     pub table: Ident,
@@ -42,8 +41,19 @@ impl OptionGetComponentTrait {
 }
 
 impl ToTokens for OptionGetComponentTrait {
-    fn to_tokens(&self, _tokens: &mut TokenStream) {
-        // Emitted inside the per-component module by ComponentModule::ToTokens.
-        // Avoid emitting the trait at the top-level here to prevent duplicate definitions.
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let Self {
+            option_get_component_trait,
+            component_ty,
+            getter_fn,
+            ..
+        } = self;
+
+        tokens.extend(quote! {
+            #[allow(non_camel_case_types)]
+            pub trait #option_get_component_trait {
+                fn #getter_fn(&self) -> Option<#component_ty>;
+            }
+        });
     }
 }

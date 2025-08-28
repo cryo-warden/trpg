@@ -1,12 +1,12 @@
-use crate::{gen_struct, gen_trait, macro_input};
 use crate::RcSlice;
+use crate::{gen_struct, gen_trait, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use structmeta::ToTokens;
 use syn::{Error, Result};
 
 pub struct OptionGetComponentTrait {
-    pub option_get_component_trait: gen_trait::OptionGetComponentTrait,
+    pub option_get_component_trait: crate::gen_component_module::OptionGetComponentTrait,
     pub with_component_struct: gen_struct::WithComponentStruct,
     pub option_with_component_trait: gen_trait::OptionWithComponentTrait,
 }
@@ -14,7 +14,7 @@ pub struct OptionGetComponentTrait {
 impl OptionGetComponentTrait {
     pub fn new(
         wcs: &gen_struct::WithComponentStruct,
-        ogct: &gen_trait::OptionGetComponentTrait,
+        ogct: &crate::gen_component_module::OptionGetComponentTrait,
         owct: &gen_trait::OptionWithComponentTrait,
     ) -> Self {
         Self {
@@ -26,7 +26,7 @@ impl OptionGetComponentTrait {
 
     pub fn new_vec(
         with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
-        option_get_component_traits: &RcSlice<gen_trait::OptionGetComponentTrait>,
+        option_get_component_traits: &RcSlice<crate::gen_component_module::OptionGetComponentTrait>,
         option_with_component_traits: &RcSlice<gen_trait::OptionWithComponentTrait>,
     ) -> Result<RcSlice<Self>> {
         option_get_component_traits
@@ -59,7 +59,7 @@ impl ToTokens for OptionGetComponentTrait {
             with_component_struct,
             ..
         } = &self.with_component_struct;
-        let gen_trait::OptionGetComponentTrait {
+        let crate::gen_component_module::OptionGetComponentTrait {
             option_get_component_trait,
             component,
             getter_fn,

@@ -36,7 +36,7 @@ impl ReplacementWithComponentStruct {
             .map(|wcs| {
                 let cm = component_modules
                     .iter()
-                    .find(|cm| cm.module_name == wcs.component)
+                    .find(|cm| cm.module == wcs.component)
                     .ok_or(Error::new(
                         wcs.component.span(),
                         "Cannot find the corresponding component module.",
@@ -62,8 +62,9 @@ impl ToTokens for ReplacementWithComponentStruct {
             ..
         } = &self.with_component_struct;
         let ComponentModule {
-            module_name,
+            module: module_name,
             component_trait,
+            ..
         } = &self.component_module;
         let gen_component_trait::ComponentTrait {
             component_trait: component_trait_ident,
@@ -117,7 +118,7 @@ impl PassthroughWithComponentStruct {
             .flat_map(|wcs| {
                 component_modules
                     .iter()
-                    .filter(|cm| cm.module_name != wcs.component)
+                    .filter(|cm| cm.module != wcs.component)
                     .map(|cm| Self::new(wcs, cm))
             })
             .collect()
@@ -131,8 +132,9 @@ impl ToTokens for PassthroughWithComponentStruct {
             ..
         } = &self.with_component_struct;
         let ComponentModule {
-            module_name,
+            module: module_name,
             component_trait,
+            ..
         } = &self.component_module;
         let gen_component_trait::ComponentTrait {
             component_trait: component_trait_ident,
