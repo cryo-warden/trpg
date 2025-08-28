@@ -1,4 +1,4 @@
-use crate::{fundamental, gen_struct, macro_input, rc_slice::RcSlice};
+use crate::{fundamental, gen_struct, gen_trait, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{Error, Ident, Result};
@@ -27,12 +27,12 @@ impl OptionComponentTrait {
     pub fn new(
         ctp: &macro_input::ComponentTablePair,
         cd: &macro_input::ComponentDeclaration,
+        ogct: &gen_trait::OptionGetComponentTrait,
         wcs: &gen_struct::WithComponentStruct,
     ) -> Self {
         Self {
             option_component_trait: format_ident!("Option__{}__Trait", ctp.component),
-            // WIP Use original trait instead of duplicating name logic.
-            option_get_component_trait: format_ident!("OptionGet__{}__Trait", ctp.component),
+            option_get_component_trait: ogct.option_get_component_trait.to_owned(),
             getter_fn: ctp.component.to_owned(),
             component_field_args: fundamental::FieldArgs(cd.fields.to_owned()),
             component_field_names: fundamental::FieldNames(cd.fields.to_owned()),
@@ -52,6 +52,7 @@ impl OptionComponentTrait {
 
     pub fn new_vec(
         component_declarations: &RcSlice<fundamental::WithAttrs<macro_input::ComponentDeclaration>>,
+        option_get_component_traits: &RcSlice<gen_trait::OptionGetComponentTrait>,
         with_component_structs: &RcSlice<gen_struct::WithComponentStruct>,
     ) -> Result<RcSlice<Self>> {
         component_declarations
@@ -65,7 +66,14 @@ impl OptionComponentTrait {
                             ctp.component.span(),
                             "Cannot find the corresponding with-component struct.",
                         ))?;
-                    Ok(Self::new(ctp, cdwa, wcs))
+                    let ogct = option_get_component_traits
+                        .iter()
+                        .find(|ogct| ogct.component == ctp.component)
+                        .ok_or(Error::new(
+                            ctp.component.span(),
+                            "Cannot find the corresponding option-get-component trait.",
+                        ))?;
+                    Ok(Self::new(ctp, cdwa, ogct, wcs))
                 })
             })
             .collect()
