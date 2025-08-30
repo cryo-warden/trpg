@@ -1,13 +1,12 @@
-use std::ops::AddAssign;
-
-use derive_builder::Builder;
-use secador::secador_multi;
-use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
-
-secador_multi!(
+secador::secador_multi!(
     seca_int!((stat), [(attack), (mhp), (defense), (mep)]),
     seca_id_vec!((stat), [(action_ids), (appearance_feature_ids)]),
     {
+        use std::ops::AddAssign;
+
+        use derive_builder::Builder;
+        use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
+
         #[derive(Debug, Clone, SpacetimeType, Builder, Default)]
         #[builder(default)]
         pub struct StatBlock {

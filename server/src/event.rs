@@ -1,13 +1,4 @@
-use ecs::Ecs;
-use secador::secador;
-use spacetimedb::{table, SpacetimeType, Table, Timestamp};
-
-use crate::{
-    action::ActionEffect,
-    entity::{hp_components, location_components, path_components},
-};
-
-secador!(
+secador::secador!(
     (table, emit_fn),
     [
         (early_events, emit_early),
@@ -15,6 +6,14 @@ secador!(
         (late_events, emit_late),
     ],
     {
+        use ecs::Ecs;
+        use spacetimedb::{table, SpacetimeType, Table, Timestamp};
+
+        use crate::{
+            action::ActionEffect,
+            entity::{hp_components, location_components, path_components},
+        };
+
         #[derive(Debug, Clone, SpacetimeType)]
         pub enum EventType {
             StartAction(u64),

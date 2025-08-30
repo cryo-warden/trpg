@@ -1,9 +1,8 @@
 use crate::{gen_struct, gen_trait, macro_input};
-use secador::secador;
 use structmeta::ToTokens;
 use syn::Result;
 
-secador!(
+secador::secador!(
     (impl_name),
     [
         (component_delete_trait_impl),
