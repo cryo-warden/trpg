@@ -5,31 +5,32 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bun run stdb && vite",
-    "build": "bun run stdb && tsc -b && vite build",
-    "lint": "eslint .",
+    "check": "bun run stdb-generate && bun run lint",
+    "dev": "bun run check && vite",
+    "build": "bun run check -b && vite build",
+    "lint": "eslint . && tsc",
     "preview": "vite preview",
-    "predeploy": "bun run stdb && bun run build",
+    "predeploy": "bun run build",
     "deploy": "gh-pages -d ./dist",
     "stdb-generate": "spacetime generate --project-path ../server --lang typescript --out-dir ./src/stdb"
   },
   "dependencies": {
-    "@clockworklabs/spacetimedb-sdk": "^1.2.1",
+    "@clockworklabs/spacetimedb-sdk": "^1.3.1",
     "gh-pages": "^6.3.0",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.31.0",
-    "@types/react": "^19.1.8",
-    "@types/react-dom": "^19.1.6",
-    "@vitejs/plugin-react": "^4.6.0",
-    "eslint": "^9.31.0",
+    "@eslint/js": "^9.34.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
+    "eslint": "^9.34.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
-    "typescript": "~5.8.3",
-    "typescript-eslint": "^8.36.0",
-    "vite": "^7.0.4"
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.41.0",
+    "vite": "^7.1.3"
   }
 }

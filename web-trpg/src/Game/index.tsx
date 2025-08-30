@@ -1,5 +1,5 @@
 import { Panel } from "../structural/Panel";
-import { WithDynamicPanel } from "./context/DynamicPanelContext";
+import { WithDynamicPanel } from "./context/WithDynamicPanel";
 import { WithStdb } from "./context/StdbContext";
 import { DynamicPanel } from "./DynamicPanel";
 import { EventsPanel } from "./EventsPanel";

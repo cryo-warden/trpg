@@ -7,4 +7,5 @@ export type StdbContext = Context<{
   identity: Identity;
 }>;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const StdbContext: StdbContext = createContext(null as any);

@@ -3,13 +3,14 @@ import { useEffect } from "react";
 export const usePeriodicEffect = (
   createEffect: () => () => void,
   periodMS: number,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   dependencies: any[]
 ): void => {
   useEffect(() => {
     const effect = createEffect();
 
     let isCancelled = false;
-    let timeout: number | null = null;
+    let timeout: NodeJS.Timeout | null = null;
 
     const update = () => {
       if (isCancelled) {
@@ -28,5 +29,6 @@ export const usePeriodicEffect = (
         clearTimeout(timeout);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 };

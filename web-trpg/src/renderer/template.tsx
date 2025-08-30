@@ -13,7 +13,7 @@ type TemplateNode =
       next?: TemplateNode;
     };
 
-const matchRegExp = /([^\{]*)\{([^}]+)\}(.*)/;
+const matchRegExp = /([^{]*)\{([^}]+)\}(.*)/;
 const ruleRegExp = /([^:])+(?::(.*))/;
 
 const lex = (template: string): TemplateNode => {

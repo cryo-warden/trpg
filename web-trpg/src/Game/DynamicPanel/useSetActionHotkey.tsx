@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { usePlayerEntity } from "../context/StdbContext/components";
 import { ActionId } from "../trpg";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const useSetActionHotkey = (_action: ActionId) => {
   const entityToken = usePlayerEntity();
   const isPointerInRef = useRef(false);

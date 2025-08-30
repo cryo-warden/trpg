@@ -3,13 +3,13 @@ import { RemoteTables } from "../../../stdb";
 import { ActionId, EntityId, EventId } from "../../trpg";
 import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
-import { useTable } from "./useTable";
+import { createUseTable } from "./useTable";
 import { useTableData } from "./useTableData";
 
-const useComponent =
+const createUseComponent =
   <T extends keyof RemoteTables>(tableName: T) =>
-  (entityId: EntityId | null): RowType<T> | null => {
-    return useTableData(
+  (entityId: EntityId | null): RowType<T> | null =>
+    useTableData(
       tableName,
       (table): RowType<T> | null => {
         if (!("entityId" in table)) {
@@ -22,11 +22,11 @@ const useComponent =
           return null;
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return (table.entityId.find(entityId) as any) ?? null;
       },
       [entityId]
     );
-  };
 
 export const componentQueries = [
   "select * from action_hotkeys_components",
@@ -46,20 +46,22 @@ export const componentQueries = [
   "select * from target_components",
 ];
 
-const useActionHotkeysComponent = useComponent("actionHotkeysComponents");
-export const useActionStateComponent = useComponent("actionStateComponents");
-const useActionOptionsComponent = useComponent("actionOptionsComponents");
-export const useAttackComponent = useComponent("attackComponents");
-export const useEpComponent = useComponent("epComponents");
-export const useHpComponent = useComponent("hpComponents");
-const useLocationComponent = useComponent("locationComponents");
-export const useQueuedActionStateComponent = useComponent(
+const useActionHotkeysComponent = createUseComponent("actionHotkeysComponents");
+export const useActionStateComponent = createUseComponent(
+  "actionStateComponents"
+);
+const useActionOptionsComponent = createUseComponent("actionOptionsComponents");
+export const useAttackComponent = createUseComponent("attackComponents");
+export const useEpComponent = createUseComponent("epComponents");
+export const useHpComponent = createUseComponent("hpComponents");
+const useLocationComponent = createUseComponent("locationComponents");
+export const useQueuedActionStateComponent = createUseComponent(
   "queuedActionStateComponents"
 );
-const useTargetComponent = useComponent("targetComponents");
+const useTargetComponent = createUseComponent("targetComponents");
 
-export const useAllegianceComponents = useTable("allegianceComponents");
-export const useAppearanceFeaturesComponents = useTable(
+export const useAllegianceComponents = createUseTable("allegianceComponents");
+export const useAppearanceFeaturesComponents = createUseTable(
   "appearanceFeaturesComponents"
 );
 
@@ -133,8 +135,12 @@ export const useLocationEntities = (locationEntityId: EntityId | null) => {
 };
 
 export const useObserverComponentsObservableEventIds = (
-  entityId: EntityId | null
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _entityId: EntityId | null
 ): EventId[] => {
+  //*
+  return [];
+  /*/
   return useTableData(
     "observerComponents",
     (table) =>
@@ -145,6 +151,7 @@ export const useObserverComponentsObservableEventIds = (
             .map((c) => c.observableEventId),
     [entityId]
   );
+  //*/
 };
 
 export const useTarget = (entityId: EntityId | null) => {

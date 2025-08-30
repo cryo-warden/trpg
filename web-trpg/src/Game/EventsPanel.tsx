@@ -29,9 +29,10 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     if (playerEntity == null) {
       return () => null;
     }
-    return ({ event }: { event: EntityEvent }): ReactNode => {
+    const EventDisplay = ({ event }: { event: EntityEvent }): ReactNode => {
       return useMemo(() => renderEvent(event), [event]);
     };
+    return EventDisplay;
   }, [renderEvent, playerEntity]);
 
   const [eventSet, setEventSet] = useState(new Set<EntityEvent>());

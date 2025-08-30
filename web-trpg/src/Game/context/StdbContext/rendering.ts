@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { EntityEvent } from "../../../stdb";
 import { ActionId, EntityId } from "../../trpg";
 import { useObserverComponentsObservableEventIds } from "./components";
-import { useTable } from "./useTable";
+import { createUseTable } from "./useTable";
 import { useTableData } from "./useTableData";
 
 export const renderingQueries = [
@@ -11,7 +11,7 @@ export const renderingQueries = [
   "select * from observable_events",
 ];
 
-export const useActionAppearances = useTable("actionAppearances");
+export const useActionAppearances = createUseTable("actionAppearances");
 export const useActionName = (actionId: ActionId) => {
   return useTableData(
     "actionAppearances",
@@ -19,8 +19,8 @@ export const useActionName = (actionId: ActionId) => {
     [actionId]
   );
 };
-export const useAppearanceFeatures = useTable("appearanceFeatures");
-const useObservableEvents = useTable("observableEvents");
+export const useAppearanceFeatures = createUseTable("appearanceFeatures");
+const useObservableEvents = createUseTable("observableEvents");
 
 export const useObserverComponentsEvents = (
   entityId: EntityId | null

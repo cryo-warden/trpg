@@ -29,7 +29,9 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
         setStatus("connected");
 
         // TODO Move dev code behind compilation flags.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).dev = (window as any).dev || {};
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).dev.connection = connection;
       })
       .onConnectError((error) => {

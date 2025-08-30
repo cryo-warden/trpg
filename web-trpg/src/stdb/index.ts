@@ -86,6 +86,8 @@ import { EnAppearanceFeaturesTableHandle } from "./en_appearance_features_table.
 export { EnAppearanceFeaturesTableHandle };
 import { EntitiesTableHandle } from "./entities_table.ts";
 export { EntitiesTableHandle };
+import { EntityBlobsTableHandle } from "./entity_blobs_table.ts";
+export { EntityBlobsTableHandle };
 import { EntityDeactivationTimerComponentsTableHandle } from "./entity_deactivation_timer_components_table.ts";
 export { EntityDeactivationTimerComponentsTableHandle };
 import { EntityObservationsTableHandle } from "./entity_observations_table.ts";
@@ -182,6 +184,8 @@ import { ComponentSet } from "./component_set_type.ts";
 export { ComponentSet };
 import { Entity } from "./entity_type.ts";
 export { Entity };
+import { EntityBlob } from "./entity_blob_type.ts";
+export { EntityBlob };
 import { EntityEvent } from "./entity_event_type.ts";
 export { EntityEvent };
 import { EntityObservations } from "./entity_observations_type.ts";
@@ -376,6 +380,10 @@ const REMOTE_MODULE = {
         colName: "id",
         colType: Entity.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
+    },
+    entity_blobs: {
+      tableName: "entity_blobs",
+      rowType: EntityBlob.getTypeScriptAlgebraicType(),
     },
     entity_deactivation_timer_components: {
       tableName: "entity_deactivation_timer_components",
@@ -908,6 +916,10 @@ export class RemoteTables {
 
   get entities(): EntitiesTableHandle {
     return new EntitiesTableHandle(this.connection.clientCache.getOrCreateTable<Entity>(REMOTE_MODULE.tables.entities));
+  }
+
+  get entityBlobs(): EntityBlobsTableHandle {
+    return new EntityBlobsTableHandle(this.connection.clientCache.getOrCreateTable<EntityBlob>(REMOTE_MODULE.tables.entity_blobs));
   }
 
   get entityDeactivationTimerComponents(): EntityDeactivationTimerComponentsTableHandle {
