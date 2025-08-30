@@ -1,9 +1,10 @@
 [package]
 name = "secador"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "Stop repeating code"
 license = "MIT"
+readme = "README.md"
 repository = "https://github.com/cryo-warden/trpg/tree/master/secador"
 documentation = "https://docs.rs/secador"
 

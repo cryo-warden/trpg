@@ -462,7 +462,7 @@ checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
 
 [[package]]
 name = "secador"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "secador-macro",
 ]
@@ -510,6 +510,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "server"
+version = "0.1.0"
+dependencies = [
+ "derive_builder",
+ "ecs",
+ "log",
+ "secador",
+ "spacetimedb",
+]
+
+[[package]]
 name = "sha3"
 version = "0.10.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -530,17 +541,6 @@ name = "smallvec"
 version = "1.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
-
-[[package]]
-name = "spacetime-module"
-version = "0.1.0"
-dependencies = [
- "derive_builder",
- "ecs",
- "log",
- "secador",
- "spacetimedb",
-]
 
 [[package]]
 name = "spacetimedb"
