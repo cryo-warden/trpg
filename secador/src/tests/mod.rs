@@ -151,3 +151,18 @@ mod test_secador_type_substitution {
         }
     );
 }
+
+mod test_secador_unary {
+    crate::secador!(var, [A, B, C, D], {
+        seca!(1);
+        const __var: u64 = 0;
+
+        #[test]
+        fn compiles() {
+            let _ = A;
+            let _ = B;
+            let _ = C;
+            let _ = D;
+        }
+    });
+}

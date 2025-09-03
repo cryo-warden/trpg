@@ -3,22 +3,22 @@ use structmeta::ToTokens;
 use syn::Result;
 
 secador::secador!(
-    (impl_name),
+    impl_name,
     [
-        (component_delete_trait_impl),
-        (component_struct_impl),
-        (component_trait_impl),
-        (delete_entity_trait_impl),
-        (find_entity_handle_trait_impl),
-        (into_component_handle_trait_impl),
-        (iter_component_trait_impl),
-        (new_entity_blob_trait_impl),
-        (new_entity_handle_trait_impl),
-        (option_component_iter_trait_impl),
-        (option_component_trait_impl),
-        (option_get_component_trait_impl),
-        (option_with_component_trait_impl),
-        (with_entity_handle_trait_impl),
+        component_delete_trait_impl,
+        component_struct_impl,
+        component_trait_impl,
+        delete_entity_trait_impl,
+        find_entity_handle_trait_impl,
+        into_component_handle_trait_impl,
+        iter_component_trait_impl,
+        new_entity_blob_trait_impl,
+        new_entity_handle_trait_impl,
+        option_component_iter_trait_impl,
+        option_component_trait_impl,
+        option_get_component_trait_impl,
+        option_with_component_trait_impl,
+        with_entity_handle_trait_impl,
     ],
     {
         seca!(1);

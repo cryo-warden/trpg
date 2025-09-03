@@ -1,6 +1,6 @@
 secador::secador_multi!(
-    seca_int!((stat), [(attack), (mhp), (defense), (mep)]),
-    seca_id_vec!((stat), [(action_ids), (appearance_feature_ids)]),
+    seca_int!(stat, [attack, mhp, defense, mep]),
+    seca_id_vec!(stat, [action_ids, appearance_feature_ids]),
     {
         use std::ops::AddAssign;
 

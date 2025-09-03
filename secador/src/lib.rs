@@ -11,7 +11,7 @@
 //!
 //! # Example
 //! ```rust
-//! secador::secador!((variable_iter), [(some_method), (another_method)], {
+//! secador::secador!(variable_iter, [some_method, another_method], {
 //!     # struct SomeContainer;
 //!     # impl SomeContainer {
 //!     #     fn some_method(&self) -> Vec<i32> { vec![1, 2, 3] }
@@ -67,7 +67,7 @@ mod tests;
 /// # }
 /// # let some_container = SomeContainer;
 /// #
-/// secador::secador!((variable_iter), [(some_method), (another_method)], {
+/// secador::secador!(variable_iter, [some_method, another_method], {
 ///     seca!(1);
 ///     for x in some_container.__variable_iter().iter() {
 ///         println!("{:?}", x);
@@ -82,8 +82,8 @@ pub use secador_macro::secador;
 /// # Example
 /// ```rust
 /// secador::secador_multi!(
-///   seca_iter!((variable_iter), [(some_method), (another_method)]),
-///   seca_attr!((attribute), [(derive(Debug)), (derive(Clone))]),
+///   seca_iter!(variable_iter, [some_method, another_method]),
+///   seca_attr!(attribute, [derive(Debug), derive(Clone)]),
 ///   {
 ///     # struct SomeContainer;
 ///     # impl SomeContainer {

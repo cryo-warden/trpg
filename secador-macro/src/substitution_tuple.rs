@@ -4,6 +4,7 @@ use quote::ToTokens;
 use syn::{
     Expr, Result, Token, Type, bracketed, parenthesized,
     parse::{Parse, ParseStream},
+    token,
 };
 
 mod kw {
@@ -69,9 +70,14 @@ impl Deref for SubstitutionTuple {
 
 impl Parse for SubstitutionTuple {
     fn parse(input: ParseStream) -> Result<Self> {
-        let content;
-        parenthesized!(content in input);
-        let substitutions = content.parse_terminated(Substitution::parse, Token![,])?;
-        Ok(Self(substitutions.into_iter().collect()))
+        if input.peek(token::Paren) {
+            let content;
+            parenthesized!(content in input);
+            let substitutions = content.parse_terminated(Substitution::parse, Token![,])?;
+            Ok(Self(substitutions.into_iter().collect()))
+        } else {
+            let substitution = input.parse::<Substitution>()?;
+            Ok(Self(vec![substitution]))
+        }
     }
 }

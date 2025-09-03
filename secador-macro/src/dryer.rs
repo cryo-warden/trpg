@@ -6,6 +6,7 @@ use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
+    token,
 };
 
 use crate::{
@@ -191,13 +192,17 @@ impl Default for Dryer {
 
 impl Dryer {
     pub fn parse_args(mut self, input: ParseStream) -> Result<Self> {
-        let content;
-        parenthesized!(content in input);
-        let names = content
-            .parse_terminated(Ident::parse, Token![,])?
-            .into_iter()
-            .map(|i| i.to_string())
-            .collect();
+        let names = if input.peek(token::Paren) {
+            let content;
+            parenthesized!(content in input);
+            content
+                .parse_terminated(Ident::parse, Token![,])?
+                .into_iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+        } else {
+            vec![input.parse::<Ident>()?.to_string()]
+        };
 
         input.parse::<Token![,]>()?;
 

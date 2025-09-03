@@ -27,7 +27,7 @@ pub fn observation_system(ecs: Ecs) {
 }
 
 pub fn event_resolve_system(ecs: Ecs) {
-    secador::secador!((table), [(early_events), (middle_events), (late_events)], {
+    secador::secador!(table, [early_events, middle_events, late_events], {
         seca!(1);
         for event in ecs.db.__table().iter() {
             event.resolve(ecs);
