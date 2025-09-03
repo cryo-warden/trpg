@@ -45,7 +45,7 @@
 mod tests;
 
 /// A macro to reduce boilerplate code in Rust.
-/// Takes a tuple of names, a list of substition tuples, and a block of code.
+/// Takes a tuple of names, a list of substitution tuples, and a block of code.
 /// Each section marked with `seca!` in that block of code is duplicated for
 /// each substitution tuple, with each name (expressed as `__name`) replaced
 /// by the corresponding value in the tuple.
@@ -77,7 +77,7 @@ mod tests;
 pub use secador_macro::secador;
 
 /// Like `secador!`, but allows multiple sets of names and substitution tuples.
-/// The substition sets can lead to polynomial code expansion, so use with care.
+/// The substitution sets can lead to polynomial code expansion, so use with care.
 ///
 /// # Example
 /// ```rust
