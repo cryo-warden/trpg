@@ -13,9 +13,9 @@ pub struct SecadorMultiMacro {
 
 impl ToTokens for SecadorMultiMacro {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self { stmts: statements } = self;
+        let Self { stmts } = self;
         tokens.extend(quote! {
-          #(#statements)*
+          #(#stmts)*
         });
     }
 }

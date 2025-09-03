@@ -1,9 +1,7 @@
 #![cfg(test)]
 
 mod test_single_line {
-    use crate::secador;
-
-    secador!(
+    crate::secador!(
         (field, Type),
         [(happy, Happy), (sad, Sad), (mad, Mad), (glad, Glad),],
         {
@@ -46,9 +44,7 @@ mod test_single_line {
 }
 
 mod test_multi_line {
-    use crate::secador;
-
-    secador!(
+    crate::secador!(
         (field, Type, other_field, OtherType),
         [
             (happy, Happy, path, Path),
@@ -100,9 +96,7 @@ mod test_multi_line {
 }
 
 mod test_attr {
-    use crate::secador;
-
-    secador!((attr, arg), [(derive, Clone), (derive, Debug),], {
+    crate::secador!((attr, arg), [(derive, Clone), (derive, Debug),], {
         #[seca(1)]
         #[__attr(__arg)]
         pub struct Test(pub u64);
@@ -117,9 +111,7 @@ mod test_attr {
 }
 
 mod test_secador_multi {
-    use crate::secador_multi;
-
-    secador_multi!(
+    crate::secador_multi!(
         seca!((var, ty, init), [(A, u64, 8), (B, u32, 13),]), // Intentional extra comma.
         custom_named_seca!((var, ty, init), [(Z, u64, 8), (Y, u32, 13)]),
         {
@@ -134,6 +126,27 @@ mod test_secador_multi {
                 let _ = B;
                 let _ = Y;
                 let _ = Z;
+            }
+        }
+    );
+}
+
+mod test_secador_type_substitution {
+    crate::secador!(
+        (var, ty, init),
+        [(A, Type![Vec<u64>], vec![]), (B, u32, 13), (C, Option<u16>, Some(8)),],
+        {
+            seca!(1);
+            const __var: __ty = __init;
+
+            #[test]
+            fn compiles() {
+                // rustfmt cannot handle certain type substitutions unless they're wrapped in `Type![]`.
+                // `Option<u16>` above prevents rustfmt from working in these macro args.
+                // The extra space before `A` below illustrates this.
+                let _ =  A;
+                let _ = B;
+                let _ = C;
             }
         }
     );
