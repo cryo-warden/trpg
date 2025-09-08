@@ -280,7 +280,6 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     let ecs = ctx.ecs();
 
     action_system(ecs);
-    event_resolve_system(ecs);
     hp_system(ecs);
     ep_system(ecs);
     shift_queued_action_system(ecs);

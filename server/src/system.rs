@@ -1,7 +1,7 @@
 use crate::{
     action::{ActionEffect, ActionHandle},
     entity::*,
-    event::{early_events, late_events, middle_events, observable_events, EntityEvent, EventType},
+    event::{observable_events, EventQueue, EventType, NewEvent},
     stat_block::{baselines, traits, StatBlock},
 };
 use ecs::Ecs;
@@ -11,8 +11,7 @@ use std::cmp::{max, min};
 pub fn observation_system(ecs: Ecs) {
     for o in ecs.db.observable_events().iter() {
         if let Some(l) = ecs.find(o.target_entity_id).with_location() {
-            for l in { ecs.db.location_components() }
-                .location_entity_id()
+            for l in { ecs.db.location_components().location_entity_id() }
                 .filter(l.location().location_entity_id)
             {
                 if ecs.find(l.entity_id).player_controller().is_some() {
@@ -24,16 +23,6 @@ pub fn observation_system(ecs: Ecs) {
             }
         }
     }
-}
-
-pub fn event_resolve_system(ecs: Ecs) {
-    secador::secador!(table, [early_events, middle_events, late_events], {
-        seca!(1);
-        for event in ecs.db.__table().iter() {
-            event.resolve(ecs);
-            ecs.db.__table().id().delete(event.id);
-        }
-    });
 }
 
 pub fn hp_system(ecs: Ecs) {
@@ -65,19 +54,18 @@ pub fn shift_queued_action_system(ecs: Ecs) {
         if e.action_state().is_none() {
             let e = e.into_handle().shift_queued_action_state();
             if let Some(a) = e.action_state() {
-                ecs.db.observable_events().insert(EntityEvent {
-                    id: 0,
-                    event_type: EventType::StartAction(a.action_id),
-                    owner_entity_id: a.entity_id,
-                    target_entity_id: a.target_entity_id,
-                    time: ecs.timestamp,
-                });
+                ecs.db.observable_events().insert(ecs.new_event(
+                    a.entity_id,
+                    EventType::StartAction(a.action_id),
+                    a.target_entity_id,
+                ));
             }
         }
     }
 }
 
 pub fn action_system(ecs: Ecs) {
+    let mut queue = EventQueue::new();
     for mut e in ecs.iter_action_state() {
         let action_state = e.action_state();
         let entity_id = action_state.entity_id;
@@ -87,42 +75,38 @@ pub fn action_system(ecs: Ecs) {
         if let Some(ref effect) = effect {
             match effect {
                 ActionEffect::Buff(_) => {
-                    EntityEvent::emit_early(
-                        ecs,
+                    queue.emit_early(ecs.new_event(
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
                         action_state.target_entity_id,
-                    );
+                    ));
                 }
                 ActionEffect::Attack(damage) => {
                     let attack = e.attack().map(|c| c.attack).unwrap_or(0);
                     let t = ecs.find(action_state.target_entity_id);
                     let target_defense = t.hp().map(|c| c.defense).unwrap_or(0);
-                    EntityEvent::emit_middle(
-                        ecs,
+                    queue.emit_middle(ecs.new_event(
                         entity_id,
                         EventType::ActionEffect(ActionEffect::Attack(max(
                             0,
                             damage + attack - target_defense,
                         ))),
                         action_state.target_entity_id,
-                    );
+                    ));
                 }
                 ActionEffect::Heal(_) => {
-                    EntityEvent::emit_middle(
-                        ecs,
+                    queue.emit_middle(ecs.new_event(
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
                         action_state.target_entity_id,
-                    );
+                    ));
                 }
                 _ => {
-                    EntityEvent::emit_late(
-                        ecs,
+                    queue.emit_late(ecs.new_event(
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
                         action_state.target_entity_id,
-                    );
+                    ));
                 }
             }
         }
@@ -139,6 +123,8 @@ pub fn action_system(ecs: Ecs) {
             with_action_state.delete_action_state();
         }
     }
+
+    queue.resolve(ecs);
 }
 
 pub fn target_validation_system(ecs: Ecs) {

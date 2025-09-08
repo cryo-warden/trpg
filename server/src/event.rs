@@ -1,5 +1,5 @@
 secador::secador!(
-    (table, emit_fn),
+    (queue_field, emit_fn),
     [
         (early_events, emit_early),
         (middle_events, emit_middle),
@@ -21,8 +21,6 @@ secador::secador!(
         }
 
         #[table(name = observable_events, public)]
-        #[seca(1)]
-        #[table(name = __table)]
         #[derive(Debug, Clone)]
         pub struct EntityEvent {
             #[primary_key]
@@ -34,24 +32,7 @@ secador::secador!(
             pub target_entity_id: u64,
         }
 
-        #[allow(dead_code)]
         impl EntityEvent {
-            seca!(1);
-            pub fn __emit_fn(
-                ecs: Ecs,
-                owner_entity_id: u64,
-                event_type: EventType,
-                target_entity_id: u64,
-            ) {
-                ecs.db.__table().insert(EntityEvent {
-                    id: 0,
-                    time: ecs.timestamp,
-                    owner_entity_id,
-                    event_type,
-                    target_entity_id,
-                });
-            }
-
             pub fn resolve(&self, ecs: Ecs) {
                 let target_entity_id = self.target_entity_id;
                 log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
@@ -115,6 +96,58 @@ secador::secador!(
                 let mut observable_event = self.to_owned();
                 observable_event.id = 0;
                 ecs.db.observable_events().insert(observable_event);
+            }
+        }
+
+        pub trait NewEvent {
+            fn new_event(
+                self,
+                owner_entity_id: u64,
+                event_type: EventType,
+                target_entity_id: u64,
+            ) -> EntityEvent;
+        }
+
+        impl NewEvent for Ecs<'_> {
+            fn new_event(
+                self,
+                owner_entity_id: u64,
+                event_type: EventType,
+                target_entity_id: u64,
+            ) -> EntityEvent {
+                EntityEvent {
+                    id: 0,
+                    time: self.timestamp,
+                    owner_entity_id,
+                    event_type,
+                    target_entity_id,
+                }
+            }
+        }
+
+        pub struct EventQueue {
+            __seca: __1,
+            __queue_field: Vec<EntityEvent>,
+        }
+
+        impl EventQueue {
+            pub fn new() -> Self {
+                Self {
+                    __seca: __1,
+                    __queue_field: Vec::new(),
+                }
+            }
+
+            seca!(1);
+            pub fn __emit_fn(&mut self, event: EntityEvent) {
+                self.__queue_field.push(event);
+            }
+
+            pub fn resolve(self, ecs: Ecs) {
+                seca!(1);
+                for event in self.__queue_field {
+                    event.resolve(ecs);
+                }
             }
         }
     }
