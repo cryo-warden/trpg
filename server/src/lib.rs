@@ -237,19 +237,6 @@ pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
 }
 
 #[reducer]
-pub fn consume_observer_components(ctx: &ReducerContext) -> Result<(), String> {
-    if let Some(p) = { ctx.db.player_controller_components() }
-        .identity()
-        .find(ctx.sender)
-    {
-        ctx.db.entity_observations().entity_id().delete(p.entity_id);
-        Ok(())
-    } else {
-        Err("Cannot consume observer events without a player controller component.".to_string())
-    }
-}
-
-#[reducer]
 pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Result<(), String> {
     ctx.ecs().find(entity_id).add_trait(trait_name);
 
@@ -279,6 +266,7 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
 
     let ecs = ctx.ecs();
 
+    observation_reset_system(ecs);
     action_system(ecs);
     hp_system(ecs);
     ep_system(ecs);
@@ -288,7 +276,6 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     entity_prominence_system(ecs);
     entity_deactivation_system(ecs);
     entity_stats_system(ecs);
-    observation_system(ecs);
 
     Ok(())
 }

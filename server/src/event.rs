@@ -33,14 +33,14 @@ secador::secador!(
         }
 
         impl EntityEvent {
-            pub fn resolve(&self, ecs: Ecs) {
+            pub fn resolve(mut self, ecs: Ecs) {
                 let target_entity_id = self.target_entity_id;
                 log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
-                match self.event_type {
-                    EventType::StartAction(_) => {}
+                let is_observable = match self.event_type {
+                    EventType::StartAction(_) => true,
                     EventType::ActionEffect(ref action_effect) => match action_effect {
-                        ActionEffect::Buff(_) => {} // WIP
-                        ActionEffect::Rest => {}
+                        ActionEffect::Buff(_) => true,
+                        ActionEffect::Rest => false,
                         ActionEffect::Move => {
                             match ecs.db.path_components().entity_id().find(target_entity_id) {
                                 None => {}
@@ -63,6 +63,7 @@ secador::secador!(
                                     }
                                 }
                             }
+                            true
                         }
                         ActionEffect::Attack(damage) => {
                             let target_hp =
@@ -74,6 +75,7 @@ secador::secador!(
                                     ecs.db.hp_components().entity_id().update(target_hp);
                                 }
                             }
+                            true
                         }
                         ActionEffect::Heal(heal) => {
                             let target_hp =
@@ -85,17 +87,19 @@ secador::secador!(
                                     ecs.db.hp_components().entity_id().update(target_hp);
                                 }
                             }
+                            true
                         }
-                        ActionEffect::Take => {}    // WIP
-                        ActionEffect::Drop => {}    // WIP
-                        ActionEffect::Equip => {}   // WIP
-                        ActionEffect::Unequip => {} // WIP
+                        ActionEffect::Take => true,    // WIP
+                        ActionEffect::Drop => true,    // WIP
+                        ActionEffect::Equip => true,   // WIP
+                        ActionEffect::Unequip => true, // WIP
                     },
-                }
+                };
 
-                let mut observable_event = self.to_owned();
-                observable_event.id = 0;
-                ecs.db.observable_events().insert(observable_event);
+                if is_observable {
+                    self.id = 0;
+                    ecs.db.observable_events().insert(self);
+                }
             }
         }
 

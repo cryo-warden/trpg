@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { RemoteTables } from "../../../stdb";
-import { ActionId, EntityId, EventId } from "../../trpg";
+import { ActionId, EntityId } from "../../trpg";
 import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
 import { createUseTable } from "./useTable";
@@ -40,7 +40,6 @@ export const componentQueries = [
   "select * from ep_components",
   "select * from hp_components",
   "select * from location_components",
-  "select * from entity_observations",
   "select * from player_controller_components",
   "select * from queued_action_state_components",
   "select * from target_components",
@@ -132,26 +131,6 @@ export const useLocationEntities = (locationEntityId: EntityId | null) => {
         .map((locationComponent) => locationComponent.entityId),
     [locationEntityId]
   );
-};
-
-export const useObserverComponentsObservableEventIds = (
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _entityId: EntityId | null
-): EventId[] => {
-  //*
-  return [];
-  /*/
-  return useTableData(
-    "observerComponents",
-    (table) =>
-      entityId == null
-        ? []
-        : [...table.iter()]
-            .filter((c) => c.entityId === entityId)
-            .map((c) => c.observableEventId),
-    [entityId]
-  );
-  //*/
 };
 
 export const useTarget = (entityId: EntityId | null) => {

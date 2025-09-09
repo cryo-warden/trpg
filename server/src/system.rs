@@ -8,20 +8,9 @@ use ecs::Ecs;
 use spacetimedb::Table;
 use std::cmp::{max, min};
 
-pub fn observation_system(ecs: Ecs) {
-    for o in ecs.db.observable_events().iter() {
-        if let Some(l) = ecs.find(o.target_entity_id).with_location() {
-            for l in { ecs.db.location_components().location_entity_id() }
-                .filter(l.location().location_entity_id)
-            {
-                if ecs.find(l.entity_id).player_controller().is_some() {
-                    ecs.db.entity_observations().insert(EntityObservations {
-                        entity_id: l.entity_id,
-                        observable_event_id: o.id,
-                    });
-                }
-            }
-        }
+pub fn observation_reset_system(ecs: Ecs) {
+    for event in ecs.db.observable_events().iter() {
+        ecs.db.observable_events().delete(event);
     }
 }
 

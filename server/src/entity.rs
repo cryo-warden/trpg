@@ -187,15 +187,6 @@ entity!(
     }
 );
 
-#[table(name = entity_observations, public)]
-#[derive(Debug, Clone)]
-pub struct EntityObservations {
-    #[index(btree)]
-    pub entity_id: u64,
-    #[index(btree)]
-    pub observable_event_id: u64,
-}
-
 pub trait GetRng {
     fn get_rng(&self) -> StdRng;
 }

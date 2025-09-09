@@ -2,9 +2,7 @@ import {
   ComponentPropsWithoutRef,
   ReactNode,
   useCallback,
-  useEffect,
   useMemo,
-  useState,
 } from "react";
 import { useDebugRenderer } from "../renderer";
 import { EntityEvent } from "../stdb";
@@ -13,12 +11,12 @@ import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { usePlayerEntity } from "./context/StdbContext/components";
-import { useObserverComponentsEvents } from "./context/StdbContext/rendering";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import "./index.css";
+import { useTableStream } from "./context/StdbContext/useTableStream";
 
-const compareEvents = (a: EntityEvent, b: EntityEvent) =>
-  Number(a.time.microsSinceUnixEpoch - b.time.microsSinceUnixEpoch);
+// const compareEvents = (a: EntityEvent, b: EntityEvent) =>
+// Number(a.time.microsSinceUnixEpoch - b.time.microsSinceUnixEpoch);
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const connection = useStdbConnection();
@@ -35,18 +33,7 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     return EventDisplay;
   }, [renderEvent, playerEntity]);
 
-  const [eventSet, setEventSet] = useState(new Set<EntityEvent>());
-
-  const events = useObserverComponentsEvents(playerEntity);
-
-  useEffect(() => {
-    setEventSet((oldEvents) => {
-      if (events.length < 1) {
-        return oldEvents;
-      }
-      return new Set([...oldEvents, ...events].toSorted(compareEvents));
-    });
-  }, [events]);
+  const eventSet = useTableStream("observableEvents", (e) => e, []);
 
   const setMode = useSetDynamicPanelMode();
   const clearSelection = useCallback(() => {

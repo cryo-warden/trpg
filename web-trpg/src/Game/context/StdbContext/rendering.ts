@@ -1,7 +1,4 @@
-import { useMemo } from "react";
-import { EntityEvent } from "../../../stdb";
-import { ActionId, EntityId } from "../../trpg";
-import { useObserverComponentsObservableEventIds } from "./components";
+import { ActionId } from "../../trpg";
 import { createUseTable } from "./useTable";
 import { useTableData } from "./useTableData";
 
@@ -20,18 +17,3 @@ export const useActionName = (actionId: ActionId) => {
   );
 };
 export const useAppearanceFeatures = createUseTable("appearanceFeatures");
-const useObservableEvents = createUseTable("observableEvents");
-
-export const useObserverComponentsEvents = (
-  entityId: EntityId | null
-): EntityEvent[] => {
-  const eventIds = useObserverComponentsObservableEventIds(entityId);
-  const observableEvents = useObservableEvents();
-  const events = useMemo(() => {
-    const idToObservableEvent = new Map(observableEvents.map((e) => [e.id, e]));
-    return eventIds
-      .map((id) => idToObservableEvent.get(id))
-      .filter((e) => e != null);
-  }, [eventIds, observableEvents]);
-  return events;
-};
