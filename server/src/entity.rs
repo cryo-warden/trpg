@@ -99,11 +99,6 @@ entity!(
         pub identity: Identity,
     }
 
-    #[component(target in target_components)]
-    struct TargetComponent {
-        pub target_entity_id: EntityId,
-    }
-
     #[component(
       action_state in action_state_components,
       queued_action_state in queued_action_state_components,
@@ -128,17 +123,6 @@ entity!(
     #[component(action_hotkeys in action_hotkeys_components)]
     struct ActionHotkeysComponent {
         pub action_hotkeys: Vec<ActionHotkey>,
-    }
-
-    #[derive(Debug, Clone, SpacetimeType)]
-    pub struct ActionOption {
-        pub action_id: u64,
-        pub target_entity_id: EntityId,
-    }
-
-    #[component(action_options in action_options_components)]
-    struct ActionOptionsComponent {
-        pub action_options: Vec<ActionOption>,
     }
 
     #[component(entity_prominence in entity_prominence_components)]
@@ -467,10 +451,6 @@ impl<'a> EntityHandle<'a> {
         self.upsert_new_name(name.to_string()).into_handle()
     }
 
-    pub fn set_target(self, target_entity_id: u64) -> Self {
-        self.upsert_new_target(target_entity_id).into_handle()
-    }
-
     pub fn set_allegiance(self, allegiance_entity_id: u64) -> Self {
         self.upsert_new_allegiance(allegiance_entity_id)
             .into_handle()
@@ -589,25 +569,6 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn add_action_option(self, action_id: u64, target_entity_id: u64) -> Self {
-        if let Some(mut a) = self.action_options() {
-            a.action_options.push(ActionOption {
-                action_id,
-                target_entity_id,
-            });
-            self.update_action_options(a);
-        } else {
-            self.insert_action_options(ActionOptionsComponent {
-                entity_id: self.entity_id,
-                action_options: vec![ActionOption {
-                    action_id,
-                    target_entity_id,
-                }],
-            });
-        }
-        self
-    }
-
     pub fn set_queued_action_state(self, action_id: u64, target_entity_id: u64) -> Self {
         self.delete_queued_action_state();
         self.insert_queued_action_state(ActionStateComponent {
@@ -654,6 +615,7 @@ impl<'a> EntityHandle<'a> {
     pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
         if let Some(a) = self.ecs.db.actions().id().find(action_id) {
             let o = self.ecs.find(other_entity_id);
+            // TODO Add same-location check as a separate function, which is also used to validate individual effects before they're resolved.
             match a.action_type {
                 ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),

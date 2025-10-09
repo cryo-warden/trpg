@@ -33,7 +33,6 @@ import {
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 import { ActionHotkeysComponent as __ActionHotkeysComponent } from "./action_hotkeys_component_type";
-import { ActionOptionsComponent as __ActionOptionsComponent } from "./action_options_component_type";
 import { ActionStateComponent as __ActionStateComponent } from "./action_state_component_type";
 import { ActionsComponent as __ActionsComponent } from "./actions_component_type";
 import { AllegianceComponent as __AllegianceComponent } from "./allegiance_component_type";
@@ -49,7 +48,6 @@ import { FlagComponent as __FlagComponent } from "./flag_component_type";
 import { HpComponent as __HpComponent } from "./hp_component_type";
 import { EpComponent as __EpComponent } from "./ep_component_type";
 import { PlayerControllerComponent as __PlayerControllerComponent } from "./player_controller_component_type";
-import { TargetComponent as __TargetComponent } from "./target_component_type";
 import { EntityProminenceComponent as __EntityProminenceComponent } from "./entity_prominence_component_type";
 import { TimerComponent as __TimerComponent } from "./timer_component_type";
 import { RngSeedComponent as __RngSeedComponent } from "./rng_seed_component_type";
@@ -71,12 +69,10 @@ export type EntityBlob = {
   hp: __HpComponent | undefined,
   ep: __EpComponent | undefined,
   playerController: __PlayerControllerComponent | undefined,
-  target: __TargetComponent | undefined,
   actionState: __ActionStateComponent | undefined,
   queuedActionState: __ActionStateComponent | undefined,
   actions: __ActionsComponent | undefined,
   actionHotkeys: __ActionHotkeysComponent | undefined,
-  actionOptions: __ActionOptionsComponent | undefined,
   entityProminence: __EntityProminenceComponent | undefined,
   entityDeactivationTimer: __TimerComponent | undefined,
   rngSeed: __RngSeedComponent | undefined,
@@ -110,12 +106,10 @@ export namespace EntityBlob {
       new ProductTypeElement("hp", AlgebraicType.createOptionType(__HpComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("ep", AlgebraicType.createOptionType(__EpComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("playerController", AlgebraicType.createOptionType(__PlayerControllerComponent.getTypeScriptAlgebraicType())),
-      new ProductTypeElement("target", AlgebraicType.createOptionType(__TargetComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("actionState", AlgebraicType.createOptionType(__ActionStateComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("queuedActionState", AlgebraicType.createOptionType(__ActionStateComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("actions", AlgebraicType.createOptionType(__ActionsComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("actionHotkeys", AlgebraicType.createOptionType(__ActionHotkeysComponent.getTypeScriptAlgebraicType())),
-      new ProductTypeElement("actionOptions", AlgebraicType.createOptionType(__ActionOptionsComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("entityProminence", AlgebraicType.createOptionType(__EntityProminenceComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("entityDeactivationTimer", AlgebraicType.createOptionType(__TimerComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("rngSeed", AlgebraicType.createOptionType(__RngSeedComponent.getTypeScriptAlgebraicType())),

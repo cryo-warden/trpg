@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { RemoteTables } from "../../../stdb";
+import { RemoteTables, Action } from "../../../stdb";
 import { ActionId, EntityId } from "../../trpg";
 import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
 import { createUseTable } from "./useTable";
 import { useTableData } from "./useTableData";
+import { Target } from "../TargetContext";
 
 const createUseComponent =
   <T extends keyof RemoteTables>(tableName: T) =>
@@ -29,8 +30,8 @@ const createUseComponent =
     );
 
 export const componentQueries = [
+  "select * from actions",
   "select * from action_hotkeys_components",
-  "select * from action_options_components",
   "select * from actions_components",
   "select * from action_state_components",
   "select * from allegiance_components",
@@ -40,16 +41,16 @@ export const componentQueries = [
   "select * from ep_components",
   "select * from hp_components",
   "select * from location_components",
+  "select * from path_components",
   "select * from player_controller_components",
   "select * from queued_action_state_components",
-  "select * from target_components",
 ];
 
 const useActionHotkeysComponent = createUseComponent("actionHotkeysComponents");
 export const useActionStateComponent = createUseComponent(
   "actionStateComponents"
 );
-const useActionOptionsComponent = createUseComponent("actionOptionsComponents");
+export const useActionsComponent = createUseComponent("actionsComponents");
 export const useAttackComponent = createUseComponent("attackComponents");
 export const useEpComponent = createUseComponent("epComponents");
 export const useHpComponent = createUseComponent("hpComponents");
@@ -57,12 +58,14 @@ const useLocationComponent = createUseComponent("locationComponents");
 export const useQueuedActionStateComponent = createUseComponent(
   "queuedActionStateComponents"
 );
-const useTargetComponent = createUseComponent("targetComponents");
 
 export const useAllegianceComponents = createUseTable("allegianceComponents");
 export const useAppearanceFeaturesComponents = createUseTable(
   "appearanceFeaturesComponents"
 );
+
+const useAllegianceComponent = createUseComponent("allegianceComponents");
+const usePathComponent = createUseComponent("pathComponents");
 
 export const useLocation = (entityId: EntityId | null) => {
   const component = useLocationComponent(entityId);
@@ -73,20 +76,70 @@ export const useLocation = (entityId: EntityId | null) => {
   return component.locationEntityId;
 };
 
-export const useActionOptions = (
-  targetEntityId: EntityId | null
-): ActionId[] => {
-  const playerEntity = usePlayerEntity();
-  const actionOptionsComponent = useActionOptionsComponent(playerEntity);
-  return useMemo(
-    () =>
-      actionOptionsComponent?.actionOptions
-        .filter(
-          (actionOption) => actionOption.targetEntityId === targetEntityId
-        )
-        .map((actionOption) => actionOption.actionId) ?? [],
-    [actionOptionsComponent, targetEntityId]
+export const useActionsMap = () =>
+  useTableData(
+    "actions",
+    (table) => {
+      const m = new Map<bigint, Action>();
+      for (const row of table.iter()) {
+        m.set(row.id, row);
+      }
+      return m;
+    },
+    []
   );
+
+export const useActionOptions = (target: Target): ActionId[] => {
+  const playerEntity = usePlayerEntity();
+  const actionsComponent = useActionsComponent(playerEntity);
+
+  const actionsMap = useActionsMap();
+  const targetHp = useHpComponent(target);
+  const playerAllegiance = useAllegianceComponent(playerEntity);
+  const targetAllegiance = useAllegianceComponent(target);
+  const targetPath = usePathComponent(target);
+
+  return useMemo(() => {
+    const actionIds = actionsComponent?.actionIds ?? [];
+
+    const isAlly =
+      playerEntity === target ||
+      !!(
+        playerAllegiance &&
+        targetAllegiance &&
+        playerAllegiance.allegianceEntityId ===
+          targetAllegiance.allegianceEntityId
+      );
+
+    return actionIds.filter((aid) => {
+      const action = actionsMap.get(aid as bigint);
+      if (!action) return false;
+
+      switch (action.actionType.tag) {
+        case "Attack":
+          return !!targetHp && !isAlly;
+        case "Buff":
+          return !!targetHp && isAlly;
+        case "Move":
+          return !!targetPath;
+        case "Equip":
+          return true;
+        case "Inventory":
+          return true;
+        default:
+          return false;
+      }
+    });
+  }, [
+    actionsComponent,
+    actionsMap,
+    playerEntity,
+    targetHp,
+    playerAllegiance,
+    targetAllegiance,
+    targetPath,
+    target,
+  ]);
 };
 
 export const useActionHotkey = (actionId: ActionId) => {
@@ -133,15 +186,6 @@ export const useLocationEntities = (locationEntityId: EntityId | null) => {
   );
 };
 
-export const useTarget = (entityId: EntityId | null) => {
-  const component = useTargetComponent(entityId);
-  if (component == null) {
-    return null;
-  }
-
-  return component.targetEntityId;
-};
-
 const usePlayerControllerComponent = () => {
   const identity = useStdbIdentity();
   return useTableData(
@@ -159,3 +203,14 @@ export const usePlayerEntity = (): EntityId | null => {
 
   return playerControllerComponent.entityId;
 };
+
+export const useAction = (actionId: ActionId | null) =>
+  useTableData(
+    "actions",
+    (table) => {
+      if (actionId == null) return null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (table.id.find(actionId as any) as any) ?? null;
+    },
+    [actionId]
+  );

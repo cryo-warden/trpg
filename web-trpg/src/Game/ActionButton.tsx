@@ -6,11 +6,11 @@ import {
   useActionStateComponent,
   usePlayerEntity,
   useQueuedActionStateComponent,
-  useTarget,
 } from "./context/StdbContext/components";
 import { useActionName } from "./context/StdbContext/rendering";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { ActionId, EntityId } from "./trpg";
+import { useTarget } from "./context/TargetContext";
 
 export const ActionButton = ({
   target,
@@ -22,7 +22,7 @@ export const ActionButton = ({
 } & ComponentPropsWithoutRef<typeof Button>) => {
   const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
-  const contextualTarget = useTarget(playerEntity);
+  const contextualTarget = useTarget();
   const finalTarget = target ?? contextualTarget;
   const hotkey = useActionHotkey(actionId);
   const queueAction = useCallback(() => {

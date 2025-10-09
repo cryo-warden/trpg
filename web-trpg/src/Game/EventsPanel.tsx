@@ -11,17 +11,17 @@ import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
 import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { usePlayerEntity } from "./context/StdbContext/components";
-import { useStdbConnection } from "./context/StdbContext/useStdb";
 import "./index.css";
 import { useTableStream } from "./context/StdbContext/useTableStream";
+import { useSetTarget } from "./context/TargetContext";
 
 // const compareEvents = (a: EntityEvent, b: EntityEvent) =>
 // Number(a.time.microsSinceUnixEpoch - b.time.microsSinceUnixEpoch);
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
-  const connection = useStdbConnection();
   const { renderEvent } = useDebugRenderer();
   const playerEntity = usePlayerEntity();
+  const setTarget = useSetTarget();
 
   const EventDisplay = useMemo(() => {
     if (playerEntity == null) {
@@ -38,8 +38,8 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const setMode = useSetDynamicPanelMode();
   const clearSelection = useCallback(() => {
     setMode("location");
-    connection.reducers.deleteTarget();
-  }, [setMode, connection]);
+    setTarget(null);
+  }, [setMode, setTarget]);
 
   const ref = useHotkeyRef<HTMLDivElement>("Escape");
 

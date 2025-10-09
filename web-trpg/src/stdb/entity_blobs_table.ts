@@ -34,7 +34,6 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 import { EntityBlob } from "./entity_blob_type";
 import { ActionHotkeysComponent as __ActionHotkeysComponent } from "./action_hotkeys_component_type";
-import { ActionOptionsComponent as __ActionOptionsComponent } from "./action_options_component_type";
 import { ActionStateComponent as __ActionStateComponent } from "./action_state_component_type";
 import { ActionsComponent as __ActionsComponent } from "./actions_component_type";
 import { AllegianceComponent as __AllegianceComponent } from "./allegiance_component_type";
@@ -50,7 +49,6 @@ import { FlagComponent as __FlagComponent } from "./flag_component_type";
 import { HpComponent as __HpComponent } from "./hp_component_type";
 import { EpComponent as __EpComponent } from "./ep_component_type";
 import { PlayerControllerComponent as __PlayerControllerComponent } from "./player_controller_component_type";
-import { TargetComponent as __TargetComponent } from "./target_component_type";
 import { EntityProminenceComponent as __EntityProminenceComponent } from "./entity_prominence_component_type";
 import { TimerComponent as __TimerComponent } from "./timer_component_type";
 import { RngSeedComponent as __RngSeedComponent } from "./rng_seed_component_type";

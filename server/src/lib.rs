@@ -4,7 +4,6 @@ use ecs::WithEcs;
 use entity::*;
 use spacetimedb::{reducer, table, ReducerContext, ScheduleAt, Table, TimeDuration};
 use stat_block::{StatBlockBuilder, StatBlockContext};
-use system::action_option_system;
 
 mod action;
 mod appearance;
@@ -213,30 +212,6 @@ pub fn act(ctx: &ReducerContext, action_id: u64, target_entity_id: u64) -> Resul
 }
 
 #[reducer]
-pub fn target(ctx: &ReducerContext, target_entity_id: u64) -> Result<(), String> {
-    match ctx.ecs().from_player_identity() {
-        Some(p) => {
-            p.into_handle().set_target(target_entity_id);
-            // TODO Only update for the given player and target.
-            action_option_system(ctx.ecs());
-            Ok(())
-        }
-        None => Err("Cannot find a player entity.".to_string()),
-    }
-}
-
-#[reducer]
-pub fn delete_target(ctx: &ReducerContext) -> Result<(), String> {
-    match ctx.ecs().from_player_identity() {
-        Some(p) => {
-            p.delete_target();
-            Ok(())
-        }
-        None => Err("Cannot find a player entity.".to_string()),
-    }
-}
-
-#[reducer]
 pub fn add_trait(ctx: &ReducerContext, entity_id: u64, trait_name: &str) -> Result<(), String> {
     ctx.ecs().find(entity_id).add_trait(trait_name);
 
@@ -271,8 +246,6 @@ pub fn run_system(ctx: &ReducerContext, _timer: SystemTimer) -> Result<(), Strin
     hp_system(ecs);
     ep_system(ecs);
     shift_queued_action_system(ecs);
-    target_validation_system(ecs);
-    action_option_system(ecs);
     entity_prominence_system(ecs);
     entity_deactivation_system(ecs);
     entity_stats_system(ecs);

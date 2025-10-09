@@ -40,24 +40,18 @@ import { AddTrait } from "./add_trait_reducer.ts";
 export { AddTrait };
 import { Damage } from "./damage_reducer.ts";
 export { Damage };
-import { DeleteTarget } from "./delete_target_reducer.ts";
-export { DeleteTarget };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
 export { IdentityDisconnected };
 import { RunSystem } from "./run_system_reducer.ts";
 export { RunSystem };
-import { Target } from "./target_reducer.ts";
-export { Target };
 
 // Import and reexport all table handle types
 import { ActionAppearancesTableHandle } from "./action_appearances_table.ts";
 export { ActionAppearancesTableHandle };
 import { ActionHotkeysComponentsTableHandle } from "./action_hotkeys_components_table.ts";
 export { ActionHotkeysComponentsTableHandle };
-import { ActionOptionsComponentsTableHandle } from "./action_options_components_table.ts";
-export { ActionOptionsComponentsTableHandle };
 import { ActionStateComponentsTableHandle } from "./action_state_components_table.ts";
 export { ActionStateComponentsTableHandle };
 import { ActionStepsTableHandle } from "./action_steps_table.ts";
@@ -116,8 +110,6 @@ import { RngSeedComponentsTableHandle } from "./rng_seed_components_table.ts";
 export { RngSeedComponentsTableHandle };
 import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
-import { TargetComponentsTableHandle } from "./target_components_table.ts";
-export { TargetComponentsTableHandle };
 import { TotalStatBlockDirtyFlagComponentsTableHandle } from "./total_stat_block_dirty_flag_components_table.ts";
 export { TotalStatBlockDirtyFlagComponentsTableHandle };
 import { TraitsTableHandle } from "./traits_table.ts";
@@ -142,10 +134,6 @@ import { ActionHotkey } from "./action_hotkey_type.ts";
 export { ActionHotkey };
 import { ActionHotkeysComponent } from "./action_hotkeys_component_type.ts";
 export { ActionHotkeysComponent };
-import { ActionOption } from "./action_option_type.ts";
-export { ActionOption };
-import { ActionOptionsComponent } from "./action_options_component_type.ts";
-export { ActionOptionsComponent };
 import { ActionStateComponent } from "./action_state_component_type.ts";
 export { ActionStateComponent };
 import { ActionStep } from "./action_step_type.ts";
@@ -214,8 +202,6 @@ import { StatBlockCacheComponent } from "./stat_block_cache_component_type.ts";
 export { StatBlockCacheComponent };
 import { SystemTimer } from "./system_timer_type.ts";
 export { SystemTimer };
-import { TargetComponent } from "./target_component_type.ts";
-export { TargetComponent };
 import { TimerComponent } from "./timer_component_type.ts";
 export { TimerComponent };
 import { Trait } from "./trait_type.ts";
@@ -241,15 +227,6 @@ const REMOTE_MODULE = {
       primaryKeyInfo: {
         colName: "entityId",
         colType: ActionHotkeysComponent.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
-      },
-    },
-    action_options_components: {
-      tableName: "action_options_components",
-      rowType: ActionOptionsComponent.getTypeScriptAlgebraicType(),
-      primaryKey: "entityId",
-      primaryKeyInfo: {
-        colName: "entityId",
-        colType: ActionOptionsComponent.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
     },
     action_state_components: {
@@ -503,15 +480,6 @@ const REMOTE_MODULE = {
         colType: SystemTimer.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
     },
-    target_components: {
-      tableName: "target_components",
-      rowType: TargetComponent.getTypeScriptAlgebraicType(),
-      primaryKey: "entityId",
-      primaryKeyInfo: {
-        colName: "entityId",
-        colType: TargetComponent.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
-      },
-    },
     total_stat_block_dirty_flag_components: {
       tableName: "total_stat_block_dirty_flag_components",
       rowType: FlagComponent.getTypeScriptAlgebraicType(),
@@ -580,10 +548,6 @@ const REMOTE_MODULE = {
       reducerName: "damage",
       argsType: Damage.getTypeScriptAlgebraicType(),
     },
-    delete_target: {
-      reducerName: "delete_target",
-      argsType: DeleteTarget.getTypeScriptAlgebraicType(),
-    },
     identity_connected: {
       reducerName: "identity_connected",
       argsType: IdentityConnected.getTypeScriptAlgebraicType(),
@@ -595,10 +559,6 @@ const REMOTE_MODULE = {
     run_system: {
       reducerName: "run_system",
       argsType: RunSystem.getTypeScriptAlgebraicType(),
-    },
-    target: {
-      reducerName: "target",
-      argsType: Target.getTypeScriptAlgebraicType(),
     },
   },
   versionInfo: {
@@ -633,11 +593,9 @@ export type Reducer = never
 | { name: "Act", args: Act }
 | { name: "AddTrait", args: AddTrait }
 | { name: "Damage", args: Damage }
-| { name: "DeleteTarget", args: DeleteTarget }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
 | { name: "RunSystem", args: RunSystem }
-| { name: "Target", args: Target }
 ;
 
 export class RemoteReducers {
@@ -691,18 +649,6 @@ export class RemoteReducers {
     this.connection.offReducer("damage", callback);
   }
 
-  deleteTarget() {
-    this.connection.callReducer("delete_target", new Uint8Array(0), this.setCallReducerFlags.deleteTargetFlags);
-  }
-
-  onDeleteTarget(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.onReducer("delete_target", callback);
-  }
-
-  removeOnDeleteTarget(callback: (ctx: ReducerEventContext) => void) {
-    this.connection.offReducer("delete_target", callback);
-  }
-
   onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.onReducer("identity_connected", callback);
   }
@@ -735,22 +681,6 @@ export class RemoteReducers {
     this.connection.offReducer("run_system", callback);
   }
 
-  target(targetEntityId: bigint) {
-    const __args = { targetEntityId };
-    let __writer = new BinaryWriter(1024);
-    Target.getTypeScriptAlgebraicType().serialize(__writer, __args);
-    let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("target", __argsBuffer, this.setCallReducerFlags.targetFlags);
-  }
-
-  onTarget(callback: (ctx: ReducerEventContext, targetEntityId: bigint) => void) {
-    this.connection.onReducer("target", callback);
-  }
-
-  removeOnTarget(callback: (ctx: ReducerEventContext, targetEntityId: bigint) => void) {
-    this.connection.offReducer("target", callback);
-  }
-
 }
 
 export class SetReducerFlags {
@@ -769,19 +699,9 @@ export class SetReducerFlags {
     this.damageFlags = flags;
   }
 
-  deleteTargetFlags: CallReducerFlags = 'FullUpdate';
-  deleteTarget(flags: CallReducerFlags) {
-    this.deleteTargetFlags = flags;
-  }
-
   runSystemFlags: CallReducerFlags = 'FullUpdate';
   runSystem(flags: CallReducerFlags) {
     this.runSystemFlags = flags;
-  }
-
-  targetFlags: CallReducerFlags = 'FullUpdate';
-  target(flags: CallReducerFlags) {
-    this.targetFlags = flags;
   }
 
 }
@@ -795,10 +715,6 @@ export class RemoteTables {
 
   get actionHotkeysComponents(): ActionHotkeysComponentsTableHandle {
     return new ActionHotkeysComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeysComponent>(REMOTE_MODULE.tables.action_hotkeys_components));
-  }
-
-  get actionOptionsComponents(): ActionOptionsComponentsTableHandle {
-    return new ActionOptionsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionOptionsComponent>(REMOTE_MODULE.tables.action_options_components));
   }
 
   get actionStateComponents(): ActionStateComponentsTableHandle {
@@ -915,10 +831,6 @@ export class RemoteTables {
 
   get systemTimers(): SystemTimersTableHandle {
     return new SystemTimersTableHandle(this.connection.clientCache.getOrCreateTable<SystemTimer>(REMOTE_MODULE.tables.system_timers));
-  }
-
-  get targetComponents(): TargetComponentsTableHandle {
-    return new TargetComponentsTableHandle(this.connection.clientCache.getOrCreateTable<TargetComponent>(REMOTE_MODULE.tables.target_components));
   }
 
   get totalStatBlockDirtyFlagComponents(): TotalStatBlockDirtyFlagComponentsTableHandle {

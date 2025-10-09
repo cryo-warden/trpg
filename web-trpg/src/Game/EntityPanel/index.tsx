@@ -6,14 +6,13 @@ import { ActionButton } from "../ActionButton";
 import {
   useActionOptions,
   usePlayerEntity,
-  useTarget,
 } from "../context/StdbContext/components";
-import { useStdbConnection } from "../context/StdbContext/useStdb";
 import { EntityName } from "../EntityName";
 import { EntityId } from "../trpg";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
+import { useSetTarget, useTarget } from "../context/TargetContext";
 
 export const EntityPanel = ({
   entity,
@@ -25,13 +24,13 @@ export const EntityPanel = ({
   hotkey?: string;
   detailed?: boolean;
 } & ComponentPropsWithoutRef<typeof Panel>) => {
-  const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
   const getClassName = useGetClassName(playerEntity);
-  const target = useTarget(playerEntity);
+  const target = useTarget();
+  const setTarget = useSetTarget();
   const targetThis = useCallback(() => {
-    connection.reducers.target(entity);
-  }, [entity, connection]);
+    setTarget(entity);
+  }, [entity, setTarget]);
 
   const panelRef = useHotkeyRef<HTMLDivElement>(hotkey);
 
@@ -55,7 +54,7 @@ export const EntityPanel = ({
         props.className ?? "",
         "EntityPanel",
         getClassName(entity),
-        entity === target ? "targetted" : "",
+        entity === target ? "targeted" : "",
       ].join(" ")}
       onClick={targetThis}
     >

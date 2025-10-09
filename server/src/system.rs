@@ -43,11 +43,21 @@ pub fn shift_queued_action_system(ecs: Ecs) {
         if e.action_state().is_none() {
             let e = e.into_handle().shift_queued_action_state();
             if let Some(a) = e.action_state() {
-                ecs.db.observable_events().insert(ecs.new_event(
-                    a.entity_id,
-                    EventType::StartAction(a.action_id),
-                    a.target_entity_id,
-                ));
+                if e.can_target_other(a.target_entity_id, a.action_id) {
+                    ecs.db.observable_events().insert(ecs.new_event(
+                        a.entity_id,
+                        EventType::StartAction(a.action_id),
+                        a.target_entity_id,
+                    ));
+                } else {
+                    log::warn!(
+                        "Entity {} has invalid queued action target {} for action {}",
+                        e.entity_id(),
+                        a.target_entity_id,
+                        a.action_id
+                    );
+                    e.delete_action_state();
+                }
             }
         }
     }
@@ -114,52 +124,6 @@ pub fn action_system(ecs: Ecs) {
     }
 
     queue.resolve(ecs);
-}
-
-pub fn target_validation_system(ecs: Ecs) {
-    for e in ecs.iter_target() {
-        let t = ecs.find(e.target().target_entity_id);
-        let is_valid = match t.location() {
-            None => false,
-            Some(tl) => {
-                tl.location_entity_id == e.target().entity_id // WIP Make entity_id() trait.
-                    || match e.location() {
-                        None => false,
-                        Some(el) => tl.location_entity_id == el.location_entity_id,
-                    }
-            }
-        };
-
-        if !is_valid {
-            e.delete_target();
-        }
-    }
-}
-
-pub fn action_option_system(ecs: Ecs) {
-    for e in ecs.iter_action_options() {
-        e.delete_action_options();
-    }
-    for e in ecs.iter_location() {
-        for other_entity_id in match e.target() {
-            None => vec![e.entity_id()],
-            Some(target) => {
-                if e.entity_id() == target.target_entity_id {
-                    vec![e.entity_id()]
-                } else {
-                    vec![e.entity_id(), target.target_entity_id]
-                }
-            }
-        } {
-            let mut e = e.clone().into_handle();
-            for action_id in e.actions().into_iter().flat_map(|a| a.action_ids) {
-                // WIP Take methods out of EntityHandle and onto component traits.
-                if e.can_target_other(other_entity_id, action_id) {
-                    e = e.add_action_option(action_id, other_entity_id);
-                }
-            }
-        }
-    }
 }
 
 pub fn entity_prominence_system(ecs: Ecs) {
