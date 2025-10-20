@@ -32,34 +32,40 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type AppearanceFeaturesComponent = {
-  entityId: bigint,
-  appearanceFeatureIndexes: number[],
+
+export type AdminRecreatePlayerForIdentity = {
+  identity: Identity,
+  allegianceName: string,
+  startingRoomName: string,
+  baselineName: string,
+  traitNames: string[],
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace AppearanceFeaturesComponent {
+export namespace AdminRecreatePlayerForIdentity {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("appearanceFeatureIndexes", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
+      new ProductTypeElement("identity", AlgebraicType.createIdentityType()),
+      new ProductTypeElement("allegianceName", AlgebraicType.createStringType()),
+      new ProductTypeElement("startingRoomName", AlgebraicType.createStringType()),
+      new ProductTypeElement("baselineName", AlgebraicType.createStringType()),
+      new ProductTypeElement("traitNames", AlgebraicType.createArrayType(AlgebraicType.createStringType())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AppearanceFeaturesComponent): void {
-    AppearanceFeaturesComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: AdminRecreatePlayerForIdentity): void {
+    AdminRecreatePlayerForIdentity.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AppearanceFeaturesComponent {
-    return AppearanceFeaturesComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): AdminRecreatePlayerForIdentity {
+    return AdminRecreatePlayerForIdentity.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

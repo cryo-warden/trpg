@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { RemoteTables, Action } from "../../../stdb";
+import { RemoteTables } from "../../../stdb";
+import { actions } from "../../assets";
 import { ActionId, EntityId } from "../../trpg";
 import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
@@ -30,7 +31,6 @@ const createUseComponent =
     );
 
 export const componentQueries = [
-  "select * from actions",
   "select * from action_hotkeys_components",
   "select * from actions_components",
   "select * from action_state_components",
@@ -76,24 +76,10 @@ export const useLocation = (entityId: EntityId | null) => {
   return component.locationEntityId;
 };
 
-export const useActionsMap = () =>
-  useTableData(
-    "actions",
-    (table) => {
-      const m = new Map<bigint, Action>();
-      for (const row of table.iter()) {
-        m.set(row.id, row);
-      }
-      return m;
-    },
-    []
-  );
-
 export const useActionOptions = (target: Target): ActionId[] => {
   const playerEntity = usePlayerEntity();
   const actionsComponent = useActionsComponent(playerEntity);
 
-  const actionsMap = useActionsMap();
   const targetHp = useHpComponent(target);
   const playerAllegiance = useAllegianceComponent(playerEntity);
   const targetAllegiance = useAllegianceComponent(target);
@@ -111,28 +97,23 @@ export const useActionOptions = (target: Target): ActionId[] => {
           targetAllegiance.allegianceEntityId
       );
 
-    return actionIds.filter((aid) => {
-      const action = actionsMap.get(aid as bigint);
+    return actionIds.filter((id) => {
+      const action = actions[id];
       if (!action) return false;
 
-      switch (action.actionType.tag) {
+      switch (action.type) {
         case "Attack":
           return !!targetHp && !isAlly;
         case "Buff":
           return !!targetHp && isAlly;
         case "Move":
           return !!targetPath;
-        case "Equip":
-          return true;
-        case "Inventory":
-          return true;
         default:
           return false;
       }
     });
   }, [
     actionsComponent,
-    actionsMap,
     playerEntity,
     targetHp,
     playerAllegiance,
@@ -204,13 +185,5 @@ export const usePlayerEntity = (): EntityId | null => {
   return playerControllerComponent.entityId;
 };
 
-export const useAction = (actionId: ActionId | null) =>
-  useTableData(
-    "actions",
-    (table) => {
-      if (actionId == null) return null;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (table.id.find(actionId as any) as any) ?? null;
-    },
-    [actionId]
-  );
+export const useAction = (id: ActionId | null) =>
+  useMemo(() => (id == null ? null : actions[id] ?? null), [id]);

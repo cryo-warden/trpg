@@ -35,7 +35,7 @@ import {
 import { StatBlock as __StatBlock } from "./stat_block_type";
 
 export type Baseline = {
-  id: bigint,
+  id: number,
   name: string,
   statBlock: __StatBlock,
 };
@@ -50,7 +50,7 @@ export namespace Baseline {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("id", AlgebraicType.createU32Type()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
       new ProductTypeElement("statBlock", __StatBlock.getTypeScriptAlgebraicType()),
     ]);

@@ -1,6 +1,6 @@
-use std::cmp::max;
+use spacetimedb::{table, ReducerContext, SpacetimeType};
 
-use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
+pub type ActionId = u32;
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ActionType {
@@ -15,21 +15,10 @@ pub enum ActionType {
 #[derive(Debug, Clone)]
 pub struct Action {
     #[primary_key]
-    #[auto_inc]
-    pub id: u64,
+    pub id: ActionId,
     #[unique]
     pub name: String,
     pub action_type: ActionType,
-}
-
-#[table(name = action_appearances, public)]
-#[derive(Debug, Clone)]
-pub struct ActionAppearance {
-    #[primary_key]
-    pub action_id: u64,
-    #[unique]
-    pub name: String,
-    pub begin_template: String,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -58,81 +47,19 @@ pub enum ActionEffect {
 #[derive(Debug, Clone)]
 pub struct ActionStep {
     #[primary_key]
-    #[auto_inc]
     id: u64,
-    action_id: u64,
+    action_id: ActionId,
     sequence_index: i32,
     action_effect: ActionEffect,
 }
 
-pub struct ActionContext<'a> {
-    ctx: &'a ReducerContext,
-}
-
-#[allow(dead_code)]
-impl<'a> ActionContext<'a> {
-    pub fn new(ctx: &'a ReducerContext) -> Self {
-        Self { ctx }
-    }
-
-    pub fn new_handle(&self, name: &str, action_type: ActionType) -> ActionHandle {
-        ActionHandle::new(self.ctx, name, action_type)
-    }
-
-    pub fn by_names(&self, names: &[&str]) -> Vec<u64> {
-        names
-            .iter()
-            .filter_map(|n| {
-                self.ctx
-                    .db
-                    .actions()
-                    .name()
-                    .find(n.to_string())
-                    .map(|a| a.id)
-            })
-            .collect()
-    }
-}
-
 pub struct ActionHandle<'a> {
     ctx: &'a ReducerContext,
-    action_id: u64,
+    action_id: ActionId,
 }
 
-#[allow(dead_code)]
 impl<'a> ActionHandle<'a> {
-    pub fn new(ctx: &'a ReducerContext, name: &str, action_type: ActionType) -> Self {
-        let action = ctx.db.actions().insert(Action {
-            id: 0,
-            name: name.to_string(),
-            action_type,
-        });
-        Self {
-            ctx,
-            action_id: action.id,
-        }
-    }
-
-    pub fn add_appearance(self, name: &str, begin_template: &str) -> Self {
-        self.ctx.db.action_appearances().insert(ActionAppearance {
-            action_id: self.action_id,
-            name: name.to_string(),
-            begin_template: begin_template.to_string(),
-        });
-        self
-    }
-
-    pub fn next_sequence_index(&self) -> i32 {
-        1 + self
-            .ctx
-            .db
-            .action_steps()
-            .action_sequence()
-            .filter(self.action_id)
-            .fold(-1, |agg, step| max(agg, step.sequence_index))
-    }
-
-    pub fn from_id(ctx: &'a ReducerContext, action_id: u64) -> Self {
+    pub fn from_id(ctx: &'a ReducerContext, action_id: ActionId) -> Self {
         Self { ctx, action_id }
     }
 
@@ -144,31 +71,5 @@ impl<'a> ActionHandle<'a> {
             .filter((self.action_id, sequence_index))
             .next()
             .map(|a| a.action_effect)
-    }
-
-    pub fn add_step(self, action_effect: ActionEffect) -> Self {
-        self.ctx.db.action_steps().insert(ActionStep {
-            id: 0,
-            action_id: self.action_id,
-            action_effect,
-            sequence_index: self.next_sequence_index(),
-        });
-        self
-    }
-
-    pub fn add_rest(self) -> Self {
-        self.add_step(ActionEffect::Rest)
-    }
-
-    pub fn add_move(self) -> Self {
-        self.add_step(ActionEffect::Move)
-    }
-
-    pub fn add_attack(self, value: i32) -> Self {
-        self.add_step(ActionEffect::Attack(value))
-    }
-
-    pub fn add_heal(self, value: i32) -> Self {
-        self.add_step(ActionEffect::Heal(value))
     }
 }

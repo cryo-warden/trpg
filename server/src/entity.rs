@@ -1,6 +1,5 @@
 use crate::{
-    action::{actions, ActionType},
-    appearance::AppearanceFeatureContext,
+    action::{actions, ActionId, ActionType},
     stat_block::{baselines, traits, StatBlock},
 };
 use ecs::{entity, Ecs, WithEcs};
@@ -50,12 +49,12 @@ entity!(
 
     #[component(baseline in baseline_components)]
     struct BaselineComponent {
-        pub baseline_id: u64,
+        pub baseline_id: u32,
     }
 
     #[component(traits in traits_components)]
     struct TraitsComponent {
-        pub trait_ids: Vec<u64>,
+        pub trait_ids: Vec<u32>,
     }
 
     // TODO Add StatBlock caches for equipment and status effects.
@@ -105,18 +104,18 @@ entity!(
     )]
     struct ActionStateComponent {
         pub target_entity_id: EntityId,
-        pub action_id: u64,
+        pub action_id: ActionId,
         pub sequence_index: i32,
     }
 
     #[component(actions in actions_components)]
     struct ActionsComponent {
-        pub action_ids: Vec<u64>,
+        pub action_ids: Vec<ActionId>,
     }
 
     #[derive(Debug, Clone, SpacetimeType)]
     pub struct ActionHotkey {
-        pub action_id: u64,
+        pub action_id: ActionId,
         pub character_code: u32,
     }
 
@@ -167,9 +166,23 @@ entity!(
 
     #[component(appearance_features in appearance_features_components)]
     struct AppearanceFeaturesComponent {
-        pub appearance_feature_ids: Vec<u64>,
+        pub appearance_feature_indexes: Vec<u32>,
     }
 );
+
+#[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
+pub enum SpecialEntityBlobType {
+    NewPlayer,
+    FirstRoom,
+}
+
+#[table(name = special_entity_blobs)]
+#[derive(Debug, Clone)]
+pub struct SpecialEntityBlob {
+    #[primary_key]
+    pub special_entity_blob_type: SpecialEntityBlobType,
+    pub blob: EntityBlob,
+}
 
 pub trait GetRng {
     fn get_rng(&self) -> StdRng;
@@ -181,10 +194,12 @@ impl<T: rng_seed_component::Some> GetRng for T {
     }
 }
 
+#[allow(dead_code)]
 pub struct MapGenerationResult {
     pub room_ids: Vec<u64>,
 }
 
+#[allow(dead_code)]
 pub trait MapGenerator {
     fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult;
 }
@@ -192,12 +207,12 @@ pub trait MapGenerator {
 pub trait EcsExtension<'a> {
     fn new_room(
         self,
-        appearance_feature_ids: Vec<u64>,
+        appearance_feature_indexes: Vec<u32>,
         location_map_entity_id: u64,
     ) -> EntityHandle<'a>;
     fn new_path(
         self,
-        appearance_feature_ids: Vec<u64>,
+        appearance_feature_indexes: Vec<u32>,
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> EntityHandle<'a>;
@@ -211,22 +226,22 @@ pub trait EcsExtension<'a> {
 impl<'a> EcsExtension<'a> for Ecs<'a> {
     fn new_room(
         self,
-        appearance_feature_ids: Vec<u64>,
+        appearance_feature_indexes: Vec<u32>,
         location_map_entity_id: u64,
     ) -> EntityHandle<'a> {
         self.new()
-            .upsert_new_appearance_features(appearance_feature_ids)
+            .upsert_new_appearance_features(appearance_feature_indexes)
             .upsert_new_location_map(location_map_entity_id)
             .into_handle()
     }
     fn new_path(
         self,
-        appearance_feature_ids: Vec<u64>,
+        appearance_feature_indexes: Vec<u32>,
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> EntityHandle<'a> {
         self.new()
-            .upsert_new_appearance_features(appearance_feature_ids)
+            .upsert_new_appearance_features(appearance_feature_indexes)
             .upsert_new_location(location_entity_id)
             .upsert_new_path(destination_entity_id)
             .into_handle()
@@ -250,8 +265,11 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
     }
 
     fn new_player(self) -> Result<EntityHandle<'a>, String> {
+        // WIP Get new player entity blob from its table.
+        // Add the player controller to it.
+        // Design how to handle references to other entities (like allegiances, rooms, etc) in entity blobs.
         Ok(self
-            .new()
+            .new() // WIP .new_from_blob()
             .upsert_new_player_controller(self.sender)
             .upsert_new_allegiance(
                 self.from_name("allegiance1")
@@ -279,33 +297,28 @@ impl<'a, T: WithEntityHandle<'a> + unrealized_map_component::Some + rng_seed_com
     MapGenerator for T
 {
     fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
-        let af_ctx = AppearanceFeatureContext::new(ctx);
         let map = self.unrealized_map();
         let mut rng = self.get_rng();
         let total_room_count = map.extra_room_count + map.main_room_count;
         let room_handles: Vec<EntityHandle> = (0..total_room_count)
             .map(|_| {
-                ctx.ecs()
-                    .new_room(af_ctx.by_texts(&["room"]), self.entity_id())
+                ctx.ecs() // WIP Use entity blobs to initialize rooms and paths.
+                    .new_room(vec![], self.entity_id())
             })
             .collect();
 
         for i in 0..(map.main_room_count as usize - 1) {
             let a = &room_handles[i];
             let b = &room_handles[i + 1];
-            ctx.ecs()
-                .new_path(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id);
-            ctx.ecs()
-                .new_path(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id);
+            ctx.ecs().new_path(vec![], a.entity_id, b.entity_id);
+            ctx.ecs().new_path(vec![], b.entity_id, a.entity_id);
         }
 
         for i in (map.main_room_count as u32)..(total_room_count as u32) {
             let a = &room_handles[i as usize];
             let b = &room_handles[(rng.next_u32() % i) as usize];
-            ctx.ecs()
-                .new_path(af_ctx.by_texts(&["path"]), a.entity_id, b.entity_id);
-            ctx.ecs()
-                .new_path(af_ctx.by_texts(&["path"]), b.entity_id, a.entity_id);
+            ctx.ecs().new_path(vec![], a.entity_id, b.entity_id);
+            ctx.ecs().new_path(vec![], b.entity_id, a.entity_id);
         }
 
         MapGenerationResult {
@@ -447,15 +460,6 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn set_name(self, name: &str) -> Self {
-        self.upsert_new_name(name.to_string()).into_handle()
-    }
-
-    pub fn set_allegiance(self, allegiance_entity_id: u64) -> Self {
-        self.upsert_new_allegiance(allegiance_entity_id)
-            .into_handle()
-    }
-
     pub fn allegiance_id(&self) -> Option<u64> {
         self.allegiance().map(|a| a.allegiance_entity_id)
     }
@@ -475,7 +479,7 @@ impl<'a> EntityHandle<'a> {
         }
     }
 
-    pub fn set_actions(self, action_ids: Vec<u64>) -> Self {
+    pub fn set_actions(self, action_ids: Vec<ActionId>) -> Self {
         if let Some(mut c) = self.actions() {
             c.action_ids = action_ids;
             self.update_actions(c);
@@ -513,7 +517,7 @@ impl<'a> EntityHandle<'a> {
         }
     }
 
-    pub fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u64>) -> Self {
+    pub fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
         self.upsert_new_appearance_features(appearance_feature_ids)
             .into_handle()
     }
@@ -569,7 +573,7 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn set_queued_action_state(self, action_id: u64, target_entity_id: u64) -> Self {
+    pub fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
         self.delete_queued_action_state();
         self.insert_queued_action_state(ActionStateComponent {
             action_id,
@@ -612,7 +616,7 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn can_target_other(&self, other_entity_id: u64, action_id: u64) -> bool {
+    pub fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool {
         if let Some(a) = self.ecs.db.actions().id().find(action_id) {
             let o = self.ecs.find(other_entity_id);
             // TODO Add same-location check as a separate function, which is also used to validate individual effects before they're resolved.

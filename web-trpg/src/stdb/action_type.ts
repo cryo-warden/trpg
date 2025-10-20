@@ -35,7 +35,7 @@ import {
 import { ActionType as __ActionType } from "./action_type_type";
 
 export type Action = {
-  id: bigint,
+  id: number,
   name: string,
   actionType: __ActionType,
 };
@@ -50,7 +50,7 @@ export namespace Action {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("id", AlgebraicType.createU32Type()),
       new ProductTypeElement("name", AlgebraicType.createStringType()),
       new ProductTypeElement("actionType", __ActionType.getTypeScriptAlgebraicType()),
     ]);

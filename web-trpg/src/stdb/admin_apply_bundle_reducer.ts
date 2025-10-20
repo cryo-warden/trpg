@@ -32,34 +32,34 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type AppearanceFeaturesComponent = {
-  entityId: bigint,
-  appearanceFeatureIndexes: number[],
+
+import { AdminBundle as __AdminBundle } from "./admin_bundle_type";
+
+export type AdminApplyBundle = {
+  bundle: __AdminBundle,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace AppearanceFeaturesComponent {
+export namespace AdminApplyBundle {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("appearanceFeatureIndexes", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
+      new ProductTypeElement("bundle", __AdminBundle.getTypeScriptAlgebraicType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AppearanceFeaturesComponent): void {
-    AppearanceFeaturesComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: AdminApplyBundle): void {
+    AdminApplyBundle.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AppearanceFeaturesComponent {
-    return AppearanceFeaturesComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): AdminApplyBundle {
+    return AdminApplyBundle.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

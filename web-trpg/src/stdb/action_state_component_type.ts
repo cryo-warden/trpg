@@ -35,7 +35,7 @@ import {
 export type ActionStateComponent = {
   entityId: bigint,
   targetEntityId: bigint,
-  actionId: bigint,
+  actionId: number,
   sequenceIndex: number,
 };
 
@@ -51,7 +51,7 @@ export namespace ActionStateComponent {
     return AlgebraicType.createProductType([
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("actionId", AlgebraicType.createU32Type()),
       new ProductTypeElement("sequenceIndex", AlgebraicType.createI32Type()),
     ]);
   }

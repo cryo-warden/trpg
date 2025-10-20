@@ -36,7 +36,7 @@ import { ActionEffect as __ActionEffect } from "./action_effect_type";
 
 export type ActionStep = {
   id: bigint,
-  actionId: bigint,
+  actionId: number,
   sequenceIndex: number,
   actionEffect: __ActionEffect,
 };
@@ -52,7 +52,7 @@ export namespace ActionStep {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("id", AlgebraicType.createU64Type()),
-      new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("actionId", AlgebraicType.createU32Type()),
       new ProductTypeElement("sequenceIndex", AlgebraicType.createI32Type()),
       new ProductTypeElement("actionEffect", __ActionEffect.getTypeScriptAlgebraicType()),
     ]);

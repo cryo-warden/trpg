@@ -32,15 +32,13 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-import { ActionEffect as __ActionEffect } from "./action_effect_type";
-
 // A namespace for generated variants and helper functions.
-export namespace EventType {
+export namespace SpecialEntityBlobType {
   // These are the generated variant types for each variant of the tagged union.
   // One type is generated per variant and will be used in the `value` field of
   // the tagged union.
-  export type StartAction = { tag: "StartAction", value: number };
-  export type ActionEffect = { tag: "ActionEffect", value: __ActionEffect };
+  export type NewPlayer = { tag: "NewPlayer" };
+  export type FirstRoom = { tag: "FirstRoom" };
 
   // Helper functions for constructing each variant of the tagged union.
   // ```
@@ -48,28 +46,28 @@ export namespace EventType {
   // assert!(foo.tag === "A");
   // assert!(foo.value === 42);
   // ```
-  export const StartAction = (value: number): EventType => ({ tag: "StartAction", value });
-  export const ActionEffect = (value: __ActionEffect): EventType => ({ tag: "ActionEffect", value });
+  export const NewPlayer = { tag: "NewPlayer" };
+  export const FirstRoom = { tag: "FirstRoom" };
 
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createSumType([
-      new SumTypeVariant("StartAction", AlgebraicType.createU32Type()),
-      new SumTypeVariant("ActionEffect", __ActionEffect.getTypeScriptAlgebraicType()),
+      new SumTypeVariant("NewPlayer", AlgebraicType.createProductType([])),
+      new SumTypeVariant("FirstRoom", AlgebraicType.createProductType([])),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: EventType): void {
-      EventType.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: SpecialEntityBlobType): void {
+      SpecialEntityBlobType.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): EventType {
-      return EventType.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): SpecialEntityBlobType {
+      return SpecialEntityBlobType.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
 
-// The tagged union or sum type for the algebraic type `EventType`.
-export type EventType = EventType.StartAction | EventType.ActionEffect;
+// The tagged union or sum type for the algebraic type `SpecialEntityBlobType`.
+export type SpecialEntityBlobType = SpecialEntityBlobType.NewPlayer | SpecialEntityBlobType.FirstRoom;
 
-export default EventType;
+export default SpecialEntityBlobType;
 

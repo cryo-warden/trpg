@@ -36,20 +36,26 @@ import {
 // Import and reexport all reducer arg types
 import { Act } from "./act_reducer.ts";
 export { Act };
-import { AddTrait } from "./add_trait_reducer.ts";
-export { AddTrait };
-import { Damage } from "./damage_reducer.ts";
-export { Damage };
+import { AdminAddTrait } from "./admin_add_trait_reducer.ts";
+export { AdminAddTrait };
+import { AdminApplyBundle } from "./admin_apply_bundle_reducer.ts";
+export { AdminApplyBundle };
+import { AdminDamage } from "./admin_damage_reducer.ts";
+export { AdminDamage };
+import { AdminRecreatePlayerForIdentity } from "./admin_recreate_player_for_identity_reducer.ts";
+export { AdminRecreatePlayerForIdentity };
+import { CreatePlayerForSelf } from "./create_player_for_self_reducer.ts";
+export { CreatePlayerForSelf };
 import { IdentityConnected } from "./identity_connected_reducer.ts";
 export { IdentityConnected };
 import { IdentityDisconnected } from "./identity_disconnected_reducer.ts";
 export { IdentityDisconnected };
+import { RegisterAdmin } from "./register_admin_reducer.ts";
+export { RegisterAdmin };
 import { RunSystem } from "./run_system_reducer.ts";
 export { RunSystem };
 
 // Import and reexport all table handle types
-import { ActionAppearancesTableHandle } from "./action_appearances_table.ts";
-export { ActionAppearancesTableHandle };
 import { ActionHotkeysComponentsTableHandle } from "./action_hotkeys_components_table.ts";
 export { ActionHotkeysComponentsTableHandle };
 import { ActionStateComponentsTableHandle } from "./action_state_components_table.ts";
@@ -60,6 +66,8 @@ import { ActionsTableHandle } from "./actions_table.ts";
 export { ActionsTableHandle };
 import { ActionsComponentsTableHandle } from "./actions_components_table.ts";
 export { ActionsComponentsTableHandle };
+import { AdminIdentitiesTableHandle } from "./admin_identities_table.ts";
+export { AdminIdentitiesTableHandle };
 import { AllegianceComponentsTableHandle } from "./allegiance_components_table.ts";
 export { AllegianceComponentsTableHandle };
 import { AppearanceFeaturesTableHandle } from "./appearance_features_table.ts";
@@ -108,6 +116,8 @@ import { RealizedMapComponentsTableHandle } from "./realized_map_components_tabl
 export { RealizedMapComponentsTableHandle };
 import { RngSeedComponentsTableHandle } from "./rng_seed_components_table.ts";
 export { RngSeedComponentsTableHandle };
+import { SpecialEntityBlobsTableHandle } from "./special_entity_blobs_table.ts";
+export { SpecialEntityBlobsTableHandle };
 import { SystemTimersTableHandle } from "./system_timers_table.ts";
 export { SystemTimersTableHandle };
 import { TotalStatBlockDirtyFlagComponentsTableHandle } from "./total_stat_block_dirty_flag_components_table.ts";
@@ -126,8 +136,6 @@ export { UnrealizedMapComponentsTableHandle };
 // Import and reexport all types
 import { Action } from "./action_type.ts";
 export { Action };
-import { ActionAppearance } from "./action_appearance_type.ts";
-export { ActionAppearance };
 import { ActionEffect } from "./action_effect_type.ts";
 export { ActionEffect };
 import { ActionHotkey } from "./action_hotkey_type.ts";
@@ -142,6 +150,10 @@ import { ActionType } from "./action_type_type.ts";
 export { ActionType };
 import { ActionsComponent } from "./actions_component_type.ts";
 export { ActionsComponent };
+import { AdminBundle } from "./admin_bundle_type.ts";
+export { AdminBundle };
+import { AdminIdentity } from "./admin_identity_type.ts";
+export { AdminIdentity };
 import { AllegianceComponent } from "./allegiance_component_type.ts";
 export { AllegianceComponent };
 import { AppearanceFeature } from "./appearance_feature_type.ts";
@@ -196,6 +208,10 @@ import { PlayerControllerComponent } from "./player_controller_component_type.ts
 export { PlayerControllerComponent };
 import { RngSeedComponent } from "./rng_seed_component_type.ts";
 export { RngSeedComponent };
+import { SpecialEntityBlob } from "./special_entity_blob_type.ts";
+export { SpecialEntityBlob };
+import { SpecialEntityBlobType } from "./special_entity_blob_type_type.ts";
+export { SpecialEntityBlobType };
 import { StatBlock } from "./stat_block_type.ts";
 export { StatBlock };
 import { StatBlockCacheComponent } from "./stat_block_cache_component_type.ts";
@@ -211,15 +227,6 @@ export { TraitsComponent };
 
 const REMOTE_MODULE = {
   tables: {
-    action_appearances: {
-      tableName: "action_appearances",
-      rowType: ActionAppearance.getTypeScriptAlgebraicType(),
-      primaryKey: "actionId",
-      primaryKeyInfo: {
-        colName: "actionId",
-        colType: ActionAppearance.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
-      },
-    },
     action_hotkeys_components: {
       tableName: "action_hotkeys_components",
       rowType: ActionHotkeysComponent.getTypeScriptAlgebraicType(),
@@ -265,6 +272,10 @@ const REMOTE_MODULE = {
         colType: ActionsComponent.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
     },
+    admin_identities: {
+      tableName: "admin_identities",
+      rowType: AdminIdentity.getTypeScriptAlgebraicType(),
+    },
     allegiance_components: {
       tableName: "allegiance_components",
       rowType: AllegianceComponent.getTypeScriptAlgebraicType(),
@@ -277,9 +288,9 @@ const REMOTE_MODULE = {
     appearance_features: {
       tableName: "appearance_features",
       rowType: AppearanceFeature.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
+      primaryKey: "index",
       primaryKeyInfo: {
-        colName: "id",
+        colName: "index",
         colType: AppearanceFeature.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
     },
@@ -322,9 +333,9 @@ const REMOTE_MODULE = {
     en_appearance_features: {
       tableName: "en_appearance_features",
       rowType: AppearanceFeature.getTypeScriptAlgebraicType(),
-      primaryKey: "id",
+      primaryKey: "index",
       primaryKeyInfo: {
-        colName: "id",
+        colName: "index",
         colType: AppearanceFeature.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
     },
@@ -471,6 +482,15 @@ const REMOTE_MODULE = {
         colType: RngSeedComponent.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
       },
     },
+    special_entity_blobs: {
+      tableName: "special_entity_blobs",
+      rowType: SpecialEntityBlob.getTypeScriptAlgebraicType(),
+      primaryKey: "specialEntityBlobType",
+      primaryKeyInfo: {
+        colName: "specialEntityBlobType",
+        colType: SpecialEntityBlob.getTypeScriptAlgebraicType().product.elements[0].algebraicType,
+      },
+    },
     system_timers: {
       tableName: "system_timers",
       rowType: SystemTimer.getTypeScriptAlgebraicType(),
@@ -540,13 +560,25 @@ const REMOTE_MODULE = {
       reducerName: "act",
       argsType: Act.getTypeScriptAlgebraicType(),
     },
-    add_trait: {
-      reducerName: "add_trait",
-      argsType: AddTrait.getTypeScriptAlgebraicType(),
+    admin_add_trait: {
+      reducerName: "admin_add_trait",
+      argsType: AdminAddTrait.getTypeScriptAlgebraicType(),
     },
-    damage: {
-      reducerName: "damage",
-      argsType: Damage.getTypeScriptAlgebraicType(),
+    admin_apply_bundle: {
+      reducerName: "admin_apply_bundle",
+      argsType: AdminApplyBundle.getTypeScriptAlgebraicType(),
+    },
+    admin_damage: {
+      reducerName: "admin_damage",
+      argsType: AdminDamage.getTypeScriptAlgebraicType(),
+    },
+    admin_recreate_player_for_identity: {
+      reducerName: "admin_recreate_player_for_identity",
+      argsType: AdminRecreatePlayerForIdentity.getTypeScriptAlgebraicType(),
+    },
+    create_player_for_self: {
+      reducerName: "create_player_for_self",
+      argsType: CreatePlayerForSelf.getTypeScriptAlgebraicType(),
     },
     identity_connected: {
       reducerName: "identity_connected",
@@ -555,6 +587,10 @@ const REMOTE_MODULE = {
     identity_disconnected: {
       reducerName: "identity_disconnected",
       argsType: IdentityDisconnected.getTypeScriptAlgebraicType(),
+    },
+    register_admin: {
+      reducerName: "register_admin",
+      argsType: RegisterAdmin.getTypeScriptAlgebraicType(),
     },
     run_system: {
       reducerName: "run_system",
@@ -591,17 +627,21 @@ const REMOTE_MODULE = {
 // A type representing all the possible variants of a reducer.
 export type Reducer = never
 | { name: "Act", args: Act }
-| { name: "AddTrait", args: AddTrait }
-| { name: "Damage", args: Damage }
+| { name: "AdminAddTrait", args: AdminAddTrait }
+| { name: "AdminApplyBundle", args: AdminApplyBundle }
+| { name: "AdminDamage", args: AdminDamage }
+| { name: "AdminRecreatePlayerForIdentity", args: AdminRecreatePlayerForIdentity }
+| { name: "CreatePlayerForSelf", args: CreatePlayerForSelf }
 | { name: "IdentityConnected", args: IdentityConnected }
 | { name: "IdentityDisconnected", args: IdentityDisconnected }
+| { name: "RegisterAdmin", args: RegisterAdmin }
 | { name: "RunSystem", args: RunSystem }
 ;
 
 export class RemoteReducers {
   constructor(private connection: DbConnectionImpl, private setCallReducerFlags: SetReducerFlags) {}
 
-  act(actionId: bigint, targetEntityId: bigint) {
+  act(actionId: number, targetEntityId: bigint) {
     const __args = { actionId, targetEntityId };
     let __writer = new BinaryWriter(1024);
     Act.getTypeScriptAlgebraicType().serialize(__writer, __args);
@@ -609,44 +649,92 @@ export class RemoteReducers {
     this.connection.callReducer("act", __argsBuffer, this.setCallReducerFlags.actFlags);
   }
 
-  onAct(callback: (ctx: ReducerEventContext, actionId: bigint, targetEntityId: bigint) => void) {
+  onAct(callback: (ctx: ReducerEventContext, actionId: number, targetEntityId: bigint) => void) {
     this.connection.onReducer("act", callback);
   }
 
-  removeOnAct(callback: (ctx: ReducerEventContext, actionId: bigint, targetEntityId: bigint) => void) {
+  removeOnAct(callback: (ctx: ReducerEventContext, actionId: number, targetEntityId: bigint) => void) {
     this.connection.offReducer("act", callback);
   }
 
-  addTrait(entityId: bigint, traitName: string) {
+  adminAddTrait(entityId: bigint, traitName: string) {
     const __args = { entityId, traitName };
     let __writer = new BinaryWriter(1024);
-    AddTrait.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    AdminAddTrait.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("add_trait", __argsBuffer, this.setCallReducerFlags.addTraitFlags);
+    this.connection.callReducer("admin_add_trait", __argsBuffer, this.setCallReducerFlags.adminAddTraitFlags);
   }
 
-  onAddTrait(callback: (ctx: ReducerEventContext, entityId: bigint, traitName: string) => void) {
-    this.connection.onReducer("add_trait", callback);
+  onAdminAddTrait(callback: (ctx: ReducerEventContext, entityId: bigint, traitName: string) => void) {
+    this.connection.onReducer("admin_add_trait", callback);
   }
 
-  removeOnAddTrait(callback: (ctx: ReducerEventContext, entityId: bigint, traitName: string) => void) {
-    this.connection.offReducer("add_trait", callback);
+  removeOnAdminAddTrait(callback: (ctx: ReducerEventContext, entityId: bigint, traitName: string) => void) {
+    this.connection.offReducer("admin_add_trait", callback);
   }
 
-  damage(entityId: bigint, damage: number) {
+  adminApplyBundle(bundle: AdminBundle) {
+    const __args = { bundle };
+    let __writer = new BinaryWriter(1024);
+    AdminApplyBundle.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("admin_apply_bundle", __argsBuffer, this.setCallReducerFlags.adminApplyBundleFlags);
+  }
+
+  onAdminApplyBundle(callback: (ctx: ReducerEventContext, bundle: AdminBundle) => void) {
+    this.connection.onReducer("admin_apply_bundle", callback);
+  }
+
+  removeOnAdminApplyBundle(callback: (ctx: ReducerEventContext, bundle: AdminBundle) => void) {
+    this.connection.offReducer("admin_apply_bundle", callback);
+  }
+
+  adminDamage(entityId: bigint, damage: number) {
     const __args = { entityId, damage };
     let __writer = new BinaryWriter(1024);
-    Damage.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    AdminDamage.getTypeScriptAlgebraicType().serialize(__writer, __args);
     let __argsBuffer = __writer.getBuffer();
-    this.connection.callReducer("damage", __argsBuffer, this.setCallReducerFlags.damageFlags);
+    this.connection.callReducer("admin_damage", __argsBuffer, this.setCallReducerFlags.adminDamageFlags);
   }
 
-  onDamage(callback: (ctx: ReducerEventContext, entityId: bigint, damage: number) => void) {
-    this.connection.onReducer("damage", callback);
+  onAdminDamage(callback: (ctx: ReducerEventContext, entityId: bigint, damage: number) => void) {
+    this.connection.onReducer("admin_damage", callback);
   }
 
-  removeOnDamage(callback: (ctx: ReducerEventContext, entityId: bigint, damage: number) => void) {
-    this.connection.offReducer("damage", callback);
+  removeOnAdminDamage(callback: (ctx: ReducerEventContext, entityId: bigint, damage: number) => void) {
+    this.connection.offReducer("admin_damage", callback);
+  }
+
+  adminRecreatePlayerForIdentity(identity: Identity, allegianceName: string, startingRoomName: string, baselineName: string, traitNames: string[]) {
+    const __args = { identity, allegianceName, startingRoomName, baselineName, traitNames };
+    let __writer = new BinaryWriter(1024);
+    AdminRecreatePlayerForIdentity.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("admin_recreate_player_for_identity", __argsBuffer, this.setCallReducerFlags.adminRecreatePlayerForIdentityFlags);
+  }
+
+  onAdminRecreatePlayerForIdentity(callback: (ctx: ReducerEventContext, identity: Identity, allegianceName: string, startingRoomName: string, baselineName: string, traitNames: string[]) => void) {
+    this.connection.onReducer("admin_recreate_player_for_identity", callback);
+  }
+
+  removeOnAdminRecreatePlayerForIdentity(callback: (ctx: ReducerEventContext, identity: Identity, allegianceName: string, startingRoomName: string, baselineName: string, traitNames: string[]) => void) {
+    this.connection.offReducer("admin_recreate_player_for_identity", callback);
+  }
+
+  createPlayerForSelf(allegianceName: string, startingRoomName: string, baselineName: string, traitNames: string[]) {
+    const __args = { allegianceName, startingRoomName, baselineName, traitNames };
+    let __writer = new BinaryWriter(1024);
+    CreatePlayerForSelf.getTypeScriptAlgebraicType().serialize(__writer, __args);
+    let __argsBuffer = __writer.getBuffer();
+    this.connection.callReducer("create_player_for_self", __argsBuffer, this.setCallReducerFlags.createPlayerForSelfFlags);
+  }
+
+  onCreatePlayerForSelf(callback: (ctx: ReducerEventContext, allegianceName: string, startingRoomName: string, baselineName: string, traitNames: string[]) => void) {
+    this.connection.onReducer("create_player_for_self", callback);
+  }
+
+  removeOnCreatePlayerForSelf(callback: (ctx: ReducerEventContext, allegianceName: string, startingRoomName: string, baselineName: string, traitNames: string[]) => void) {
+    this.connection.offReducer("create_player_for_self", callback);
   }
 
   onIdentityConnected(callback: (ctx: ReducerEventContext) => void) {
@@ -663,6 +751,18 @@ export class RemoteReducers {
 
   removeOnIdentityDisconnected(callback: (ctx: ReducerEventContext) => void) {
     this.connection.offReducer("identity_disconnected", callback);
+  }
+
+  registerAdmin() {
+    this.connection.callReducer("register_admin", new Uint8Array(0), this.setCallReducerFlags.registerAdminFlags);
+  }
+
+  onRegisterAdmin(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.onReducer("register_admin", callback);
+  }
+
+  removeOnRegisterAdmin(callback: (ctx: ReducerEventContext) => void) {
+    this.connection.offReducer("register_admin", callback);
   }
 
   runSystem(timer: SystemTimer) {
@@ -689,14 +789,34 @@ export class SetReducerFlags {
     this.actFlags = flags;
   }
 
-  addTraitFlags: CallReducerFlags = 'FullUpdate';
-  addTrait(flags: CallReducerFlags) {
-    this.addTraitFlags = flags;
+  adminAddTraitFlags: CallReducerFlags = 'FullUpdate';
+  adminAddTrait(flags: CallReducerFlags) {
+    this.adminAddTraitFlags = flags;
   }
 
-  damageFlags: CallReducerFlags = 'FullUpdate';
-  damage(flags: CallReducerFlags) {
-    this.damageFlags = flags;
+  adminApplyBundleFlags: CallReducerFlags = 'FullUpdate';
+  adminApplyBundle(flags: CallReducerFlags) {
+    this.adminApplyBundleFlags = flags;
+  }
+
+  adminDamageFlags: CallReducerFlags = 'FullUpdate';
+  adminDamage(flags: CallReducerFlags) {
+    this.adminDamageFlags = flags;
+  }
+
+  adminRecreatePlayerForIdentityFlags: CallReducerFlags = 'FullUpdate';
+  adminRecreatePlayerForIdentity(flags: CallReducerFlags) {
+    this.adminRecreatePlayerForIdentityFlags = flags;
+  }
+
+  createPlayerForSelfFlags: CallReducerFlags = 'FullUpdate';
+  createPlayerForSelf(flags: CallReducerFlags) {
+    this.createPlayerForSelfFlags = flags;
+  }
+
+  registerAdminFlags: CallReducerFlags = 'FullUpdate';
+  registerAdmin(flags: CallReducerFlags) {
+    this.registerAdminFlags = flags;
   }
 
   runSystemFlags: CallReducerFlags = 'FullUpdate';
@@ -708,10 +828,6 @@ export class SetReducerFlags {
 
 export class RemoteTables {
   constructor(private connection: DbConnectionImpl) {}
-
-  get actionAppearances(): ActionAppearancesTableHandle {
-    return new ActionAppearancesTableHandle(this.connection.clientCache.getOrCreateTable<ActionAppearance>(REMOTE_MODULE.tables.action_appearances));
-  }
 
   get actionHotkeysComponents(): ActionHotkeysComponentsTableHandle {
     return new ActionHotkeysComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionHotkeysComponent>(REMOTE_MODULE.tables.action_hotkeys_components));
@@ -731,6 +847,10 @@ export class RemoteTables {
 
   get actionsComponents(): ActionsComponentsTableHandle {
     return new ActionsComponentsTableHandle(this.connection.clientCache.getOrCreateTable<ActionsComponent>(REMOTE_MODULE.tables.actions_components));
+  }
+
+  get adminIdentities(): AdminIdentitiesTableHandle {
+    return new AdminIdentitiesTableHandle(this.connection.clientCache.getOrCreateTable<AdminIdentity>(REMOTE_MODULE.tables.admin_identities));
   }
 
   get allegianceComponents(): AllegianceComponentsTableHandle {
@@ -827,6 +947,10 @@ export class RemoteTables {
 
   get rngSeedComponents(): RngSeedComponentsTableHandle {
     return new RngSeedComponentsTableHandle(this.connection.clientCache.getOrCreateTable<RngSeedComponent>(REMOTE_MODULE.tables.rng_seed_components));
+  }
+
+  get specialEntityBlobs(): SpecialEntityBlobsTableHandle {
+    return new SpecialEntityBlobsTableHandle(this.connection.clientCache.getOrCreateTable<SpecialEntityBlob>(REMOTE_MODULE.tables.special_entity_blobs));
   }
 
   get systemTimers(): SystemTimersTableHandle {

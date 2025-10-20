@@ -10,13 +10,13 @@ secador::secador!(
         use spacetimedb::{table, SpacetimeType, Table, Timestamp};
 
         use crate::{
-            action::ActionEffect,
+            action::{ActionEffect, ActionId},
             entity::{hp_components, location_components, path_components},
         };
 
         #[derive(Debug, Clone, SpacetimeType)]
         pub enum EventType {
-            StartAction(u64),
+            StartAction(ActionId),
             ActionEffect(ActionEffect),
         }
 

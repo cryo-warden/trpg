@@ -32,36 +32,29 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type ActionAppearance = {
-  actionId: bigint,
-  name: string,
-  beginTemplate: string,
-};
+
+export type RegisterAdmin = {};
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace ActionAppearance {
+export namespace RegisterAdmin {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("name", AlgebraicType.createStringType()),
-      new ProductTypeElement("beginTemplate", AlgebraicType.createStringType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: ActionAppearance): void {
-    ActionAppearance.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: RegisterAdmin): void {
+    RegisterAdmin.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): ActionAppearance {
-    return ActionAppearance.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): RegisterAdmin {
+    return RegisterAdmin.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

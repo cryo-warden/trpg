@@ -33,7 +33,7 @@ import {
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 
-export type AddTrait = {
+export type AdminAddTrait = {
   entityId: bigint,
   traitName: string,
 };
@@ -41,7 +41,7 @@ export type AddTrait = {
 /**
  * A namespace for generated helper functions.
  */
-export namespace AddTrait {
+export namespace AdminAddTrait {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -53,12 +53,12 @@ export namespace AddTrait {
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AddTrait): void {
-    AddTrait.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: AdminAddTrait): void {
+    AdminAddTrait.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AddTrait {
-    return AddTrait.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): AdminAddTrait {
+    return AdminAddTrait.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }

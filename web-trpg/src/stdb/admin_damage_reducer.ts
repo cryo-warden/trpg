@@ -32,15 +32,16 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type AppearanceFeaturesComponent = {
+
+export type AdminDamage = {
   entityId: bigint,
-  appearanceFeatureIndexes: number[],
+  damage: number,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace AppearanceFeaturesComponent {
+export namespace AdminDamage {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
@@ -48,18 +49,17 @@ export namespace AppearanceFeaturesComponent {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("appearanceFeatureIndexes", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
+      new ProductTypeElement("damage", AlgebraicType.createI32Type()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AppearanceFeaturesComponent): void {
-    AppearanceFeaturesComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: AdminDamage): void {
+    AdminDamage.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AppearanceFeaturesComponent {
-    return AppearanceFeaturesComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): AdminDamage {
+    return AdminDamage.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

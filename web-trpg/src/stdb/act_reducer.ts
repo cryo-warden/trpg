@@ -34,7 +34,7 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 
 export type Act = {
-  actionId: bigint,
+  actionId: number,
   targetEntityId: bigint,
 };
 
@@ -48,7 +48,7 @@ export namespace Act {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("actionId", AlgebraicType.createU32Type()),
       new ProductTypeElement("targetEntityId", AlgebraicType.createU64Type()),
     ]);
   }

@@ -1,12 +1,12 @@
 import { useMemo, type ReactNode } from "react";
 import { usePlayerEntity } from "../Game/context/StdbContext/components";
-import { useActionAppearances } from "../Game/context/StdbContext/rendering";
 import { ActionId, EntityId } from "../Game/trpg";
 import { EntityEvent } from "../stdb";
 import "./debug.css";
 import { renderTemplate, RenderValue } from "./template";
 import { useGetClassName } from "./useGetClassName";
 import { useGetName } from "./useGetName";
+import { actions } from "../Game/assets";
 
 type RenderContext = {
   subject: null | EntityId;
@@ -16,28 +16,15 @@ type RenderContext = {
 const capitalize = (word: string) =>
   word.substring(0, 1).toUpperCase() + word.substring(1);
 
-const useGetActionTemplate = () => {
-  const actionAppearances = useActionAppearances();
-  return useMemo(() => {
-    const idToActionAppearanceMap = new Map(
-      actionAppearances.map((a) => [a.actionId, a])
-    );
-    return (actionId: ActionId) => {
-      const action = idToActionAppearanceMap.get(actionId);
-      if (action == null) {
-        return null;
-      }
-
-      return action.beginTemplate;
-    };
-  }, [actionAppearances]);
+const getActionTemplate = (actionId: ActionId) => {
+  const action = actions[actionId];
+  return action.appearance.beginTemplate ?? null;
 };
 
 export const useDebugRenderer = () => {
   const playerEntity = usePlayerEntity();
   const getName = useGetName(playerEntity);
   const getClassName = useGetClassName(playerEntity);
-  const getActionTemplate = useGetActionTemplate();
 
   const renderValue: RenderValue<EntityId | ReactNode, RenderContext> = useMemo(
     () => (value, ruleSet, context) => {
@@ -115,7 +102,7 @@ export const useDebugRenderer = () => {
             "{0:sentence:subject} began a mysterious action toward {1:object}."
         )([event.ownerEntityId, event.targetEntityId]);
       },
-    [renderWithTemplate, getActionTemplate]
+    [renderWithTemplate]
   );
 
   const renderEvent = useMemo(

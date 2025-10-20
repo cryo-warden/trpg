@@ -32,25 +32,26 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-import { AppearanceFeature } from "./appearance_feature_type";
-import { AppearanceFeatureType as __AppearanceFeatureType } from "./appearance_feature_type_type";
+import { SpecialEntityBlob } from "./special_entity_blob_type";
+import { SpecialEntityBlobType as __SpecialEntityBlobType } from "./special_entity_blob_type_type";
+import { EntityBlob as __EntityBlob } from "./entity_blob_type";
 
 import { type EventContext, type Reducer, RemoteReducers, RemoteTables } from ".";
 
 /**
- * Table handle for the table `en_appearance_features`.
+ * Table handle for the table `special_entity_blobs`.
  *
- * Obtain a handle from the [`enAppearanceFeatures`] property on [`RemoteTables`],
- * like `ctx.db.enAppearanceFeatures`.
+ * Obtain a handle from the [`specialEntityBlobs`] property on [`RemoteTables`],
+ * like `ctx.db.specialEntityBlobs`.
  *
  * Users are encouraged not to explicitly reference this type,
  * but to directly chain method calls,
- * like `ctx.db.enAppearanceFeatures.on_insert(...)`.
+ * like `ctx.db.specialEntityBlobs.on_insert(...)`.
  */
-export class EnAppearanceFeaturesTableHandle {
-  tableCache: TableCache<AppearanceFeature>;
+export class SpecialEntityBlobsTableHandle {
+  tableCache: TableCache<SpecialEntityBlob>;
 
-  constructor(tableCache: TableCache<AppearanceFeature>) {
+  constructor(tableCache: TableCache<SpecialEntityBlob>) {
     this.tableCache = tableCache;
   }
 
@@ -58,53 +59,53 @@ export class EnAppearanceFeaturesTableHandle {
     return this.tableCache.count();
   }
 
-  iter(): Iterable<AppearanceFeature> {
+  iter(): Iterable<SpecialEntityBlob> {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `index` unique index on the table `en_appearance_features`,
+   * Access to the `specialEntityBlobType` unique index on the table `special_entity_blobs`,
    * which allows point queries on the field of the same name
-   * via the [`EnAppearanceFeaturesIndexUnique.find`] method.
+   * via the [`SpecialEntityBlobsSpecialEntityBlobTypeUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.enAppearanceFeatures.index().find(...)`.
+   * like `ctx.db.specialEntityBlobs.specialEntityBlobType().find(...)`.
    *
-   * Get a handle on the `index` unique index on the table `en_appearance_features`.
+   * Get a handle on the `specialEntityBlobType` unique index on the table `special_entity_blobs`.
    */
-  index = {
-    // Find the subscribed row whose `index` column value is equal to `col_val`,
+  specialEntityBlobType = {
+    // Find the subscribed row whose `specialEntityBlobType` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: number): AppearanceFeature | undefined => {
+    find: (col_val: SpecialEntityBlobType): SpecialEntityBlob | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.index, col_val)) {
+        if (deepEqual(row.specialEntityBlobType, col_val)) {
           return row;
         }
       }
     },
   };
 
-  onInsert = (cb: (ctx: EventContext, row: AppearanceFeature) => void) => {
+  onInsert = (cb: (ctx: EventContext, row: SpecialEntityBlob) => void) => {
     return this.tableCache.onInsert(cb);
   }
 
-  removeOnInsert = (cb: (ctx: EventContext, row: AppearanceFeature) => void) => {
+  removeOnInsert = (cb: (ctx: EventContext, row: SpecialEntityBlob) => void) => {
     return this.tableCache.removeOnInsert(cb);
   }
 
-  onDelete = (cb: (ctx: EventContext, row: AppearanceFeature) => void) => {
+  onDelete = (cb: (ctx: EventContext, row: SpecialEntityBlob) => void) => {
     return this.tableCache.onDelete(cb);
   }
 
-  removeOnDelete = (cb: (ctx: EventContext, row: AppearanceFeature) => void) => {
+  removeOnDelete = (cb: (ctx: EventContext, row: SpecialEntityBlob) => void) => {
     return this.tableCache.removeOnDelete(cb);
   }
 
   // Updates are only defined for tables with primary keys.
-  onUpdate = (cb: (ctx: EventContext, oldRow: AppearanceFeature, newRow: AppearanceFeature) => void) => {
+  onUpdate = (cb: (ctx: EventContext, oldRow: SpecialEntityBlob, newRow: SpecialEntityBlob) => void) => {
     return this.tableCache.onUpdate(cb);
   }
 
-  removeOnUpdate = (cb: (ctx: EventContext, onRow: AppearanceFeature, newRow: AppearanceFeature) => void) => {
+  removeOnUpdate = (cb: (ctx: EventContext, onRow: SpecialEntityBlob, newRow: SpecialEntityBlob) => void) => {
     return this.tableCache.removeOnUpdate(cb);
   }}

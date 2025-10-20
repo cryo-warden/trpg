@@ -1,11 +1,15 @@
 secador::secador_multi!(
     seca_int!(stat, [attack, mhp, defense, mep]),
-    seca_id_vec!(stat, [action_ids, appearance_feature_ids]),
+    seca_id_vec!(
+        (stat, StatType),
+        [(action_ids, ActionId), (appearance_feature_ids, u32)]
+    ),
     {
         use std::ops::AddAssign;
 
+        use crate::action::ActionId;
         use derive_builder::Builder;
-        use spacetimedb::{table, ReducerContext, SpacetimeType, Table};
+        use spacetimedb::{table, SpacetimeType};
 
         #[derive(Debug, Clone, SpacetimeType, Builder, Default)]
         #[builder(default)]
@@ -13,7 +17,7 @@ secador::secador_multi!(
             __seca_int: __1,
             pub __stat: i32,
             __seca_id_vec: __1,
-            pub __stat: Vec<u64>,
+            pub __stat: Vec<__StatType>,
         }
 
         impl AddAssign<&Self> for StatBlock {
@@ -31,8 +35,7 @@ secador::secador_multi!(
         #[derive(Debug, Clone)]
         pub struct Baseline {
             #[primary_key]
-            #[auto_inc]
-            pub id: u64,
+            pub id: u32,
             #[unique]
             pub name: String,
             pub stat_block: StatBlock,
@@ -42,43 +45,10 @@ secador::secador_multi!(
         #[derive(Debug, Clone)]
         pub struct Trait {
             #[primary_key]
-            #[auto_inc]
-            pub id: u64,
+            pub id: u32,
             #[unique]
             pub name: String,
             pub stat_block: StatBlock,
-        }
-
-        pub struct StatBlockContext<'a> {
-            ctx: &'a ReducerContext,
-        }
-
-        impl<'a> StatBlockContext<'a> {
-            pub fn new(ctx: &'a ReducerContext) -> Self {
-                Self { ctx }
-            }
-
-            pub fn insert_baseline(
-                self,
-                name: &str,
-                stat_block_builder: &StatBlockBuilder,
-            ) -> Self {
-                self.ctx.db.baselines().insert(Baseline {
-                    id: 0,
-                    name: name.to_string(),
-                    stat_block: stat_block_builder.build().unwrap(), // TODO Return Result instead.
-                });
-                self
-            }
-
-            pub fn insert_trait(self, name: &str, stat_block_builder: &StatBlockBuilder) -> Self {
-                self.ctx.db.traits().insert(Trait {
-                    id: 0,
-                    name: name.to_string(),
-                    stat_block: stat_block_builder.build().unwrap(), // TODO Return Result instead.
-                });
-                self
-            }
         }
     }
 );

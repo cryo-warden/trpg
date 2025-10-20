@@ -35,7 +35,7 @@ import {
 import { AppearanceFeatureType as __AppearanceFeatureType } from "./appearance_feature_type_type";
 
 export type AppearanceFeature = {
-  id: bigint,
+  index: number,
   text: string,
   appearanceFeatureType: __AppearanceFeatureType,
   priority: number,
@@ -51,7 +51,7 @@ export namespace AppearanceFeature {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("id", AlgebraicType.createU64Type()),
+      new ProductTypeElement("index", AlgebraicType.createU32Type()),
       new ProductTypeElement("text", AlgebraicType.createStringType()),
       new ProductTypeElement("appearanceFeatureType", __AppearanceFeatureType.getTypeScriptAlgebraicType()),
       new ProductTypeElement("priority", AlgebraicType.createI32Type()),

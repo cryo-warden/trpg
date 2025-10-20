@@ -4,6 +4,7 @@ import { DbConnection } from "../../../stdb";
 import { componentQueries } from "./components";
 import { renderingQueries } from "./rendering";
 import { StdbContext } from "./StdbContext";
+import { init } from "../../init";
 
 const queries = [...renderingQueries, ...componentQueries];
 
@@ -33,6 +34,8 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
         (window as any).dev = (window as any).dev || {};
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).dev.connection = connection;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).dev.init = () => init(connection);
       })
       .onConnectError((error) => {
         setConnection(null);

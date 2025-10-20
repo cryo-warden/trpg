@@ -34,7 +34,7 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 export type BaselineComponent = {
   entityId: bigint,
-  baselineId: bigint,
+  baselineId: number,
 };
 
 /**
@@ -48,7 +48,7 @@ export namespace BaselineComponent {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("baselineId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("baselineId", AlgebraicType.createU32Type()),
     ]);
   }
 

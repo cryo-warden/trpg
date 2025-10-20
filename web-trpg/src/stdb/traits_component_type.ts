@@ -34,7 +34,7 @@ import {
 } from "@clockworklabs/spacetimedb-sdk";
 export type TraitsComponent = {
   entityId: bigint,
-  traitIds: bigint[],
+  traitIds: number[],
 };
 
 /**
@@ -48,7 +48,7 @@ export namespace TraitsComponent {
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
       new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("traitIds", AlgebraicType.createArrayType(AlgebraicType.createU64Type())),
+      new ProductTypeElement("traitIds", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
     ]);
   }
 

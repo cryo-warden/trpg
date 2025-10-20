@@ -62,44 +62,22 @@ export class AppearanceFeaturesTableHandle {
     return this.tableCache.iter();
   }
   /**
-   * Access to the `id` unique index on the table `appearance_features`,
+   * Access to the `index` unique index on the table `appearance_features`,
    * which allows point queries on the field of the same name
-   * via the [`AppearanceFeaturesIdUnique.find`] method.
+   * via the [`AppearanceFeaturesIndexUnique.find`] method.
    *
    * Users are encouraged not to explicitly reference this type,
    * but to directly chain method calls,
-   * like `ctx.db.appearanceFeatures.id().find(...)`.
+   * like `ctx.db.appearanceFeatures.index().find(...)`.
    *
-   * Get a handle on the `id` unique index on the table `appearance_features`.
+   * Get a handle on the `index` unique index on the table `appearance_features`.
    */
-  id = {
-    // Find the subscribed row whose `id` column value is equal to `col_val`,
+  index = {
+    // Find the subscribed row whose `index` column value is equal to `col_val`,
     // if such a row is present in the client cache.
-    find: (col_val: bigint): AppearanceFeature | undefined => {
+    find: (col_val: number): AppearanceFeature | undefined => {
       for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.id, col_val)) {
-          return row;
-        }
-      }
-    },
-  };
-  /**
-   * Access to the `text` unique index on the table `appearance_features`,
-   * which allows point queries on the field of the same name
-   * via the [`AppearanceFeaturesTextUnique.find`] method.
-   *
-   * Users are encouraged not to explicitly reference this type,
-   * but to directly chain method calls,
-   * like `ctx.db.appearanceFeatures.text().find(...)`.
-   *
-   * Get a handle on the `text` unique index on the table `appearance_features`.
-   */
-  text = {
-    // Find the subscribed row whose `text` column value is equal to `col_val`,
-    // if such a row is present in the client cache.
-    find: (col_val: string): AppearanceFeature | undefined => {
-      for (let row of this.tableCache.iter()) {
-        if (deepEqual(row.text, col_val)) {
+        if (deepEqual(row.index, col_val)) {
           return row;
         }
       }

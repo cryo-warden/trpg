@@ -1,25 +1,23 @@
 import { useMemo } from "react";
 import { useAppearanceFeaturesComponents } from "../Game/context/StdbContext/components";
-import { useAppearanceFeatures } from "../Game/context/StdbContext/rendering";
 import { EntityId } from "../Game/trpg";
-import { AppearanceFeature } from "../stdb";
+import { appearanceFeatures, AppearanceFeatureAsset } from "../Game/assets";
 
 const compareAppearanceFeatures = (
-  a: AppearanceFeature,
-  b: AppearanceFeature
+  a: AppearanceFeatureAsset,
+  b: AppearanceFeatureAsset
 ) => b.priority - a.priority;
 
-const getText = (a: AppearanceFeature) => a.text;
+const getText = (a: AppearanceFeatureAsset) => a.text;
+
+const getAppearanceFeatures = (ids: number[]) =>
+  ids.map((id) => appearanceFeatures[id]).filter((af) => af != null);
 
 // TODO Return different functions for different languages.
 export const useGetName = (viewpointEntityId: EntityId | null) => {
-  const appearanceFeatures = useAppearanceFeatures();
   const appearanceFeaturesComponents = useAppearanceFeaturesComponents();
 
   return useMemo(() => {
-    const idToAppearanceFeature = new Map(
-      appearanceFeatures.map((af) => [af.id, af])
-    );
     const entityIdToAppearanceFeaturesComponent = new Map(
       appearanceFeaturesComponents.map((c) => [c.entityId, c])
     );
@@ -31,18 +29,17 @@ export const useGetName = (viewpointEntityId: EntityId | null) => {
         return "something";
       }
 
-      const appearanceFeatures =
-        appearanceFeaturesComponent.appearanceFeatureIds
-          .map((id) => idToAppearanceFeature.get(id))
-          .filter((af) => af != null);
+      const appearanceFeatures = getAppearanceFeatures(
+        appearanceFeaturesComponent.appearanceFeatureIndexes
+      );
 
       const noun =
         appearanceFeatures
-          .filter((af) => af.appearanceFeatureType.tag === "Noun")
+          .filter((af) => af.type === "noun")
           .sort(compareAppearanceFeatures)[0]?.text ?? "something";
 
       const adjectives = appearanceFeatures
-        .filter((af) => af.appearanceFeatureType.tag === "Adjective")
+        .filter((af) => af.type === "adjective")
         .sort(compareAppearanceFeatures)
         .map(getText)
         .slice(0, 3)
@@ -69,5 +66,5 @@ export const useGetName = (viewpointEntityId: EntityId | null) => {
       }
       return entityIdToName(namedEntityId);
     };
-  }, [appearanceFeatures, appearanceFeaturesComponents, viewpointEntityId]);
+  }, [appearanceFeaturesComponents, viewpointEntityId]);
 };

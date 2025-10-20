@@ -35,16 +35,15 @@ import {
 import { ActionHotkeysComponent as __ActionHotkeysComponent } from "./action_hotkeys_component_type";
 import { ActionStateComponent as __ActionStateComponent } from "./action_state_component_type";
 import { ActionsComponent as __ActionsComponent } from "./actions_component_type";
-import { AllegianceComponent as __AllegianceComponent } from "./allegiance_component_type";
-import { AppearanceFeaturesComponent as __AppearanceFeaturesComponent } from "./appearance_features_component_type";
-import { AttackComponent as __AttackComponent } from "./attack_component_type";
-import { BaselineComponent as __BaselineComponent } from "./baseline_component_type";
 import { NameComponent as __NameComponent } from "./name_component_type";
 import { LocationComponent as __LocationComponent } from "./location_component_type";
 import { PathComponent as __PathComponent } from "./path_component_type";
+import { AllegianceComponent as __AllegianceComponent } from "./allegiance_component_type";
+import { BaselineComponent as __BaselineComponent } from "./baseline_component_type";
 import { TraitsComponent as __TraitsComponent } from "./traits_component_type";
 import { StatBlockCacheComponent as __StatBlockCacheComponent } from "./stat_block_cache_component_type";
 import { FlagComponent as __FlagComponent } from "./flag_component_type";
+import { AttackComponent as __AttackComponent } from "./attack_component_type";
 import { HpComponent as __HpComponent } from "./hp_component_type";
 import { EpComponent as __EpComponent } from "./ep_component_type";
 import { PlayerControllerComponent as __PlayerControllerComponent } from "./player_controller_component_type";
@@ -53,6 +52,7 @@ import { TimerComponent as __TimerComponent } from "./timer_component_type";
 import { RngSeedComponent as __RngSeedComponent } from "./rng_seed_component_type";
 import { LocationMapComponent as __LocationMapComponent } from "./location_map_component_type";
 import { MapComponent as __MapComponent } from "./map_component_type";
+import { AppearanceFeaturesComponent as __AppearanceFeaturesComponent } from "./appearance_features_component_type";
 
 export type EntityBlob = {
   entityId: bigint,

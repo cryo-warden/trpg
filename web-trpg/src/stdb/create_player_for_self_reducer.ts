@@ -32,34 +32,38 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type AppearanceFeaturesComponent = {
-  entityId: bigint,
-  appearanceFeatureIndexes: number[],
+
+export type CreatePlayerForSelf = {
+  allegianceName: string,
+  startingRoomName: string,
+  baselineName: string,
+  traitNames: string[],
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace AppearanceFeaturesComponent {
+export namespace CreatePlayerForSelf {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("appearanceFeatureIndexes", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
+      new ProductTypeElement("allegianceName", AlgebraicType.createStringType()),
+      new ProductTypeElement("startingRoomName", AlgebraicType.createStringType()),
+      new ProductTypeElement("baselineName", AlgebraicType.createStringType()),
+      new ProductTypeElement("traitNames", AlgebraicType.createArrayType(AlgebraicType.createStringType())),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AppearanceFeaturesComponent): void {
-    AppearanceFeaturesComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: CreatePlayerForSelf): void {
+    CreatePlayerForSelf.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AppearanceFeaturesComponent {
-    return AppearanceFeaturesComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): CreatePlayerForSelf {
+    return CreatePlayerForSelf.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
-
 

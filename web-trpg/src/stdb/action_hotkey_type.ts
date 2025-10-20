@@ -33,7 +33,7 @@ import {
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
 export type ActionHotkey = {
-  actionId: bigint,
+  actionId: number,
   characterCode: number,
 };
 
@@ -47,7 +47,7 @@ export namespace ActionHotkey {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("actionId", AlgebraicType.createU64Type()),
+      new ProductTypeElement("actionId", AlgebraicType.createU32Type()),
       new ProductTypeElement("characterCode", AlgebraicType.createU32Type()),
     ]);
   }

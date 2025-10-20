@@ -32,32 +32,35 @@ import {
   type ReducerEventContextInterface,
   type SubscriptionEventContextInterface,
 } from "@clockworklabs/spacetimedb-sdk";
-export type AppearanceFeaturesComponent = {
-  entityId: bigint,
-  appearanceFeatureIndexes: number[],
+import { SpecialEntityBlobType as __SpecialEntityBlobType } from "./special_entity_blob_type_type";
+import { EntityBlob as __EntityBlob } from "./entity_blob_type";
+
+export type SpecialEntityBlob = {
+  specialEntityBlobType: __SpecialEntityBlobType,
+  blob: __EntityBlob,
 };
 
 /**
  * A namespace for generated helper functions.
  */
-export namespace AppearanceFeaturesComponent {
+export namespace SpecialEntityBlob {
   /**
   * A function which returns this type represented as an AlgebraicType.
   * This function is derived from the AlgebraicType used to generate this type.
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
-      new ProductTypeElement("appearanceFeatureIndexes", AlgebraicType.createArrayType(AlgebraicType.createU32Type())),
+      new ProductTypeElement("specialEntityBlobType", __SpecialEntityBlobType.getTypeScriptAlgebraicType()),
+      new ProductTypeElement("blob", __EntityBlob.getTypeScriptAlgebraicType()),
     ]);
   }
 
-  export function serialize(writer: BinaryWriter, value: AppearanceFeaturesComponent): void {
-    AppearanceFeaturesComponent.getTypeScriptAlgebraicType().serialize(writer, value);
+  export function serialize(writer: BinaryWriter, value: SpecialEntityBlob): void {
+    SpecialEntityBlob.getTypeScriptAlgebraicType().serialize(writer, value);
   }
 
-  export function deserialize(reader: BinaryReader): AppearanceFeaturesComponent {
-    return AppearanceFeaturesComponent.getTypeScriptAlgebraicType().deserialize(reader);
+  export function deserialize(reader: BinaryReader): SpecialEntityBlob {
+    return SpecialEntityBlob.getTypeScriptAlgebraicType().deserialize(reader);
   }
 
 }
