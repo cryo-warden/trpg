@@ -55,7 +55,6 @@ import { MapComponent as __MapComponent } from "./map_component_type";
 import { AppearanceFeaturesComponent as __AppearanceFeaturesComponent } from "./appearance_features_component_type";
 
 export type EntityBlob = {
-  entityId: bigint,
   name: __NameComponent | undefined,
   location: __LocationComponent | undefined,
   path: __PathComponent | undefined,
@@ -92,7 +91,6 @@ export namespace EntityBlob {
   */
   export function getTypeScriptAlgebraicType(): AlgebraicType {
     return AlgebraicType.createProductType([
-      new ProductTypeElement("entityId", AlgebraicType.createU64Type()),
       new ProductTypeElement("name", AlgebraicType.createOptionType(__NameComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("location", AlgebraicType.createOptionType(__LocationComponent.getTypeScriptAlgebraicType())),
       new ProductTypeElement("path", AlgebraicType.createOptionType(__PathComponent.getTypeScriptAlgebraicType())),

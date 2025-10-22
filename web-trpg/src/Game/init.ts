@@ -9,7 +9,6 @@ import {
   type DbConnection,
   type SpecialEntityBlob,
   SpecialEntityBlobType,
-  TraitsComponent,
   ActionHotkey,
 } from "../stdb";
 import {
@@ -122,7 +121,6 @@ type EntityBlobAsset = {
 
 const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
   return {
-    entityId: 0n,
     allegiance: entityBlobAsset.allegiance
       ? {
           entityId: 0n,

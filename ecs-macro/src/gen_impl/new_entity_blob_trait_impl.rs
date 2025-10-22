@@ -78,7 +78,6 @@ impl ToTokens for EntityHandleStruct {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let gen_struct::EntityHandleStruct {
             entity_handle_struct,
-            id,
             ..
         } = &self.entity_handle_struct;
         let gen_trait::NewEntityBlobTrait {
@@ -98,7 +97,6 @@ impl ToTokens for EntityHandleStruct {
           impl<'a> #new_entity_blob_trait for #entity_handle_struct<'a> {
               fn new_blob(&self) -> #entity_blob_struct {
                   #entity_blob_struct {
-                    #id: self.#id,
                     #(#fields,)*
                   }
               }

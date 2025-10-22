@@ -1,7 +1,7 @@
 use crate::{RcSlice, fundamental, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
-use syn::{Ident, Type};
+use syn::Ident;
 
 #[derive(Clone)]
 pub struct EntityBlobComponentField(pub macro_input::ComponentTablePair, pub Ident);
@@ -20,8 +20,6 @@ pub struct EntityBlobStruct {
     pub attrs: fundamental::Attributes,
     pub table: fundamental::Table,
     pub entity_blob_struct: Ident,
-    pub id: Ident,
-    pub id_ty: Type,
     pub component_fields: RcSlice<EntityBlobComponentField>,
 }
 
@@ -36,8 +34,6 @@ impl EntityBlobStruct {
             attrs: struct_attrs.attrs.to_owned(),
             table: fundamental::Table(blob_declaration.table.to_owned()),
             entity_blob_struct: format_ident!("{}Blob", entity_declaration.entity),
-            id: entity_declaration.id.to_owned(),
-            id_ty: entity_declaration.id_ty.to_owned(),
             component_fields: component_declarations
                 .iter()
                 .flat_map(|cdwa| {
@@ -56,8 +52,6 @@ impl ToTokens for EntityBlobStruct {
             attrs,
             table,
             entity_blob_struct,
-            id,
-            id_ty,
             component_fields,
         } = self;
         let component_fields = component_fields.iter();
@@ -65,7 +59,6 @@ impl ToTokens for EntityBlobStruct {
           #attrs
           #table
           pub struct #entity_blob_struct {
-            pub #id: #id_ty,
             #(#component_fields,)*
           }
         })
