@@ -10,6 +10,7 @@ secador::secador!(
         component_trait_impl,
         delete_entity_trait_impl,
         find_entity_handle_trait_impl,
+        instantiate_entity_blob_trait_impl,
         into_component_handle_trait_impl,
         iter_component_trait_impl,
         new_entity_blob_trait_impl,

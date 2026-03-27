@@ -104,6 +104,13 @@ secador::secador!(
             new_entity_blob_trait,
             Type![Option<NewEntityBlobTrait>],
         ),
+        (
+            instantiate_entity_blob_trait,
+            InstantiateEntityBlobTrait,
+            new(entity_blob_struct),
+            instantiate_entity_blob_trait,
+            Type![Option<InstantiateEntityBlobTrait>],
+        ),
     ],
     {
         use crate::{gen_struct, macro_input, rc_slice::RcSlice};
