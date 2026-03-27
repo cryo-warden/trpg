@@ -1,4 +1,4 @@
-import { EntityBlob } from "../../stdb";
+import { EntityBlob } from "../../stdb/types";
 import { Simplify } from "../../structural/Simplify";
 import { BASELINES } from "./baselines";
 import { TRAITS } from "./traits";

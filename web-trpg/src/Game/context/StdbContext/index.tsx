@@ -1,4 +1,4 @@
-import { Identity } from "@clockworklabs/spacetimedb-sdk";
+import { Identity } from "spacetimedb";
 import { ReactNode, useEffect, useState } from "react";
 import { DbConnection } from "../../../stdb";
 import { componentQueries } from "./components";
@@ -17,7 +17,7 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     DbConnection.builder()
-      .withModuleName("trpg")
+      .withDatabaseName("trpg")
       .withToken(localStorage.getItem("auth_token") || "")
       .withUri("ws://localhost:3000") // TODO Use process arg.
       .onConnect((connection, identity, token) => {

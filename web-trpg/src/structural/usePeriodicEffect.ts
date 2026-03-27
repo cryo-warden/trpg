@@ -4,13 +4,13 @@ export const usePeriodicEffect = (
   createEffect: () => () => void,
   periodMS: number,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  dependencies: any[]
+  dependencies: any[],
 ): void => {
   useEffect(() => {
     const effect = createEffect();
 
     let isCancelled = false;
-    let timeout: NodeJS.Timeout | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
 
     const update = () => {
       if (isCancelled) {

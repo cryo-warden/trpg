@@ -1,4 +1,4 @@
-import { Action, ActionEffect, ActionType } from "../../stdb";
+import { Action, ActionEffect, ActionType } from "../../stdb/types";
 
 export type ActionAsset = {
   name: Action["name"];
@@ -7,12 +7,12 @@ export type ActionAsset = {
   steps: ActionEffect[];
 };
 
-const Rest = { tag: "Rest" } as const satisfies ActionEffect.Rest;
-const Move = { tag: "Move" } as const satisfies ActionEffect.Move;
+const Rest = { tag: "Rest" } as const satisfies ActionEffect;
+const Move = { tag: "Move" } as const satisfies ActionEffect;
 const Attack = (value: number) =>
-  ({ tag: "Attack", value } as const satisfies ActionEffect.Attack);
+  ({ tag: "Attack", value }) as const satisfies ActionEffect;
 const Heal = (value: number) =>
-  ({ tag: "Heal", value } as const satisfies ActionEffect.Heal);
+  ({ tag: "Heal", value }) as const satisfies ActionEffect;
 
 export const ACTIONS = [
   {

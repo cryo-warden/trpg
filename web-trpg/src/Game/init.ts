@@ -1,3 +1,4 @@
+import { DbConnection } from "../stdb";
 import {
   type Action,
   type ActionEffect,
@@ -6,11 +7,10 @@ import {
   type StatBlock,
   type ActionStep,
   type EntityBlob,
-  type DbConnection,
   type SpecialEntityBlob,
   SpecialEntityBlobType,
   ActionHotkey,
-} from "../stdb";
+} from "../stdb/types";
 import {
   actions,
   appearanceFeatures,
@@ -27,10 +27,10 @@ const assetToStatBlock = (asset: StatBlockAsset): StatBlock => {
     defense: asset.defense ?? 0,
     mep: asset.mep ?? 0,
     actionIds: (asset.actionNames ?? []).map((name) =>
-      actions.findIndex((a) => a.name === name)
+      actions.findIndex((a) => a.name === name),
     ),
     appearanceFeatureIds: (asset.appearanceFeatureNames ?? []).map((name) =>
-      appearanceFeatures.findIndex((af) => af.name === name)
+      appearanceFeatures.findIndex((af) => af.name === name),
     ),
   } as StatBlock;
 };
@@ -73,7 +73,7 @@ const getActionSteps = () => {
         actionId: actionId,
         sequenceIndex,
         actionEffect,
-      })
+      }),
     );
   });
 };
@@ -102,14 +102,14 @@ type ActionHotkeyAsset = {
 };
 
 const getActionHotkeys = (
-  actionHotkeyAssets: ActionHotkeyAsset[]
+  actionHotkeyAssets: ActionHotkeyAsset[],
 ): ActionHotkey[] =>
   actionHotkeyAssets.map(
     (aha) =>
       ({
         actionId: actions.findIndex((a) => a.name === aha.actionName),
         characterCode: aha.hotkey.charCodeAt(0),
-      } as ActionHotkey)
+      }) as ActionHotkey,
   );
 
 type EntityBlobAsset = {
@@ -131,7 +131,7 @@ const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
       ? {
           entityId: 0n,
           baselineId: baselines.findIndex(
-            (b) => b.name === entityBlobAsset.baseline
+            (b) => b.name === entityBlobAsset.baseline,
           ),
         }
       : undefined,
@@ -139,7 +139,7 @@ const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
       ? {
           entityId: 0n,
           traitIds: (entityBlobAsset.traits ?? []).map((name) =>
-            traits.findIndex((t) => t.name === name)
+            traits.findIndex((t) => t.name === name),
           ),
         }
       : undefined,
@@ -171,12 +171,14 @@ const getSpecialEntityBlobs = (): SpecialEntityBlob[] => {
 };
 
 export const init = (connection: DbConnection) => {
-  connection.reducers.registerAdmin();
+  connection.reducers.registerAdmin({});
   connection.reducers.adminApplyBundle({
-    actions: getActions(),
-    actionSteps: getActionSteps(),
-    baselines: getBaselines(),
-    traits: getTraits(),
-    specialEntityBlobs: getSpecialEntityBlobs(),
+    bundle: {
+      actions: getActions(),
+      actionSteps: getActionSteps(),
+      baselines: getBaselines(),
+      traits: getTraits(),
+      specialEntityBlobs: getSpecialEntityBlobs(),
+    },
   });
 };

@@ -11,7 +11,7 @@ pub enum ActionType {
     Equip,
 }
 
-#[table(name = actions, public)]
+#[table(accessor = actions, public)]
 #[derive(Debug, Clone)]
 pub struct Action {
     #[primary_key]
@@ -40,8 +40,8 @@ pub enum ActionEffect {
 }
 
 #[table(
-  name = action_steps,
-  index(name = action_sequence, btree(columns = [action_id, sequence_index])),
+  accessor = action_steps,
+  index(accessor = action_sequence, btree(columns = [action_id, sequence_index])),
   public
 )]
 #[derive(Debug, Clone)]

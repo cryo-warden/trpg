@@ -176,11 +176,19 @@ pub enum SpecialEntityBlobType {
     FirstRoom,
 }
 
-#[table(name = special_entity_blobs)]
+#[table(accessor = special_entity_blobs)]
 #[derive(Debug, Clone)]
 pub struct SpecialEntityBlob {
     #[primary_key]
     pub special_entity_blob_type: SpecialEntityBlobType,
+    pub blob: EntityBlob,
+}
+
+#[table(accessor = player_entity_blobs)]
+#[derive(Debug, Clone)]
+pub struct PlayerEntityBlob {
+    #[primary_key]
+    pub identity: Identity,
     pub blob: EntityBlob,
 }
 
@@ -221,6 +229,8 @@ pub trait EcsExtension<'a> {
     ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>>;
     fn from_name(self, name: &str) -> Option<name_component::WithComponent<EntityHandle<'a>>>;
     fn new_player(self) -> Result<EntityHandle<'a>, String>;
+    fn find_player(self, identity: Identity) -> Option<PlayerEntityBlob>;
+    fn activate_player_entity_blob(self, player_entity_blob: PlayerEntityBlob) -> EntityHandle<'a>;
 }
 
 impl<'a> EcsExtension<'a> for Ecs<'a> {
@@ -252,7 +262,7 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         self.db
             .player_controller_components()
             .identity()
-            .find(self.sender)
+            .find(self.sender())
             .map(|p| self.into_player_controller_handle(p))
     }
 
@@ -268,20 +278,27 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // WIP Get new player entity blob from its table.
         // Add the player controller to it.
         // Design how to handle references to other entities (like allegiances, rooms, etc) in entity blobs.
+        // Reference concept: For special entities, the relationships would be hardcoded. Other relationships can simply use IDs of real entities.
+        // Consider adding a SpecialEntityComponent type which simply points sepcific enum variants to specific entity IDs.
         Ok(self
-            .new() // WIP .new_from_blob()
-            .upsert_new_player_controller(self.sender)
+            .new()
+            // WIP .imprint_blob()
+            .upsert_new_player_controller(self.sender())
             .upsert_new_allegiance(
+                // WIP NewPlayerAllegiance SpecialEntityComponent?
                 self.from_name("allegiance1")
                     .ok_or("Cannot find starting allegiance.")?
                     .entity_id(),
             )
             .upsert_new_location(
+                // WIP Must generate new entity to hold new player starting room and map.
+                // Player should not be immediately dropped into a shared instance.
                 self.from_name("room1")
                     .ok_or("Cannot find starting room.")?
                     .entity_id(),
             )
             .into_handle()
+            // WIP Remove all these, since it is built into the asset.
             .set_baseline("human")
             .add_trait("admin")
             .add_trait("mobile")
@@ -290,6 +307,20 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .set_hotkey("boppity_bop", 'v')
             .set_hotkey("quick_move", 'm')
             .set_hotkey("divine_heal", 'h'))
+    }
+
+    fn find_player(self, identity: Identity) -> Option<PlayerEntityBlob> {
+        self.db.player_entity_blobs().identity().find(identity)
+    }
+
+    fn activate_player_entity_blob(self, player_entity_blob: PlayerEntityBlob) -> EntityHandle<'a> {
+        let e = self.new();
+
+        if let Some(c) = player_entity_blob.blob.player_controller {
+            e.insert_player_controller(c);
+        }
+
+        e
     }
 }
 
@@ -340,7 +371,7 @@ pub struct ComponentSet {
     pub traits_component: Option<TraitsComponent>,
 }
 
-#[table(name = named_inactive_entities)]
+#[table(accessor = named_inactive_entities)]
 #[derive(Debug, Clone)]
 pub struct NamedInactiveEntity {
     #[primary_key]
@@ -348,90 +379,12 @@ pub struct NamedInactiveEntity {
     pub component_set: ComponentSet,
 }
 
-#[table(name = identity_inactive_entities)]
+#[table(accessor = identity_inactive_entities)]
 #[derive(Debug, Clone)]
 pub struct IdentityInactiveEntity {
     #[unique]
     pub identity: Identity,
     pub component_set: ComponentSet,
-}
-
-pub struct InactiveEntityHandle<'a> {
-    pub ctx: &'a ReducerContext,
-    pub component_set: ComponentSet,
-}
-
-impl<'a> InactiveEntityHandle<'a> {
-    pub fn from_player_identity(ctx: &'a ReducerContext) -> Option<Self> {
-        let result = ctx
-            .db
-            .identity_inactive_entities()
-            .identity()
-            .find(ctx.sender)
-            .map(|i| Self {
-                ctx,
-                component_set: i.component_set,
-            });
-        ctx.db
-            .identity_inactive_entities()
-            .identity()
-            .delete(ctx.sender);
-        result
-    }
-
-    pub fn activate(self) -> EntityHandle<'a> {
-        let id = self.component_set.entity_id;
-        self.activate_with_id(id)
-    }
-
-    pub fn activate_with_id(self, id: u64) -> EntityHandle<'a> {
-        let e = EntityHandle::insert_id(self.ctx, id);
-        if let Some(mut c) = self.component_set.actions_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.actions_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.action_hotkeys_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.action_hotkeys_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.allegiance_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.allegiance_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.ep_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.ep_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.hp_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.hp_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.player_controller_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.player_controller_components().insert(c);
-        }
-        if let Some(mut c) = self.component_set.baseline_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.baseline_components().insert(c);
-            self.ctx
-                .db
-                .total_stat_block_dirty_flag_components()
-                .insert(FlagComponent {
-                    entity_id: e.entity_id,
-                });
-        }
-        if let Some(mut c) = self.component_set.traits_component {
-            c.entity_id = e.entity_id;
-            self.ctx.db.traits_components().insert(c);
-            self.ctx
-                .db
-                .traits_stat_block_dirty_flag_components()
-                .insert(FlagComponent {
-                    entity_id: e.entity_id,
-                });
-        }
-        e
-    }
 }
 
 impl<'a> EntityHandle<'a> {

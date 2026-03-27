@@ -1,4 +1,4 @@
-import { Identity } from "@clockworklabs/spacetimedb-sdk";
+import { Identity } from "spacetimedb";
 import { Context, createContext } from "react";
 import { DbConnection } from "../../../stdb";
 

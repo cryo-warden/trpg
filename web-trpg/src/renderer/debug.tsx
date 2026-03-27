@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { usePlayerEntity } from "../Game/context/StdbContext/components";
 import { ActionId, EntityId } from "../Game/trpg";
-import { EntityEvent } from "../stdb";
+import { EntityEvent } from "../stdb/types";
 import "./debug.css";
 import { renderTemplate, RenderValue } from "./template";
 import { useGetClassName } from "./useGetClassName";
@@ -32,8 +32,8 @@ export const useDebugRenderer = () => {
         const nextContext = ruleSet.has("subject")
           ? { ...context, subject: value }
           : ruleSet.has("object")
-          ? { ...context, object: value }
-          : context;
+            ? { ...context, object: value }
+            : context;
 
         const postProcess = ruleSet.has("sentence")
           ? capitalize
@@ -43,8 +43,8 @@ export const useDebugRenderer = () => {
             {postProcess(
               getName(
                 value,
-                ruleSet.has("object") ? context.subject ?? void 0 : void 0
-              ) ?? ""
+                ruleSet.has("object") ? (context.subject ?? void 0) : void 0,
+              ) ?? "",
             )}
           </span>,
           {
@@ -56,7 +56,7 @@ export const useDebugRenderer = () => {
 
       return [value, context];
     },
-    [getName, getClassName]
+    [getName, getClassName],
   );
 
   const renderWithTemplate = useMemo(() => {
@@ -76,15 +76,14 @@ export const useDebugRenderer = () => {
       return result;
     };
 
-    return (template: string) => (values: (EntityId | ReactNode)[]) =>
-      (
-        <div className="debug renderer">
-          {getTemplate(template)(values, {
-            object: null,
-            subject: null,
-          })}
-        </div>
-      );
+    return (template: string) => (values: (EntityId | ReactNode)[]) => (
+      <div className="debug renderer">
+        {getTemplate(template)(values, {
+          object: null,
+          subject: null,
+        })}
+      </div>
+    );
   }, [renderValue]);
 
   const renderAction = useMemo(
@@ -92,17 +91,17 @@ export const useDebugRenderer = () => {
       (event: EntityEvent): ReactNode => {
         if (event.eventType.tag !== "StartAction") {
           throw new Error(
-            `Unexpected event type "${event.eventType.tag}" cannot be rendered as an action.`
+            `Unexpected event type "${event.eventType.tag}" cannot be rendered as an action.`,
           );
         }
         const actionId = event.eventType.value;
         const template = getActionTemplate(actionId);
         return renderWithTemplate(
           template ??
-            "{0:sentence:subject} began a mysterious action toward {1:object}."
+            "{0:sentence:subject} began a mysterious action toward {1:object}.",
         )([event.ownerEntityId, event.targetEntityId]);
       },
-    [renderWithTemplate]
+    [renderWithTemplate],
   );
 
   const renderEvent = useMemo(
@@ -117,7 +116,7 @@ export const useDebugRenderer = () => {
                 return null;
               case "Attack":
                 return renderWithTemplate(
-                  "{0:sentence:subject} dealt {2} damage to {1:object}!"
+                  "{0:sentence:subject} dealt {2} damage to {1:object}!",
                 )([
                   event.ownerEntityId,
                   event.targetEntityId,
@@ -132,15 +131,15 @@ export const useDebugRenderer = () => {
               //   });
               case "Drop":
                 return renderWithTemplate(
-                  "{0:sentence:subject} dropped {1:object}."
+                  "{0:sentence:subject} dropped {1:object}.",
                 )([event.ownerEntityId, event.targetEntityId]);
               case "Equip":
                 return renderWithTemplate(
-                  "{0:sentence:subject} equipped {1:object}."
+                  "{0:sentence:subject} equipped {1:object}.",
                 )([event.ownerEntityId, event.targetEntityId]);
               case "Heal":
                 return renderWithTemplate(
-                  "{0:sentence:subject} healed {1:object} for {2}."
+                  "{0:sentence:subject} healed {1:object} for {2}.",
                 )([
                   event.ownerEntityId,
                   event.targetEntityId,
@@ -148,7 +147,7 @@ export const useDebugRenderer = () => {
                 ]);
               case "Move":
                 return renderWithTemplate(
-                  "{0:sentence:subject} moved through {1:object}."
+                  "{0:sentence:subject} moved through {1:object}.",
                 )([event.ownerEntityId, event.targetEntityId]);
               // case "status":
               //   return renderSentence({
@@ -162,7 +161,7 @@ export const useDebugRenderer = () => {
               //   });
               case "Take":
                 return renderWithTemplate(
-                  "{0:sentence:subject} took {1:object}."
+                  "{0:sentence:subject} took {1:object}.",
                 )([event.ownerEntityId, event.targetEntityId]);
               // case "unconscious":
               //   return renderSentence({
@@ -173,14 +172,14 @@ export const useDebugRenderer = () => {
               //   });
               case "Unequip":
                 return renderWithTemplate(
-                  "{0:sentence:subject} unequipped {1:object}."
+                  "{0:sentence:subject} unequipped {1:object}.",
                 )([event.ownerEntityId, event.targetEntityId]);
             }
         }
 
         return <div>Unknown event type: "{event.eventType.tag}".</div>;
       },
-    [renderAction, renderWithTemplate]
+    [renderAction, renderWithTemplate],
   );
 
   return { renderEvent };

@@ -28,25 +28,33 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
             e.delete_entity_deactivation_timer();
             log::debug!(
                 "Reconnected {} to {} and removed deactivation timer.",
-                ctx.sender,
+                ctx.sender(),
                 e.entity_id()
             );
         }
-        None => match InactiveEntityHandle::from_player_identity(ctx) {
-            Some(h) => {
-                let e = h.activate();
-                log::debug!("Reactivated {} to {}.", ctx.sender, e.entity_id());
+        None => match ctx.ecs().find_player(ctx.sender()) {
+            Some(p) => {
+                // WIP
+                // let e = p.activate();
+                // log::debug!("Reactivated {} to {}.", ctx.sender(), e.entity_id());
             }
             None => {
                 match ctx.ecs().new_player() {
                     Ok(p) => {
-                        log::debug!("Connected {} to new player {}.", ctx.sender, p.entity_id());
+                        log::debug!(
+                            "Connected {} to new player {}.",
+                            ctx.sender(),
+                            p.entity_id()
+                        );
                     }
                     _ => {
                         // WIP Check if connected user is admin and DB is not initialized.
                         // If admin and DB is not ready, do not emit any error.
                         // Otherwise, emit the error.
-                        log::debug!("Connected {}, but no player could be created.", ctx.sender);
+                        log::debug!(
+                            "Connected {}, but no player could be created.",
+                            ctx.sender()
+                        );
                     }
                 }
             }
@@ -60,7 +68,7 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
 pub fn identity_disconnected(ctx: &ReducerContext) {
     match ctx.ecs().from_player_identity() {
         None => {
-            log::debug!("Disconnected {} but cannot find any player.", ctx.sender);
+            log::debug!("Disconnected {} but cannot find any player.", ctx.sender());
         }
         Some(e) => {
             if e.entity_deactivation_timer().is_none() {
@@ -73,7 +81,7 @@ pub fn identity_disconnected(ctx: &ReducerContext) {
                         e.insert_new_entity_deactivation_timer(timestamp);
                         log::debug!(
                             "Disconnected {} from player {} and set deactivation timer.",
-                            ctx.sender,
+                            ctx.sender(),
                             e.entity_id()
                         );
                     }
@@ -99,7 +107,7 @@ pub fn act(ctx: &ReducerContext, action_id: ActionId, target_entity_id: u64) -> 
     }
 }
 
-#[table(name = system_timers, scheduled(run_system))]
+#[table(accessor = system_timers, scheduled(run_system))]
 pub struct SystemTimer {
     #[primary_key]
     #[auto_inc]

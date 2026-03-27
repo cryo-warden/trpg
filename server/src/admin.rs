@@ -14,10 +14,10 @@ pub struct AdminBundle {
     pub special_entity_blobs: Vec<SpecialEntityBlob>,
 }
 
-#[table(name = admin_identities)]
+#[table(accessor = admin_identities)]
 #[derive(Debug, Clone)]
 pub struct AdminIdentity {
-    #[unique]
+    #[primary_key]
     pub identity: Identity,
 }
 
@@ -25,7 +25,7 @@ fn is_admin(ctx: &ReducerContext) -> bool {
     ctx.db
         .admin_identities()
         .identity()
-        .find(ctx.sender)
+        .find(ctx.sender())
         .is_some()
 }
 
@@ -44,7 +44,7 @@ pub fn register_admin(ctx: &ReducerContext) -> Result<(), String> {
     }
 
     ctx.db.admin_identities().insert(AdminIdentity {
-        identity: ctx.sender,
+        identity: ctx.sender(),
     });
 
     Ok(())
@@ -123,7 +123,7 @@ pub fn create_player_for_self(
     let mut e = ctx
         .ecs()
         .new()
-        .upsert_new_player_controller(ctx.sender)
+        .upsert_new_player_controller(ctx.sender())
         .upsert_new_allegiance(allegiance_id)
         .upsert_new_location(room_id)
         .into_handle()

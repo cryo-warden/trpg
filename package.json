@@ -6,7 +6,7 @@
     "start": "spacetime start",
     "dev": "cd ./web-trpg && bun run dev",
     "check": "cd ./web-trpg && bun run check",
-    "dev-publish": "spacetime publish --project-path ./server trpg --delete-data --yes",
+    "dev-publish": "spacetime publish --module-path ./server trpg --delete-data --yes",
     "stdb-generate": "cd ./web-trpg && bun run stdb-generate"
   }
 }

@@ -173,7 +173,7 @@ impl ToTokens for Table {
         let Table(table) = self;
         // TODO Make the `public` controllable.
         tokens.extend(quote! {
-          #[::spacetimedb::table(name = #table, public)]
+          #[::spacetimedb::table(accessor = #table, public)]
         })
     }
 }

@@ -20,7 +20,7 @@ secador::secador!(
             ActionEffect(ActionEffect),
         }
 
-        #[table(name = observable_events, public)]
+        #[table(accessor = observable_events, public, event)]
         #[derive(Debug, Clone)]
         pub struct EntityEvent {
             #[primary_key]

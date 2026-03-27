@@ -1,11 +1,10 @@
 import { useMemo } from "react";
-import { RemoteTables } from "../../../stdb";
 import { actions } from "../../assets";
 import { ActionId, EntityId } from "../../trpg";
 import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
 import { createUseTable } from "./useTable";
-import { useTableData } from "./useTableData";
+import { RemoteTables, useTableData } from "./useTableData";
 import { Target } from "../TargetContext";
 
 const createUseComponent =
@@ -16,7 +15,7 @@ const createUseComponent =
       (table): RowType<T> | null => {
         if (!("entityId" in table)) {
           throw new Error(
-            `Table "${tableName}" used with useComponent does not have an entityId unique index.`
+            `Table "${tableName}" used with useComponent does not have an entityId unique index.`,
           );
         }
 
@@ -25,9 +24,9 @@ const createUseComponent =
         }
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return (table.entityId.find(entityId) as any) ?? null;
+        return (table.entityId as any).find(entityId) ?? null;
       },
-      [entityId]
+      [entityId],
     );
 
 export const componentQueries = [
@@ -46,26 +45,28 @@ export const componentQueries = [
   "select * from queued_action_state_components",
 ];
 
-const useActionHotkeysComponent = createUseComponent("actionHotkeysComponents");
+const useActionHotkeysComponent = createUseComponent(
+  "action_hotkeys_components",
+);
 export const useActionStateComponent = createUseComponent(
-  "actionStateComponents"
+  "action_state_components",
 );
-export const useActionsComponent = createUseComponent("actionsComponents");
-export const useAttackComponent = createUseComponent("attackComponents");
-export const useEpComponent = createUseComponent("epComponents");
-export const useHpComponent = createUseComponent("hpComponents");
-const useLocationComponent = createUseComponent("locationComponents");
+export const useActionsComponent = createUseComponent("actions_components");
+export const useAttackComponent = createUseComponent("attack_components");
+export const useEpComponent = createUseComponent("ep_components");
+export const useHpComponent = createUseComponent("hp_components");
+const useLocationComponent = createUseComponent("location_components");
 export const useQueuedActionStateComponent = createUseComponent(
-  "queuedActionStateComponents"
+  "queued_action_state_components",
 );
 
-export const useAllegianceComponents = createUseTable("allegianceComponents");
+export const useAllegianceComponents = createUseTable("allegiance_components");
 export const useAppearanceFeaturesComponents = createUseTable(
-  "appearanceFeaturesComponents"
+  "appearance_features_components",
 );
 
-const useAllegianceComponent = createUseComponent("allegianceComponents");
-const usePathComponent = createUseComponent("pathComponents");
+const useAllegianceComponent = createUseComponent("allegiance_components");
+const usePathComponent = createUseComponent("path_components");
 
 export const useLocation = (entityId: EntityId | null) => {
   const component = useLocationComponent(entityId);
@@ -131,7 +132,7 @@ export const useActionHotkey = (actionId: ActionId) => {
   }
 
   const actionHotkey = actionHotkeysComponent.actionHotkeys.find(
-    (actionHotkey) => actionHotkey.actionId === actionId
+    (actionHotkey) => actionHotkey.actionId === actionId,
   );
   if (actionHotkey == null) {
     return void 0;
@@ -142,37 +143,47 @@ export const useActionHotkey = (actionId: ActionId) => {
 
 export const useEntityProminences = (entityIds: EntityId[]) => {
   return useTableData(
-    "entityProminenceComponents",
+    "entity_prominence_components",
     (table) => {
       const m = new Map([...table.iter()].map((ep) => [ep.entityId, ep]));
       return entityIds.map((id) => {
         return m.get(id) ?? { entityId: id, prominence: -Infinity };
       });
     },
-    [entityIds]
+    [entityIds],
   );
 };
 
 export const useLocationEntities = (locationEntityId: EntityId | null) => {
   return useTableData(
-    "locationComponents",
+    "location_components",
     (table) =>
       [...table.iter()]
         .filter(
           (locationComponent) =>
-            locationComponent.locationEntityId === locationEntityId
+            locationComponent.locationEntityId === locationEntityId,
         )
         .map((locationComponent) => locationComponent.entityId),
-    [locationEntityId]
+    [locationEntityId],
   );
 };
 
 const usePlayerControllerComponent = () => {
   const identity = useStdbIdentity();
   return useTableData(
-    "playerControllerComponents",
-    (table) => table.identity.find(identity) ?? null,
-    [identity]
+    "player_controller_components",
+    (table) => {
+      // TODO Remove "as any" cast after ranged index is correctly replaced with unique index in generated type.
+      // type Flat<T> = {
+      //   [k in keyof T]: T[k];
+      // };
+      // type A = Flat<typeof table>;
+      // type AK = keyof A;
+      // type B = Flat<typeof table.identity>;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (table.identity as any).find(identity) ?? null;
+    },
+    [identity],
   );
 };
 
@@ -186,4 +197,4 @@ export const usePlayerEntity = (): EntityId | null => {
 };
 
 export const useAction = (id: ActionId | null) =>
-  useMemo(() => (id == null ? null : actions[id] ?? null), [id]);
+  useMemo(() => (id == null ? null : (actions[id] ?? null)), [id]);

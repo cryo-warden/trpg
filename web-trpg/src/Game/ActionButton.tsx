@@ -30,7 +30,7 @@ export const ActionButton = ({
       return;
     }
 
-    connection.reducers.act(actionId, finalTarget);
+    connection.reducers.act({ actionId, targetEntityId: finalTarget });
   }, [playerEntity, finalTarget, actionId, connection.reducers]);
 
   const actionName = useActionName(actionId);

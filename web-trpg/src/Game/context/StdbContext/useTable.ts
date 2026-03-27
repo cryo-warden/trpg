@@ -1,6 +1,5 @@
-import { RemoteTables } from "../../../stdb";
 import { RowType } from "./RowType";
-import { useTableData } from "./useTableData";
+import { RemoteTables, useTableData } from "./useTableData";
 
 export const createUseTable =
   <T extends keyof RemoteTables>(tableName: T) =>
@@ -9,7 +8,7 @@ export const createUseTable =
       tableName,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (table): RowType<T>[] => [...table.iter()] as any,
-      []
+      [],
     );
   };
 

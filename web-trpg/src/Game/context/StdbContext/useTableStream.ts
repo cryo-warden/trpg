@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { RemoteTables } from "../../../stdb";
 import { useStdbConnection } from "./useStdb";
 import { RowType } from "./RowType";
+import { RemoteTables } from "./useTableData";
 
 // In React hook deps, treat any empty array as the same empty array.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,12 +17,12 @@ export const useTableStream = <
   T extends keyof RemoteTables,
   R extends RowType<T>,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  F extends (row: R) => any
+  F extends (row: R) => any,
 >(
   tableName: T,
   compute: F,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deps: any[]
+  deps: any[],
 ): ReturnType<F>[] => {
   const connection = useStdbConnection();
   const [result, setResult] = useState([] as ReturnType<F>[]);

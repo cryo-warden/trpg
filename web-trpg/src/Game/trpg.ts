@@ -1,4 +1,4 @@
-import { Action, Entity } from "../stdb";
+import { Action, Entity } from "../stdb/types";
 
 export type ActionId = Action["id"];
 

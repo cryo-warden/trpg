@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RemoteTables } from "../../../stdb";
+import { DbConnection } from "../../../stdb";
 import { useStdbConnection } from "./useStdb";
 
 // In React hook deps, treat any empty array as the same empty array.
@@ -12,15 +12,17 @@ const guardEmpty = <T>(value: T): T => {
   return value;
 };
 
+export type RemoteTables = DbConnection["db"];
+
 export const useTableData = <
   T extends keyof RemoteTables,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  F extends (table: RemoteTables[T]) => any
+  F extends (table: RemoteTables[T]) => any,
 >(
   tableName: T,
   compute: F,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deps: any[]
+  deps: any[],
 ): ReturnType<F> => {
   const connection = useStdbConnection();
   const [result, setResult] = useState(() => compute(connection.db[tableName]));

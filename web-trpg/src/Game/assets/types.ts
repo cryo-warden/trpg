@@ -1,4 +1,4 @@
-import { StatBlock } from "../../stdb";
+import { StatBlock } from "../../stdb/types";
 import { Simplify } from "../../structural/Simplify";
 import { ACTIONS } from "./actions";
 import { APPEARANCE_FEATURES } from "./appearance_features";

@@ -5,7 +5,7 @@ import {
   useMemo,
 } from "react";
 import { useDebugRenderer } from "../renderer";
-import { EntityEvent } from "../stdb";
+import { EntityEvent } from "../stdb/types";
 import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
 import { useHotkeyRef } from "../structural/useHotkeyRef";
@@ -33,7 +33,7 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
     return EventDisplay;
   }, [renderEvent, playerEntity]);
 
-  const eventSet = useTableStream("observableEvents", (e) => e, []);
+  const eventSet = useTableStream("observable_events", (e) => e, []);
 
   const setMode = useSetDynamicPanelMode();
   const clearSelection = useCallback(() => {

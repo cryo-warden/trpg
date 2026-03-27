@@ -31,11 +31,11 @@ impl<'a> Ecs<'a> {
 }
 
 pub trait WithEcs {
-    fn ecs(&self) -> Ecs;
+    fn ecs(&self) -> Ecs<'_>;
 }
 
 impl WithEcs for ReducerContext {
-    fn ecs(&self) -> Ecs {
+    fn ecs(&self) -> Ecs<'_> {
         Ecs { ctx: self }
     }
 }

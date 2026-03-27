@@ -31,7 +31,7 @@ secador::secador_multi!(
             }
         }
 
-        #[table(name = baselines, public)]
+        #[table(accessor = baselines, public)]
         #[derive(Debug, Clone)]
         pub struct Baseline {
             #[primary_key]
@@ -41,7 +41,7 @@ secador::secador_multi!(
             pub stat_block: StatBlock,
         }
 
-        #[table(name = traits, public)]
+        #[table(accessor = traits, public)]
         #[derive(Debug, Clone)]
         pub struct Trait {
             #[primary_key]

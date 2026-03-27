@@ -9,7 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-spacetimedb = "1.1.2"
+spacetimedb = "2.1.0"
 log = "0.4"
 derive_builder = "0.20.2"
 ecs.workspace = true
