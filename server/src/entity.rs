@@ -1,5 +1,6 @@
 use crate::{
     action::{actions, ActionId, ActionType},
+    asset::ReducerContextExtension,
     stat_block::{baselines, traits, StatBlock},
 };
 use ecs::{entity, Ecs, WithEcs};
@@ -171,20 +172,6 @@ entity!(
     }
 );
 
-#[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
-pub enum SpecialEntityBlobType {
-    NewPlayer,
-    FirstRoom,
-}
-
-#[table(accessor = special_entity_blobs)]
-#[derive(Debug, Clone)]
-pub struct SpecialEntityBlob {
-    #[primary_key]
-    pub special_entity_blob_type: SpecialEntityBlobType,
-    pub blob: EntityBlob,
-}
-
 pub trait GetRng {
     fn get_rng(&self) -> StdRng;
 }
@@ -279,32 +266,35 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // Design how to handle references to other entities (like allegiances, rooms, etc) in entity blobs.
         // Reference concept: For special entities, the relationships would be hardcoded. Other relationships can simply use IDs of real entities.
         // Consider adding a SpecialEntityComponent type which simply points sepcific enum variants to specific entity IDs.
-        Ok(self
-            .new()
-            .upsert_new_allegiance(
-                // WIP NewPlayerAllegiance SpecialEntityComponent?
-                self.from_name("allegiance1")
-                    .ok_or("Cannot find starting allegiance.")?
-                    .entity_id(),
-            )
-            .upsert_new_location(
-                // WIP Must generate new entity to hold new player starting room and map.
-                // Player should not be immediately dropped into a shared instance.
-                self.from_name("room1")
-                    .ok_or("Cannot find starting room.")?
-                    .entity_id(),
-            )
-            // WIP Remove all these, since it is built into the asset.
-            .set_baseline("human")
-            .add_trait("admin")
-            .add_trait("mobile")
-            .add_trait("bopper")
-            .set_hotkey("bop", 'b')
-            .set_hotkey("boppity_bop", 'v')
-            .set_hotkey("quick_move", 'm')
-            .set_hotkey("divine_heal", 'h')
-            .into_handle()
-            .upsert_new_player_controller(identity))
+        let e = self.new();
+        e.instantiate_blob(
+            self.get_new_player_blob()
+                .ok_or("Failed to obtain the new player entity blob.")?,
+        );
+        Ok(e.upsert_new_allegiance(
+            // WIP NewPlayerAllegiance SpecialEntityComponent?
+            self.from_name("allegiance1")
+                .ok_or("Cannot find starting allegiance.")?
+                .entity_id(),
+        )
+        .upsert_new_location(
+            // WIP Must generate new entity to hold new player starting room and map.
+            // Player should not be immediately dropped into a shared instance.
+            self.from_name("room1")
+                .ok_or("Cannot find starting room.")?
+                .entity_id(),
+        )
+        // WIP Remove all these, since it is built into the asset.
+        .set_baseline("human")
+        .add_trait("admin")
+        .add_trait("mobile")
+        .add_trait("bopper")
+        .set_hotkey("bop", 'b')
+        .set_hotkey("boppity_bop", 'v')
+        .set_hotkey("quick_move", 'm')
+        .set_hotkey("divine_heal", 'h')
+        .into_handle()
+        .upsert_new_player_controller(identity))
     }
 }
 

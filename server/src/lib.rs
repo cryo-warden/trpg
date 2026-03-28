@@ -1,6 +1,6 @@
 mod action;
-mod admin;
 mod appearance;
+mod asset;
 mod entity;
 mod event;
 mod reducers;

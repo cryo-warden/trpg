@@ -35,12 +35,7 @@ import {
 
 // Import all reducer arg schemas
 import ActReducer from "./act_reducer";
-import AdminAddTraitReducer from "./admin_add_trait_reducer";
-import AdminApplyBundleReducer from "./admin_apply_bundle_reducer";
-import AdminDamageReducer from "./admin_damage_reducer";
-import AdminRecreatePlayerForIdentityReducer from "./admin_recreate_player_for_identity_reducer";
-import CreatePlayerForSelfReducer from "./create_player_for_self_reducer";
-import RegisterAdminReducer from "./register_admin_reducer";
+import PushAssetsReducer from "./push_assets_reducer";
 
 // Import all procedure arg schemas
 
@@ -493,12 +488,7 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("act", ActReducer),
-  __reducerSchema("admin_add_trait", AdminAddTraitReducer),
-  __reducerSchema("admin_apply_bundle", AdminApplyBundleReducer),
-  __reducerSchema("admin_damage", AdminDamageReducer),
-  __reducerSchema("admin_recreate_player_for_identity", AdminRecreatePlayerForIdentityReducer),
-  __reducerSchema("create_player_for_self", CreatePlayerForSelfReducer),
-  __reducerSchema("register_admin", RegisterAdminReducer),
+  __reducerSchema("push_assets", PushAssetsReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

@@ -13,15 +13,16 @@ import {
   ActionHotkeysComponent,
   ActionStateComponent,
   ActionsComponent,
+  AllegianceComponent,
+  AppearanceFeaturesComponent,
+  AttackComponent,
+  BaselineComponent,
   NameComponent,
   LocationComponent,
   PathComponent,
-  AllegianceComponent,
-  BaselineComponent,
   TraitsComponent,
   StatBlockCacheComponent,
   FlagComponent,
-  AttackComponent,
   HpComponent,
   EpComponent,
   PlayerControllerComponent,
@@ -30,7 +31,6 @@ import {
   RngSeedComponent,
   LocationMapComponent,
   MapComponent,
-  AppearanceFeaturesComponent,
 } from "./types";
 
 

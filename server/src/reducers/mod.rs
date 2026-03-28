@@ -29,20 +29,26 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
             ctx.sender(),
             p.entity_id()
         );
-    } else if let Ok(p) = ctx.ecs().new_player(ctx.sender()) {
-        log::debug!(
-            "Connected {} to new player {}.",
-            ctx.sender(),
-            p.entity_id()
-        );
     } else {
-        // WIP Check if connected user is admin and DB is not initialized.
-        // If admin and DB is not ready, do not emit any error.
-        // Otherwise, emit the error.
-        log::debug!(
-            "Connected {}, but no player could be found or created.",
-            ctx.sender()
-        );
+        match ctx.ecs().new_player(ctx.sender()) {
+            Ok(p) => {
+                log::debug!(
+                    "Connected {} to new player {}.",
+                    ctx.sender(),
+                    p.entity_id()
+                );
+            }
+            Err(err) => {
+                // WIP Check if connected user is admin and DB is not initialized.
+                // If admin and DB is not ready, do not emit any error.
+                // Otherwise, emit the error.
+                log::debug!(
+                    "Connected {}, but no player could be found or created. {}",
+                    ctx.sender(),
+                    err
+                );
+            }
+        }
     }
 
     Ok(())

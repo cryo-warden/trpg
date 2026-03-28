@@ -7,9 +7,9 @@ import {
   type StatBlock,
   type ActionStep,
   type EntityBlob,
-  type SpecialEntityBlob,
-  SpecialEntityBlobType,
   ActionHotkey,
+  AppearanceFeature,
+  AppearanceFeatureType,
 } from "../stdb/types";
 import {
   actions,
@@ -77,6 +77,21 @@ const getActionSteps = () => {
     );
   });
 };
+
+const appearanceFeatureTypeMap = {
+  noun: AppearanceFeatureType.Noun,
+  adjective: AppearanceFeatureType.Adjective,
+} as const;
+
+const getAppearanceFeatures = () =>
+  appearanceFeatures.map((a, index) => {
+    return {
+      index,
+      text: a.text,
+      appearanceFeatureType: appearanceFeatureTypeMap[a.type],
+      priority: a.priority,
+    } as AppearanceFeature;
+  });
 
 const getBaselines = () =>
   baselines.map((b, id) => {
@@ -152,11 +167,10 @@ const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
   } as EntityBlob;
 };
 
-const getSpecialEntityBlobs = (): SpecialEntityBlob[] => {
-  return [
-    {
-      specialEntityBlobType: SpecialEntityBlobType.NewPlayer,
-      blob: getEntityBlob({
+export const init = (connection: DbConnection) => {
+  connection.reducers.pushAssets({
+    assetPack: {
+      newPlayerBlob: getEntityBlob({
         actionHotkeys: [
           { actionName: "boppity_bop", hotkey: "v" },
           { actionName: "quick_move", hotkey: "m" },
@@ -166,19 +180,11 @@ const getSpecialEntityBlobs = (): SpecialEntityBlob[] => {
         baseline: "human",
         traits: ["admin", "mobile", "bopper"],
       }),
-    } as SpecialEntityBlob,
-  ] as SpecialEntityBlob[];
-};
-
-export const init = (connection: DbConnection) => {
-  connection.reducers.registerAdmin({});
-  connection.reducers.adminApplyBundle({
-    bundle: {
-      actions: getActions(),
-      actionSteps: getActionSteps(),
       baselines: getBaselines(),
       traits: getTraits(),
-      specialEntityBlobs: getSpecialEntityBlobs(),
+      actions: getActions(),
+      actionSteps: getActionSteps(),
+      appearanceFeatures: getAppearanceFeatures(),
     },
   });
 };

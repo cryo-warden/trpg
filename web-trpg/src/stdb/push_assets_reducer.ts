@@ -10,9 +10,12 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+import {
+  AssetPack,
+} from "./types";
+
 export default {
-  allegianceName: __t.string(),
-  startingRoomName: __t.string(),
-  baselineName: __t.string(),
-  traitNames: __t.array(__t.string()),
+  get assetPack() {
+    return AssetPack;
+  },
 };

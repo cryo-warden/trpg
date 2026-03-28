@@ -83,30 +83,6 @@ export const ActionsComponent = __t.object("ActionsComponent", {
 });
 export type ActionsComponent = __Infer<typeof ActionsComponent>;
 
-export const AdminBundle = __t.object("AdminBundle", {
-  get actions() {
-    return __t.array(Action);
-  },
-  get actionSteps() {
-    return __t.array(ActionStep);
-  },
-  get baselines() {
-    return __t.array(Baseline);
-  },
-  get traits() {
-    return __t.array(Trait);
-  },
-  get specialEntityBlobs() {
-    return __t.array(SpecialEntityBlob);
-  },
-});
-export type AdminBundle = __Infer<typeof AdminBundle>;
-
-export const AdminIdentity = __t.object("AdminIdentity", {
-  identity: __t.identity(),
-});
-export type AdminIdentity = __Infer<typeof AdminIdentity>;
-
 export const AllegianceComponent = __t.object("AllegianceComponent", {
   entityId: __t.u64(),
   allegianceEntityId: __t.u64(),
@@ -135,6 +111,28 @@ export const AppearanceFeaturesComponent = __t.object("AppearanceFeaturesCompone
   appearanceFeatureIndexes: __t.array(__t.u32()),
 });
 export type AppearanceFeaturesComponent = __Infer<typeof AppearanceFeaturesComponent>;
+
+export const AssetPack = __t.object("AssetPack", {
+  get newPlayerBlob() {
+    return EntityBlob;
+  },
+  get baselines() {
+    return __t.array(Baseline);
+  },
+  get traits() {
+    return __t.array(Trait);
+  },
+  get actions() {
+    return __t.array(Action);
+  },
+  get actionSteps() {
+    return __t.array(ActionStep);
+  },
+  get appearanceFeatures() {
+    return __t.array(AppearanceFeature);
+  },
+});
+export type AssetPack = __Infer<typeof AssetPack>;
 
 export const AttackComponent = __t.object("AttackComponent", {
   entityId: __t.u64(),
@@ -396,8 +394,8 @@ export const RngSeedComponent = __t.object("RngSeedComponent", {
 export type RngSeedComponent = __Infer<typeof RngSeedComponent>;
 
 export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
-  get specialEntityBlobType() {
-    return SpecialEntityBlobType;
+  get key() {
+    return SpecialEntityBlobKey;
   },
   get blob() {
     return EntityBlob;
@@ -405,12 +403,11 @@ export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
 });
 export type SpecialEntityBlob = __Infer<typeof SpecialEntityBlob>;
 
-// The tagged union or sum type for the algebraic type `SpecialEntityBlobType`.
-export const SpecialEntityBlobType = __t.enum("SpecialEntityBlobType", {
+// The tagged union or sum type for the algebraic type `SpecialEntityBlobKey`.
+export const SpecialEntityBlobKey = __t.enum("SpecialEntityBlobKey", {
   NewPlayer: __t.unit(),
-  FirstRoom: __t.unit(),
 });
-export type SpecialEntityBlobType = __Infer<typeof SpecialEntityBlobType>;
+export type SpecialEntityBlobKey = __Infer<typeof SpecialEntityBlobKey>;
 
 export const StatBlock = __t.object("StatBlock", {
   attack: __t.i32(),

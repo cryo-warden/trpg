@@ -7,18 +7,8 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import ActReducer from "../act_reducer";
-import AdminAddTraitReducer from "../admin_add_trait_reducer";
-import AdminApplyBundleReducer from "../admin_apply_bundle_reducer";
-import AdminDamageReducer from "../admin_damage_reducer";
-import AdminRecreatePlayerForIdentityReducer from "../admin_recreate_player_for_identity_reducer";
-import CreatePlayerForSelfReducer from "../create_player_for_self_reducer";
-import RegisterAdminReducer from "../register_admin_reducer";
+import PushAssetsReducer from "../push_assets_reducer";
 
 export type ActParams = __Infer<typeof ActReducer>;
-export type AdminAddTraitParams = __Infer<typeof AdminAddTraitReducer>;
-export type AdminApplyBundleParams = __Infer<typeof AdminApplyBundleReducer>;
-export type AdminDamageParams = __Infer<typeof AdminDamageReducer>;
-export type AdminRecreatePlayerForIdentityParams = __Infer<typeof AdminRecreatePlayerForIdentityReducer>;
-export type CreatePlayerForSelfParams = __Infer<typeof CreatePlayerForSelfReducer>;
-export type RegisterAdminParams = __Infer<typeof RegisterAdminReducer>;
+export type PushAssetsParams = __Infer<typeof PushAssetsReducer>;
 
