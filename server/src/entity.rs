@@ -5,7 +5,7 @@ use crate::{
 use ecs::{entity, Ecs, WithEcs};
 use spacetimedb::{
     rand::{rngs::StdRng, RngCore, SeedableRng},
-    table, Identity, ReducerContext, SpacetimeType, Table, Timestamp,
+    table, Identity, ReducerContext, SpacetimeType, Timestamp,
 };
 
 entity!(
@@ -130,7 +130,8 @@ entity!(
     }
 
     #[component(
-      entity_deactivation_timer in entity_deactivation_timer_components
+      entity_deletion_timer in entity_deletion_timer_components,
+      player_deactivation_timer in player_deactivation_timer_components,
     )]
     struct TimerComponent {
         pub timestamp: Timestamp,
@@ -184,14 +185,6 @@ pub struct SpecialEntityBlob {
     pub blob: EntityBlob,
 }
 
-#[table(accessor = player_entity_blobs)]
-#[derive(Debug, Clone)]
-pub struct PlayerEntityBlob {
-    #[primary_key]
-    pub identity: Identity,
-    pub blob: EntityBlob,
-}
-
 pub trait GetRng {
     fn get_rng(&self) -> StdRng;
 }
@@ -226,11 +219,13 @@ pub trait EcsExtension<'a> {
     ) -> EntityHandle<'a>;
     fn from_player_identity(
         self,
+        identity: Identity,
     ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>>;
     fn from_name(self, name: &str) -> Option<name_component::WithComponent<EntityHandle<'a>>>;
-    fn new_player(self) -> Result<EntityHandle<'a>, String>;
-    fn find_player(self, identity: Identity) -> Option<PlayerEntityBlob>;
-    fn activate_player_entity_blob(self, player_entity_blob: PlayerEntityBlob) -> EntityHandle<'a>;
+    fn new_player(
+        self,
+        identity: Identity,
+    ) -> Result<player_controller_component::WithComponent<EntityHandle<'a>>, String>;
 }
 
 impl<'a> EcsExtension<'a> for Ecs<'a> {
@@ -258,11 +253,12 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
     }
     fn from_player_identity(
         self,
+        identity: Identity,
     ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>> {
         self.db
             .player_controller_components()
             .identity()
-            .find(self.sender())
+            .find(identity)
             .map(|p| self.into_player_controller_handle(p))
     }
 
@@ -274,7 +270,10 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .map(|n| self.into_name_handle(n))
     }
 
-    fn new_player(self) -> Result<EntityHandle<'a>, String> {
+    fn new_player(
+        self,
+        identity: Identity,
+    ) -> Result<player_controller_component::WithComponent<EntityHandle<'a>>, String> {
         // WIP Get new player entity blob from its table.
         // Add the player controller to it.
         // Design how to handle references to other entities (like allegiances, rooms, etc) in entity blobs.
@@ -282,8 +281,6 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // Consider adding a SpecialEntityComponent type which simply points sepcific enum variants to specific entity IDs.
         Ok(self
             .new()
-            // WIP .imprint_blob()
-            .upsert_new_player_controller(self.sender())
             .upsert_new_allegiance(
                 // WIP NewPlayerAllegiance SpecialEntityComponent?
                 self.from_name("allegiance1")
@@ -297,7 +294,6 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
                     .ok_or("Cannot find starting room.")?
                     .entity_id(),
             )
-            .into_handle()
             // WIP Remove all these, since it is built into the asset.
             .set_baseline("human")
             .add_trait("admin")
@@ -306,21 +302,9 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .set_hotkey("bop", 'b')
             .set_hotkey("boppity_bop", 'v')
             .set_hotkey("quick_move", 'm')
-            .set_hotkey("divine_heal", 'h'))
-    }
-
-    fn find_player(self, identity: Identity) -> Option<PlayerEntityBlob> {
-        self.db.player_entity_blobs().identity().find(identity)
-    }
-
-    fn activate_player_entity_blob(self, player_entity_blob: PlayerEntityBlob) -> EntityHandle<'a> {
-        let e = self.new();
-
-        if let Some(c) = player_entity_blob.blob.player_controller {
-            e.insert_player_controller(c);
-        }
-
-        e
+            .set_hotkey("divine_heal", 'h')
+            .into_handle()
+            .upsert_new_player_controller(identity))
     }
 }
 
@@ -387,44 +371,147 @@ pub struct IdentityInactiveEntity {
     pub component_set: ComponentSet,
 }
 
-impl<'a> EntityHandle<'a> {
-    pub fn insert_id(ctx: &'a ReducerContext, id: u64) -> Self {
-        let entity = ctx.db.entities().insert(Entity { id });
-        Self {
-            entity_id: entity.id,
-            ecs: ctx.ecs(),
-        }
-    }
+pub trait EntityHandleExtension {
+    fn apply_stat_block(self, stat_block: StatBlock) -> Self;
+    fn set_mhp(self, mhp: i32) -> Self;
+    fn set_defense(self, defense: i32) -> Self;
+    fn set_mep(self, mep: i32) -> Self;
+    fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
+    fn set_baseline(self, name: &str) -> Self;
+    fn add_trait(self, name: &str) -> Self;
+    fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
+    fn generate_prominence(self) -> Self;
+    fn allegiance_id(&self) -> Option<u64>;
+    fn is_ally(&self, other_entity_id: u64) -> bool;
+    fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
+    fn shift_queued_action_state(self) -> Self;
+    fn set_hotkey(self, name: &str, character: char) -> Self;
+    fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool;
+}
 
-    pub fn generate_prominence(self) -> Self {
-        let mut prominence = 0;
-        if self.path().is_some() {
-            prominence |= 1 << 8;
-        }
-        // TODO Add other controller types.
-        if self.player_controller().is_some() {
-            prominence |= 1 << 7;
-        }
-        if self.hp().is_some() {
-            prominence |= 1 << 6;
-        }
-
-        self.insert_new_entity_prominence(prominence);
+impl<'a, T: WithEntityHandle<'a>> EntityHandleExtension for T {
+    fn apply_stat_block(self, stat_block: StatBlock) -> Self {
+        self.to_handle()
+            .clone()
+            .upsert_new_attack(stat_block.attack)
+            .set_mhp(stat_block.mhp)
+            .set_mep(stat_block.mep)
+            .set_defense(stat_block.defense)
+            .set_actions(stat_block.action_ids)
+            .set_appearance_feature_ids(stat_block.appearance_feature_ids);
         self
     }
 
-    pub fn allegiance_id(&self) -> Option<u64> {
-        self.allegiance().map(|a| a.allegiance_entity_id)
+    fn set_mhp(self, mhp: i32) -> Self {
+        let e = self.to_handle();
+        if let Some(mut hp) = e.hp() {
+            hp.mhp = mhp;
+            e.update_hp(hp);
+        } else {
+            e.insert_new_hp(mhp, mhp, 0, 0, 0);
+        }
+        self
     }
 
-    pub fn is_ally(&self, other_entity_id: u64) -> bool {
-        if self.entity_id == other_entity_id {
+    fn set_defense(self, defense: i32) -> Self {
+        let e = self.to_handle();
+        if let Some(mut hp_component) = e.hp() {
+            hp_component.defense = defense;
+            e.update_hp(hp_component);
+        } else {
+            e.insert_new_hp(0, 0, defense, 0, 0);
+        }
+        self
+    }
+
+    fn set_mep(self, mep: i32) -> Self {
+        let e = self.to_handle();
+        if let Some(mut ep_component) = e.ep() {
+            ep_component.mep = mep;
+            e.update_ep(ep_component);
+        } else {
+            e.insert_new_ep(mep, mep);
+        }
+        self
+    }
+
+    fn set_actions(self, action_ids: Vec<ActionId>) -> Self {
+        let e = self.to_handle();
+        if let Some(mut c) = e.actions() {
+            c.action_ids = action_ids;
+            e.update_actions(c);
+        } else {
+            e.insert_new_actions(action_ids);
+        }
+        self
+    }
+
+    fn set_baseline(self, name: &str) -> Self {
+        let e = self.to_handle();
+        if let Some(b) = e.ecs.db.baselines().name().find(name.to_string()) {
+            e.clone()
+                .upsert_new_baseline(b.id)
+                .upsert_new_total_stat_block_dirty_flag();
+        }
+        self
+    }
+
+    fn add_trait(self, name: &str) -> Self {
+        let e = self.to_handle();
+        if let Some(t) = e.ecs.db.traits().name().find(name.to_string()) {
+            if let Some(mut c) = e.traits() {
+                c.trait_ids.push(t.id);
+                e.update_traits(c);
+            } else {
+                e.insert_traits(TraitsComponent {
+                    entity_id: e.entity_id,
+                    trait_ids: vec![t.id],
+                });
+            }
+
+            e.clone().upsert_new_traits_stat_block_dirty_flag();
+        }
+        self
+    }
+
+    fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
+        self.to_handle()
+            .clone()
+            .upsert_new_appearance_features(appearance_feature_ids);
+        self
+    }
+
+    fn generate_prominence(self) -> Self {
+        let e = self.to_handle();
+        let mut prominence = 0;
+        if e.path().is_some() {
+            prominence |= 1 << 8;
+        }
+        // TODO Add other controller types.
+        if e.player_controller().is_some() {
+            prominence |= 1 << 7;
+        }
+        if e.hp().is_some() {
+            prominence |= 1 << 6;
+        }
+        e.insert_new_entity_prominence(prominence);
+        self
+    }
+
+    fn allegiance_id(&self) -> Option<u64> {
+        self.to_handle()
+            .allegiance()
+            .map(|a| a.allegiance_entity_id)
+    }
+
+    fn is_ally(&self, other_entity_id: u64) -> bool {
+        let e = self.to_handle();
+        if e.entity_id == other_entity_id {
             return true;
         }
-
         if let (Some(a), Some(o)) = (
-            self.allegiance_id(),
-            self.ecs.find(other_entity_id).allegiance_id(),
+            e.allegiance_id(),
+            e.ecs.find(other_entity_id).allegiance_id(),
         ) {
             a == o
         } else {
@@ -432,136 +519,45 @@ impl<'a> EntityHandle<'a> {
         }
     }
 
-    pub fn set_actions(self, action_ids: Vec<ActionId>) -> Self {
-        if let Some(mut c) = self.actions() {
-            c.action_ids = action_ids;
-            self.update_actions(c);
-        } else {
-            self.insert_new_actions(action_ids);
-        }
-        self
-    }
-
-    pub fn set_baseline(self, name: &str) -> Self {
-        if let Some(b) = self.ecs.db.baselines().name().find(name.to_string()) {
-            self.upsert_new_baseline(b.id)
-                .upsert_new_total_stat_block_dirty_flag()
-                .into_handle()
-        } else {
-            self
-        }
-    }
-
-    pub fn add_trait(self, name: &str) -> Self {
-        if let Some(t) = self.ecs.db.traits().name().find(name.to_string()) {
-            if let Some(mut c) = self.traits() {
-                c.trait_ids.push(t.id);
-                self.update_traits(c);
-            } else {
-                self.insert_traits(TraitsComponent {
-                    entity_id: self.entity_id,
-                    trait_ids: vec![t.id],
-                });
-            }
-
-            self.upsert_new_traits_stat_block_dirty_flag().into_handle()
-        } else {
-            self
-        }
-    }
-
-    pub fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
-        self.upsert_new_appearance_features(appearance_feature_ids)
-            .into_handle()
-    }
-
-    pub fn apply_stat_block(self, stat_block: StatBlock) -> Self {
-        self.delete_total_stat_block_dirty_flag();
-
-        self.set_attack(stat_block.attack)
-            .set_mhp(stat_block.mhp)
-            .set_mep(stat_block.mep)
-            .set_defense(stat_block.defense)
-            .set_actions(stat_block.action_ids)
-            .set_appearance_feature_ids(stat_block.appearance_feature_ids)
-    }
-
-    pub fn set_traits_stat_block_cache(self, stat_block: StatBlock) -> Self {
-        self.delete_traits_stat_block_dirty_flag();
-        self.upsert_new_traits_stat_block_cache(stat_block)
-            .into_handle()
-    }
-
-    pub fn set_attack(self, attack: i32) -> Self {
-        self.upsert_new_attack(attack).into_handle()
-    }
-
-    pub fn set_mhp(self, mhp: i32) -> Self {
-        if let Some(mut hp) = self.hp() {
-            hp.mhp = mhp;
-            self.update_hp(hp);
-        } else {
-            self.insert_new_hp(mhp, mhp, 0, 0, 0);
-        }
-        self
-    }
-
-    pub fn set_defense(self, defense: i32) -> Self {
-        if let Some(mut hp_component) = self.hp() {
-            hp_component.defense = defense;
-            self.update_hp(hp_component);
-        } else {
-            self.insert_new_hp(0, 0, defense, 0, 0);
-        }
-        self
-    }
-
-    pub fn set_mep(self, mep: i32) -> Self {
-        if let Some(mut ep_component) = self.ep() {
-            ep_component.mep = mep;
-            self.update_ep(ep_component);
-        } else {
-            self.insert_new_ep(mep, mep);
-        }
-        self
-    }
-
-    pub fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
-        self.delete_queued_action_state();
-        self.insert_queued_action_state(ActionStateComponent {
+    fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
+        let e = self.to_handle();
+        e.delete_queued_action_state();
+        e.insert_queued_action_state(ActionStateComponent {
             action_id,
-            entity_id: self.entity_id,
+            entity_id: e.entity_id,
             sequence_index: 0,
             target_entity_id,
         });
         self
     }
 
-    pub fn shift_queued_action_state(self) -> Self {
-        if let Some(queued_action_state) = self.queued_action_state() {
-            self.delete_queued_action_state();
-            self.insert_action_state(queued_action_state);
+    fn shift_queued_action_state(self) -> Self {
+        let e = self.to_handle();
+        if let Some(queued_action_state) = e.queued_action_state() {
+            e.delete_queued_action_state();
+            e.insert_action_state(queued_action_state);
         }
         self
     }
 
-    pub fn set_hotkey(self, name: &str, character: char) -> Self {
-        let action_id = if let Some(action) = self.ecs.db.actions().name().find(name.to_string()) {
+    fn set_hotkey(self, name: &str, character: char) -> Self {
+        let e = self.to_handle();
+        let action_id = if let Some(action) = e.ecs.db.actions().name().find(name.to_string()) {
             action.id
         } else {
             return self;
         };
         let character_code = character as u32;
-        if let Some(mut a) = self.action_hotkeys() {
+        if let Some(mut a) = e.action_hotkeys() {
             a.action_hotkeys
                 .retain(|h| h.action_id != action_id && h.character_code != character_code);
             a.action_hotkeys.push(ActionHotkey {
                 action_id,
                 character_code,
             });
-            self.update_action_hotkeys(a);
+            e.update_action_hotkeys(a);
         } else {
-            self.insert_new_action_hotkeys(vec![ActionHotkey {
+            e.insert_new_action_hotkeys(vec![ActionHotkey {
                 action_id,
                 character_code,
             }]);
@@ -569,9 +565,10 @@ impl<'a> EntityHandle<'a> {
         self
     }
 
-    pub fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool {
-        if let Some(a) = self.ecs.db.actions().id().find(action_id) {
-            let o = self.ecs.find(other_entity_id);
+    fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool {
+        let e = self.to_handle();
+        if let Some(a) = e.ecs.db.actions().id().find(action_id) {
+            let o = e.ecs.find(other_entity_id);
             // TODO Add same-location check as a separate function, which is also used to validate individual effects before they're resolved.
             match a.action_type {
                 ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),

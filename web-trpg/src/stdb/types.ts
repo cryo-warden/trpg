@@ -252,7 +252,10 @@ export const EntityBlob = __t.object("EntityBlob", {
   get entityProminence() {
     return __t.option(EntityProminenceComponent);
   },
-  get entityDeactivationTimer() {
+  get entityDeletionTimer() {
+    return __t.option(TimerComponent);
+  },
+  get playerDeactivationTimer() {
     return __t.option(TimerComponent);
   },
   get rngSeed() {
@@ -385,14 +388,6 @@ export const PlayerControllerComponent = __t.object("PlayerControllerComponent",
   identity: __t.identity(),
 });
 export type PlayerControllerComponent = __Infer<typeof PlayerControllerComponent>;
-
-export const PlayerEntityBlob = __t.object("PlayerEntityBlob", {
-  identity: __t.identity(),
-  get blob() {
-    return EntityBlob;
-  },
-});
-export type PlayerEntityBlob = __Infer<typeof PlayerEntityBlob>;
 
 export const RngSeedComponent = __t.object("RngSeedComponent", {
   entityId: __t.u64(),

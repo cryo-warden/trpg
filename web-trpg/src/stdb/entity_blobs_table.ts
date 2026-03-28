@@ -89,8 +89,11 @@ export default __t.row({
   get entityProminence() {
     return __t.option(EntityProminenceComponent).name("entity_prominence");
   },
-  get entityDeactivationTimer() {
-    return __t.option(TimerComponent).name("entity_deactivation_timer");
+  get entityDeletionTimer() {
+    return __t.option(TimerComponent).name("entity_deletion_timer");
+  },
+  get playerDeactivationTimer() {
+    return __t.option(TimerComponent).name("player_deactivation_timer");
   },
   get rngSeed() {
     return __t.option(RngSeedComponent).name("rng_seed");

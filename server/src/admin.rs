@@ -105,7 +105,7 @@ pub fn create_player_for_self(
 ) -> Result<(), String> {
     require_admin(ctx)?;
 
-    if ctx.ecs().from_player_identity().is_some() {
+    if ctx.ecs().from_player_identity(ctx.sender()).is_some() {
         return Err("Player already exists for this identity.".to_string());
     }
 

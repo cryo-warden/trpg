@@ -59,7 +59,7 @@ import BaselinesRow from "./baselines_table";
 import EnAppearanceFeaturesRow from "./en_appearance_features_table";
 import EntitiesRow from "./entities_table";
 import EntityBlobsRow from "./entity_blobs_table";
-import EntityDeactivationTimerComponentsRow from "./entity_deactivation_timer_components_table";
+import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
 import EntityProminenceComponentsRow from "./entity_prominence_components_table";
 import EpComponentsRow from "./ep_components_table";
 import HpComponentsRow from "./hp_components_table";
@@ -69,6 +69,7 @@ import NameComponentsRow from "./name_components_table";
 import ObservableEventsRow from "./observable_events_table";
 import PathComponentsRow from "./path_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
+import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RealizedMapComponentsRow from "./realized_map_components_table";
 import RngSeedComponentsRow from "./rng_seed_components_table";
@@ -248,17 +249,17 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, EntityBlobsRow),
-  entity_deactivation_timer_components: __table({
-    name: 'entity_deactivation_timer_components',
+  entity_deletion_timer_components: __table({
+    name: 'entity_deletion_timer_components',
     indexes: [
-      { accessor: 'entity_id', name: 'entity_deactivation_timer_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'entity_deletion_timer_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'entity_deactivation_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'entity_deletion_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, EntityDeactivationTimerComponentsRow),
+  }, EntityDeletionTimerComponentsRow),
   entity_prominence_components: __table({
     name: 'entity_prominence_components',
     indexes: [
@@ -373,6 +374,17 @@ const tablesSchema = __schema({
       { name: 'player_controller_components_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, PlayerControllerComponentsRow),
+  player_deactivation_timer_components: __table({
+    name: 'player_deactivation_timer_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'player_deactivation_timer_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'player_deactivation_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, PlayerDeactivationTimerComponentsRow),
   queued_action_state_components: __table({
     name: 'queued_action_state_components',
     indexes: [

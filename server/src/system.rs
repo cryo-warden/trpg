@@ -135,13 +135,19 @@ pub fn entity_prominence_system(ecs: Ecs) {
     }
 }
 
-pub fn entity_deactivation_system(ecs: Ecs) {
-    for t in ecs.iter_entity_deactivation_timer() {
-        if t.entity_deactivation_timer().timestamp <= ecs.timestamp {
-            let t = t.delete_entity_deactivation_timer();
-            let _ = t.new_blob();
-            // WIP Complete deactivation by moving blob into a new entity_blobs table.
+pub fn entity_deletion_timer_system(ecs: Ecs) {
+    for t in ecs.iter_entity_deletion_timer() {
+        if t.entity_deletion_timer().timestamp <= ecs.timestamp {
             t.delete();
+        }
+    }
+}
+
+pub fn player_deactivation_timer_system(ecs: Ecs) {
+    for t in ecs.iter_player_deactivation_timer() {
+        if t.player_deactivation_timer().timestamp <= ecs.timestamp {
+            t.delete_player_deactivation_timer().delete_location();
+            // WIP Add a checkpoint_location_component to place player after login.
         }
     }
 }
@@ -158,8 +164,9 @@ pub fn entity_stats_system(ecs: Ecs) {
             }
 
             f.upsert_new_total_stat_block_dirty_flag()
-                .into_handle()
-                .set_traits_stat_block_cache(stat_block);
+                .upsert_new_traits_stat_block_cache(stat_block)
+                .delete_traits_stat_block_dirty_flag()
+                .into_handle();
         }
     }
 
@@ -173,6 +180,20 @@ pub fn entity_stats_system(ecs: Ecs) {
             stat_block += &t.stat_block;
         }
 
-        f.into_handle().apply_stat_block(stat_block);
+        f.delete_total_stat_block_dirty_flag()
+            .into_handle()
+            .apply_stat_block(stat_block);
     }
+}
+
+pub fn execute_all_systems(ecs: Ecs) {
+    observation_reset_system(ecs);
+    action_system(ecs);
+    hp_system(ecs);
+    ep_system(ecs);
+    shift_queued_action_system(ecs);
+    entity_prominence_system(ecs);
+    entity_deletion_timer_system(ecs);
+    player_deactivation_timer_system(ecs);
+    entity_stats_system(ecs);
 }
