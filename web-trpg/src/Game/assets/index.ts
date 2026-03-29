@@ -5,11 +5,16 @@ import {
   APPEARANCE_FEATURES,
   AppearanceFeatureAsset,
 } from "./appearance_features";
-import { ENTITY_BLOBS, EntityBlobAsset } from "./entity_blobs";
+import {
+  ENTITY_BLOBS,
+  EntityBlobAsset,
+  ActionHotkeyAsset,
+} from "./entity_blobs";
 import { TRAITS } from "./traits";
 
 export type {
   ActionAsset,
+  ActionHotkeyAsset,
   AppearanceFeatureAsset,
   EntityBlobAsset,
   StatBlockAsset,

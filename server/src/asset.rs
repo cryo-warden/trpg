@@ -1,9 +1,10 @@
+use ecs::WithEcs;
 use spacetimedb::{reducer, table, ReducerContext, SpacetimeType, Table};
 
 use crate::{
     action::{action_steps, actions, Action, ActionStep},
     appearance::{appearance_features, AppearanceFeature},
-    entity::EntityBlob,
+    entity::{EntityBlob, InstantiateEntityBlob, NewEntityHandle},
     stat_block::{baselines, traits, Baseline, Trait},
 };
 
@@ -27,11 +28,17 @@ struct AssetPack {
     actions: Vec<Action>,
     action_steps: Vec<ActionStep>,
     appearance_features: Vec<AppearanceFeature>,
+    instantiate_entity_blobs: Vec<EntityBlob>,
 }
 
 #[reducer]
 fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String> {
     log::debug!("Loading asset pack from {}.", ctx.sender());
+
+    if ctx.get_new_player_blob().is_some() {
+        log::debug!("Assets are already populated. Skipped loading.");
+        return Ok(());
+    }
 
     ctx.db.special_entity_blobs().insert(SpecialEntityBlob {
         key: SpecialEntityBlobKey::NewPlayer,
@@ -51,6 +58,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     }
     for a in asset_pack.appearance_features {
         ctx.db.appearance_features().insert(a);
+    }
+    for b in asset_pack.instantiate_entity_blobs {
+        ctx.ecs().new().instantiate_blob(b);
     }
     Ok(())
 }

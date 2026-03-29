@@ -12,13 +12,15 @@ import {
   AppearanceFeatureType,
 } from "../stdb/types";
 import {
+  ActionHotkeyAsset,
   actions,
   appearanceFeatures,
   baselines,
+  EntityBlobAsset,
+  entityBlobs,
   StatBlockAsset,
   traits,
 } from "./assets";
-import { EntityId } from "./trpg";
 
 const assetToStatBlock = (asset: StatBlockAsset): StatBlock => {
   return {
@@ -111,11 +113,6 @@ const getTraits = () =>
     } as Trait;
   });
 
-type ActionHotkeyAsset = {
-  actionName: (typeof actions)[number]["name"];
-  hotkey: string;
-};
-
 const getActionHotkeys = (
   actionHotkeyAssets: ActionHotkeyAsset[],
 ): ActionHotkey[] =>
@@ -127,21 +124,8 @@ const getActionHotkeys = (
       }) as ActionHotkey,
   );
 
-type EntityBlobAsset = {
-  actionHotkeys?: ActionHotkeyAsset[];
-  allegiance?: EntityId;
-  baseline?: (typeof baselines)[number]["name"];
-  traits?: (typeof traits)[number]["name"][];
-};
-
 const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
   return {
-    allegiance: entityBlobAsset.allegiance
-      ? {
-          entityId: 0n,
-          allegianceEntityId: entityBlobAsset.allegiance,
-        }
-      : undefined,
     baseline: entityBlobAsset.baseline
       ? {
           entityId: 0n,
@@ -164,6 +148,12 @@ const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
           actionHotkeys: getActionHotkeys(entityBlobAsset.actionHotkeys),
         }
       : undefined,
+    name: entityBlobAsset.name
+      ? {
+          entityId: 0n,
+          name: entityBlobAsset.name,
+        }
+      : undefined,
   } as EntityBlob;
 };
 
@@ -176,7 +166,6 @@ export const init = (connection: DbConnection) => {
           { actionName: "quick_move", hotkey: "m" },
           { actionName: "divine_heal", hotkey: "h" },
         ],
-        allegiance: 0n,
         baseline: "human",
         traits: ["admin", "mobile", "bopper"],
       }),
@@ -185,6 +174,7 @@ export const init = (connection: DbConnection) => {
       actions: getActions(),
       actionSteps: getActionSteps(),
       appearanceFeatures: getAppearanceFeatures(),
+      instantiateEntityBlobs: entityBlobs.map(getEntityBlob),
     },
   });
 };

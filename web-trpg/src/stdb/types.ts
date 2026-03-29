@@ -131,6 +131,9 @@ export const AssetPack = __t.object("AssetPack", {
   get appearanceFeatures() {
     return __t.array(AppearanceFeature);
   },
+  get instantiateEntityBlobs() {
+    return __t.array(EntityBlob);
+  },
 });
 export type AssetPack = __Infer<typeof AssetPack>;
 
