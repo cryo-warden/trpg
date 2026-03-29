@@ -2,6 +2,7 @@ use ecs::WithEcs;
 use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table, TimeDuration};
 
 use crate::{
+    asset::ReducerContextExtension,
     entity::*,
     reducers::system_timer::{system_timers, SystemTimer},
 };
@@ -22,13 +23,17 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
 
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
-    if let Some(p) = ctx.ecs().from_player_identity(ctx.sender()) {
+    if ctx.get_new_player_blob().is_none() {
+        log::debug!("Connected {} before asset initialization.", ctx.sender());
+        Ok(())
+    } else if let Some(p) = ctx.ecs().from_player_identity(ctx.sender()) {
         p.delete_player_deactivation_timer();
         log::debug!(
             "Reconnected {} to {} and removed deactivation timer.",
             ctx.sender(),
             p.entity_id()
         );
+        Ok(())
     } else {
         match ctx.ecs().new_player(ctx.sender()) {
             Ok(p) => {
@@ -37,6 +42,7 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
                     ctx.sender(),
                     p.entity_id()
                 );
+                Ok(())
             }
             Err(err) => {
                 // WIP Check if connected user is admin and DB is not initialized.
@@ -47,11 +53,10 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
                     ctx.sender(),
                     err
                 );
+                Err(err)
             }
         }
     }
-
-    Ok(())
 }
 
 #[reducer(client_disconnected)]
