@@ -9,6 +9,7 @@ import {
   ENTITY_BLOBS,
   EntityBlobAsset,
   ActionHotkeyAsset,
+  NEW_PLAYER_BLOB,
 } from "./entity_blobs";
 import { TRAITS } from "./traits";
 
@@ -26,11 +27,13 @@ export const appearanceFeatures =
 export const baselines = BASELINES as readonly StatBlockAsset[];
 export const entityBlobs = ENTITY_BLOBS as readonly EntityBlobAsset[];
 export const traits = TRAITS as readonly StatBlockAsset[];
+export const newPlayerBlob = NEW_PLAYER_BLOB as EntityBlobAsset;
 
 export const assets = {
   actions,
   appearanceFeatures,
   baselines,
   entityBlobs,
+  newPlayerBlob,
   traits,
 };

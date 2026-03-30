@@ -18,6 +18,7 @@ import {
   baselines,
   EntityBlobAsset,
   entityBlobs,
+  newPlayerBlob,
   StatBlockAsset,
   traits,
 } from "./assets";
@@ -160,15 +161,7 @@ const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
 export const init = (connection: DbConnection) => {
   connection.reducers.pushAssets({
     assetPack: {
-      newPlayerBlob: getEntityBlob({
-        actionHotkeys: [
-          { actionName: "boppity_bop", hotkey: "v" },
-          { actionName: "quick_move", hotkey: "m" },
-          { actionName: "divine_heal", hotkey: "h" },
-        ],
-        baseline: "human",
-        traits: ["admin", "mobile", "bopper"],
-      }),
+      newPlayerBlob: getEntityBlob(newPlayerBlob),
       baselines: getBaselines(),
       traits: getTraits(),
       actions: getActions(),

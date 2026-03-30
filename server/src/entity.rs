@@ -1,7 +1,7 @@
 use crate::{
     action::{actions, ActionId, ActionType},
     asset::ReducerContextExtension,
-    stat_block::{baselines, traits, StatBlock},
+    stat_block::StatBlock,
 };
 use ecs::{entity, Ecs, WithEcs};
 use spacetimedb::{
@@ -261,40 +261,31 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         self,
         identity: Identity,
     ) -> Result<player_controller_component::WithComponent<EntityHandle<'a>>, String> {
-        // WIP Get new player entity blob from its table.
-        // Add the player controller to it.
-        // Design how to handle references to other entities (like allegiances, rooms, etc) in entity blobs.
+        // WIP Design how to handle references to other entities (like allegiances, rooms, etc) in entity blobs.
         // Reference concept: For special entities, the relationships would be hardcoded. Other relationships can simply use IDs of real entities.
         // Consider adding a SpecialEntityComponent type which simply points sepcific enum variants to specific entity IDs.
-        let e = self.new();
-        e.instantiate_blob(
-            self.get_new_player_blob()
-                .ok_or("Failed to obtain the new player entity blob.")?,
-        );
-        Ok(e.upsert_new_allegiance(
-            // WIP NewPlayerAllegiance SpecialEntityComponent?
-            self.from_name("allegiance1")
-                .ok_or("Cannot find starting allegiance.")?
-                .entity_id(),
-        )
-        .upsert_new_location(
-            // WIP Must generate new entity to hold new player starting room and map.
-            // Player should not be immediately dropped into a shared instance.
-            self.from_name("room1")
-                .ok_or("Cannot find starting room.")?
-                .entity_id(),
-        )
-        // WIP Remove all these, since it is built into the asset.
-        .set_baseline("human")
-        .add_trait("admin")
-        .add_trait("mobile")
-        .add_trait("bopper")
-        .set_hotkey("bop", 'b')
-        .set_hotkey("boppity_bop", 'v')
-        .set_hotkey("quick_move", 'm')
-        .set_hotkey("divine_heal", 'h')
-        .into_handle()
-        .upsert_new_player_controller(identity))
+        Ok({
+            let e = self.new();
+            e.instantiate_blob(
+                self.get_new_player_blob()
+                    .ok_or("Failed to obtain the new player entity blob.")?,
+            );
+            e.upsert_new_allegiance(
+                // WIP NewPlayerAllegiance SpecialEntityComponent?
+                self.from_name("allegiance1")
+                    .ok_or("Cannot find starting allegiance.")?
+                    .entity_id(),
+            )
+            .upsert_new_location(
+                // WIP Must generate new entity to hold new player starting room and map.
+                // Player should not be immediately dropped into a shared instance.
+                self.from_name("room1")
+                    .ok_or("Cannot find starting room.")?
+                    .entity_id(),
+            )
+            .into_handle()
+            .upsert_new_player_controller(identity)
+        })
     }
 }
 
@@ -367,15 +358,12 @@ pub trait EntityHandleExtension {
     fn set_defense(self, defense: i32) -> Self;
     fn set_mep(self, mep: i32) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
-    fn set_baseline(self, name: &str) -> Self;
-    fn add_trait(self, name: &str) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
     fn generate_prominence(self) -> Self;
     fn allegiance_id(&self) -> Option<u64>;
     fn is_ally(&self, other_entity_id: u64) -> bool;
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
     fn shift_queued_action_state(self) -> Self;
-    fn set_hotkey(self, name: &str, character: char) -> Self;
     fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool;
 }
 
@@ -432,34 +420,6 @@ impl<'a, T: WithEntityHandle<'a>> EntityHandleExtension for T {
             e.update_actions(c);
         } else {
             e.insert_new_actions(action_ids);
-        }
-        self
-    }
-
-    fn set_baseline(self, name: &str) -> Self {
-        let e = self.to_handle();
-        if let Some(b) = e.ecs.db.baselines().name().find(name.to_string()) {
-            e.clone()
-                .upsert_new_baseline(b.id)
-                .upsert_new_total_stat_block_dirty_flag();
-        }
-        self
-    }
-
-    fn add_trait(self, name: &str) -> Self {
-        let e = self.to_handle();
-        if let Some(t) = e.ecs.db.traits().name().find(name.to_string()) {
-            if let Some(mut c) = e.traits() {
-                c.trait_ids.push(t.id);
-                e.update_traits(c);
-            } else {
-                e.insert_traits(TraitsComponent {
-                    entity_id: e.entity_id,
-                    trait_ids: vec![t.id],
-                });
-            }
-
-            e.clone().upsert_new_traits_stat_block_dirty_flag();
         }
         self
     }
@@ -526,31 +486,6 @@ impl<'a, T: WithEntityHandle<'a>> EntityHandleExtension for T {
         if let Some(queued_action_state) = e.queued_action_state() {
             e.delete_queued_action_state();
             e.insert_action_state(queued_action_state);
-        }
-        self
-    }
-
-    fn set_hotkey(self, name: &str, character: char) -> Self {
-        let e = self.to_handle();
-        let action_id = if let Some(action) = e.ecs.db.actions().name().find(name.to_string()) {
-            action.id
-        } else {
-            return self;
-        };
-        let character_code = character as u32;
-        if let Some(mut a) = e.action_hotkeys() {
-            a.action_hotkeys
-                .retain(|h| h.action_id != action_id && h.character_code != character_code);
-            a.action_hotkeys.push(ActionHotkey {
-                action_id,
-                character_code,
-            });
-            e.update_action_hotkeys(a);
-        } else {
-            e.insert_new_action_hotkeys(vec![ActionHotkey {
-                action_id,
-                character_code,
-            }]);
         }
         self
     }
