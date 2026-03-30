@@ -164,35 +164,6 @@ export const Buff = __t.enum("Buff", {
 });
 export type Buff = __Infer<typeof Buff>;
 
-export const ComponentSet = __t.object("ComponentSet", {
-  entityId: __t.u64(),
-  get hpComponent() {
-    return __t.option(HpComponent);
-  },
-  get epComponent() {
-    return __t.option(EpComponent);
-  },
-  get actionsComponent() {
-    return __t.option(ActionsComponent);
-  },
-  get actionHotkeysComponent() {
-    return __t.option(ActionHotkeysComponent);
-  },
-  get allegianceComponent() {
-    return __t.option(AllegianceComponent);
-  },
-  get playerControllerComponent() {
-    return __t.option(PlayerControllerComponent);
-  },
-  get baselineComponent() {
-    return __t.option(BaselineComponent);
-  },
-  get traitsComponent() {
-    return __t.option(TraitsComponent);
-  },
-});
-export type ComponentSet = __Infer<typeof ComponentSet>;
-
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
 });
@@ -325,14 +296,6 @@ export const HpComponent = __t.object("HpComponent", {
 });
 export type HpComponent = __Infer<typeof HpComponent>;
 
-export const IdentityInactiveEntity = __t.object("IdentityInactiveEntity", {
-  identity: __t.identity(),
-  get componentSet() {
-    return ComponentSet;
-  },
-});
-export type IdentityInactiveEntity = __Infer<typeof IdentityInactiveEntity>;
-
 export const LocationComponent = __t.object("LocationComponent", {
   entityId: __t.u64(),
   locationEntityId: __t.u64(),
@@ -369,14 +332,6 @@ export const NameComponent = __t.object("NameComponent", {
   name: __t.string(),
 });
 export type NameComponent = __Infer<typeof NameComponent>;
-
-export const NamedInactiveEntity = __t.object("NamedInactiveEntity", {
-  prefabName: __t.string(),
-  get componentSet() {
-    return ComponentSet;
-  },
-});
-export type NamedInactiveEntity = __Infer<typeof NamedInactiveEntity>;
 
 export const PathComponent = __t.object("PathComponent", {
   entityId: __t.u64(),

@@ -1,6 +1,7 @@
 use crate::{
     action::{ActionEffect, ActionHandle},
     entity::*,
+    entity_handle_extension::EntityHandleExtension,
     event::{observable_events, EventQueue, EventType, NewEvent},
     stat_block::{baselines, traits, StatBlock},
 };

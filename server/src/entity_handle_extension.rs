@@ -1,0 +1,170 @@
+use crate::{
+    action::{actions, ActionId, ActionType},
+    entity::*,
+    stat_block::StatBlock,
+};
+
+pub trait EntityHandleExtension {
+    fn apply_stat_block(self, stat_block: StatBlock) -> Self;
+    fn set_mhp(self, mhp: i32) -> Self;
+    fn set_defense(self, defense: i32) -> Self;
+    fn set_mep(self, mep: i32) -> Self;
+    fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
+    fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
+    fn generate_prominence(self) -> Self;
+    fn allegiance_id(&self) -> Option<u64>;
+    fn is_ally(&self, other_entity_id: u64) -> bool;
+    fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
+    fn shift_queued_action_state(self) -> Self;
+    fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool;
+    fn instantiate_blob_dirty(self, blob: EntityBlob) -> Self;
+}
+
+impl<'a, T: WithEntityHandle<'a>> EntityHandleExtension for T {
+    fn apply_stat_block(self, stat_block: StatBlock) -> Self {
+        self.to_handle()
+            .clone()
+            .upsert_new_attack(stat_block.attack)
+            .set_mhp(stat_block.mhp)
+            .set_mep(stat_block.mep)
+            .set_defense(stat_block.defense)
+            .set_actions(stat_block.action_ids)
+            .set_appearance_feature_ids(stat_block.appearance_feature_ids);
+        self
+    }
+
+    fn set_mhp(self, mhp: i32) -> Self {
+        let e = self.to_handle();
+        if let Some(mut hp) = e.hp() {
+            hp.mhp = mhp;
+            e.update_hp(hp);
+        } else {
+            e.insert_new_hp(mhp, mhp, 0, 0, 0);
+        }
+        self
+    }
+
+    fn set_defense(self, defense: i32) -> Self {
+        let e = self.to_handle();
+        if let Some(mut hp_component) = e.hp() {
+            hp_component.defense = defense;
+            e.update_hp(hp_component);
+        } else {
+            e.insert_new_hp(0, 0, defense, 0, 0);
+        }
+        self
+    }
+
+    fn set_mep(self, mep: i32) -> Self {
+        let e = self.to_handle();
+        if let Some(mut ep_component) = e.ep() {
+            ep_component.mep = mep;
+            e.update_ep(ep_component);
+        } else {
+            e.insert_new_ep(mep, mep);
+        }
+        self
+    }
+
+    fn set_actions(self, action_ids: Vec<ActionId>) -> Self {
+        let e = self.to_handle();
+        if let Some(mut c) = e.actions() {
+            c.action_ids = action_ids;
+            e.update_actions(c);
+        } else {
+            e.insert_new_actions(action_ids);
+        }
+        self
+    }
+
+    fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
+        self.to_handle()
+            .clone()
+            .upsert_new_appearance_features(appearance_feature_ids);
+        self
+    }
+
+    fn generate_prominence(self) -> Self {
+        let e = self.to_handle();
+        let mut prominence = 0;
+        if e.path().is_some() {
+            prominence |= 1 << 8;
+        }
+        // TODO Add other controller types.
+        if e.player_controller().is_some() {
+            prominence |= 1 << 7;
+        }
+        if e.hp().is_some() {
+            prominence |= 1 << 6;
+        }
+        e.insert_new_entity_prominence(prominence);
+        self
+    }
+
+    fn allegiance_id(&self) -> Option<u64> {
+        self.to_handle()
+            .allegiance()
+            .map(|a| a.allegiance_entity_id)
+    }
+
+    fn is_ally(&self, other_entity_id: u64) -> bool {
+        let e = self.to_handle();
+        if e.entity_id() == other_entity_id {
+            return true;
+        }
+        if let (Some(a), Some(o)) = (
+            e.allegiance_id(),
+            e.ecs().find(other_entity_id).allegiance_id(),
+        ) {
+            a == o
+        } else {
+            false
+        }
+    }
+
+    fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
+        let e = self.to_handle();
+        e.delete_queued_action_state();
+        e.insert_queued_action_state(ActionStateComponent {
+            action_id,
+            entity_id: e.entity_id(),
+            sequence_index: 0,
+            target_entity_id,
+        });
+        self
+    }
+
+    fn shift_queued_action_state(self) -> Self {
+        let e = self.to_handle();
+        if let Some(queued_action_state) = e.queued_action_state() {
+            e.delete_queued_action_state();
+            e.insert_action_state(queued_action_state);
+        }
+        self
+    }
+
+    fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool {
+        let e = self.to_handle();
+        if let Some(a) = e.ecs().db.actions().id().find(action_id) {
+            let o = e.ecs().find(other_entity_id);
+            // TODO Add same-location check as a separate function, which is also used to validate individual effects before they're resolved.
+            match a.action_type {
+                ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
+                ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),
+                ActionType::Equip => true,     // WIP
+                ActionType::Inventory => true, // WIP
+                ActionType::Move => o.path().is_some(),
+            }
+        } else {
+            false
+        }
+    }
+
+    fn instantiate_blob_dirty(self, blob: EntityBlob) -> Self {
+        let e = self.to_handle();
+        e.instantiate_blob(blob);
+        e.insert_new_traits_stat_block_dirty_flag();
+        e.insert_new_total_stat_block_dirty_flag();
+        self
+    }
+}

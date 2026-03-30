@@ -49,6 +49,9 @@ impl ToTokens for WithComponentStruct {
               fn #id_fn(&self) -> #id_ty {
                 self.to_handle().#id_fn()
               }
+              fn ecs(&self) -> ecs::Ecs<'a> {
+                self.to_handle().ecs()
+              }
               fn to_handle(&self) -> &#entity_handle_struct<'a> {
                 self.value.to_handle()
               }
@@ -93,6 +96,7 @@ impl ToTokens for EntityHandleStruct {
         tokens.extend(quote! {
           impl<'a> #with_entity_id_trait<'a> for #entity_handle_struct<'a> {
               fn #id_fn(&self) -> #id_ty { self.#id }
+              fn ecs(&self) -> ecs::Ecs<'a> { self.ecs }
               fn to_handle(&self) -> &Self { self }
               fn into_handle(self) -> Self { self }
           }

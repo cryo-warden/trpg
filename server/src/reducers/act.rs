@@ -1,7 +1,9 @@
 use ecs::WithEcs;
 use spacetimedb::{reducer, ReducerContext};
 
-use crate::{action::ActionId, entity::*};
+use crate::{
+    action::ActionId, ecs_extension::EcsExtension, entity_handle_extension::EntityHandleExtension,
+};
 
 #[reducer]
 pub fn act(ctx: &ReducerContext, action_id: ActionId, target_entity_id: u64) -> Result<(), String> {

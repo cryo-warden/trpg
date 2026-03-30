@@ -1,7 +1,9 @@
 mod action;
 mod appearance;
 mod asset;
+mod ecs_extension;
 mod entity;
+mod entity_handle_extension;
 mod event;
 mod reducers;
 mod stat_block;

@@ -33,6 +33,7 @@ impl ToTokens for WithEntityHandleTrait {
         tokens.extend(quote! {
           pub trait #with_entity_handle_trait<'a> {
               fn #id_fn(&self) -> #id_ty;
+              fn ecs(&self) -> ecs::Ecs<'a>;
               fn to_handle(&self) -> &#entity_handle_struct<'a>;
               fn into_handle(self) -> #entity_handle_struct<'a>;
           }

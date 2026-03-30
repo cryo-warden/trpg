@@ -3,6 +3,7 @@ use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table, TimeDuration};
 
 use crate::{
     asset::ReducerContextExtension,
+    ecs_extension::EcsExtension,
     entity::*,
     reducers::system_timer::{system_timers, SystemTimer},
 };
