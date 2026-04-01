@@ -1,9 +1,9 @@
 use crate::{
     action::{ActionEffect, ActionHandle},
+    asset::stat_block::{baselines, traits, StatBlock},
     entity::*,
     entity_handle_extension::EntityHandleExtension,
     event::{observable_events, EventQueue, EventType, NewEvent},
-    stat_block::{baselines, traits, StatBlock},
 };
 use ecs::Ecs;
 use spacetimedb::Table;

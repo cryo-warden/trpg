@@ -4,9 +4,12 @@ use spacetimedb::{reducer, table, ReducerContext, SpacetimeType, Table};
 use crate::{
     action::{action_steps, actions, Action, ActionStep},
     appearance::{appearance_features, AppearanceFeature},
+    asset::stat_block::{baselines, traits, Baseline, Trait},
     entity::{EntityBlob, InstantiateEntityBlob, NewEntityHandle},
-    stat_block::{baselines, traits, Baseline, Trait},
 };
+
+pub mod location_map;
+pub mod stat_block;
 
 #[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
 pub enum SpecialEntityBlobKey {

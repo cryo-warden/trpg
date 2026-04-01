@@ -6,5 +6,4 @@ mod entity;
 mod entity_handle_extension;
 mod event;
 mod reducers;
-mod stat_block;
 mod system;

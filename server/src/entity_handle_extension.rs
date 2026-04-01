@@ -1,7 +1,7 @@
 use crate::{
     action::{actions, ActionId, ActionType},
+    asset::stat_block::StatBlock,
     entity::*,
-    stat_block::StatBlock,
 };
 
 pub trait EntityHandleExtension {

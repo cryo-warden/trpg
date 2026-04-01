@@ -1,9 +1,6 @@
-use crate::{action::ActionId, ecs_extension::EcsExtension, stat_block::StatBlock};
-use ecs::{entity, WithEcs};
-use spacetimedb::{
-    rand::{rngs::StdRng, RngCore, SeedableRng},
-    Identity, ReducerContext, SpacetimeType, Timestamp,
-};
+use crate::{action::ActionId, asset::stat_block::StatBlock};
+use ecs::entity;
+use spacetimedb::{Identity, SpacetimeType, Timestamp};
 
 entity!(
     #[struct_attrs]
@@ -54,8 +51,9 @@ entity!(
         pub trait_ids: Vec<u32>,
     }
 
-    // TODO Add StatBlock caches for equipment and status effects.
     #[component(
+      equipment_stat_block_cache in equipment_stat_block_cache_components,
+      status_stat_block_cache in status_stat_block_cache_components,
       traits_stat_block_cache in traits_stat_block_cache_components,
     )]
     struct StatBlockCacheComponent {
@@ -134,32 +132,9 @@ entity!(
         pub timestamp: Timestamp,
     }
 
-    #[component(rng_seed in rng_seed_components)]
-    struct RngSeedComponent {
-        pub rng_seed: u64,
-    }
-
     #[component(location_map in location_map_components)]
     struct LocationMapComponent {
-        pub map_entity_id: EntityId,
-    }
-
-    #[derive(Debug, Clone, SpacetimeType)]
-    pub enum MapLayout {
-        Path,
-        Hub,
-    }
-
-    #[component(
-      realized_map in realized_map_components,
-      unrealized_map in unrealized_map_components,
-    )]
-    struct MapComponent {
-        pub map_theme_id: u64,
-        pub map_layout: MapLayout,
-        pub extra_room_count: u8,
-        pub main_room_count: u8,
-        pub loop_count: u8,
+        pub location_map_entity_id: EntityId,
     }
 
     #[component(appearance_features in appearance_features_components)]
@@ -167,57 +142,3 @@ entity!(
         pub appearance_feature_indexes: Vec<u32>,
     }
 );
-
-pub trait GetRng {
-    fn get_rng(&self) -> StdRng;
-}
-
-impl<T: rng_seed_component::Some> GetRng for T {
-    fn get_rng(&self) -> StdRng {
-        StdRng::seed_from_u64(self.rng_seed().rng_seed)
-    }
-}
-
-#[allow(dead_code)]
-pub struct MapGenerationResult {
-    pub room_ids: Vec<u64>,
-}
-
-#[allow(dead_code)]
-pub trait MapGenerator {
-    fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult;
-}
-
-impl<'a, T: WithEntityHandle<'a> + unrealized_map_component::Some + rng_seed_component::Some>
-    MapGenerator for T
-{
-    fn generate(&self, ctx: &ReducerContext) -> MapGenerationResult {
-        let map = self.unrealized_map();
-        let mut rng = self.get_rng();
-        let total_room_count = map.extra_room_count + map.main_room_count;
-        let room_handles: Vec<EntityHandle> = (0..total_room_count)
-            .map(|_| {
-                ctx.ecs() // WIP Use entity blobs to initialize rooms and paths.
-                    .new_room(vec![], self.entity_id())
-            })
-            .collect();
-
-        for i in 0..(map.main_room_count as usize - 1) {
-            let a = &room_handles[i];
-            let b = &room_handles[i + 1];
-            ctx.ecs().new_path(vec![], a.entity_id, b.entity_id);
-            ctx.ecs().new_path(vec![], b.entity_id, a.entity_id);
-        }
-
-        for i in (map.main_room_count as u32)..(total_room_count as u32) {
-            let a = &room_handles[i as usize];
-            let b = &room_handles[(rng.next_u32() % i) as usize];
-            ctx.ecs().new_path(vec![], a.entity_id, b.entity_id);
-            ctx.ecs().new_path(vec![], b.entity_id, a.entity_id);
-        }
-
-        MapGenerationResult {
-            room_ids: room_handles.iter().map(|h| h.entity_id).collect(),
-        }
-    }
-}
