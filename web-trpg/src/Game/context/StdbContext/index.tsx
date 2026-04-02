@@ -36,6 +36,15 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
         (window as any).dev.connection = connection;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).dev.init = () => init(connection);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (window as any).dev.getAll = () => {
+          return Object.fromEntries(
+            Object.entries(connection.db).map(([key, value]) => [
+              key,
+              [...value.iter()],
+            ]),
+          );
+        };
       })
       .onConnectError((error) => {
         setConnection(null);

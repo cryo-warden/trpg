@@ -88,13 +88,6 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
                         .ok_or("Cannot find starting allegiance.")?
                         .entity_id(),
                 )
-                .upsert_new_location(
-                    // WIP Must generate new entity to hold new player starting room and map.
-                    // Player should not be immediately dropped into a shared instance.
-                    self.from_name("room1")
-                        .ok_or("Cannot find starting room.")?
-                        .entity_id(),
-                )
                 .into_handle()
                 .upsert_new_player_controller(identity)
         })

@@ -134,6 +134,9 @@ export const AssetPack = __t.object("AssetPack", {
   get instantiateEntityBlobs() {
     return __t.array(EntityBlob);
   },
+  get locationMaps() {
+    return __t.array(LocationMap);
+  },
 });
 export type AssetPack = __Infer<typeof AssetPack>;
 
@@ -188,6 +191,12 @@ export const EntityBlob = __t.object("EntityBlob", {
   get traits() {
     return __t.option(TraitsComponent);
   },
+  get equipmentStatBlockCache() {
+    return __t.option(StatBlockCacheComponent);
+  },
+  get statusStatBlockCache() {
+    return __t.option(StatBlockCacheComponent);
+  },
   get traitsStatBlockCache() {
     return __t.option(StatBlockCacheComponent);
   },
@@ -230,17 +239,8 @@ export const EntityBlob = __t.object("EntityBlob", {
   get playerDeactivationTimer() {
     return __t.option(TimerComponent);
   },
-  get rngSeed() {
-    return __t.option(RngSeedComponent);
-  },
   get locationMap() {
     return __t.option(LocationMapComponent);
-  },
-  get realizedMap() {
-    return __t.option(MapComponent);
-  },
-  get unrealizedMap() {
-    return __t.option(MapComponent);
   },
   get appearanceFeatures() {
     return __t.option(AppearanceFeaturesComponent);
@@ -296,36 +296,38 @@ export const HpComponent = __t.object("HpComponent", {
 });
 export type HpComponent = __Infer<typeof HpComponent>;
 
+// The tagged union or sum type for the algebraic type `Layout`.
+export const Layout = __t.enum("Layout", {
+  Path: __t.unit(),
+  Hub: __t.unit(),
+});
+export type Layout = __Infer<typeof Layout>;
+
 export const LocationComponent = __t.object("LocationComponent", {
   entityId: __t.u64(),
   locationEntityId: __t.u64(),
 });
 export type LocationComponent = __Infer<typeof LocationComponent>;
 
-export const LocationMapComponent = __t.object("LocationMapComponent", {
-  entityId: __t.u64(),
-  mapEntityId: __t.u64(),
-});
-export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
-
-export const MapComponent = __t.object("MapComponent", {
-  entityId: __t.u64(),
-  mapThemeId: __t.u64(),
-  get mapLayout() {
-    return MapLayout;
+export const LocationMap = __t.object("LocationMap", {
+  id: __t.u32(),
+  name: __t.string(),
+  themeId: __t.u32(),
+  get layout() {
+    return Layout;
   },
+  rngSeed: __t.option(__t.u64()),
   extraRoomCount: __t.u8(),
   mainRoomCount: __t.u8(),
   loopCount: __t.u8(),
 });
-export type MapComponent = __Infer<typeof MapComponent>;
+export type LocationMap = __Infer<typeof LocationMap>;
 
-// The tagged union or sum type for the algebraic type `MapLayout`.
-export const MapLayout = __t.enum("MapLayout", {
-  Path: __t.unit(),
-  Hub: __t.unit(),
+export const LocationMapComponent = __t.object("LocationMapComponent", {
+  entityId: __t.u64(),
+  locationMapEntityId: __t.u64(),
 });
-export type MapLayout = __Infer<typeof MapLayout>;
+export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
 
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),
@@ -344,12 +346,6 @@ export const PlayerControllerComponent = __t.object("PlayerControllerComponent",
   identity: __t.identity(),
 });
 export type PlayerControllerComponent = __Infer<typeof PlayerControllerComponent>;
-
-export const RngSeedComponent = __t.object("RngSeedComponent", {
-  entityId: __t.u64(),
-  rngSeed: __t.u64(),
-});
-export type RngSeedComponent = __Infer<typeof RngSeedComponent>;
 
 export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
   get key() {

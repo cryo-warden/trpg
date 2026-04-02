@@ -28,9 +28,7 @@ import {
   PlayerControllerComponent,
   EntityProminenceComponent,
   TimerComponent,
-  RngSeedComponent,
   LocationMapComponent,
-  MapComponent,
 } from "./types";
 
 
@@ -52,6 +50,12 @@ export default __t.row({
   },
   get traits() {
     return __t.option(TraitsComponent);
+  },
+  get equipmentStatBlockCache() {
+    return __t.option(StatBlockCacheComponent).name("equipment_stat_block_cache");
+  },
+  get statusStatBlockCache() {
+    return __t.option(StatBlockCacheComponent).name("status_stat_block_cache");
   },
   get traitsStatBlockCache() {
     return __t.option(StatBlockCacheComponent).name("traits_stat_block_cache");
@@ -95,17 +99,8 @@ export default __t.row({
   get playerDeactivationTimer() {
     return __t.option(TimerComponent).name("player_deactivation_timer");
   },
-  get rngSeed() {
-    return __t.option(RngSeedComponent).name("rng_seed");
-  },
   get locationMap() {
     return __t.option(LocationMapComponent).name("location_map");
-  },
-  get realizedMap() {
-    return __t.option(MapComponent).name("realized_map");
-  },
-  get unrealizedMap() {
-    return __t.option(MapComponent).name("unrealized_map");
   },
   get appearanceFeatures() {
     return __t.option(AppearanceFeaturesComponent).name("appearance_features");

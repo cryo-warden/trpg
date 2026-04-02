@@ -57,6 +57,7 @@ import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
 import EntityProminenceComponentsRow from "./entity_prominence_components_table";
 import EpComponentsRow from "./ep_components_table";
+import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_components_table";
 import HpComponentsRow from "./hp_components_table";
 import LocationComponentsRow from "./location_components_table";
 import LocationMapComponentsRow from "./location_map_components_table";
@@ -66,14 +67,12 @@ import PathComponentsRow from "./path_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
-import RealizedMapComponentsRow from "./realized_map_components_table";
-import RngSeedComponentsRow from "./rng_seed_components_table";
+import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
 import TraitsRow from "./traits_table";
 import TraitsComponentsRow from "./traits_components_table";
 import TraitsStatBlockCacheComponentsRow from "./traits_stat_block_cache_components_table";
 import TraitsStatBlockDirtyFlagComponentsRow from "./traits_stat_block_dirty_flag_components_table";
-import UnrealizedMapComponentsRow from "./unrealized_map_components_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -277,6 +276,17 @@ const tablesSchema = __schema({
       { name: 'ep_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EpComponentsRow),
+  equipment_stat_block_cache_components: __table({
+    name: 'equipment_stat_block_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equipment_stat_block_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equipment_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquipmentStatBlockCacheComponentsRow),
   hp_components: __table({
     name: 'hp_components',
     indexes: [
@@ -391,28 +401,17 @@ const tablesSchema = __schema({
       { name: 'queued_action_state_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, QueuedActionStateComponentsRow),
-  realized_map_components: __table({
-    name: 'realized_map_components',
+  status_stat_block_cache_components: __table({
+    name: 'status_stat_block_cache_components',
     indexes: [
-      { accessor: 'entity_id', name: 'realized_map_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'status_stat_block_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'realized_map_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'status_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, RealizedMapComponentsRow),
-  rng_seed_components: __table({
-    name: 'rng_seed_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'rng_seed_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'rng_seed_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, RngSeedComponentsRow),
+  }, StatusStatBlockCacheComponentsRow),
   total_stat_block_dirty_flag_components: __table({
     name: 'total_stat_block_dirty_flag_components',
     indexes: [
@@ -472,17 +471,6 @@ const tablesSchema = __schema({
       { name: 'traits_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, TraitsStatBlockDirtyFlagComponentsRow),
-  unrealized_map_components: __table({
-    name: 'unrealized_map_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'unrealized_map_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'unrealized_map_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, UnrealizedMapComponentsRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */

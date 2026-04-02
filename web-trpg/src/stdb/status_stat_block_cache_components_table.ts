@@ -10,17 +10,13 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  MapLayout,
+  StatBlock,
 } from "./types";
 
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  mapThemeId: __t.u64().name("map_theme_id"),
-  get mapLayout() {
-    return MapLayout.name("map_layout");
+  get statBlock() {
+    return StatBlock.name("stat_block");
   },
-  extraRoomCount: __t.u8().name("extra_room_count"),
-  mainRoomCount: __t.u8().name("main_room_count"),
-  loopCount: __t.u8().name("loop_count"),
 });

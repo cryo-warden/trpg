@@ -12,5 +12,5 @@ import {
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  mapEntityId: __t.u64().name("map_entity_id"),
+  locationMapEntityId: __t.u64().name("location_map_entity_id"),
 });

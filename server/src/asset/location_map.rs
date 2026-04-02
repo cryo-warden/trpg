@@ -32,12 +32,12 @@ pub struct MapGenerationResult {
 
 #[allow(dead_code)]
 pub trait LocationMapGenerator {
-    fn generate_location_map(&self, ecs: &Ecs) -> MapGenerationResult;
+    fn generate_location_map(&self, ecs: Ecs) -> MapGenerationResult;
 }
 
 // WIP Create different room-link algorithm for each Layout.
 fn generate_path_layout(
-    ecs: &Ecs,
+    ecs: Ecs,
     mut rng: StdRng,
     location_map_entity_id: u64,
     main_room_count: u8,
@@ -71,9 +71,9 @@ fn generate_path_layout(
 }
 
 impl LocationMapGenerator for LocationMap {
-    fn generate_location_map(&self, ecs: &Ecs) -> MapGenerationResult {
+    fn generate_location_map(&self, ecs: Ecs) -> MapGenerationResult {
         generate_path_layout(
-            &ecs,
+            ecs,
             StdRng::seed_from_u64(self.rng_seed.unwrap_or_default()),
             ecs.new().entity_id(),
             self.main_room_count,

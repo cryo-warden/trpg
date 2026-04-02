@@ -10,6 +10,7 @@ import {
   ActionHotkey,
   AppearanceFeature,
   AppearanceFeatureType,
+  LocationMap,
 } from "../stdb/types";
 import {
   ActionHotkeyAsset,
@@ -18,6 +19,9 @@ import {
   baselines,
   EntityBlobAsset,
   entityBlobs,
+  LocationMapAsset,
+  locationMaps,
+  locationMapThemes,
   newPlayerBlob,
   StatBlockAsset,
   traits,
@@ -158,6 +162,15 @@ const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
   } as EntityBlob;
 };
 
+const getLocationMap = (
+  locationMap: LocationMapAsset,
+  index: number,
+): LocationMap => ({
+  ...locationMap,
+  id: index,
+  themeId: locationMapThemes.findIndex((t) => t.name === locationMap.themeName),
+});
+
 export const init = (connection: DbConnection) => {
   connection.reducers.pushAssets({
     assetPack: {
@@ -168,6 +181,7 @@ export const init = (connection: DbConnection) => {
       actionSteps: getActionSteps(),
       appearanceFeatures: getAppearanceFeatures(),
       instantiateEntityBlobs: entityBlobs.map(getEntityBlob),
+      locationMaps: locationMaps.map(getLocationMap),
     },
   });
 };

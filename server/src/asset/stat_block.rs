@@ -26,7 +26,11 @@ secador::secador_multi!(
                 self.__stat += other.__stat;
                 seca_id_vec!(1);
                 if other.__stat.len() > 0 {
-                    self.__stat.extend(&other.__stat);
+                    for v in &other.__stat {
+                        if !self.__stat.contains(v) {
+                            self.__stat.push(*v);
+                        }
+                    }
                 }
             }
         }

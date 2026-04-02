@@ -1,6 +1,9 @@
 use crate::{
     action::{ActionEffect, ActionHandle},
-    asset::stat_block::{baselines, traits, StatBlock},
+    asset::{
+        location_map::{location_maps, LocationMapGenerator},
+        stat_block::{baselines, traits, StatBlock},
+    },
     entity::*,
     entity_handle_extension::EntityHandleExtension,
     event::{observable_events, EventQueue, EventType, NewEvent},
@@ -187,6 +190,23 @@ pub fn entity_stats_system(ecs: Ecs) {
     }
 }
 
+pub fn player_activation_system(ecs: Ecs) {
+    for p in ecs.iter_player_controller() {
+        // WIP Do NOT add a location if player is inactive. Consider adding a flag when deactivating.
+        if p.location().is_none() {
+            // WIP Add checkpoint component to select a specific location map.
+            if let Some(m) = ecs.db.location_maps().iter().next() {
+                let map_generation_result = m.generate_location_map(ecs);
+                // WIP Add checkpoint location to select a specific room.
+                // WIP Consider adding rng seed to checkpoint to allow same map to regen.
+                if let Some(location_entity_id) = map_generation_result.main_room_ids.first() {
+                    p.insert_new_location(*location_entity_id);
+                }
+            }
+        }
+    }
+}
+
 pub fn execute_all_systems(ecs: Ecs) {
     observation_reset_system(ecs);
     action_system(ecs);
@@ -197,4 +217,5 @@ pub fn execute_all_systems(ecs: Ecs) {
     entity_deletion_timer_system(ecs);
     player_deactivation_timer_system(ecs);
     entity_stats_system(ecs);
+    player_activation_system(ecs);
 }

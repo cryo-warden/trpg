@@ -4,7 +4,10 @@ use spacetimedb::{reducer, table, ReducerContext, SpacetimeType, Table};
 use crate::{
     action::{action_steps, actions, Action, ActionStep},
     appearance::{appearance_features, AppearanceFeature},
-    asset::stat_block::{baselines, traits, Baseline, Trait},
+    asset::{
+        location_map::{location_maps, LocationMap},
+        stat_block::{baselines, traits, Baseline, Trait},
+    },
     entity::{EntityBlob, InstantiateEntityBlob, NewEntityHandle},
 };
 
@@ -32,6 +35,7 @@ struct AssetPack {
     action_steps: Vec<ActionStep>,
     appearance_features: Vec<AppearanceFeature>,
     instantiate_entity_blobs: Vec<EntityBlob>,
+    location_maps: Vec<LocationMap>,
 }
 
 #[reducer]
@@ -61,6 +65,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     }
     for a in asset_pack.appearance_features {
         ctx.db.appearance_features().insert(a);
+    }
+    for l in asset_pack.location_maps {
+        ctx.db.location_maps().insert(l);
     }
     for b in asset_pack.instantiate_entity_blobs {
         ctx.ecs().new().instantiate_blob(b);
