@@ -10,6 +10,9 @@ export type AppearanceFeatureAsset = {
 const NOUN_APPEARANCE_FEATURES = [
   { name: "path", text: "path", priority: 10000 },
   { name: "room", text: "room", priority: 10000 },
+  { name: "rock", text: "rock", priority: 10000 },
+  { name: "stone", text: "stone", priority: 10000 },
+  { name: "boulder", text: "boulder", priority: 10000 },
   { name: "human", text: "human", priority: -100 },
   { name: "slime", text: "slime", priority: 100 },
 ] as const;
@@ -27,13 +30,13 @@ export const APPEARANCE_FEATURES = [
       ({
         ...af,
         type: "noun",
-      } as const)
+      }) as const,
   ),
   ...ADJECTIVE_APPEARANCE_FEATURES.map(
     (af) =>
       ({
         ...af,
         type: "adjective",
-      } as const)
+      }) as const,
   ),
 ] as const satisfies readonly AppearanceFeatureAsset[];

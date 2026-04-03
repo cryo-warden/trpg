@@ -131,11 +131,14 @@ export const AssetPack = __t.object("AssetPack", {
   get appearanceFeatures() {
     return __t.array(AppearanceFeature);
   },
-  get instantiateEntityBlobs() {
-    return __t.array(EntityBlob);
+  get locationMapThemes() {
+    return __t.array(LocationMapTheme);
   },
   get locationMaps() {
     return __t.array(LocationMap);
+  },
+  get instantiateEntityBlobs() {
+    return __t.array(EntityBlob);
   },
 });
 export type AssetPack = __Infer<typeof AssetPack>;
@@ -166,6 +169,14 @@ export const Buff = __t.enum("Buff", {
   Guard: __t.i32(),
 });
 export type Buff = __Infer<typeof Buff>;
+
+export const Decoration = __t.object("Decoration", {
+  weight: __t.u8(),
+  get blob() {
+    return EntityBlob;
+  },
+});
+export type Decoration = __Infer<typeof Decoration>;
 
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
@@ -328,6 +339,16 @@ export const LocationMapComponent = __t.object("LocationMapComponent", {
   locationMapEntityId: __t.u64(),
 });
 export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
+
+export const LocationMapTheme = __t.object("LocationMapTheme", {
+  id: __t.u32(),
+  get decorations() {
+    return __t.array(Decoration);
+  },
+  minDecorationCount: __t.u8(),
+  maxDecorationCount: __t.u8(),
+});
+export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),

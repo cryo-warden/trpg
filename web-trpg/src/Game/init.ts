@@ -6,26 +6,22 @@ import {
   type Trait,
   type StatBlock,
   type ActionStep,
-  type EntityBlob,
-  ActionHotkey,
   AppearanceFeature,
   AppearanceFeatureType,
-  LocationMap,
 } from "../stdb/types";
 import {
-  ActionHotkeyAsset,
   actions,
   appearanceFeatures,
   baselines,
-  EntityBlobAsset,
   entityBlobs,
-  LocationMapAsset,
   locationMaps,
   locationMapThemes,
   newPlayerBlob,
   StatBlockAsset,
   traits,
 } from "./assets";
+import { getEntityBlob } from "./assets/entity_blobs";
+import { getLocationMaps, getLocationMapThemes } from "./assets/location_maps";
 
 const assetToStatBlock = (asset: StatBlockAsset): StatBlock => {
   return {
@@ -118,59 +114,6 @@ const getTraits = () =>
     } as Trait;
   });
 
-const getActionHotkeys = (
-  actionHotkeyAssets: ActionHotkeyAsset[],
-): ActionHotkey[] =>
-  actionHotkeyAssets.map(
-    (aha) =>
-      ({
-        actionId: actions.findIndex((a) => a.name === aha.actionName),
-        characterCode: aha.hotkey.charCodeAt(0),
-      }) as ActionHotkey,
-  );
-
-const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
-  return {
-    baseline: entityBlobAsset.baseline
-      ? {
-          entityId: 0n,
-          baselineId: baselines.findIndex(
-            (b) => b.name === entityBlobAsset.baseline,
-          ),
-        }
-      : undefined,
-    traits: entityBlobAsset.traits
-      ? {
-          entityId: 0n,
-          traitIds: (entityBlobAsset.traits ?? []).map((name) =>
-            traits.findIndex((t) => t.name === name),
-          ),
-        }
-      : undefined,
-    actionHotkeys: entityBlobAsset.actionHotkeys
-      ? {
-          entityId: 0n,
-          actionHotkeys: getActionHotkeys(entityBlobAsset.actionHotkeys),
-        }
-      : undefined,
-    name: entityBlobAsset.name
-      ? {
-          entityId: 0n,
-          name: entityBlobAsset.name,
-        }
-      : undefined,
-  } as EntityBlob;
-};
-
-const getLocationMap = (
-  locationMap: LocationMapAsset,
-  index: number,
-): LocationMap => ({
-  ...locationMap,
-  id: index,
-  themeId: locationMapThemes.findIndex((t) => t.name === locationMap.themeName),
-});
-
 export const init = (connection: DbConnection) => {
   connection.reducers.pushAssets({
     assetPack: {
@@ -180,8 +123,9 @@ export const init = (connection: DbConnection) => {
       actions: getActions(),
       actionSteps: getActionSteps(),
       appearanceFeatures: getAppearanceFeatures(),
+      locationMapThemes: getLocationMapThemes(locationMapThemes),
+      locationMaps: getLocationMaps(locationMaps),
       instantiateEntityBlobs: entityBlobs.map(getEntityBlob),
-      locationMaps: locationMaps.map(getLocationMap),
     },
   });
 };

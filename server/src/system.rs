@@ -1,7 +1,7 @@
 use crate::{
     action::{ActionEffect, ActionHandle},
     asset::{
-        location_map::{location_maps, LocationMapGenerator},
+        location_map::location_maps,
         stat_block::{baselines, traits, StatBlock},
     },
     entity::*,
@@ -196,7 +196,7 @@ pub fn player_activation_system(ecs: Ecs) {
         if p.location().is_none() {
             // WIP Add checkpoint component to select a specific location map.
             if let Some(m) = ecs.db.location_maps().iter().next() {
-                let map_generation_result = m.generate_location_map(ecs);
+                let map_generation_result = m.generate_entities(ecs);
                 // WIP Add checkpoint location to select a specific room.
                 // WIP Consider adding rng seed to checkpoint to allow same map to regen.
                 if let Some(location_entity_id) = map_generation_result.main_room_ids.first() {

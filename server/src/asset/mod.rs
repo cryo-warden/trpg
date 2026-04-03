@@ -5,7 +5,7 @@ use crate::{
     action::{action_steps, actions, Action, ActionStep},
     appearance::{appearance_features, AppearanceFeature},
     asset::{
-        location_map::{location_maps, LocationMap},
+        location_map::{location_map_themes, location_maps, LocationMap, LocationMapTheme},
         stat_block::{baselines, traits, Baseline, Trait},
     },
     entity::{EntityBlob, InstantiateEntityBlob, NewEntityHandle},
@@ -34,8 +34,9 @@ struct AssetPack {
     actions: Vec<Action>,
     action_steps: Vec<ActionStep>,
     appearance_features: Vec<AppearanceFeature>,
-    instantiate_entity_blobs: Vec<EntityBlob>,
+    location_map_themes: Vec<LocationMapTheme>,
     location_maps: Vec<LocationMap>,
+    instantiate_entity_blobs: Vec<EntityBlob>,
 }
 
 #[reducer]
@@ -65,6 +66,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     }
     for a in asset_pack.appearance_features {
         ctx.db.appearance_features().insert(a);
+    }
+    for t in asset_pack.location_map_themes {
+        ctx.db.location_map_themes().insert(t);
     }
     for l in asset_pack.location_maps {
         ctx.db.location_maps().insert(l);
