@@ -49,8 +49,9 @@ impl ToTokens for WithComponentStruct {
         } = &self.instantiate_entity_blob_trait;
         tokens.extend(quote! {
           impl<T: #instantiate_entity_blob_trait> #instantiate_entity_blob_trait for #with_component_struct<T> {
-              fn instantiate_blob(&self, blob: #entity_blob_struct) {
-                self.value.instantiate_blob(blob)
+              fn instantiate_blob(mut self, blob: #entity_blob_struct) -> Self {
+                self.value = self.value.instantiate_blob(blob);
+                self
               }
           }
         });
@@ -116,8 +117,9 @@ impl ToTokens for EntityHandleStruct {
         } = entity_blob_struct;
         tokens.extend(quote! {
           impl<'a> #instantiate_entity_blob_trait for #entity_handle_struct<'a> {
-              fn instantiate_blob(&self, blob: #entity_blob_struct) {
+              fn instantiate_blob(self, blob: #entity_blob_struct) -> Self {
                   #(#upsert_components;)*
+                  self
               }
           }
         });

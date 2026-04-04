@@ -17,10 +17,9 @@ pub trait EntityHandleExtension {
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
     fn shift_queued_action_state(self) -> Self;
     fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool;
-    fn instantiate_blob_dirty(self, blob: EntityBlob) -> Self;
 }
 
-impl<'a, T: WithEntityHandle<'a>> EntityHandleExtension for T {
+impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension for T {
     fn apply_stat_block(self, stat_block: StatBlock) -> Self {
         self.to_handle()
             .clone()
@@ -159,12 +158,19 @@ impl<'a, T: WithEntityHandle<'a>> EntityHandleExtension for T {
             false
         }
     }
+}
 
+pub trait InstantiateEntityBlobExtension {
+    fn instantiate_blob_dirty(self, blob: EntityBlob) -> Self;
+}
+
+impl<'a, T: WithEntityHandle<'a> + EntityHandleExtension + InstantiateEntityBlob>
+    InstantiateEntityBlobExtension for T
+{
     fn instantiate_blob_dirty(self, blob: EntityBlob) -> Self {
         let e = self.to_handle();
-        e.instantiate_blob(blob);
         e.insert_new_traits_stat_block_dirty_flag();
         e.insert_new_total_stat_block_dirty_flag();
-        self
+        self.instantiate_blob(blob)
     }
 }

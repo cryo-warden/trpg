@@ -44,6 +44,8 @@ pub struct LocationMapTheme {
     pub decorations_selector: WeightedSelector<EntityBlob>,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,
+    pub paths_selector: WeightedSelector<EntityBlob>,
+    pub rooms_selector: WeightedSelector<EntityBlob>,
 }
 
 impl LocationMapTheme {
@@ -53,11 +55,11 @@ impl LocationMapTheme {
             + self.min_decoration_count as u32;
 
         for _ in 0..decoration_count {
-            let e = room.ecs().new();
-            // WIP Sample decoration by weight.
-            let b = self.decorations_selector.sample(rng).to_owned();
-            e.instantiate_blob(b);
-            e.insert_new_location(room.entity_id());
+            let d = self.decorations_selector.sample(rng);
+            room.ecs()
+                .new()
+                .instantiate_blob(d.to_owned())
+                .insert_new_location(room.entity_id());
         }
     }
 }
@@ -113,23 +115,25 @@ impl LocationMap {
 
         let room_handles: Vec<EntityHandle> = (0..total_room_count)
             .map(|_| {
-                ecs // WIP Use entity blobs to initialize rooms and paths.
-                    .new_room(vec![], location_map_entity_id)
+                let r = theme.rooms_selector.sample(&mut rng);
+                ecs.new_room(r.to_owned(), location_map_entity_id)
             })
             .collect();
 
         for i in 0..(main_room_count as usize - 1) {
             let a = &room_handles[i];
             let b = &room_handles[i + 1];
-            ecs.new_path(vec![], a.entity_id(), b.entity_id());
-            ecs.new_path(vec![], b.entity_id(), a.entity_id());
+            let p = theme.paths_selector.sample(&mut rng);
+            ecs.new_path(p.to_owned(), a.entity_id(), b.entity_id());
+            ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
         }
 
         for i in (main_room_count as u32)..(total_room_count as u32) {
             let a = &room_handles[i as usize];
             let b = &room_handles[(rng.next_u32() % i) as usize];
-            ecs.new_path(vec![], a.entity_id(), b.entity_id());
-            ecs.new_path(vec![], b.entity_id(), a.entity_id());
+            let p = theme.paths_selector.sample(&mut rng);
+            ecs.new_path(p.to_owned(), a.entity_id(), b.entity_id());
+            ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
         }
 
         // Decorate after other steps so that decoration changes do not impact rng.

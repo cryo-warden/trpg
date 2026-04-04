@@ -7,16 +7,35 @@ import {
 } from "../../stdb/types";
 import { EntityBlobAsset, getEntityBlob } from "./entity_blobs";
 
-export type WeightedSelection<T> = {
+export type WeightedSelectionAsset<T> = {
   value: T;
 } & Omit<FixedWeightedSelection, "value">;
 
-export type WeightedSelector<T> = WeightedSelection<T>[];
+export type WeightedSelectorAsset<T> = WeightedSelectionAsset<T>[];
+
+export const getWeightedSelector = <T, R>(
+  asset: WeightedSelectorAsset<T>,
+  mapValue: (v: T) => R,
+): { selections: { weight: number; value: R }[] } => {
+  return {
+    selections: asset.map((d) => {
+      return {
+        ...d,
+        value: mapValue(d.value),
+      };
+    }),
+  };
+};
 
 export type LocationMapThemeAsset = {
   name: string;
-  decorations: WeightedSelection<EntityBlobAsset>[];
-} & Omit<LocationMapTheme, "id" | "decorationsSelector">;
+  decorations: WeightedSelectionAsset<EntityBlobAsset>[];
+  paths: WeightedSelectionAsset<EntityBlobAsset>[];
+  rooms: WeightedSelectionAsset<EntityBlobAsset>[];
+} & Omit<
+  LocationMapTheme,
+  "id" | "decorationsSelector" | "pathsSelector" | "roomsSelector"
+>;
 
 export type LocationMapAsset = { themeName: string } & Omit<
   LocationMap,
@@ -33,6 +52,17 @@ export const LOCATION_MAP_THEMES = [
     ],
     minDecorationCount: 2,
     maxDecorationCount: 4,
+    paths: [
+      { weight: 5, value: { appearanceFeatureNames: ["opening"] } },
+      { weight: 4, value: { appearanceFeatureNames: ["hole"] } },
+      { weight: 2, value: { appearanceFeatureNames: ["chasm"] } },
+      { weight: 2, value: { appearanceFeatureNames: ["crack"] } },
+    ],
+    rooms: [
+      { weight: 5, value: { appearanceFeatureNames: ["chamber"] } },
+      { weight: 4, value: { appearanceFeatureNames: ["dome"] } },
+      { weight: 2, value: { appearanceFeatureNames: ["cavern"] } },
+    ],
   },
 ] as const satisfies readonly LocationMapThemeAsset[];
 
@@ -54,14 +84,9 @@ export const getLocationMapThemes = (
   assets.map((asset, id) => ({
     ...asset,
     id,
-    decorationsSelector: {
-      selections: asset.decorations.map((d) => {
-        return {
-          ...d,
-          value: getEntityBlob(d.value),
-        };
-      }),
-    },
+    decorationsSelector: getWeightedSelector(asset.decorations, getEntityBlob),
+    pathsSelector: getWeightedSelector(asset.paths, getEntityBlob),
+    roomsSelector: getWeightedSelector(asset.rooms, getEntityBlob),
   }));
 
 export const getLocationMaps = (

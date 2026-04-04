@@ -1,18 +1,15 @@
 use crate::{
-    asset::ReducerContextExtension, entity::*, entity_handle_extension::EntityHandleExtension,
+    asset::ReducerContextExtension, entity::*,
+    entity_handle_extension::InstantiateEntityBlobExtension,
 };
 use ecs::Ecs;
 use spacetimedb::Identity;
 
 pub trait EcsExtension<'a> {
-    fn new_room(
-        self,
-        appearance_feature_indexes: Vec<u32>,
-        location_map_entity_id: u64,
-    ) -> EntityHandle<'a>;
+    fn new_room(self, blob: EntityBlob, location_map_entity_id: u64) -> EntityHandle<'a>;
     fn new_path(
         self,
-        appearance_feature_indexes: Vec<u32>,
+        blob: EntityBlob,
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> EntityHandle<'a>;
@@ -28,24 +25,20 @@ pub trait EcsExtension<'a> {
 }
 
 impl<'a> EcsExtension<'a> for Ecs<'a> {
-    fn new_room(
-        self,
-        appearance_feature_indexes: Vec<u32>,
-        location_map_entity_id: u64,
-    ) -> EntityHandle<'a> {
+    fn new_room(self, blob: EntityBlob, location_map_entity_id: u64) -> EntityHandle<'a> {
         self.new()
-            .upsert_new_appearance_features(appearance_feature_indexes)
+            .instantiate_blob(blob)
             .upsert_new_location_map(location_map_entity_id)
             .into_handle()
     }
     fn new_path(
         self,
-        appearance_feature_indexes: Vec<u32>,
+        blob: EntityBlob,
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> EntityHandle<'a> {
         self.new()
-            .upsert_new_appearance_features(appearance_feature_indexes)
+            .instantiate_blob(blob)
             .upsert_new_location(location_entity_id)
             .upsert_new_path(destination_entity_id)
             .into_handle()

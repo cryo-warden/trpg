@@ -29,7 +29,7 @@ impl ToTokens for InstantiateEntityBlobTrait {
         } = self;
         tokens.extend(quote! {
           pub trait #instantiate_entity_blob_trait {
-              fn instantiate_blob(&self, blob: #entity_blob_struct);
+              fn instantiate_blob(self, blob: #entity_blob_struct) -> Self;
           }
         })
     }

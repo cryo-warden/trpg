@@ -339,6 +339,12 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
   },
   minDecorationCount: __t.u8(),
   maxDecorationCount: __t.u8(),
+  get pathsSelector() {
+    return WeightedSelector;
+  },
+  get roomsSelector() {
+    return WeightedSelector;
+  },
 });
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 
