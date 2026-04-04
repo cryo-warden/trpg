@@ -1,21 +1,22 @@
 import { locationMapThemes } from ".";
 import {
-  Decoration,
   Layout,
   LocationMap,
   LocationMapTheme,
+  WeightedSelection as FixedWeightedSelection,
 } from "../../stdb/types";
 import { EntityBlobAsset, getEntityBlob } from "./entity_blobs";
 
-export type DecorationAsset = { blob: EntityBlobAsset } & Omit<
-  Decoration,
-  "blob"
->;
+export type WeightedSelection<T> = {
+  value: T;
+} & Omit<FixedWeightedSelection, "value">;
+
+export type WeightedSelector<T> = WeightedSelection<T>[];
 
 export type LocationMapThemeAsset = {
   name: string;
-  decorations: DecorationAsset[];
-} & Omit<LocationMapTheme, "id" | "decorations">;
+  decorations: WeightedSelection<EntityBlobAsset>[];
+} & Omit<LocationMapTheme, "id" | "decorationsSelector">;
 
 export type LocationMapAsset = { themeName: string } & Omit<
   LocationMap,
@@ -26,9 +27,9 @@ export const LOCATION_MAP_THEMES = [
   {
     name: "cave",
     decorations: [
-      { weight: 5, blob: { appearanceFeatureNames: ["rock"] } },
-      { weight: 4, blob: { appearanceFeatureNames: ["stone"] } },
-      { weight: 2, blob: { appearanceFeatureNames: ["boulder"] } },
+      { weight: 5, value: { appearanceFeatureNames: ["rock"] } },
+      { weight: 4, value: { appearanceFeatureNames: ["stone"] } },
+      { weight: 2, value: { appearanceFeatureNames: ["boulder"] } },
     ],
     minDecorationCount: 2,
     maxDecorationCount: 4,
@@ -53,12 +54,14 @@ export const getLocationMapThemes = (
   assets.map((asset, id) => ({
     ...asset,
     id,
-    decorations: asset.decorations.map((d) => {
-      return {
-        ...d,
-        blob: getEntityBlob(d.blob),
-      };
-    }),
+    decorationsSelector: {
+      selections: asset.decorations.map((d) => {
+        return {
+          ...d,
+          value: getEntityBlob(d.value),
+        };
+      }),
+    },
   }));
 
 export const getLocationMaps = (

@@ -170,14 +170,6 @@ export const Buff = __t.enum("Buff", {
 });
 export type Buff = __Infer<typeof Buff>;
 
-export const Decoration = __t.object("Decoration", {
-  weight: __t.u8(),
-  get blob() {
-    return EntityBlob;
-  },
-});
-export type Decoration = __Infer<typeof Decoration>;
-
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
 });
@@ -342,8 +334,8 @@ export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
 
 export const LocationMapTheme = __t.object("LocationMapTheme", {
   id: __t.u32(),
-  get decorations() {
-    return __t.array(Decoration);
+  get decorationsSelector() {
+    return WeightedSelector;
   },
   minDecorationCount: __t.u8(),
   maxDecorationCount: __t.u8(),
@@ -428,4 +420,19 @@ export const TraitsComponent = __t.object("TraitsComponent", {
   traitIds: __t.array(__t.u32()),
 });
 export type TraitsComponent = __Infer<typeof TraitsComponent>;
+
+export const WeightedSelection = __t.object("WeightedSelection", {
+  weight: __t.u8(),
+  get value() {
+    return EntityBlob;
+  },
+});
+export type WeightedSelection = __Infer<typeof WeightedSelection>;
+
+export const WeightedSelector = __t.object("WeightedSelector", {
+  get selections() {
+    return __t.array(WeightedSelection);
+  },
+});
+export type WeightedSelector = __Infer<typeof WeightedSelector>;
 

@@ -6,22 +6,42 @@ use spacetimedb::{
 };
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub enum Layout {
-    Path,
-    Hub,
+pub struct WeightedSelection<T: SpacetimeType> {
+    pub weight: u8,
+    pub value: T,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct Decoration {
-    pub weight: u8,
-    pub blob: EntityBlob,
+pub struct WeightedSelector<T: SpacetimeType> {
+    selections: Vec<WeightedSelection<T>>,
+}
+
+impl<T: SpacetimeType> WeightedSelector<T> {
+    pub fn sample(&self, rng: &mut StdRng) -> &T {
+        let total_weight = self.selections.iter().map(|v| v.weight as u32).sum::<u32>();
+        let index = rng.next_u32() % total_weight;
+        let mut running_total = 0;
+        for s in &self.selections {
+            running_total += s.weight;
+            if running_total as u32 >= index {
+                return &s.value;
+            }
+        }
+        panic!("Invalid weighted selection.");
+    }
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum Layout {
+    Path,
+    Hub,
 }
 
 #[table(accessor = location_map_themes)]
 pub struct LocationMapTheme {
     #[primary_key]
     pub id: u32,
-    pub decorations: Vec<Decoration>,
+    pub decorations_selector: WeightedSelector<EntityBlob>,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,
 }
@@ -35,8 +55,8 @@ impl LocationMapTheme {
         for _ in 0..decoration_count {
             let e = room.ecs().new();
             // WIP Sample decoration by weight.
-            let d = self.decorations[0].to_owned();
-            e.instantiate_blob(d.blob);
+            let b = self.decorations_selector.sample(rng).to_owned();
+            e.instantiate_blob(b);
             e.insert_new_location(room.entity_id());
         }
     }
