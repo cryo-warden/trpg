@@ -5,14 +5,21 @@ use crate::{
     action::{action_steps, actions, Action, ActionStep},
     appearance::{appearance_features, AppearanceFeature},
     asset::{
-        location_map::{location_map_themes, location_maps, LocationMap, LocationMapTheme},
-        stat_block::{baselines, traits, Baseline, Trait},
+        baseline::{baselines, Baseline},
+        location_map::{location_maps, LocationMap},
+        location_map_theme::{location_map_themes, LocationMapTheme},
+        r#trait::{traits, Trait},
     },
     entity::{EntityBlob, InstantiateEntityBlob, NewEntityHandle},
 };
 
+pub mod baseline;
+pub mod encounter;
 pub mod location_map;
+pub mod location_map_theme;
 pub mod stat_block;
+pub mod r#trait;
+pub mod weighted_selector;
 
 #[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
 pub enum SpecialEntityBlobKey {
@@ -28,15 +35,18 @@ struct SpecialEntityBlob {
 
 #[derive(SpacetimeType)]
 struct AssetPack {
-    new_player_blob: EntityBlob,
-    baselines: Vec<Baseline>,
-    traits: Vec<Trait>,
     actions: Vec<Action>,
     action_steps: Vec<ActionStep>,
     appearance_features: Vec<AppearanceFeature>,
+
+    baselines: Vec<Baseline>,
+    traits: Vec<Trait>,
+
     location_map_themes: Vec<LocationMapTheme>,
     location_maps: Vec<LocationMap>,
     instantiate_entity_blobs: Vec<EntityBlob>,
+
+    new_player_blob: EntityBlob,
 }
 
 #[reducer]
@@ -48,16 +58,6 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         return Ok(());
     }
 
-    ctx.db.special_entity_blobs().insert(SpecialEntityBlob {
-        key: SpecialEntityBlobKey::NewPlayer,
-        blob: asset_pack.new_player_blob,
-    });
-    for b in asset_pack.baselines {
-        ctx.db.baselines().insert(b);
-    }
-    for t in asset_pack.traits {
-        ctx.db.traits().insert(t);
-    }
     for a in asset_pack.actions {
         ctx.db.actions().insert(a);
     }
@@ -67,6 +67,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     for a in asset_pack.appearance_features {
         ctx.db.appearance_features().insert(a);
     }
+
+    for b in asset_pack.baselines {
+        ctx.db.baselines().insert(b);
+    }
+    for t in asset_pack.traits {
+        ctx.db.traits().insert(t);
+    }
+
     for t in asset_pack.location_map_themes {
         ctx.db.location_map_themes().insert(t);
     }
@@ -76,6 +84,12 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     for b in asset_pack.instantiate_entity_blobs {
         ctx.ecs().new().instantiate_blob(b);
     }
+
+    ctx.db.special_entity_blobs().insert(SpecialEntityBlob {
+        key: SpecialEntityBlobKey::NewPlayer,
+        blob: asset_pack.new_player_blob,
+    });
+
     Ok(())
 }
 

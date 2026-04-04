@@ -113,15 +113,6 @@ export const AppearanceFeaturesComponent = __t.object("AppearanceFeaturesCompone
 export type AppearanceFeaturesComponent = __Infer<typeof AppearanceFeaturesComponent>;
 
 export const AssetPack = __t.object("AssetPack", {
-  get newPlayerBlob() {
-    return EntityBlob;
-  },
-  get baselines() {
-    return __t.array(Baseline);
-  },
-  get traits() {
-    return __t.array(Trait);
-  },
   get actions() {
     return __t.array(Action);
   },
@@ -131,6 +122,12 @@ export const AssetPack = __t.object("AssetPack", {
   get appearanceFeatures() {
     return __t.array(AppearanceFeature);
   },
+  get baselines() {
+    return __t.array(Baseline);
+  },
+  get traits() {
+    return __t.array(Trait);
+  },
   get locationMapThemes() {
     return __t.array(LocationMapTheme);
   },
@@ -139,6 +136,9 @@ export const AssetPack = __t.object("AssetPack", {
   },
   get instantiateEntityBlobs() {
     return __t.array(EntityBlob);
+  },
+  get newPlayerBlob() {
+    return EntityBlob;
   },
 });
 export type AssetPack = __Infer<typeof AssetPack>;
@@ -169,6 +169,20 @@ export const Buff = __t.enum("Buff", {
   Guard: __t.i32(),
 });
 export type Buff = __Infer<typeof Buff>;
+
+export const Encounter = __t.object("Encounter", {
+  id: __t.u32(),
+  blobIds: __t.array(__t.u32()),
+});
+export type Encounter = __Infer<typeof Encounter>;
+
+export const EncounterBlob = __t.object("EncounterBlob", {
+  id: __t.u32(),
+  get blob() {
+    return EntityBlob;
+  },
+});
+export type EncounterBlob = __Infer<typeof EncounterBlob>;
 
 export const Entity = __t.object("Entity", {
   id: __t.u64(),

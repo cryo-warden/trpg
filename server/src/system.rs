@@ -1,8 +1,7 @@
 use crate::{
     action::{ActionEffect, ActionHandle},
     asset::{
-        location_map::location_maps,
-        stat_block::{baselines, traits, StatBlock},
+        baseline::baselines, location_map::location_maps, r#trait::traits, stat_block::StatBlock,
     },
     entity::*,
     entity_handle_extension::EntityHandleExtension,

@@ -1,4 +1,6 @@
-use crate::{ecs_extension::EcsExtension, entity::*};
+use crate::{
+    asset::location_map_theme::location_map_themes, ecs_extension::EcsExtension, entity::*,
+};
 use ecs::Ecs;
 use spacetimedb::{
     rand::{rngs::StdRng, RngCore, SeedableRng},
@@ -6,62 +8,9 @@ use spacetimedb::{
 };
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct WeightedSelection<T: SpacetimeType> {
-    pub weight: u8,
-    pub value: T,
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct WeightedSelector<T: SpacetimeType> {
-    selections: Vec<WeightedSelection<T>>,
-}
-
-impl<T: SpacetimeType> WeightedSelector<T> {
-    pub fn sample(&self, rng: &mut StdRng) -> &T {
-        let total_weight = self.selections.iter().map(|v| v.weight as u32).sum::<u32>();
-        let index = rng.next_u32() % total_weight;
-        let mut running_total = 0;
-        for s in &self.selections {
-            running_total += s.weight;
-            if running_total as u32 >= index {
-                return &s.value;
-            }
-        }
-        panic!("Invalid weighted selection.");
-    }
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
 pub enum Layout {
     Path,
     Hub,
-}
-
-#[table(accessor = location_map_themes)]
-pub struct LocationMapTheme {
-    #[primary_key]
-    pub id: u32,
-    pub decorations_selector: WeightedSelector<EntityBlob>,
-    pub min_decoration_count: u8,
-    pub max_decoration_count: u8,
-    pub paths_selector: WeightedSelector<EntityBlob>,
-    pub rooms_selector: WeightedSelector<EntityBlob>,
-}
-
-impl LocationMapTheme {
-    fn decorate(&self, room: &EntityHandle, rng: &mut StdRng) {
-        let decoration_count = rng.next_u32()
-            % (self.max_decoration_count - self.min_decoration_count) as u32
-            + self.min_decoration_count as u32;
-
-        for _ in 0..decoration_count {
-            let d = self.decorations_selector.sample(rng);
-            room.ecs()
-                .new()
-                .instantiate_blob(d.to_owned())
-                .insert_new_location(room.entity_id());
-        }
-    }
 }
 
 #[table(accessor = location_maps)]
