@@ -30,13 +30,6 @@ export type EntityBlobAsset = Simplify<
 export const ENTITY_BLOBS = [
   { name: "allegiance1" },
   { name: "allegiance2" },
-  { name: "room1" },
-  { name: "room2" },
-  { baseline: "slime" },
-  { baseline: "slime" },
-  { baseline: "slime" },
-  { baseline: "slime", traits: ["small"] },
-  { baseline: "slime", traits: ["big"] },
 ] as const satisfies readonly EntityBlobAsset[];
 
 export const NEW_PLAYER_BLOB = {

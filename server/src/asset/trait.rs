@@ -2,7 +2,7 @@ use spacetimedb::table;
 
 use crate::asset::stat_block::StatBlock;
 
-#[table(accessor = traits, public)]
+#[table(accessor = traits)]
 #[derive(Debug, Clone)]
 pub struct Trait {
     #[primary_key]

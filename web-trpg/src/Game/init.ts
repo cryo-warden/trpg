@@ -20,6 +20,7 @@ import {
   StatBlockAsset,
   traits,
 } from "./assets";
+import { getEncounterBlobs, getEncounters } from "./assets/encounters";
 import { getEntityBlob } from "./assets/entity_blobs";
 import { getLocationMaps, getLocationMapThemes } from "./assets/location_maps";
 
@@ -117,15 +118,21 @@ const getTraits = () =>
 export const init = (connection: DbConnection) => {
   connection.reducers.pushAssets({
     assetPack: {
-      newPlayerBlob: getEntityBlob(newPlayerBlob),
-      baselines: getBaselines(),
-      traits: getTraits(),
       actions: getActions(),
       actionSteps: getActionSteps(),
       appearanceFeatures: getAppearanceFeatures(),
+
+      baselines: getBaselines(),
+      traits: getTraits(),
+
+      encounterBlobs: getEncounterBlobs(),
+      encounters: getEncounters(),
+
       locationMapThemes: getLocationMapThemes(locationMapThemes),
       locationMaps: getLocationMaps(locationMaps),
       instantiateEntityBlobs: entityBlobs.map(getEntityBlob),
+
+      newPlayerBlob: getEntityBlob(newPlayerBlob),
     },
   });
 };

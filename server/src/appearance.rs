@@ -7,8 +7,8 @@ pub enum AppearanceFeatureType {
 }
 
 // appearance_features represents the canonical features used to assign IDs to StatBlocks.
-#[table(accessor = appearance_features, public)]
-#[table(accessor = en_appearance_features, public)]
+#[table(accessor = appearance_features)]
+#[table(accessor = en_appearance_features)]
 #[derive(Debug, Clone)]
 pub struct AppearanceFeature {
     #[primary_key]

@@ -10,6 +10,7 @@ export type AppearanceFeatureAsset = {
 const NOUN_APPEARANCE_FEATURES = [
   { name: "human", text: "human", priority: -100 },
   { name: "slime", text: "slime", priority: 100 },
+  { name: "bat", text: "slime", priority: 100 },
   { name: "path", text: "path", priority: 10000 },
   { name: "rock", text: "rock", priority: 10000 },
   { name: "stone", text: "stone", priority: 10000 },

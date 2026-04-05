@@ -2,7 +2,7 @@ use spacetimedb::table;
 
 use crate::asset::stat_block::StatBlock;
 
-#[table(accessor = baselines, public)]
+#[table(accessor = baselines)]
 #[derive(Debug, Clone)]
 pub struct Baseline {
     #[primary_key]

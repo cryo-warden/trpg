@@ -46,12 +46,9 @@ import ActionStepsRow from "./action_steps_table";
 import ActionsRow from "./actions_table";
 import ActionsComponentsRow from "./actions_components_table";
 import AllegianceComponentsRow from "./allegiance_components_table";
-import AppearanceFeaturesRow from "./appearance_features_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
-import BaselinesRow from "./baselines_table";
-import EnAppearanceFeaturesRow from "./en_appearance_features_table";
 import EntitiesRow from "./entities_table";
 import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
@@ -69,7 +66,6 @@ import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_co
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
-import TraitsRow from "./traits_table";
 import TraitsComponentsRow from "./traits_components_table";
 import TraitsStatBlockCacheComponentsRow from "./traits_stat_block_cache_components_table";
 import TraitsStatBlockDirtyFlagComponentsRow from "./traits_stat_block_dirty_flag_components_table";
@@ -155,17 +151,6 @@ const tablesSchema = __schema({
       { name: 'allegiance_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, AllegianceComponentsRow),
-  appearance_features: __table({
-    name: 'appearance_features',
-    indexes: [
-      { accessor: 'index', name: 'appearance_features_index_idx_btree', algorithm: 'btree', columns: [
-        'index',
-      ] },
-    ],
-    constraints: [
-      { name: 'appearance_features_index_key', constraint: 'unique', columns: ['index'] },
-    ],
-  }, AppearanceFeaturesRow),
   appearance_features_components: __table({
     name: 'appearance_features_components',
     indexes: [
@@ -199,32 +184,6 @@ const tablesSchema = __schema({
       { name: 'baseline_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, BaselineComponentsRow),
-  baselines: __table({
-    name: 'baselines',
-    indexes: [
-      { accessor: 'id', name: 'baselines_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'name', name: 'baselines_name_idx_btree', algorithm: 'btree', columns: [
-        'name',
-      ] },
-    ],
-    constraints: [
-      { name: 'baselines_id_key', constraint: 'unique', columns: ['id'] },
-      { name: 'baselines_name_key', constraint: 'unique', columns: ['name'] },
-    ],
-  }, BaselinesRow),
-  en_appearance_features: __table({
-    name: 'en_appearance_features',
-    indexes: [
-      { accessor: 'index', name: 'en_appearance_features_index_idx_btree', algorithm: 'btree', columns: [
-        'index',
-      ] },
-    ],
-    constraints: [
-      { name: 'en_appearance_features_index_key', constraint: 'unique', columns: ['index'] },
-    ],
-  }, EnAppearanceFeaturesRow),
   entities: __table({
     name: 'entities',
     indexes: [
@@ -423,21 +382,6 @@ const tablesSchema = __schema({
       { name: 'total_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, TotalStatBlockDirtyFlagComponentsRow),
-  traits: __table({
-    name: 'traits',
-    indexes: [
-      { accessor: 'id', name: 'traits_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'name', name: 'traits_name_idx_btree', algorithm: 'btree', columns: [
-        'name',
-      ] },
-    ],
-    constraints: [
-      { name: 'traits_id_key', constraint: 'unique', columns: ['id'] },
-      { name: 'traits_name_key', constraint: 'unique', columns: ['name'] },
-    ],
-  }, TraitsRow),
   traits_components: __table({
     name: 'traits_components',
     indexes: [

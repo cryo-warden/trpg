@@ -77,6 +77,11 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     }
 
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
+        log::debug!(
+            "Setting appearance feature IDs for {}: {:?}",
+            self.to_handle().entity_id(),
+            appearance_feature_ids
+        );
         self.to_handle()
             .clone()
             .upsert_new_appearance_features(appearance_feature_ids);

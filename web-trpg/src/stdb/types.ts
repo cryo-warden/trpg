@@ -128,6 +128,12 @@ export const AssetPack = __t.object("AssetPack", {
   get traits() {
     return __t.array(Trait);
   },
+  get encounterBlobs() {
+    return __t.array(EncounterBlob);
+  },
+  get encounters() {
+    return __t.array(Encounter);
+  },
   get locationMapThemes() {
     return __t.array(LocationMapTheme);
   },
@@ -183,6 +189,19 @@ export const EncounterBlob = __t.object("EncounterBlob", {
   },
 });
 export type EncounterBlob = __Infer<typeof EncounterBlob>;
+
+export const EncounterIdSample = __t.object("EncounterIdSample", {
+  weight: __t.u8(),
+  id: __t.u32(),
+});
+export type EncounterIdSample = __Infer<typeof EncounterIdSample>;
+
+export const EncounterIdsSampler = __t.object("EncounterIdsSampler", {
+  get selections() {
+    return __t.array(EncounterIdSample);
+  },
+});
+export type EncounterIdsSampler = __Infer<typeof EncounterIdsSampler>;
 
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
@@ -265,6 +284,21 @@ export const EntityBlob = __t.object("EntityBlob", {
 });
 export type EntityBlob = __Infer<typeof EntityBlob>;
 
+export const EntityBlobSample = __t.object("EntityBlobSample", {
+  weight: __t.u8(),
+  get blob() {
+    return EntityBlob;
+  },
+});
+export type EntityBlobSample = __Infer<typeof EntityBlobSample>;
+
+export const EntityBlobsSampler = __t.object("EntityBlobsSampler", {
+  get selections() {
+    return __t.array(EntityBlobSample);
+  },
+});
+export type EntityBlobsSampler = __Infer<typeof EntityBlobsSampler>;
+
 export const EntityEvent = __t.object("EntityEvent", {
   id: __t.u64(),
   time: __t.timestamp(),
@@ -337,6 +371,11 @@ export const LocationMap = __t.object("LocationMap", {
   extraRoomCount: __t.u8(),
   mainRoomCount: __t.u8(),
   loopCount: __t.u8(),
+  get encounterIdsSampler() {
+    return EncounterIdsSampler;
+  },
+  minEncounterCount: __t.u8(),
+  maxEncounterCount: __t.u8(),
 });
 export type LocationMap = __Infer<typeof LocationMap>;
 
@@ -349,15 +388,15 @@ export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
 export const LocationMapTheme = __t.object("LocationMapTheme", {
   id: __t.u32(),
   get decorationsSelector() {
-    return WeightedSelector;
+    return EntityBlobsSampler;
   },
   minDecorationCount: __t.u8(),
   maxDecorationCount: __t.u8(),
   get pathsSelector() {
-    return WeightedSelector;
+    return EntityBlobsSampler;
   },
   get roomsSelector() {
-    return WeightedSelector;
+    return EntityBlobsSampler;
   },
 });
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
@@ -440,19 +479,4 @@ export const TraitsComponent = __t.object("TraitsComponent", {
   traitIds: __t.array(__t.u32()),
 });
 export type TraitsComponent = __Infer<typeof TraitsComponent>;
-
-export const WeightedSelection = __t.object("WeightedSelection", {
-  weight: __t.u8(),
-  get value() {
-    return EntityBlob;
-  },
-});
-export type WeightedSelection = __Infer<typeof WeightedSelection>;
-
-export const WeightedSelector = __t.object("WeightedSelector", {
-  get selections() {
-    return __t.array(WeightedSelection);
-  },
-});
-export type WeightedSelector = __Infer<typeof WeightedSelector>;
 

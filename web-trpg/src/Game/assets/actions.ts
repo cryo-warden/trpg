@@ -71,4 +71,13 @@ export const ACTIONS = [
     },
     steps: [Rest, Rest, Rest, Attack(1), Rest, Rest],
   },
+  {
+    name: "scratch",
+    type: "Attack",
+    appearance: {
+      displayName: "Scratch",
+      beginTemplate: "{0:sentence:subject} brandished its claws at {1:object}.",
+    },
+    steps: [Rest, Rest, Attack(1), Rest, Rest, Rest, Rest],
+  },
 ] as const satisfies readonly ActionAsset[];

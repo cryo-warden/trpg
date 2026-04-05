@@ -1,9 +1,16 @@
 use crate::{
-    asset::location_map_theme::location_map_themes, ecs_extension::EcsExtension, entity::*,
+    asset::{
+        encounter::encounters,
+        location_map_theme::location_map_themes,
+        rng_range::RngRange,
+        weighted_sampler::{WeightedSample, WeightedSampler},
+    },
+    ecs_extension::EcsExtension,
+    entity::*,
 };
 use ecs::Ecs;
 use spacetimedb::{
-    rand::{rngs::StdRng, RngCore, SeedableRng},
+    rand::{rngs::StdRng, seq::SliceRandom, SeedableRng},
     table, SpacetimeType,
 };
 
@@ -11,6 +18,35 @@ use spacetimedb::{
 pub enum Layout {
     Path,
     Hub,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct EncounterIdSample {
+    weight: u8,
+    id: u32,
+}
+
+impl WeightedSample for EncounterIdSample {
+    type Result = u32;
+    fn value(&self) -> &Self::Result {
+        &self.id
+    }
+    fn weight(&self) -> super::weighted_sampler::Weight {
+        self.weight as u32
+    }
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct EncounterIdsSampler {
+    selections: Vec<EncounterIdSample>,
+}
+
+impl WeightedSampler for EncounterIdsSampler {
+    type Result = u32;
+    type Sample = EncounterIdSample;
+    fn selections(&self) -> &Vec<Self::Sample> {
+        &self.selections
+    }
 }
 
 #[table(accessor = location_maps)]
@@ -24,6 +60,9 @@ pub struct LocationMap {
     pub extra_room_count: u8,
     pub main_room_count: u8,
     pub loop_count: u8,
+    pub encounter_ids_sampler: EncounterIdsSampler,
+    pub min_encounter_count: u8,
+    pub max_encounter_count: u8,
 }
 
 pub struct MapGenerationResult {
@@ -77,12 +116,29 @@ impl LocationMap {
             ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
         }
 
-        for i in (main_room_count as u32)..(total_room_count as u32) {
+        for i in (main_room_count)..(total_room_count) {
             let a = &room_handles[i as usize];
-            let b = &room_handles[(rng.next_u32() % i) as usize];
+            let b = &room_handles[rng.get_range::<u8, usize>(0, i)];
             let p = theme.paths_selector.sample(&mut rng);
             ecs.new_path(p.to_owned(), a.entity_id(), b.entity_id());
             ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
+        }
+
+        // TODO Move encounter spawning to a system responding to player movement.
+        let encounter_count: usize =
+            rng.get_range(self.min_encounter_count, self.max_encounter_count);
+        let mut encounter_room_handles: Vec<_> =
+            room_handles.iter().take(encounter_count).collect();
+        encounter_room_handles.shuffle(&mut rng);
+        for r in encounter_room_handles {
+            if let Some(encounter) = ecs
+                .db
+                .encounters()
+                .id()
+                .find(self.encounter_ids_sampler.sample(&mut rng))
+            {
+                encounter.populate(&r);
+            }
         }
 
         // Decorate after other steps so that decoration changes do not impact rng.
