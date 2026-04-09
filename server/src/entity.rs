@@ -93,6 +93,11 @@ entity!(
         pub identity: Identity,
     }
 
+    #[component(enemy_controller in enemy_controller_components)]
+    struct EnemyControllerComponent {
+        // TODO Add calibration properties?
+    }
+
     #[component(
       action_state in action_state_components,
       queued_action_state in queued_action_state_components,

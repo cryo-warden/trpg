@@ -26,6 +26,7 @@ import {
   HpComponent,
   EpComponent,
   PlayerControllerComponent,
+  EnemyControllerComponent,
   EntityProminenceComponent,
   TimerComponent,
   LocationMapComponent,
@@ -77,6 +78,9 @@ export default __t.row({
   },
   get playerController() {
     return __t.option(PlayerControllerComponent).name("player_controller");
+  },
+  get enemyController() {
+    return __t.option(EnemyControllerComponent).name("enemy_controller");
   },
   get actionState() {
     return __t.option(ActionStateComponent).name("action_state");

@@ -62,6 +62,7 @@ const getAppearanceFeatures = (
 
 export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
   return {
+    ...entityBlobAsset,
     baseline: entityBlobAsset.baseline
       ? {
           entityId: 0n,

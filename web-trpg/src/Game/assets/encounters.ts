@@ -11,12 +11,27 @@ export type EncounterBlobAsset = Simplify<
   { name: string; blob: EntityBlobAsset } & Omit<EncounterBlob, "id" | "blob">
 >;
 
-export const ENCOUNTER_BLOBS = [
+export const CATEGORICAL_BLOBS = [
+  {
+    name: "encounter_enemy",
+    /* TODO Add enemy allegiance component */
+    blob: {
+      enemyController: { entityId: 0n },
+    },
+  },
+] as const satisfies EncounterBlobAsset[];
+
+export const ENEMY_ENCOUNTER_BLOBS = [
   { name: "slime", blob: { baseline: "slime" } },
   { name: "slimeSmall", blob: { baseline: "slime", traits: ["small"] } },
   { name: "slimeBig", blob: { baseline: "slime", traits: ["big"] } },
   { name: "bat", blob: { baseline: "bat" } },
   { name: "batBig", blob: { baseline: "bat", traits: ["big"] } },
+] as const satisfies EncounterBlobAsset[];
+
+export const ENCOUNTER_BLOBS = [
+  ...CATEGORICAL_BLOBS,
+  ...ENEMY_ENCOUNTER_BLOBS,
 ] as const satisfies readonly EncounterBlobAsset[];
 
 export const getEncounterBlobs = (): EncounterBlob[] =>
@@ -28,22 +43,50 @@ export const getEncounterBlobs = (): EncounterBlob[] =>
 export type EncounterAsset = Simplify<
   {
     name: string;
+    categoricBlobName: (typeof CATEGORICAL_BLOBS)[number]["name"];
     blobNames: (typeof ENCOUNTER_BLOBS)[number]["name"][];
-  } & Omit<Encounter, "id" | "blobIds">
+  } & Omit<Encounter, "id" | "categoricBlobId" | "blobIds">
 >;
 
 export const ENCOUNTERS = [
-  { name: "slime1", blobNames: ["slime"] },
-  { name: "slime2", blobNames: ["slime", "slime"] },
-  { name: "slime3", blobNames: ["slime", "slime", "slime"] },
-  { name: "slime4", blobNames: ["slime", "slime", "slime", "slime"] },
-  { name: "slime2_bat1", blobNames: ["slime", "slime", "bat"] },
-  { name: "batBig1", blobNames: ["batBig"] },
+  {
+    name: "slime1",
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["slime"],
+  },
+  {
+    name: "slime2",
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["slime", "slime"],
+  },
+  {
+    name: "slime3",
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["slime", "slime", "slime"],
+  },
+  {
+    name: "slime4",
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["slime", "slime", "slime", "slime"],
+  },
+  {
+    name: "slime2_bat1",
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["slime", "slime", "bat"],
+  },
+  {
+    name: "batBig1",
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["batBig"],
+  },
 ] as const satisfies readonly EncounterAsset[];
 
 export const getEncounters = (): Encounter[] =>
   ENCOUNTERS.map((asset, id) => ({
     id,
+    categoricBlobId: ENCOUNTER_BLOBS.findIndex(
+      (b) => b.name === asset.categoricBlobName,
+    ),
     blobIds: asset.blobNames.map((name) =>
       ENCOUNTER_BLOBS.findIndex((b) => b.name === name),
     ),

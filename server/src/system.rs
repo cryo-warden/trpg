@@ -206,6 +206,47 @@ pub fn player_activation_system(ecs: Ecs) {
     }
 }
 
+pub fn enemy_control_system(ecs: Ecs) {
+    log::debug!("enemy_control_system:");
+    for e in ecs.iter_enemy_controller().with_location().with_actions() {
+        log::debug!("enemy controller for {}", e.entity_id());
+        if e.action_state().is_some() {
+            continue;
+        }
+
+        // TODO Remove bias from target selection.
+        // TODO Build cache of entity-by-location.
+        let mut p = None;
+        for t in ecs.iter_player_controller().with_location() {
+            log::debug!("considering target player {}", t.entity_id());
+            if t.location().location_entity_id == e.location().location_entity_id {
+                p = Some(t);
+                break;
+            }
+        }
+        let target_entity_id = if let Some(p) = p {
+            p.entity_id()
+        } else {
+            log::debug!("no target");
+            continue;
+        };
+        // TODO Select action.
+        let action_id = if let Some(a) = e.actions().action_ids.first() {
+            a
+        } else {
+            break;
+        };
+
+        log::debug!(
+            "setting action {} with target {}",
+            action_id,
+            target_entity_id
+        );
+        e.clone()
+            .set_queued_action_state(*action_id, target_entity_id);
+    }
+}
+
 pub fn execute_all_systems(ecs: Ecs) {
     observation_reset_system(ecs);
     action_system(ecs);
@@ -217,4 +258,5 @@ pub fn execute_all_systems(ecs: Ecs) {
     player_deactivation_timer_system(ecs);
     entity_stats_system(ecs);
     player_activation_system(ecs);
+    enemy_control_system(ecs);
 }

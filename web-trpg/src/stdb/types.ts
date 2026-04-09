@@ -178,6 +178,7 @@ export type Buff = __Infer<typeof Buff>;
 
 export const Encounter = __t.object("Encounter", {
   id: __t.u32(),
+  categoricBlobId: __t.u32(),
   blobIds: __t.array(__t.u32()),
 });
 export type Encounter = __Infer<typeof Encounter>;
@@ -202,6 +203,11 @@ export const EncounterIdsSampler = __t.object("EncounterIdsSampler", {
   },
 });
 export type EncounterIdsSampler = __Infer<typeof EncounterIdsSampler>;
+
+export const EnemyControllerComponent = __t.object("EnemyControllerComponent", {
+  entityId: __t.u64(),
+});
+export type EnemyControllerComponent = __Infer<typeof EnemyControllerComponent>;
 
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
@@ -253,6 +259,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   },
   get playerController() {
     return __t.option(PlayerControllerComponent);
+  },
+  get enemyController() {
+    return __t.option(EnemyControllerComponent);
   },
   get actionState() {
     return __t.option(ActionStateComponent);

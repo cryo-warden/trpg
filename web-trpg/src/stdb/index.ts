@@ -49,6 +49,7 @@ import AllegianceComponentsRow from "./allegiance_components_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
+import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
 import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
@@ -184,6 +185,17 @@ const tablesSchema = __schema({
       { name: 'baseline_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, BaselineComponentsRow),
+  enemy_controller_components: __table({
+    name: 'enemy_controller_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'enemy_controller_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'enemy_controller_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EnemyControllerComponentsRow),
   entities: __table({
     name: 'entities',
     indexes: [
