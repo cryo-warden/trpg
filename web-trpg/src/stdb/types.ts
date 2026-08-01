@@ -140,6 +140,9 @@ export const AssetPack = __t.object("AssetPack", {
   get locationMaps() {
     return __t.array(LocationMap);
   },
+  get locationMapConnections() {
+    return __t.array(LocationMapConnection);
+  },
   get instantiateEntityBlobs() {
     return __t.array(EntityBlob);
   },
@@ -393,6 +396,13 @@ export const LocationMapComponent = __t.object("LocationMapComponent", {
   locationMapEntityId: __t.u64(),
 });
 export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
+
+export const LocationMapConnection = __t.object("LocationMapConnection", {
+  id: __t.u32(),
+  exitLocationMapId: __t.u32(),
+  destinationLocationMapId: __t.u32(),
+});
+export type LocationMapConnection = __Infer<typeof LocationMapConnection>;
 
 export const LocationMapTheme = __t.object("LocationMapTheme", {
   id: __t.u32(),

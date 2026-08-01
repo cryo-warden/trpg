@@ -65,6 +65,14 @@ pub struct LocationMap {
     pub max_encounter_count: u8,
 }
 
+#[table(accessor = location_map_connections)]
+pub struct LocationMapConnection {
+    #[primary_key]
+    pub id: u32,
+    pub exit_location_map_id: u32,
+    pub destination_location_map_id: u32,
+}
+
 pub struct MapGenerationResult {
     pub main_room_ids: Vec<u64>,
     pub extra_room_ids: Vec<u64>,

@@ -5,6 +5,7 @@ import {
   LocationMapTheme,
   EntityBlobSample,
   EntityBlobsSampler,
+  LocationMapConnection,
 } from "../../stdb/types";
 import { getEncounterIdsSampler, EncountersSamplerAsset } from "./encounters";
 import { EntityBlobAsset, getEntityBlob } from "./entity_blobs";
@@ -39,11 +40,30 @@ export type LocationMapThemeAsset = {
 >;
 
 export type LocationMapAsset = {
-  themeName: string;
+  themeName: (typeof LOCATION_MAP_THEMES)[number]["name"];
   encountersSampler: EncountersSamplerAsset;
+  // Can't derive specific type from const without circularity error.
+  connections?: string[];
 } & Omit<LocationMap, "id" | "themeId" | "encounterIdsSampler">;
 
 export const LOCATION_MAP_THEMES = [
+  {
+    name: "encampment",
+    decorations: [
+      { weight: 5, blob: { appearanceFeatureNames: ["rock"] } },
+      { weight: 4, blob: { appearanceFeatureNames: ["stone"] } },
+    ],
+    minDecorationCount: 2,
+    maxDecorationCount: 4,
+    paths: [
+      { weight: 5, blob: { appearanceFeatureNames: ["trail"] } },
+      { weight: 4, blob: { appearanceFeatureNames: ["path"] } },
+    ],
+    rooms: [
+      { weight: 5, blob: { appearanceFeatureNames: ["enclosure"] } },
+      { weight: 4, blob: { appearanceFeatureNames: ["tent"] } },
+    ],
+  },
   {
     name: "cave",
     decorations: [
@@ -70,6 +90,19 @@ export const LOCATION_MAP_THEMES = [
 export const LOCATION_MAPS = [
   {
     name: "start_zone",
+    layout: Layout.Hub,
+    rngSeed: 0n,
+    mainRoomCount: 10,
+    extraRoomCount: 0,
+    loopCount: 5,
+    themeName: "encampment",
+    encountersSampler: [],
+    minEncounterCount: 0,
+    maxEncounterCount: 0,
+    connections: [],
+  },
+  {
+    name: "beginner_cave",
     layout: Layout.Path,
     rngSeed: 0n,
     mainRoomCount: 10,
@@ -84,6 +117,7 @@ export const LOCATION_MAPS = [
     ],
     minEncounterCount: 8,
     maxEncounterCount: 12,
+    connections: [],
   },
 ] as const satisfies readonly LocationMapAsset[];
 
@@ -107,3 +141,18 @@ export const getLocationMaps = (
     themeId: locationMapThemes.findIndex((t) => t.name === asset.themeName),
     encounterIdsSampler: getEncounterIdsSampler(asset.encountersSampler),
   }));
+
+export const getLocationMapConnections = (
+  assets: readonly LocationMapAsset[],
+): LocationMapConnection[] => {
+  let id = 0;
+  return assets.flatMap((a) =>
+    (a.connections ?? []).map(
+      (c): LocationMapConnection => ({
+        id: id++,
+        exitLocationMapId: LOCATION_MAPS.findIndex((m) => m.name === a.name),
+        destinationLocationMapId: LOCATION_MAPS.findIndex((m) => m.name === c),
+      }),
+    ),
+  );
+};

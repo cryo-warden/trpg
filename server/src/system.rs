@@ -8,14 +8,8 @@ use crate::{
     event::{observable_events, EventQueue, EventType, NewEvent},
 };
 use ecs::Ecs;
-use spacetimedb::Table;
+use spacetimedb::{rand::seq::SliceRandom, Table};
 use std::cmp::{max, min};
-
-pub fn observation_reset_system(ecs: Ecs) {
-    for event in ecs.db.observable_events().iter() {
-        ecs.db.observable_events().delete(event);
-    }
-}
 
 pub fn hp_system(ecs: Ecs) {
     for mut e in ecs.iter_hp() {
@@ -157,7 +151,6 @@ pub fn player_deactivation_timer_system(ecs: Ecs) {
 
 pub fn entity_stats_system(ecs: Ecs) {
     for f in ecs.iter_traits_stat_block_dirty_flag() {
-        log::debug!("Entity {} is computing traits stat block.", f.entity_id());
         if let Some(c) = ecs.find(f.entity_id()).with_traits() {
             let mut stat_block = StatBlock::default();
             for id in &c.traits().trait_ids {
@@ -207,18 +200,17 @@ pub fn player_activation_system(ecs: Ecs) {
 }
 
 pub fn enemy_control_system(ecs: Ecs) {
-    log::debug!("enemy_control_system:");
+    // TODO Build cache of players-by-location.
+    let mut players: Vec<_> = ecs.iter_player_controller().with_location().collect();
+    let mut player_shuffle_rng = ecs.rng();
     for e in ecs.iter_enemy_controller().with_location().with_actions() {
-        log::debug!("enemy controller for {}", e.entity_id());
         if e.action_state().is_some() {
             continue;
         }
 
-        // TODO Remove bias from target selection.
-        // TODO Build cache of entity-by-location.
         let mut p = None;
-        for t in ecs.iter_player_controller().with_location() {
-            log::debug!("considering target player {}", t.entity_id());
+        players.shuffle(&mut player_shuffle_rng);
+        for t in &players {
             if t.location().location_entity_id == e.location().location_entity_id {
                 p = Some(t);
                 break;
@@ -227,7 +219,6 @@ pub fn enemy_control_system(ecs: Ecs) {
         let target_entity_id = if let Some(p) = p {
             p.entity_id()
         } else {
-            log::debug!("no target");
             continue;
         };
         // TODO Select action.
@@ -237,18 +228,12 @@ pub fn enemy_control_system(ecs: Ecs) {
             break;
         };
 
-        log::debug!(
-            "setting action {} with target {}",
-            action_id,
-            target_entity_id
-        );
         e.clone()
             .set_queued_action_state(*action_id, target_entity_id);
     }
 }
 
 pub fn execute_all_systems(ecs: Ecs) {
-    observation_reset_system(ecs);
     action_system(ecs);
     hp_system(ecs);
     ep_system(ecs);

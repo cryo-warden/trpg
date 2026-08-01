@@ -7,7 +7,9 @@ use crate::{
     asset::{
         baseline::{baselines, Baseline},
         encounter::{encounter_blobs, encounters, Encounter, EncounterBlob},
-        location_map::{location_maps, LocationMap},
+        location_map::{
+            location_map_connections, location_maps, LocationMap, LocationMapConnection,
+        },
         location_map_theme::{location_map_themes, LocationMapTheme},
         r#trait::{traits, Trait},
     },
@@ -47,6 +49,7 @@ secador::secador!(
         (encounters, Encounter),
         (location_map_themes, LocationMapTheme),
         (location_maps, LocationMap),
+        (location_map_connections, LocationMapConnection),
     ],
     {
         #[derive(SpacetimeType)]

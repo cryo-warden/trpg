@@ -22,7 +22,11 @@ import {
 } from "./assets";
 import { getEncounterBlobs, getEncounters } from "./assets/encounters";
 import { getEntityBlob } from "./assets/entity_blobs";
-import { getLocationMaps, getLocationMapThemes } from "./assets/location_maps";
+import {
+  getLocationMapConnections,
+  getLocationMaps,
+  getLocationMapThemes,
+} from "./assets/location_maps";
 
 const assetToStatBlock = (asset: StatBlockAsset): StatBlock => {
   return {
@@ -130,6 +134,7 @@ export const init = (connection: DbConnection) => {
 
       locationMapThemes: getLocationMapThemes(locationMapThemes),
       locationMaps: getLocationMaps(locationMaps),
+      locationMapConnections: getLocationMapConnections(locationMaps),
       instantiateEntityBlobs: entityBlobs.map(getEntityBlob),
 
       newPlayerBlob: getEntityBlob(newPlayerBlob),
