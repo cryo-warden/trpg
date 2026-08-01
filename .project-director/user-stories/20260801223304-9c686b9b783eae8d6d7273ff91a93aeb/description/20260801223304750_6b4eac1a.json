@@ -1,0 +1,1 @@
+"As an application developer, I want a scheduled system timer that advances queued actions each tick, so that the game runs on a server-driven clock."

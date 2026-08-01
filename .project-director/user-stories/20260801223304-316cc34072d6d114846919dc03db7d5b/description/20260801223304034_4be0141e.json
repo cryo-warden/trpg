@@ -1,0 +1,1 @@
+"As an application developer, I want an ECS layer with entity, component, and blob macros, so that I can declare entities and their components ergonomically in the SpacetimeDB server module."

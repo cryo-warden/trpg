@@ -1,0 +1,1 @@
+"As an application developer, I want the web client to subscribe to server tables and reactively render entity state, so that the UI stays in sync with the authoritative database."

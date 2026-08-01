@@ -1,0 +1,1 @@
+"As an application developer, I want game assets authored in TypeScript that mirror the server's SpacetimeDB types, so that content stays type-checked against the live schema."
