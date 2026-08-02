@@ -1,0 +1,73 @@
+{
+  "processes": {
+    "check": {
+      "command": [
+        "bun",
+        "run",
+        "check"
+      ],
+      "cwd": "."
+    },
+    "generate": {
+      "command": [
+        "bun",
+        "run",
+        "stdb-generate"
+      ],
+      "cwd": "."
+    },
+    "test-lib": {
+      "command": [
+        "bun",
+        "test"
+      ],
+      "cwd": "action-trpg-lib"
+    },
+    "test-rust": {
+      "command": [
+        "cargo",
+        "test"
+      ],
+      "cwd": "."
+    },
+    "dev": {
+      "command": [
+        "bun",
+        "run",
+        "dev"
+      ],
+      "cwd": "."
+    },
+    "spacetime": {
+      "command": [
+        "spacetime",
+        "start"
+      ],
+      "cwd": "."
+    },
+    "publish": {
+      "command": [
+        "spacetime",
+        "publish",
+        "--module-path",
+        "./server",
+        "trpg",
+        "--delete-data",
+        "--yes"
+      ],
+      "cwd": "."
+    },
+    "test": {
+      "bundle": [
+        "test-lib",
+        "test-rust"
+      ]
+    },
+    "verify": {
+      "bundle": [
+        "check",
+        "test"
+      ]
+    }
+  }
+}

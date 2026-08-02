@@ -4,7 +4,7 @@ import {
   useCallback,
   useMemo,
 } from "react";
-import { useDebugRenderer } from "../renderer";
+import { debug, useLanguageRenderer } from "../renderer";
 import { EntityEvent } from "../stdb/types";
 import { Panel } from "../structural/Panel";
 import { Scroller } from "../structural/Scroller";
@@ -19,7 +19,9 @@ import { useSetTarget } from "./context/TargetContext";
 // Number(a.time.microsSinceUnixEpoch - b.time.microsSinceUnixEpoch);
 
 export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
-  const { renderEvent } = useDebugRenderer();
+  // Language is a planned user setting; for now the app renders with the debug
+  // language (English plus room for diagnostic drift).
+  const { renderEvent } = useLanguageRenderer(debug);
   const playerEntity = usePlayerEntity();
   const setTarget = useSetTarget();
 

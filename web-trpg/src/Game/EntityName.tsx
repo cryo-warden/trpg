@@ -3,5 +3,5 @@ import { useGetName } from "../renderer/useGetName";
 
 export const EntityName = ({ entityId }: { entityId: EntityId }) => {
   const getName = useGetName(null);
-  return getName(entityId);
+  return getName({ named: entityId });
 };

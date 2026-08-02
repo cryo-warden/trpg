@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { actions } from "../../assets";
+import { getActionOptions } from "../../domain/actionOptions";
 import { ActionId, EntityId } from "../../trpg";
 import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
@@ -86,42 +87,27 @@ export const useActionOptions = (target: Target): ActionId[] => {
   const targetAllegiance = useAllegianceComponent(target);
   const targetPath = usePathComponent(target);
 
-  return useMemo(() => {
-    const actionIds = actionsComponent?.actionIds ?? [];
-
-    const isAlly =
-      playerEntity === target ||
-      !!(
-        playerAllegiance &&
-        targetAllegiance &&
-        playerAllegiance.allegianceEntityId ===
-          targetAllegiance.allegianceEntityId
-      );
-
-    return actionIds.filter((id) => {
-      const action = actions[id];
-      if (!action) return false;
-
-      switch (action.type) {
-        case "Attack":
-          return !!targetHp && !isAlly;
-        case "Buff":
-          return !!targetHp && isAlly;
-        case "Move":
-          return !!targetPath;
-        default:
-          return false;
-      }
-    });
-  }, [
-    actionsComponent,
-    playerEntity,
-    targetHp,
-    playerAllegiance,
-    targetAllegiance,
-    targetPath,
-    target,
-  ]);
+  return useMemo(
+    () =>
+      getActionOptions({
+        actionIds: actionsComponent?.actionIds ?? [],
+        targetHasHp: !!targetHp,
+        targetHasPath: !!targetPath,
+        playerEntity,
+        target,
+        playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
+        targetAllegianceId: targetAllegiance?.allegianceEntityId ?? null,
+      }),
+    [
+      actionsComponent,
+      playerEntity,
+      targetHp,
+      playerAllegiance,
+      targetAllegiance,
+      targetPath,
+      target,
+    ],
+  );
 };
 
 export const useActionHotkey = (actionId: ActionId) => {

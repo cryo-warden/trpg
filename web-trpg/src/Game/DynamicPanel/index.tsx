@@ -1,6 +1,7 @@
 import { ComponentPropsWithRef } from "react";
 import { Panel } from "../../structural/Panel";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
+import { sortByProminenceDescending } from "../domain/prominence";
 import {
   useAttackComponent,
   useEntityProminences,
@@ -32,10 +33,10 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
       ? [] // WIP Add equipment
       : [];
   const entityProminences = useEntityProminences(entities);
-  const sortedEntities = entityProminences
-    .filter((ep) => ep.entityId !== playerEntity)
-    .toSorted((a, b) => b.prominence - a.prominence)
-    .map((ep) => ep.entityId);
+  const sortedEntities = sortByProminenceDescending({
+    prominences: entityProminences,
+    exclude: playerEntity,
+  });
 
   if (mode === "stats") {
     if (playerEntity == null) {
