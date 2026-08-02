@@ -132,6 +132,22 @@ impl LocationMap {
             ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
         }
 
+        // Loop edges: the main rooms form a linear chain, so connecting a room
+        // to the one two steps further along the chain closes a 3-room cycle (a
+        // triangle) within this map. `loop_count` controls how many such loops
+        // are added, turning the map from a pure tree into a graph with cycles.
+        // (This is intra-map only; it is unrelated to cross-map connections.)
+        if main_room_count >= 3 {
+            for _ in 0..self.loop_count {
+                let a_index: usize = rng.get_range::<u8, usize>(0, main_room_count - 2);
+                let a = &room_handles[a_index];
+                let b = &room_handles[a_index + 2];
+                let p = theme.paths_selector.sample(&mut rng);
+                ecs.new_path(p.to_owned(), a.entity_id(), b.entity_id());
+                ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
+            }
+        }
+
         // TODO Move encounter spawning to a system responding to player movement.
         let encounter_count: usize =
             rng.get_range(self.min_encounter_count, self.max_encounter_count);
@@ -154,10 +170,16 @@ impl LocationMap {
             theme.decorate(r, &mut rng);
         }
 
-        // WIP
+        let main_room_count = main_room_count as usize;
         MapGenerationResult {
-            main_room_ids: room_handles.iter().map(|h| h.entity_id()).collect(),
-            extra_room_ids: vec![],
+            main_room_ids: room_handles[..main_room_count]
+                .iter()
+                .map(|h| h.entity_id())
+                .collect(),
+            extra_room_ids: room_handles[main_room_count..]
+                .iter()
+                .map(|h| h.entity_id())
+                .collect(),
         }
     }
 }

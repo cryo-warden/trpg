@@ -119,6 +119,21 @@ export const LOCATION_MAPS = [
     maxEncounterCount: 12,
     connections: [],
   },
+  {
+    // Smallest case that produces a triangular join: three main rooms chained
+    // 0-1-2, plus one loop that adds the closing 0-2 edge to form a triangle.
+    name: "triangle_loop",
+    layout: Layout.Path,
+    rngSeed: 0n,
+    mainRoomCount: 3,
+    extraRoomCount: 0,
+    loopCount: 1,
+    themeName: "cave",
+    encountersSampler: [],
+    minEncounterCount: 0,
+    maxEncounterCount: 0,
+    connections: [],
+  },
 ] as const satisfies readonly LocationMapAsset[];
 
 export const getLocationMapThemes = (
