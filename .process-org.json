@@ -47,6 +47,22 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-world": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/2-world.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
+    "test-e2e-map": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/3-map.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -90,7 +106,9 @@
     "test-e2e": {
       "bundle": [
         "test-e2e-smoke",
-        "test-e2e-assets"
+        "test-e2e-assets",
+        "test-e2e-world",
+        "test-e2e-map"
       ]
     }
   }
