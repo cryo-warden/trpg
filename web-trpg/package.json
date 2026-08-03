@@ -7,6 +7,7 @@
   "scripts": {
     "stdb-generate": "spacetime generate --module-path ../server --lang typescript --out-dir ./src/stdb",
     "ts-check": "bun tsc -b",
+    "test": "bun test",
     "lint": "bun run eslint .",
     "check": "bun run stdb-generate && bun run lint && bun run ts-check",
     "dev": "bun run check && vite",

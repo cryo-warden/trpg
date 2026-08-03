@@ -23,6 +23,13 @@
       ],
       "cwd": "."
     },
+    "test-web": {
+      "command": [
+        "bun",
+        "test"
+      ],
+      "cwd": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -52,6 +59,7 @@
     },
     "test": {
       "bundle": [
+        "test-web",
         "test-rust"
       ]
     },
