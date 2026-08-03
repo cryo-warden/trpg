@@ -6,6 +6,10 @@ import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
 import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
+import {
+  selectEntityProminences,
+  selectLocationEntities,
+} from "./tableSelectors";
 import { Target } from "../TargetContext";
 
 const createUseComponent =
@@ -130,12 +134,7 @@ export const useActionHotkey = (actionId: ActionId) => {
 export const useEntityProminences = (entityIds: EntityId[]) => {
   return useTableData(
     "entity_prominence_components",
-    (table) => {
-      const m = new Map([...table.iter()].map((ep) => [ep.entityId, ep]));
-      return entityIds.map((id) => {
-        return m.get(id) ?? { entityId: id, prominence: -Infinity };
-      });
-    },
+    (table) => selectEntityProminences(table, entityIds),
     [entityIds],
   );
 };
@@ -143,13 +142,7 @@ export const useEntityProminences = (entityIds: EntityId[]) => {
 export const useLocationEntities = (locationEntityId: EntityId | null) => {
   return useTableData(
     "location_components",
-    (table) =>
-      [...table.iter()]
-        .filter(
-          (locationComponent) =>
-            locationComponent.locationEntityId === locationEntityId,
-        )
-        .map((locationComponent) => locationComponent.entityId),
+    (table) => selectLocationEntities(table, locationEntityId),
     [locationEntityId],
   );
 };
