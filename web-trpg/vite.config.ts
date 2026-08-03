@@ -5,4 +5,7 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   base: "/trpg/",
+  // Bind to 0.0.0.0 so the dev server is reachable from other devices on the
+  // LAN (e.g. manual testing on a phone).
+  server: { host: true },
 });
