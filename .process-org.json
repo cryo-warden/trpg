@@ -26,7 +26,17 @@
     "test-web": {
       "command": [
         "bun",
-        "test"
+        "test",
+        "src"
+      ],
+      "dir": "web-trpg"
+    },
+    "test-e2e": {
+      "command": [
+        "bun",
+        "test",
+        "e2e",
+        "--bail"
       ],
       "dir": "web-trpg"
     },
@@ -66,7 +76,8 @@
     "verify": {
       "bundle": [
         "check",
-        "test"
+        "test",
+        "test-e2e"
       ]
     }
   }

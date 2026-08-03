@@ -30,6 +30,7 @@
     "src/**/*.test.tsx",
     "src/testSupport/**/*.ts",
     "src/testSupport/**/*.tsx",
-    "src/vite-env.d.ts"
+    "src/vite-env.d.ts",
+    "e2e/**/*.ts"
   ]
 }
