@@ -73,8 +73,9 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
 export const stdbWrapper = (
   tables: Record<string, unknown>,
   identity: Identity = {} as Identity,
+  reducers: Record<string, unknown> = {},
 ) => {
-  const connection = { db: tables } as unknown as DbConnection;
+  const connection = { db: tables, reducers } as unknown as DbConnection;
   const value = { connection, identity };
   return function StdbWrapper({ children }: { children: ReactNode }) {
     return createElement(StdbContext.Provider, { value }, children);

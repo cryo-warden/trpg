@@ -1,4 +1,5 @@
 import { plugin } from "bun";
+import { afterEach } from "bun:test";
 import { GlobalRegistrator } from "@happy-dom/global-registrator";
 
 // Stub `import "./x.css"` so components can be rendered in tests without a
@@ -16,3 +17,8 @@ plugin({
 if (typeof document === "undefined") {
   GlobalRegistrator.register();
 }
+
+// Unmount rendered React trees after each test so DOM does not leak between
+// tests (imported lazily, after the DOM is registered above).
+const { cleanup } = await import("@testing-library/react");
+afterEach(cleanup);
