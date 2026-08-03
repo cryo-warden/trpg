@@ -26,9 +26,11 @@
     "test-web": {
       "command": [
         "bun",
-        "test"
+        "test",
+        "--preload",
+        "./web-trpg/happydom.ts"
       ],
-      "cwd": "web-trpg"
+      "cwd": "."
     },
     "dev": {
       "command": [

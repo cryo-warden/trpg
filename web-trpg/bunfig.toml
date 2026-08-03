@@ -1,0 +1,3 @@
+[test]
+# Register a happy-dom DOM before tests so React components/hooks can render.
+preload = ["./happydom.ts"]
