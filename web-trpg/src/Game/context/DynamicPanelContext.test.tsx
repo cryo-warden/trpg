@@ -27,3 +27,8 @@ test("useDynamicPanelMode / useSetDynamicPanelMode read the provider", () => {
     renderHook(() => useSetDynamicPanelMode(), { wrapper }).result.current,
   ).toBe(setMode);
 });
+
+test("useSetDynamicPanelMode returns a no-op default outside a provider", () => {
+  const setMode = renderHook(() => useSetDynamicPanelMode()).result.current;
+  expect(() => setMode("stats")).not.toThrow();
+});

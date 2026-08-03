@@ -40,3 +40,34 @@ test("EventsPanel narrates observable events as they arrive", () => {
   act(() => observableEvents.insertRow(attackEvent(2n, 3n, 3)));
   expect(container.textContent).toContain("dealt 3 damage to");
 });
+
+test("EventsPanel clears the panel selection when clicked", () => {
+  const identity = {} as Identity;
+  const modes: string[] = [];
+  const wrapper = gameWrapper(
+    {
+      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      location_components: mockTable([{ entityId: 1n, locationEntityId: 10n }]),
+      appearance_features_components: mockTable([]),
+      allegiance_components: mockTable([]),
+      observable_events: mockTable([]),
+    },
+    { identity, setMode: (m) => modes.push(m) },
+  );
+  const { container } = render(<EventsPanel />, { wrapper });
+  act(() => (container.querySelector(".Panel") as HTMLElement).click());
+  expect(modes).toContain("location");
+});
+
+test("EventsPanel renders an empty panel when there is no player", () => {
+  const wrapper = gameWrapper({
+    player_controller_components: mockTable([]),
+    location_components: mockTable([]),
+    appearance_features_components: mockTable([]),
+    allegiance_components: mockTable([]),
+    observable_events: mockTable([]),
+  });
+  const { container } = render(<EventsPanel />, { wrapper });
+  expect(container.querySelector(".Panel")).not.toBeNull();
+  expect(container.textContent).not.toContain("dealt");
+});
