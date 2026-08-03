@@ -6,7 +6,7 @@
         "run",
         "check"
       ],
-      "cwd": "."
+      "dir": "."
     },
     "generate": {
       "command": [
@@ -14,23 +14,21 @@
         "run",
         "stdb-generate"
       ],
-      "cwd": "."
+      "dir": "."
     },
     "test-rust": {
       "command": [
         "cargo",
         "test"
       ],
-      "cwd": "."
+      "dir": "."
     },
     "test-web": {
       "command": [
         "bun",
-        "test",
-        "--preload",
-        "./web-trpg/happydom.ts"
+        "test"
       ],
-      "cwd": "."
+      "dir": "web-trpg"
     },
     "dev": {
       "command": [
@@ -38,14 +36,14 @@
         "run",
         "dev"
       ],
-      "cwd": "."
+      "dir": "."
     },
     "spacetime": {
       "command": [
         "spacetime",
         "start"
       ],
-      "cwd": "."
+      "dir": "."
     },
     "publish": {
       "command": [
@@ -57,7 +55,7 @@
         "--delete-data",
         "--yes"
       ],
-      "cwd": "."
+      "dir": "."
     },
     "test": {
       "bundle": [
