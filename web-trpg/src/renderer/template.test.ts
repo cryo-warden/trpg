@@ -28,6 +28,15 @@ test("passes each slot's rule set to the value renderer", () => {
   expect(render("{0:sentence} and {1}")(["hi", "lo"], {})).toBe("HI and lo");
 });
 
+test("parses multi-digit slot indices, even with a rule set (regression)", () => {
+  const render = renderWith(passthrough);
+  const values = Array.from({ length: 11 }, (_, index) => `v${index}`);
+  expect(render("{10}")(values, {})).toBe("v10");
+  // Previously the index lexer kept only the last digit when rules were
+  // present, so "{10:sentence}" mis-parsed to slot 0.
+  expect(render("{10:sentence}")(values, {})).toBe("v10");
+});
+
 test("threads context from earlier slots to later ones", () => {
   type Ctx = { count: number };
   const render = renderTemplate<string, Ctx, string>({

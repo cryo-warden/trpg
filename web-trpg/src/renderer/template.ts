@@ -14,7 +14,7 @@ type TemplateNode =
     };
 
 const matchRegExp = /([^{]*)\{([^}]+)\}(.*)/;
-const ruleRegExp = /([^:])+(?::(.*))/;
+const ruleRegExp = /([^:]+)(?::(.*))/;
 
 const lex = (template: string): TemplateNode => {
   const match = matchRegExp.exec(template);
