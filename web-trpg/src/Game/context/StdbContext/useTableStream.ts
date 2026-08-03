@@ -29,7 +29,6 @@ export const useTableStream = <
 
   useEffect(() => {
     const handleInsert = (_: never, row: R) => {
-      console.log(row);
       setResult((result) => [...result, compute(row)]);
     };
     connection.db[tableName].onInsert(handleInsert as never);
