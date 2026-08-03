@@ -14,9 +14,13 @@ plugin({
 // Register a happy-dom DOM into the global scope so `bun test` can render
 // React components/hooks. Loaded as a bun test preload (bunfig.toml [test]).
 // Guarded so double-preload is a no-op.
+const NativeWebSocket = globalThis.WebSocket;
 if (typeof document === "undefined") {
   GlobalRegistrator.register();
 }
+// Keep bun's native WebSocket (happy-dom replaces it) so E2E tests can open a
+// real connection to a running SpacetimeDB instance.
+globalThis.WebSocket = NativeWebSocket;
 
 // Unmount rendered React trees after each test so DOM does not leak between
 // tests (imported lazily, after the DOM is registered above).

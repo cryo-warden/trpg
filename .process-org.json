@@ -31,12 +31,19 @@
       ],
       "dir": "web-trpg"
     },
-    "test-e2e": {
+    "test-e2e-smoke": {
       "command": [
         "bun",
         "test",
-        "e2e",
-        "--bail"
+        "e2e/0-smoke.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
+    "test-e2e-assets": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/1-assets.test.ts"
       ],
       "dir": "web-trpg"
     },
@@ -78,6 +85,12 @@
         "check",
         "test",
         "test-e2e"
+      ]
+    },
+    "test-e2e": {
+      "bundle": [
+        "test-e2e-smoke",
+        "test-e2e-assets"
       ]
     }
   }
