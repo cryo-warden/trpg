@@ -16,13 +16,6 @@
       ],
       "cwd": "."
     },
-    "test-lib": {
-      "command": [
-        "bun",
-        "test"
-      ],
-      "cwd": "action-trpg-lib"
-    },
     "test-rust": {
       "command": [
         "cargo",
@@ -59,7 +52,6 @@
     },
     "test": {
       "bundle": [
-        "test-lib",
         "test-rust"
       ]
     },
