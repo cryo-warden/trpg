@@ -4,6 +4,10 @@ import {
   DynamicPanelContext,
   type DynamicPanelMode,
 } from "../Game/context/DynamicPanelContext";
+import {
+  TargetContext,
+  type Target,
+} from "../Game/context/TargetContext";
 import { TargetProvider } from "../Game/context/TargetProvider";
 import { stdbWrapper } from "./mockConnection";
 
@@ -19,6 +23,10 @@ export const gameWrapper = (
     mode?: DynamicPanelMode;
     setMode?: (mode: DynamicPanelMode) => void;
     reducers?: Record<string, unknown>;
+    // When provided, inject this fixed target instead of the co-location-aware
+    // TargetProvider (handy for exercising target-dependent branches).
+    target?: Target;
+    setTarget?: (target: Target) => void;
   } = {},
 ) => {
   const Stdb = stdbWrapper(tables, options.identity, options.reducers);
@@ -26,11 +34,24 @@ export const gameWrapper = (
     mode: options.mode ?? "location",
     setMode: options.setMode ?? (() => {}),
   };
+  const hasFixedTarget = "target" in options;
   return function GameWrapper({ children }: { children: ReactNode }) {
+    const targeted = hasFixedTarget ? (
+      <TargetContext.Provider
+        value={{
+          target: options.target ?? null,
+          setTarget: options.setTarget ?? (() => {}),
+        }}
+      >
+        {children}
+      </TargetContext.Provider>
+    ) : (
+      <TargetProvider>{children}</TargetProvider>
+    );
     return (
       <Stdb>
         <DynamicPanelContext.Provider value={value}>
-          <TargetProvider>{children}</TargetProvider>
+          {targeted}
         </DynamicPanelContext.Provider>
       </Stdb>
     );

@@ -11,7 +11,7 @@ import { StdbContext } from "../Game/context/StdbContext/StdbContext";
  * stdb. Isolated to the test tsconfig; never imported by app code.
  */
 
-type Callback = () => void;
+type Callback = (...args: unknown[]) => void;
 
 export type MockTable<Row> = {
   iter: () => Row[];
@@ -35,7 +35,10 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
   const inserts = new Set<Callback>();
   const deletes = new Set<Callback>();
   const updates = new Set<Callback>();
-  const fire = (cbs: Set<Callback>) => cbs.forEach((cb) => cb());
+  // SpacetimeDB row callbacks receive (eventContext, row[, newRow]); the mock
+  // passes a stub context so useTableStream (which reads the row) works too.
+  const fire = (cbs: Set<Callback>, ...args: unknown[]) =>
+    cbs.forEach((cb) => cb({}, ...args));
   const findBy = (field: string, value: unknown): Row | undefined =>
     rows.find((row) => (row as Record<string, unknown>)[field] === value);
   return {
@@ -51,15 +54,17 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
     identity: { find: (id) => findBy("identity", id) },
     insertRow: (row) => {
       rows = [...rows, row];
-      fire(inserts);
+      fire(inserts, row);
     },
     updateRow: (match, next) => {
+      const previous = rows.find(match);
       rows = rows.map((row) => (match(row) ? next : row));
-      fire(updates);
+      fire(updates, previous, next);
     },
     deleteRow: (match) => {
+      const removed = rows.find(match);
       rows = rows.filter((row) => !match(row));
-      fire(deletes);
+      fire(deletes, removed);
     },
   };
 };

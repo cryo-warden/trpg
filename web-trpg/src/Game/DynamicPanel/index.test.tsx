@@ -1,0 +1,47 @@
+import { test, expect } from "bun:test";
+import { render } from "@testing-library/react";
+import type { Identity } from "spacetimedb";
+import { mockTable } from "../../testSupport/mockConnection";
+import { gameWrapper } from "../../testSupport/gameWrapper";
+import { DynamicPanel } from "./index";
+
+const identity = {} as Identity;
+const tables = () => ({
+  player_controller_components: mockTable([{ entityId: 1n, identity }]),
+  location_components: mockTable([
+    { entityId: 1n, locationEntityId: 10n },
+    { entityId: 2n, locationEntityId: 10n },
+  ]),
+  appearance_features_components: mockTable([
+    { entityId: 1n, appearanceFeatureIndexes: [0] }, // "human"
+    { entityId: 2n, appearanceFeatureIndexes: [3] }, // "path"
+  ]),
+  hp_components: mockTable([
+    { entityId: 1n, hp: 5, mhp: 5, defense: 2 },
+    { entityId: 2n, hp: 3, mhp: 3 },
+  ]),
+  ep_components: mockTable([
+    { entityId: 1n, ep: 5, mep: 5 },
+    { entityId: 2n, ep: 1, mep: 1 },
+  ]),
+  attack_components: mockTable([{ entityId: 1n, attack: 4 }]),
+  allegiance_components: mockTable([]),
+  entity_prominence_components: mockTable([{ entityId: 2n, prominence: 1 }]),
+});
+
+test("DynamicPanel stats mode shows the player's vitals, attack, and defense", () => {
+  const { container } = render(<DynamicPanel />, {
+    wrapper: gameWrapper(tables(), { identity, mode: "stats" }),
+  });
+  expect(container.textContent).toContain("5 / 5 HP");
+  expect(container.textContent).toContain("Attack: 4");
+  expect(container.textContent).toContain("Defense: 2");
+});
+
+test("DynamicPanel location mode lists co-located entities, excluding the player", () => {
+  const { container } = render(<DynamicPanel />, {
+    wrapper: gameWrapper(tables(), { identity, mode: "location" }),
+  });
+  expect(container.querySelectorAll(".EntityPanel").length).toBe(1);
+  expect(container.textContent).toContain("path");
+});
