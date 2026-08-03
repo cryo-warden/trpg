@@ -1,64 +1,142 @@
 import { test, expect } from "bun:test";
 import { renderHook, act } from "@testing-library/react";
-import type { ReactNode } from "react";
 import type { Identity } from "spacetimedb";
-import type { DbConnection } from "../../../stdb";
-import { StdbContext } from "./StdbContext";
-import { useLocationEntities } from "./components";
+import { actions } from "../../assets";
+import { mockTable, stdbWrapper } from "../../../testSupport/mockConnection";
+import {
+  useAction,
+  useActionHotkey,
+  useActionOptions,
+  useEntityProminences,
+  useHpComponent,
+  useLocation,
+  useLocationEntities,
+  usePlayerEntity,
+} from "./components";
 
-/**
- * A minimal in-memory stand-in for a live SpacetimeDB table handle: it iterates
- * its rows and lets a test drive inserts to fire the subscription the hooks
- * register. Enough of the surface for useTableData (iter + on/removeOn Insert/
- * Delete/Update).
- */
-const mockTable = <Row,>(initial: Row[]) => {
-  let rows = [...initial];
-  const inserts = new Set<() => void>();
-  const deletes = new Set<() => void>();
-  const updates = new Set<() => void>();
-  return {
-    iter: () => rows,
-    onInsert: (cb: () => void) => inserts.add(cb),
-    removeOnInsert: (cb: () => void) => inserts.delete(cb),
-    onDelete: (cb: () => void) => deletes.add(cb),
-    removeOnDelete: (cb: () => void) => deletes.delete(cb),
-    onUpdate: (cb: () => void) => updates.add(cb),
-    removeOnUpdate: (cb: () => void) => updates.delete(cb),
-    insertRow: (row: Row) => {
-      rows = [...rows, row];
-      inserts.forEach((cb) => cb());
-    },
-  };
-};
-
-const wrapperFor = (connection: DbConnection) =>
-  function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <StdbContext.Provider value={{ connection, identity: {} as Identity }}>
-        {children}
-      </StdbContext.Provider>
-    );
-  };
+const attackId = actions.findIndex((a) => a.type === "Attack");
+const buffId = actions.findIndex((a) => a.type === "Buff");
+const moveId = actions.findIndex((a) => a.type === "Move");
 
 test("useLocationEntities returns entities in the location and updates on insert", () => {
   const table = mockTable([
     { entityId: 1n, locationEntityId: 10n },
     { entityId: 2n, locationEntityId: 20n },
   ]);
-  const connection = {
-    db: { location_components: table },
-  } as unknown as DbConnection;
-
   const { result } = renderHook(() => useLocationEntities(10n), {
-    wrapper: wrapperFor(connection),
+    wrapper: stdbWrapper({ location_components: table }),
   });
 
   expect(result.current).toEqual([1n]);
+  act(() => table.insertRow({ entityId: 3n, locationEntityId: 10n }));
+  expect(result.current).toEqual([1n, 3n]);
+});
 
-  act(() => {
-    table.insertRow({ entityId: 3n, locationEntityId: 10n });
+test("useEntityProminences preserves order and fills missing entities", () => {
+  const table = mockTable([{ entityId: 1n, prominence: 5 }]);
+  // Stable array reference: a fresh array each render would re-fire the
+  // subscription effect and loop (the app passes a memoized array).
+  const entityIds = [1n, 2n];
+  const { result } = renderHook(() => useEntityProminences(entityIds), {
+    wrapper: stdbWrapper({ entity_prominence_components: table }),
   });
 
-  expect(result.current).toEqual([1n, 3n]);
+  expect(result.current).toEqual([
+    { entityId: 1n, prominence: 5 },
+    { entityId: 2n, prominence: -Infinity },
+  ]);
+});
+
+test("useHpComponent finds the row by entity id, or null when absent", () => {
+  const table = mockTable([{ entityId: 1n, hp: 3, mhp: 10 }]);
+  const wrapper = stdbWrapper({ hp_components: table });
+
+  const found = renderHook(() => useHpComponent(1n), { wrapper }).result.current;
+  expect(found?.hp).toBe(3);
+  expect(found?.mhp).toBe(10);
+  expect(
+    renderHook(() => useHpComponent(2n), { wrapper }).result.current,
+  ).toBeNull();
+  expect(
+    renderHook(() => useHpComponent(null), { wrapper }).result.current,
+  ).toBeNull();
+});
+
+test("useLocation returns the location entity id, or null when absent", () => {
+  const table = mockTable([{ entityId: 1n, locationEntityId: 99n }]);
+  const wrapper = stdbWrapper({ location_components: table });
+
+  expect(renderHook(() => useLocation(1n), { wrapper }).result.current).toBe(99n);
+  expect(renderHook(() => useLocation(2n), { wrapper }).result.current).toBeNull();
+});
+
+test("usePlayerEntity resolves the player's entity via the connected identity", () => {
+  const identity = {} as Identity;
+  const withPlayer = stdbWrapper(
+    { player_controller_components: mockTable([{ entityId: 5n, identity }]) },
+    identity,
+  );
+  expect(renderHook(() => usePlayerEntity(), { wrapper: withPlayer }).result.current).toBe(5n);
+
+  const noPlayer = stdbWrapper(
+    { player_controller_components: mockTable([]) },
+    identity,
+  );
+  expect(
+    renderHook(() => usePlayerEntity(), { wrapper: noPlayer }).result.current,
+  ).toBeNull();
+});
+
+test("useActionHotkey maps the player's bound character code to a key", () => {
+  const identity = {} as Identity;
+  const wrapper = stdbWrapper(
+    {
+      player_controller_components: mockTable([{ entityId: 5n, identity }]),
+      action_hotkeys_components: mockTable([
+        { entityId: 5n, actionHotkeys: [{ actionId: attackId, characterCode: 65 }] },
+      ]),
+    },
+    identity,
+  );
+
+  expect(
+    renderHook(() => useActionHotkey(attackId), { wrapper }).result.current,
+  ).toBe("A");
+  // No binding for this action id.
+  expect(
+    renderHook(() => useActionHotkey(moveId), { wrapper }).result.current,
+  ).toBeUndefined();
+});
+
+test("useAction looks up an action asset by id", () => {
+  expect(renderHook(() => useAction(attackId)).result.current).toBe(
+    actions[attackId],
+  );
+  expect(renderHook(() => useAction(null)).result.current).toBeNull();
+});
+
+test("useActionOptions keeps only actions valid against the target", () => {
+  const identity = {} as Identity;
+  const player = 1n;
+  const target = 2n;
+  const wrapper = stdbWrapper(
+    {
+      player_controller_components: mockTable([{ entityId: player, identity }]),
+      actions_components: mockTable([
+        { entityId: player, actionIds: [attackId, buffId, moveId] },
+      ]),
+      hp_components: mockTable([{ entityId: target, hp: 5, mhp: 10 }]),
+      allegiance_components: mockTable([
+        { entityId: player, allegianceEntityId: 10n },
+        { entityId: target, allegianceEntityId: 20n },
+      ]),
+      path_components: mockTable([{ entityId: target }]),
+    },
+    identity,
+  );
+
+  // Enemy target (different allegiance) with hp and a path: attack + move, no buff.
+  expect(
+    renderHook(() => useActionOptions(target), { wrapper }).result.current,
+  ).toEqual([attackId, moveId]);
 });

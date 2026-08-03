@@ -1,0 +1,82 @@
+import { createElement, type ReactNode } from "react";
+import type { Identity } from "spacetimedb";
+import type { DbConnection } from "../stdb";
+import { StdbContext } from "../Game/context/StdbContext/StdbContext";
+
+/**
+ * Test-only, in-memory stand-ins for a live SpacetimeDB connection. They
+ * implement just the surface the client hooks touch — `iter`, the `entityId`
+ * and `identity` unique indexes, and the insert/delete/update subscriptions —
+ * so hooks and components can be rendered against injected data with no real
+ * stdb. Isolated to the test tsconfig; never imported by app code.
+ */
+
+type Callback = () => void;
+
+export type MockTable<Row> = {
+  iter: () => Row[];
+  count: () => number;
+  onInsert: (cb: Callback) => void;
+  removeOnInsert: (cb: Callback) => void;
+  onDelete: (cb: Callback) => void;
+  removeOnDelete: (cb: Callback) => void;
+  onUpdate: (cb: Callback) => void;
+  removeOnUpdate: (cb: Callback) => void;
+  entityId: { find: (id: bigint) => Row | undefined };
+  identity: { find: (id: Identity) => Row | undefined };
+  /** Test drivers: mutate rows and fire the matching subscription. */
+  insertRow: (row: Row) => void;
+  updateRow: (match: (row: Row) => boolean, next: Row) => void;
+  deleteRow: (match: (row: Row) => boolean) => void;
+};
+
+export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
+  let rows = [...initial];
+  const inserts = new Set<Callback>();
+  const deletes = new Set<Callback>();
+  const updates = new Set<Callback>();
+  const fire = (cbs: Set<Callback>) => cbs.forEach((cb) => cb());
+  const findBy = (field: string, value: unknown): Row | undefined =>
+    rows.find((row) => (row as Record<string, unknown>)[field] === value);
+  return {
+    iter: () => rows,
+    count: () => rows.length,
+    onInsert: (cb) => void inserts.add(cb),
+    removeOnInsert: (cb) => void inserts.delete(cb),
+    onDelete: (cb) => void deletes.add(cb),
+    removeOnDelete: (cb) => void deletes.delete(cb),
+    onUpdate: (cb) => void updates.add(cb),
+    removeOnUpdate: (cb) => void updates.delete(cb),
+    entityId: { find: (id) => findBy("entityId", id) },
+    identity: { find: (id) => findBy("identity", id) },
+    insertRow: (row) => {
+      rows = [...rows, row];
+      fire(inserts);
+    },
+    updateRow: (match, next) => {
+      rows = rows.map((row) => (match(row) ? next : row));
+      fire(updates);
+    },
+    deleteRow: (match) => {
+      rows = rows.filter((row) => !match(row));
+      fire(deletes);
+    },
+  };
+};
+
+/**
+ * A React wrapper (for `renderHook`/`render`) that injects a mock connection
+ * built from the given tables (keyed by table name) and optional player
+ * identity via StdbContext. Tables are typed loosely so mock tables of
+ * different row types can be combined.
+ */
+export const stdbWrapper = (
+  tables: Record<string, unknown>,
+  identity: Identity = {} as Identity,
+) => {
+  const connection = { db: tables } as unknown as DbConnection;
+  const value = { connection, identity };
+  return function StdbWrapper({ children }: { children: ReactNode }) {
+    return createElement(StdbContext.Provider, { value }, children);
+  };
+};
