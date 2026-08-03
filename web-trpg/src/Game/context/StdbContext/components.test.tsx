@@ -7,6 +7,7 @@ import {
   useAction,
   useActionHotkey,
   useActionOptions,
+  useAllegianceComponents,
   useEntityProminences,
   useHpComponent,
   useLocation,
@@ -139,4 +140,38 @@ test("useActionOptions keeps only actions valid against the target", () => {
   expect(
     renderHook(() => useActionOptions(target), { wrapper }).result.current,
   ).toEqual([attackId, moveId]);
+});
+
+test("createUseTable hooks expose every row of a table", () => {
+  const table = mockTable([
+    { entityId: 1n, allegianceEntityId: 10n },
+    { entityId: 2n, allegianceEntityId: 20n },
+  ]);
+  const { result } = renderHook(() => useAllegianceComponents(), {
+    wrapper: stdbWrapper({ allegiance_components: table }),
+  });
+  expect(result.current.map((component) => component.entityId)).toEqual([1n, 2n]);
+});
+
+test("table-backed hooks react to deletes and updates", () => {
+  const table = mockTable([
+    { entityId: 1n, locationEntityId: 10n },
+    { entityId: 2n, locationEntityId: 10n },
+  ]);
+  const { result } = renderHook(() => useLocationEntities(10n), {
+    wrapper: stdbWrapper({ location_components: table }),
+  });
+  expect(result.current).toEqual([1n, 2n]);
+
+  act(() => table.deleteRow((row) => row.entityId === 1n));
+  expect(result.current).toEqual([2n]);
+
+  // Moving entity 2 to another location removes it from this location's list.
+  act(() =>
+    table.updateRow(
+      (row) => row.entityId === 2n,
+      { entityId: 2n, locationEntityId: 20n },
+    ),
+  );
+  expect(result.current).toEqual([]);
 });
