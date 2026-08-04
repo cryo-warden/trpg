@@ -34,6 +34,14 @@ const emptyPack = (): AssetPack => ({
   newPlayerBlob: blob({ name: { entityId: 0n, name: "unused" } }),
 });
 
+/** The smallest valid bundle: a single action and no world entities. */
+export const minimalPack = (): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    { id: ATTACK_ACTION_ID, name: "test_action", actionType: { tag: "Attack" } },
+  ],
+});
+
 /**
  * A minimal combat world: one attack action, a player owned by `playerIdentity`,
  * and a co-located hostile enemy with hp. Neither fighter has a baseline, so the
