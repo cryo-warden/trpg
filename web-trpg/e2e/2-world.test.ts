@@ -16,14 +16,14 @@ beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
 
-  seeder = await connect();
+  seeder = (await connect()).connection;
   seeder.subscriptionBuilder().subscribe(["SELECT * FROM actions"]);
   init(seeder);
   await waitFor(() => seeder.db.actions.count() > 0);
 
   // A fresh identity connecting after assets are loaded is auto-assigned a
   // player entity by new_player().
-  player = await connect();
+  player = (await connect()).connection;
   player
     .subscriptionBuilder()
     .subscribe([

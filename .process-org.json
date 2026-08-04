@@ -63,6 +63,14 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-combat": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/4-combat.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -108,7 +116,8 @@
         "test-e2e-smoke",
         "test-e2e-assets",
         "test-e2e-world",
-        "test-e2e-map"
+        "test-e2e-map",
+        "test-e2e-combat"
       ]
     }
   }

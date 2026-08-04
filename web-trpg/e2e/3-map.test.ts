@@ -16,12 +16,12 @@ beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
 
-  seeder = await connect();
+  seeder = (await connect()).connection;
   seeder.subscriptionBuilder().subscribe(["SELECT * FROM actions"]);
   init(seeder);
   await waitFor(() => seeder.db.actions.count() > 0);
 
-  player = await connect();
+  player = (await connect()).connection;
   player
     .subscriptionBuilder()
     .subscribe([

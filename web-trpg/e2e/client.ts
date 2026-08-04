@@ -1,9 +1,12 @@
+import type { Identity } from "spacetimedb";
 import { DbConnection } from "../src/stdb";
 import { SPACETIME_URI, TEST_DB } from "./harness";
 
+export type Connected = { connection: DbConnection; identity: Identity };
+
 /** Open an SDK connection to the running test instance. An empty token yields
  * a fresh identity; pass a saved token to reconnect as the same identity. */
-export const connect = (token = ""): Promise<DbConnection> =>
+export const connect = (token = ""): Promise<Connected> =>
   new Promise((resolve, reject) => {
     const timer = setTimeout(
       () => reject(new Error("timed out connecting to SpacetimeDB")),
@@ -13,9 +16,9 @@ export const connect = (token = ""): Promise<DbConnection> =>
       .withDatabaseName(TEST_DB)
       .withUri(SPACETIME_URI)
       .withToken(token)
-      .onConnect((connection) => {
+      .onConnect((connection, identity) => {
         clearTimeout(timer);
-        resolve(connection);
+        resolve({ connection, identity });
       })
       .onConnectError((error) => {
         clearTimeout(timer);
