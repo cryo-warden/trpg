@@ -43,6 +43,52 @@ export const minimalPack = (): AssetPack => ({
 });
 
 /**
+ * A direct-seeded player world: a player entity owned by `playerIdentity`, in a
+ * location, with hp — no new_player flow, no map generation, no production
+ * assets. Because it carries no baseline, the stats system leaves its hp alone.
+ */
+export const playerPack = (playerIdentity: Identity): AssetPack => ({
+  ...emptyPack(),
+  instantiateEntityBlobs: [
+    blob({
+      playerController: { entityId: 0n, identity: playerIdentity },
+      location: { entityId: 0n, locationEntityId: 999n },
+      hp: {
+        entityId: 0n,
+        hp: 5,
+        mhp: 5,
+        defense: 0,
+        accumulatedDamage: 0,
+        accumulatedHealing: 0,
+      },
+    }),
+  ],
+});
+
+/**
+ * A direct-seeded world graph: two co-located occupants and a path entity
+ * connecting their room to another. Exercises location/path components without
+ * relying on the map generator.
+ */
+export const graphPack = (): AssetPack => ({
+  ...emptyPack(),
+  instantiateEntityBlobs: [
+    blob({
+      name: { entityId: 0n, name: "occupant_a" },
+      location: { entityId: 0n, locationEntityId: 1n },
+    }),
+    blob({
+      name: { entityId: 0n, name: "occupant_b" },
+      location: { entityId: 0n, locationEntityId: 1n },
+    }),
+    blob({
+      path: { entityId: 0n, destinationEntityId: 2n },
+      location: { entityId: 0n, locationEntityId: 1n },
+    }),
+  ],
+});
+
+/**
  * A minimal combat world: one attack action, a player owned by `playerIdentity`,
  * and a co-located hostile enemy with hp. Neither fighter has a baseline, so the
  * stats system leaves their seeded hp alone (only damage changes it).

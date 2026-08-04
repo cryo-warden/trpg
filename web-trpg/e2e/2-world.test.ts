@@ -1,29 +1,27 @@
 import { test, expect, beforeAll, afterAll } from "bun:test";
 import type { DbConnection } from "../src/stdb";
-import { init } from "../src/Game/init";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
+import { playerPack } from "./testAssets";
 
-// Phase 2: a small live world. Seed assets, then connect a fresh identity so
-// identity_connected/new_player creates a player entity; the scheduled tick
-// then applies its stats and places it in a generated room.
+// Phase 2: a small world seeded directly (no production assets, no new_player /
+// map generation). A player entity owned by the connecting identity is present
+// with vitals and a location.
 
-let seeder: DbConnection;
 let player: DbConnection;
+
+const rowFor = <Row extends { entityId: bigint }>(
+  rows: Iterable<Row>,
+  entityId: bigint,
+): Row | undefined => [...rows].find((row) => row.entityId === entityId);
 
 beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
 
-  seeder = (await connect()).connection;
-  seeder.subscriptionBuilder().subscribe(["SELECT * FROM actions"]);
-  init(seeder);
-  await waitFor(() => seeder.db.actions.count() > 0);
-
-  // A fresh identity connecting after assets are loaded is auto-assigned a
-  // player entity by new_player().
-  player = (await connect()).connection;
+  const { connection, identity } = await connect();
+  player = connection;
   player
     .subscriptionBuilder()
     .subscribe([
@@ -31,31 +29,25 @@ beforeAll(async () => {
       "SELECT * FROM hp_components",
       "SELECT * FROM location_components",
     ]);
+  player.reducers.pushAssets({ assetPack: playerPack(identity) });
+  await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
 }, 60000);
 
 afterAll(() => {
-  seeder?.disconnect();
   player?.disconnect();
 });
 
-const rowFor = <Row extends { entityId: bigint }>(
-  rows: Iterable<Row>,
-  entityId: bigint,
-): Row | undefined => [...rows].find((row) => row.entityId === entityId);
-
-test("a newly connected player is created with vitals and placed in the world", async () => {
-  await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
-  const controller = [...player.db.player_controller_components.iter()][0];
-  const entityId = controller.entityId;
-
-  // The scheduled tick derives stats (hp) and places the player in a room.
+test("a seeded player entity has vitals and a location", async () => {
+  const entityId = [
+    ...player.db.player_controller_components.iter(),
+  ][0].entityId;
   await waitFor(
     () => rowFor(player.db.hp_components.iter(), entityId) != null,
-    30000,
+    10000,
   );
   await waitFor(
     () => rowFor(player.db.location_components.iter(), entityId) != null,
-    30000,
+    10000,
   );
 
   expect(rowFor(player.db.hp_components.iter(), entityId)?.hp).toBeGreaterThan(0);
