@@ -14,9 +14,16 @@ pub trait WeightedSampler {
     type Result: SpacetimeType;
     type Sample: WeightedSample<Result = Self::Result>;
     fn selections(&self) -> &Vec<Self::Sample>;
-    fn sample(&self, rng: &mut StdRng) -> &Self::Result {
+    /// Draw a sample, or `None` when there is nothing to draw — an empty
+    /// selector or one whose weights sum to zero. Callers decide how to treat a
+    /// missing draw (skip, default, etc.), so a minimal/degenerate selector
+    /// never panics.
+    fn sample(&self, rng: &mut StdRng) -> Option<&Self::Result> {
         let selections = self.selections();
         let total_weight = selections.iter().map(|v| v.weight()).sum::<Weight>();
+        if total_weight == 0 {
+            return None;
+        }
         // `index` is uniform in `0..total_weight` (get_range's max is
         // exclusive). Walking the cumulative weights, the sample whose running
         // total first exceeds `index` owns that slot. This must be a strict `>`:
@@ -28,10 +35,11 @@ pub trait WeightedSampler {
         for s in selections {
             running_total += s.weight();
             if running_total > index {
-                return s.value();
+                return Some(s.value());
             }
         }
-        panic!("Invalid weighted selection.");
+        // Unreachable while total_weight > 0, but return None rather than panic.
+        None
     }
 }
 
@@ -69,10 +77,17 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(0);
         let mut counts = vec![0u32; sampler.selections.len()];
         for _ in 0..draws {
-            let v = *sampler.sample(&mut rng);
+            let v = *sampler.sample(&mut rng).expect("non-empty sampler");
             counts[v as usize] += 1;
         }
         counts
+    }
+
+    #[test]
+    fn an_empty_selector_yields_no_sample_instead_of_panicking() {
+        let mut rng = StdRng::seed_from_u64(0);
+        let sampler = Sampler { selections: vec![] };
+        assert!(sampler.sample(&mut rng).is_none());
     }
 
     #[test]

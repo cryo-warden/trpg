@@ -53,11 +53,12 @@ impl LocationMapTheme {
             rng.get_range(self.min_decoration_count, self.max_decoration_count);
 
         for _ in 0..decoration_count {
-            let d = self.decorations_selector.sample(rng);
-            room.ecs()
-                .new()
-                .instantiate_blob(d.to_owned())
-                .insert_new_location(room.entity_id());
+            if let Some(d) = self.decorations_selector.sample(rng) {
+                room.ecs()
+                    .new()
+                    .instantiate_blob(d.to_owned())
+                    .insert_new_location(room.entity_id());
+            }
         }
     }
 }

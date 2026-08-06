@@ -107,29 +107,39 @@ impl LocationMap {
             extra_room_count,
             ..
         } = *self;
-        let total_room_count = main_room_count + extra_room_count;
+        let total_room_count = main_room_count as usize + extra_room_count as usize;
 
+        // Rooms: skip any the (possibly empty) selector cannot fill. A theme
+        // offering no room blob simply yields no rooms rather than panicking.
         let room_handles: Vec<EntityHandle> = (0..total_room_count)
-            .map(|_| {
-                let r = theme.rooms_selector.sample(&mut rng);
-                ecs.new_room(r.to_owned(), location_map_entity_id)
+            .filter_map(|_| {
+                theme
+                    .rooms_selector
+                    .sample(&mut rng)
+                    .map(|r| ecs.new_room(r.to_owned(), location_map_entity_id))
             })
             .collect();
+        let room_count = room_handles.len();
+        // Clamp the main/extra split to the rooms actually produced.
+        let main_room_count = (main_room_count as usize).min(room_count);
 
-        for i in 0..(main_room_count as usize - 1) {
-            let a = &room_handles[i];
-            let b = &room_handles[i + 1];
-            let p = theme.paths_selector.sample(&mut rng);
-            ecs.new_path(p.to_owned(), a.entity_id(), b.entity_id());
-            ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
+        // Main-path chain, connecting consecutive main rooms.
+        for i in 0..main_room_count.saturating_sub(1) {
+            if let Some(p) = theme.paths_selector.sample(&mut rng) {
+                let (a, b) = (room_handles[i].entity_id(), room_handles[i + 1].entity_id());
+                ecs.new_path(p.to_owned(), a, b);
+                ecs.new_path(p.to_owned(), b, a);
+            }
         }
 
-        for i in (main_room_count)..(total_room_count) {
-            let a = &room_handles[i as usize];
-            let b = &room_handles[rng.get_range::<u8, usize>(0, i)];
-            let p = theme.paths_selector.sample(&mut rng);
-            ecs.new_path(p.to_owned(), a.entity_id(), b.entity_id());
-            ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
+        // Extra rooms attach back to a random earlier room.
+        for i in main_room_count..room_count {
+            if let Some(p) = theme.paths_selector.sample(&mut rng) {
+                let a = room_handles[i].entity_id();
+                let b = room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
+                ecs.new_path(p.to_owned(), a, b);
+                ecs.new_path(p.to_owned(), b, a);
+            }
         }
 
         // Loop edges: the main rooms form a linear chain, so connecting a room
@@ -139,12 +149,14 @@ impl LocationMap {
         // (This is intra-map only; it is unrelated to cross-map connections.)
         if main_room_count >= 3 {
             for _ in 0..self.loop_count {
-                let a_index: usize = rng.get_range::<u8, usize>(0, main_room_count - 2);
-                let a = &room_handles[a_index];
-                let b = &room_handles[a_index + 2];
-                let p = theme.paths_selector.sample(&mut rng);
-                ecs.new_path(p.to_owned(), a.entity_id(), b.entity_id());
-                ecs.new_path(p.to_owned(), b.entity_id(), a.entity_id());
+                let a_index: usize =
+                    rng.get_range::<u32, usize>(0, (main_room_count - 2) as u32);
+                if let Some(p) = theme.paths_selector.sample(&mut rng) {
+                    let a = room_handles[a_index].entity_id();
+                    let b = room_handles[a_index + 2].entity_id();
+                    ecs.new_path(p.to_owned(), a, b);
+                    ecs.new_path(p.to_owned(), b, a);
+                }
             }
         }
 
@@ -155,13 +167,10 @@ impl LocationMap {
             room_handles.iter().take(encounter_count).collect();
         encounter_room_handles.shuffle(&mut rng);
         for r in encounter_room_handles {
-            if let Some(encounter) = ecs
-                .db
-                .encounters()
-                .id()
-                .find(self.encounter_ids_sampler.sample(&mut rng))
-            {
-                encounter.populate(&r);
+            if let Some(encounter_id) = self.encounter_ids_sampler.sample(&mut rng) {
+                if let Some(encounter) = ecs.db.encounters().id().find(*encounter_id) {
+                    encounter.populate(&r);
+                }
             }
         }
 
@@ -170,7 +179,6 @@ impl LocationMap {
             theme.decorate(r, &mut rng);
         }
 
-        let main_room_count = main_room_count as usize;
         MapGenerationResult {
             main_room_ids: room_handles[..main_room_count]
                 .iter()
