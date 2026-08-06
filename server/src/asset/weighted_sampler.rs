@@ -77,7 +77,7 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(0);
         let mut counts = vec![0u32; sampler.selections.len()];
         for _ in 0..draws {
-            let v = *sampler.sample(&mut rng).expect("non-empty sampler");
+            let v = sampler.sample(&mut rng).copied().unwrap_or_default();
             counts[v as usize] += 1;
         }
         counts

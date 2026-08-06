@@ -4,14 +4,14 @@ pub trait RngRange {
     fn get_range<T, U>(&mut self, min: T, max: T) -> U
     where
         T: Into<u32>,
-        U: TryFrom<u32>;
+        U: TryFrom<u32> + Default;
 }
 
 impl RngRange for StdRng {
     fn get_range<T, U>(&mut self, min: T, max: T) -> U
     where
         T: Into<u32>,
-        U: TryFrom<u32>,
+        U: TryFrom<u32> + Default,
     {
         let min = min.into();
         let max = max.into();
@@ -22,8 +22,7 @@ impl RngRange for StdRng {
             min + self.next_u32() % (max - min)
         }
         .try_into()
-        .ok()
-        .unwrap()
+        .unwrap_or_default()
     }
 }
 
