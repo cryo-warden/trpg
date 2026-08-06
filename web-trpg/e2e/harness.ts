@@ -47,6 +47,10 @@ export const sql = (dbName: string, query: string): string => {
   return out;
 };
 
+/** The module's log output (for diagnostics). */
+export const moduleLogs = (dbName: string = TEST_DB): string =>
+  spacetime(["logs", dbName]).out;
+
 /** Best-effort teardown of a test database. */
 export const deleteTestModule = (dbName: string = TEST_DB): void => {
   spacetime(["delete", dbName]);

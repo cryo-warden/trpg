@@ -89,6 +89,68 @@ export const graphPack = (): AssetPack => ({
 });
 
 /**
+ * A tiny map-generation world: the allegiance entities new_player requires,
+ * a baseline, and a single small map with a fixed rng seed whose theme offers
+ * one room/path/decoration blob. A fresh client is placed here through the real
+ * new_player + map-generation flow, but on test assets rather than production
+ * content.
+ */
+export const mapGenPack = (): AssetPack => ({
+  ...emptyPack(),
+  // A public action so tests can await "assets landed".
+  actions: [
+    { id: ATTACK_ACTION_ID, name: "test_action", actionType: { tag: "Move" } },
+  ],
+  baselines: [
+    {
+      id: 0,
+      name: "test_human",
+      statBlock: {
+        attack: 1,
+        mhp: 5,
+        defense: 0,
+        mep: 5,
+        actionIds: [],
+        appearanceFeatureIds: [],
+      },
+    },
+  ],
+  locationMapThemes: [
+    {
+      id: 0,
+      // Nameless blobs: NameComponent.name is unique, so a generator that
+      // stamps out many rooms/paths must not give them a fixed name.
+      decorationsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+      minDecorationCount: 0,
+      maxDecorationCount: 1,
+      pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+      roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+    },
+  ],
+  locationMaps: [
+    {
+      id: 0,
+      name: "tiny",
+      themeId: 0,
+      layout: { tag: "Path" },
+      rngSeed: 0n,
+      extraRoomCount: 0,
+      mainRoomCount: 3,
+      loopCount: 1,
+      encounterIdsSampler: { selections: [] },
+      minEncounterCount: 0,
+      maxEncounterCount: 0,
+    },
+  ],
+  // new_player resolves its starting allegiance by the name "allegiance1".
+  instantiateEntityBlobs: [
+    blob({ name: { entityId: 0n, name: "allegiance1" } }),
+    blob({ name: { entityId: 0n, name: "allegiance2" } }),
+  ],
+  newPlayerBlob: blob({ baseline: { entityId: 0n, baselineId: 0 } }),
+});
+
+/**
  * A minimal combat world: one attack action, a player owned by `playerIdentity`,
  * and a co-located hostile enemy with hp. Neither fighter has a baseline, so the
  * stats system leaves their seeded hp alone (only damage changes it).
