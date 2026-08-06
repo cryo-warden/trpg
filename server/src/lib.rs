@@ -1,3 +1,15 @@
+// No-panic / no-unsafe guard (project principle no-panic-no-unsafe-rust): these
+// deny our hand-written code from panicking or using unsafe. clippy does not
+// lint code produced by external macros (entity!, secador!, #[table],
+// #[reducer]), so this binds only our own code.
+#![deny(unsafe_code)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
+#![deny(clippy::panic)]
+#![deny(clippy::todo)]
+#![deny(clippy::unimplemented)]
+#![deny(clippy::unreachable)]
+
 mod action;
 mod appearance;
 mod asset;

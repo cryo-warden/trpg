@@ -23,6 +23,14 @@
       ],
       "dir": "."
     },
+    "clippy": {
+      "command": [
+        "cargo",
+        "clippy",
+        "--all-targets"
+      ],
+      "dir": "."
+    },
     "test-web": {
       "command": [
         "bun",
@@ -115,6 +123,7 @@
     "verify": {
       "bundle": [
         "check",
+        "clippy",
         "test",
         "test-e2e"
       ]
