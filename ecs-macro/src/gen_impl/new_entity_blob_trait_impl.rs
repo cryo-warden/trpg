@@ -87,7 +87,12 @@ impl ToTokens for EntityHandleStruct {
         let fields = entity_blob_struct.component_fields.iter().map(
             |gen_struct::EntityBlobComponentField(ctp, _)| {
                 let macro_input::ComponentTablePair { component, .. } = ctp;
-                quote! { #component: self.#component() }
+                quote! {
+                    #component: ::core::option::Option::map(
+                        self.#component(),
+                        ::core::convert::Into::into,
+                    )
+                }
             },
         );
         let gen_struct::EntityBlobStruct {

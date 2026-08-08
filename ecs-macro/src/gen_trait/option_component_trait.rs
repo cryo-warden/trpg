@@ -11,6 +11,7 @@ pub struct OptionComponentTrait {
     pub component_field_names: fundamental::FieldNames,
     pub component: Ident,
     pub component_ty: Ident,
+    pub component_blob_ty: Ident,
     pub table: Ident,
     pub with_component_struct: Ident,
     pub upsert_fn: Ident,
@@ -38,6 +39,7 @@ impl OptionComponentTrait {
             component_field_names: fundamental::FieldNames(cd.fields.to_owned()),
             component: ctp.component.to_owned(),
             component_ty: cd.component_ty.to_owned(),
+            component_blob_ty: gen_struct::blob_ident(&cd.component_ty),
             table: ctp.table.to_owned(),
             with_component_struct: wcs.with_component_struct.to_owned(),
             upsert_fn: format_ident!("upsert_{}", ctp.component),
@@ -89,6 +91,7 @@ impl ToTokens for OptionComponentTrait {
             component_field_names,
             component,
             component_ty,
+            component_blob_ty,
             table: _,
             with_component_struct,
             upsert_fn,
@@ -103,7 +106,7 @@ impl ToTokens for OptionComponentTrait {
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
           pub trait #option_component_trait: Sized + #option_get_component_trait {
-            fn #upsert_fn(self, #component: #component_ty) -> #with_component_struct<Self> {
+            fn #upsert_fn(self, #component: #component_blob_ty) -> #with_component_struct<Self> {
               let #component = if ::core::option::Option::is_some(&self.#getter_fn()) {
                 self.#update_fn(#component)
               } else {
@@ -115,16 +118,16 @@ impl ToTokens for OptionComponentTrait {
               }
             }
             fn #upsert_new_fn(self, #component_field_args) -> #with_component_struct<Self> {
-              self.#upsert_fn(#component_ty::new(#component_field_names))
+              self.#upsert_fn(#component_blob_ty { #component_field_names })
             }
-            fn #insert_fn(&self, #component: #component_ty) -> #component_ty;
-            fn #update_fn(&self, #component: #component_ty) -> #component_ty;
+            fn #insert_fn(&self, #component: #component_blob_ty) -> #component_ty;
+            fn #update_fn(&self, #component: #component_blob_ty) -> #component_ty;
             fn #delete_fn(&self);
             fn #insert_new_fn(&self, #component_field_args) -> #component_ty {
-              self.#insert_fn(#component_ty::new(#component_field_names))
+              self.#insert_fn(#component_blob_ty { #component_field_names })
             }
             fn #update_new_fn(&self, #component_field_args) -> #component_ty {
-              self.#update_fn(#component_ty::new(#component_field_names))
+              self.#update_fn(#component_blob_ty { #component_field_names })
             }
           }
         })

@@ -46,6 +46,7 @@ impl ToTokens for PassthroughWithComponentStruct {
             option_component_trait,
             component,
             component_ty,
+            component_blob_ty,
             insert_fn,
             update_fn,
             delete_fn,
@@ -53,10 +54,10 @@ impl ToTokens for PassthroughWithComponentStruct {
         } = &self.option_component_trait;
         tokens.extend(quote! {
           impl<T: #option_component_trait> #option_component_trait for #with_component_struct<T> {
-            fn #insert_fn(&self, #component: #component_ty) -> #component_ty {
+            fn #insert_fn(&self, #component: #component_blob_ty) -> #component_ty {
               self.value.#insert_fn(#component)
             }
-            fn #update_fn(&self, #component: #component_ty) -> #component_ty {
+            fn #update_fn(&self, #component: #component_blob_ty) -> #component_ty {
               self.value.#update_fn(#component)
             }
             fn #delete_fn(&self) {
@@ -105,6 +106,7 @@ impl ToTokens for EntityHandleStruct {
             option_component_trait,
             component,
             component_ty,
+            component_blob_ty,
             insert_fn,
             update_fn,
             delete_fn,
@@ -113,13 +115,11 @@ impl ToTokens for EntityHandleStruct {
         } = &self.option_component_trait;
         tokens.extend(quote! {
           impl<'a> #option_component_trait for #entity_handle_struct<'a> {
-            fn #insert_fn(&self, mut #component: #component_ty) -> #component_ty {
-              #component.#id = self.#id;
-              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component)
+            fn #insert_fn(&self, #component: #component_blob_ty) -> #component_ty {
+              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component.into_component(self.#id))
             }
-            fn #update_fn(&self, mut #component: #component_ty) -> #component_ty {
-              #component.#id = self.#id;
-              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component)
+            fn #update_fn(&self, #component: #component_blob_ty) -> #component_ty {
+              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component.into_component(self.#id))
             }
             fn #delete_fn(&self) {
               ::spacetimedb::UniqueColumn::delete(&self.ecs.db.#table().#id(), self.#id);

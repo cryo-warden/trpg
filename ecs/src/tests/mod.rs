@@ -47,7 +47,19 @@ impl<'a> EntityHandle<'a> {
 #[allow(dead_code, unused_must_use, unused_variables, path_statements)]
 fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     let e = ctx.ecs().find(0);
-    ctx.ecs().into_location_handle(LocationComponent::new(1));
+    let blob = LocationComponentBlob {
+        location_entity_id: 1,
+    };
+    let component: LocationComponent = blob.clone().into_component(7);
+    let round_tripped: LocationComponentBlob = component.clone().into();
+    assert_eq!(round_tripped.location_entity_id, 1);
+    ctx.ecs().into_location_handle(component);
+    ctx.ecs().new().instantiate_blob(EntityBlob {
+        location: Some(blob),
+        secondary_location: None,
+        path: None,
+        excess_path: None,
+    });
     assert_eq!(
         ctx.ecs()
             .new()

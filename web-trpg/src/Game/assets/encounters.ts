@@ -16,7 +16,7 @@ export const CATEGORICAL_BLOBS = [
     name: "encounter_enemy",
     /* TODO Add enemy allegiance component */
     blob: {
-      enemyController: { entityId: 0n },
+      enemyController: {},
     },
   },
 ] as const satisfies EncounterBlobAsset[];

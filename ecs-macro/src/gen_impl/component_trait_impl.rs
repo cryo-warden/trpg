@@ -80,7 +80,9 @@ impl ToTokens for ReplacementWithComponentStruct {
               &self.#component
             }
             fn #update_fn(mut self) -> Self {
-              self.#component = self.value.#option_update_fn(self.#component);
+              self.#component = self
+                .value
+                .#option_update_fn(::core::convert::Into::into(self.#component));
               self
             }
           }

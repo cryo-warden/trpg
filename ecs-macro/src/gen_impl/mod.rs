@@ -5,8 +5,8 @@ use syn::Result;
 secador::secador!(
     impl_name,
     [
+        component_blob_struct_impl,
         component_delete_trait_impl,
-        component_struct_impl,
         component_trait_impl,
         delete_entity_trait_impl,
         find_entity_handle_trait_impl,

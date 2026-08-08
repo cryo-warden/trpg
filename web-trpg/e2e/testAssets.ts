@@ -31,7 +31,7 @@ const emptyPack = (): AssetPack => ({
   instantiateEntityBlobs: [],
   // Never instantiated in these scenarios (no client triggers new_player), but
   // AssetPack requires one; a name-only blob is a valid placeholder.
-  newPlayerBlob: blob({ name: { entityId: 0n, name: "unused" } }),
+  newPlayerBlob: blob({ name: { name: "unused" } }),
 });
 
 /** The smallest valid bundle: a single action and no world entities. */
@@ -51,10 +51,9 @@ export const playerPack = (playerIdentity: Identity): AssetPack => ({
   ...emptyPack(),
   instantiateEntityBlobs: [
     blob({
-      playerController: { entityId: 0n, identity: playerIdentity },
-      location: { entityId: 0n, locationEntityId: 999n },
+      playerController: { identity: playerIdentity },
+      location: { locationEntityId: 999n },
       hp: {
-        entityId: 0n,
         hp: 5,
         mhp: 5,
         defense: 0,
@@ -74,16 +73,16 @@ export const graphPack = (): AssetPack => ({
   ...emptyPack(),
   instantiateEntityBlobs: [
     blob({
-      name: { entityId: 0n, name: "occupant_a" },
-      location: { entityId: 0n, locationEntityId: 1n },
+      name: { name: "occupant_a" },
+      location: { locationEntityId: 1n },
     }),
     blob({
-      name: { entityId: 0n, name: "occupant_b" },
-      location: { entityId: 0n, locationEntityId: 1n },
+      name: { name: "occupant_b" },
+      location: { locationEntityId: 1n },
     }),
     blob({
-      path: { entityId: 0n, destinationEntityId: 2n },
-      location: { entityId: 0n, locationEntityId: 1n },
+      path: { destinationEntityId: 2n },
+      location: { locationEntityId: 1n },
     }),
   ],
 });
@@ -144,10 +143,10 @@ export const mapGenPack = (): AssetPack => ({
   ],
   // new_player resolves its starting allegiance by the name "allegiance1".
   instantiateEntityBlobs: [
-    blob({ name: { entityId: 0n, name: "allegiance1" } }),
-    blob({ name: { entityId: 0n, name: "allegiance2" } }),
+    blob({ name: { name: "allegiance1" } }),
+    blob({ name: { name: "allegiance2" } }),
   ],
-  newPlayerBlob: blob({ baseline: { entityId: 0n, baselineId: 0 } }),
+  newPlayerBlob: blob({ baseline: { baselineId: 0 } }),
 });
 
 /**
@@ -173,23 +172,22 @@ export const combatPack = (
   ],
   instantiateEntityBlobs: [
     blob({
-      playerController: { entityId: 0n, identity: playerIdentity },
-      location: { entityId: 0n, locationEntityId: SHARED_LOCATION_ID },
-      actions: { entityId: 0n, actionIds: [ATTACK_ACTION_ID] },
-      allegiance: { entityId: 0n, allegianceEntityId: 100n },
+      playerController: { identity: playerIdentity },
+      location: { locationEntityId: SHARED_LOCATION_ID },
+      actions: { actionIds: [ATTACK_ACTION_ID] },
+      allegiance: { allegianceEntityId: 100n },
     }),
     blob({
-      enemyController: { entityId: 0n },
-      location: { entityId: 0n, locationEntityId: SHARED_LOCATION_ID },
+      enemyController: {},
+      location: { locationEntityId: SHARED_LOCATION_ID },
       hp: {
-        entityId: 0n,
         hp: enemyHp,
         mhp: enemyHp,
         defense: 0,
         accumulatedDamage: 0,
         accumulatedHealing: 0,
       },
-      allegiance: { entityId: 0n, allegianceEntityId: 200n },
+      allegiance: { allegianceEntityId: 200n },
     }),
   ],
 });

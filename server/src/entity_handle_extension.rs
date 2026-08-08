@@ -36,7 +36,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {
             hp.mhp = mhp;
-            e.update_hp(hp);
+            e.update_hp(hp.into());
         } else {
             e.insert_new_hp(mhp, mhp, 0, 0, 0);
         }
@@ -47,7 +47,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut hp_component) = e.hp() {
             hp_component.defense = defense;
-            e.update_hp(hp_component);
+            e.update_hp(hp_component.into());
         } else {
             e.insert_new_hp(0, 0, defense, 0, 0);
         }
@@ -58,7 +58,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut ep_component) = e.ep() {
             ep_component.mep = mep;
-            e.update_ep(ep_component);
+            e.update_ep(ep_component.into());
         } else {
             e.insert_new_ep(mep, mep);
         }
@@ -69,7 +69,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut c) = e.actions() {
             c.action_ids = action_ids;
-            e.update_actions(c);
+            e.update_actions(c.into());
         } else {
             e.insert_new_actions(action_ids);
         }
@@ -129,9 +129,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
         let e = self.to_handle();
         e.delete_queued_action_state();
-        e.insert_queued_action_state(ActionStateComponent {
+        e.insert_queued_action_state(ActionStateComponentBlob {
             action_id,
-            entity_id: e.entity_id(),
             sequence_index: 0,
             target_entity_id,
         });
@@ -142,7 +141,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(queued_action_state) = e.queued_action_state() {
             e.delete_queued_action_state();
-            e.insert_action_state(queued_action_state);
+            e.insert_action_state(queued_action_state.into());
         }
         self
     }

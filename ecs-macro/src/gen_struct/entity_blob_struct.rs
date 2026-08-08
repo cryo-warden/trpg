@@ -1,3 +1,4 @@
+use super::component_blob_struct::blob_ident;
 use crate::{RcSlice, fundamental, macro_input};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
@@ -8,9 +9,9 @@ pub struct EntityBlobComponentField(pub macro_input::ComponentTablePair, pub Ide
 
 impl ToTokens for EntityBlobComponentField {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Self(macro_input::ComponentTablePair { component, .. }, component_ty) = self;
+        let Self(macro_input::ComponentTablePair { component, .. }, component_blob_ty) = self;
         tokens.extend(quote! {
-            pub #component: ::core::option::Option<#component_ty>
+            pub #component: ::core::option::Option<#component_blob_ty>
         })
     }
 }
@@ -38,7 +39,7 @@ impl EntityBlobStruct {
                 .iter()
                 .flat_map(|cdwa| {
                     cdwa.component_table_pairs.iter().map(|ctp| {
-                        EntityBlobComponentField(ctp.to_owned(), cdwa.component_ty.to_owned())
+                        EntityBlobComponentField(ctp.to_owned(), blob_ident(&cdwa.component_ty))
                     })
                 })
                 .collect(),

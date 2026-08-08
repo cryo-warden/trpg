@@ -65,7 +65,6 @@ export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
     ...entityBlobAsset,
     baseline: entityBlobAsset.baseline
       ? {
-          entityId: 0n,
           baselineId: baselines.findIndex(
             (b) => b.name === entityBlobAsset.baseline,
           ),
@@ -73,7 +72,6 @@ export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
       : undefined,
     traits: entityBlobAsset.traits
       ? {
-          entityId: 0n,
           traitIds: (entityBlobAsset.traits ?? []).map((name) =>
             traits.findIndex((t) => t.name === name),
           ),
@@ -81,19 +79,16 @@ export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
       : undefined,
     actionHotkeys: entityBlobAsset.actionHotkeys
       ? {
-          entityId: 0n,
           actionHotkeys: getActionHotkeys(entityBlobAsset.actionHotkeys),
         }
       : undefined,
     name: entityBlobAsset.name
       ? {
-          entityId: 0n,
           name: entityBlobAsset.name,
         }
       : undefined,
     appearanceFeatures: entityBlobAsset.appearanceFeatureNames
       ? {
-          entityId: 0n,
           appearanceFeatureIndexes: getAppearanceFeatures(
             entityBlobAsset.appearanceFeatureNames,
           ),

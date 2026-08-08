@@ -10,103 +10,103 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  ActionHotkeysComponent,
-  ActionStateComponent,
-  ActionsComponent,
-  AllegianceComponent,
-  AppearanceFeaturesComponent,
-  AttackComponent,
-  BaselineComponent,
-  NameComponent,
-  LocationComponent,
-  PathComponent,
-  TraitsComponent,
-  StatBlockCacheComponent,
-  FlagComponent,
-  HpComponent,
-  EpComponent,
-  PlayerControllerComponent,
-  EnemyControllerComponent,
-  EntityProminenceComponent,
-  TimerComponent,
-  LocationMapComponent,
+  NameComponentBlob,
+  LocationComponentBlob,
+  PathComponentBlob,
+  AllegianceComponentBlob,
+  BaselineComponentBlob,
+  TraitsComponentBlob,
+  StatBlockCacheComponentBlob,
+  FlagComponentBlob,
+  AttackComponentBlob,
+  HpComponentBlob,
+  EpComponentBlob,
+  PlayerControllerComponentBlob,
+  EnemyControllerComponentBlob,
+  ActionStateComponentBlob,
+  ActionsComponentBlob,
+  ActionHotkeysComponentBlob,
+  EntityProminenceComponentBlob,
+  TimerComponentBlob,
+  LocationMapComponentBlob,
+  AppearanceFeaturesComponentBlob,
 } from "./types";
 
 
 export default __t.row({
   get name() {
-    return __t.option(NameComponent);
+    return __t.option(NameComponentBlob);
   },
   get location() {
-    return __t.option(LocationComponent);
+    return __t.option(LocationComponentBlob);
   },
   get path() {
-    return __t.option(PathComponent);
+    return __t.option(PathComponentBlob);
   },
   get allegiance() {
-    return __t.option(AllegianceComponent);
+    return __t.option(AllegianceComponentBlob);
   },
   get baseline() {
-    return __t.option(BaselineComponent);
+    return __t.option(BaselineComponentBlob);
   },
   get traits() {
-    return __t.option(TraitsComponent);
+    return __t.option(TraitsComponentBlob);
   },
   get equipmentStatBlockCache() {
-    return __t.option(StatBlockCacheComponent).name("equipment_stat_block_cache");
+    return __t.option(StatBlockCacheComponentBlob).name("equipment_stat_block_cache");
   },
   get statusStatBlockCache() {
-    return __t.option(StatBlockCacheComponent).name("status_stat_block_cache");
+    return __t.option(StatBlockCacheComponentBlob).name("status_stat_block_cache");
   },
   get traitsStatBlockCache() {
-    return __t.option(StatBlockCacheComponent).name("traits_stat_block_cache");
+    return __t.option(StatBlockCacheComponentBlob).name("traits_stat_block_cache");
   },
   get traitsStatBlockDirtyFlag() {
-    return __t.option(FlagComponent).name("traits_stat_block_dirty_flag");
+    return __t.option(FlagComponentBlob).name("traits_stat_block_dirty_flag");
   },
   get totalStatBlockDirtyFlag() {
-    return __t.option(FlagComponent).name("total_stat_block_dirty_flag");
+    return __t.option(FlagComponentBlob).name("total_stat_block_dirty_flag");
   },
   get attack() {
-    return __t.option(AttackComponent);
+    return __t.option(AttackComponentBlob);
   },
   get hp() {
-    return __t.option(HpComponent);
+    return __t.option(HpComponentBlob);
   },
   get ep() {
-    return __t.option(EpComponent);
+    return __t.option(EpComponentBlob);
   },
   get playerController() {
-    return __t.option(PlayerControllerComponent).name("player_controller");
+    return __t.option(PlayerControllerComponentBlob).name("player_controller");
   },
   get enemyController() {
-    return __t.option(EnemyControllerComponent).name("enemy_controller");
+    return __t.option(EnemyControllerComponentBlob).name("enemy_controller");
   },
   get actionState() {
-    return __t.option(ActionStateComponent).name("action_state");
+    return __t.option(ActionStateComponentBlob).name("action_state");
   },
   get queuedActionState() {
-    return __t.option(ActionStateComponent).name("queued_action_state");
+    return __t.option(ActionStateComponentBlob).name("queued_action_state");
   },
   get actions() {
-    return __t.option(ActionsComponent);
+    return __t.option(ActionsComponentBlob);
   },
   get actionHotkeys() {
-    return __t.option(ActionHotkeysComponent).name("action_hotkeys");
+    return __t.option(ActionHotkeysComponentBlob).name("action_hotkeys");
   },
   get entityProminence() {
-    return __t.option(EntityProminenceComponent).name("entity_prominence");
+    return __t.option(EntityProminenceComponentBlob).name("entity_prominence");
   },
   get entityDeletionTimer() {
-    return __t.option(TimerComponent).name("entity_deletion_timer");
+    return __t.option(TimerComponentBlob).name("entity_deletion_timer");
   },
   get playerDeactivationTimer() {
-    return __t.option(TimerComponent).name("player_deactivation_timer");
+    return __t.option(TimerComponentBlob).name("player_deactivation_timer");
   },
   get locationMap() {
-    return __t.option(LocationMapComponent).name("location_map");
+    return __t.option(LocationMapComponentBlob).name("location_map");
   },
   get appearanceFeatures() {
-    return __t.option(AppearanceFeaturesComponent).name("appearance_features");
+    return __t.option(AppearanceFeaturesComponentBlob).name("appearance_features");
   },
 });

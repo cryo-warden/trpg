@@ -49,6 +49,13 @@ export const ActionHotkeysComponent = __t.object("ActionHotkeysComponent", {
 });
 export type ActionHotkeysComponent = __Infer<typeof ActionHotkeysComponent>;
 
+export const ActionHotkeysComponentBlob = __t.object("ActionHotkeysComponentBlob", {
+  get actionHotkeys() {
+    return __t.array(ActionHotkey);
+  },
+});
+export type ActionHotkeysComponentBlob = __Infer<typeof ActionHotkeysComponentBlob>;
+
 export const ActionStateComponent = __t.object("ActionStateComponent", {
   entityId: __t.u64(),
   targetEntityId: __t.u64(),
@@ -56,6 +63,13 @@ export const ActionStateComponent = __t.object("ActionStateComponent", {
   sequenceIndex: __t.i32(),
 });
 export type ActionStateComponent = __Infer<typeof ActionStateComponent>;
+
+export const ActionStateComponentBlob = __t.object("ActionStateComponentBlob", {
+  targetEntityId: __t.u64(),
+  actionId: __t.u32(),
+  sequenceIndex: __t.i32(),
+});
+export type ActionStateComponentBlob = __Infer<typeof ActionStateComponentBlob>;
 
 export const ActionStep = __t.object("ActionStep", {
   id: __t.u64(),
@@ -83,11 +97,21 @@ export const ActionsComponent = __t.object("ActionsComponent", {
 });
 export type ActionsComponent = __Infer<typeof ActionsComponent>;
 
+export const ActionsComponentBlob = __t.object("ActionsComponentBlob", {
+  actionIds: __t.array(__t.u32()),
+});
+export type ActionsComponentBlob = __Infer<typeof ActionsComponentBlob>;
+
 export const AllegianceComponent = __t.object("AllegianceComponent", {
   entityId: __t.u64(),
   allegianceEntityId: __t.u64(),
 });
 export type AllegianceComponent = __Infer<typeof AllegianceComponent>;
+
+export const AllegianceComponentBlob = __t.object("AllegianceComponentBlob", {
+  allegianceEntityId: __t.u64(),
+});
+export type AllegianceComponentBlob = __Infer<typeof AllegianceComponentBlob>;
 
 export const AppearanceFeature = __t.object("AppearanceFeature", {
   index: __t.u32(),
@@ -111,6 +135,11 @@ export const AppearanceFeaturesComponent = __t.object("AppearanceFeaturesCompone
   appearanceFeatureIndexes: __t.array(__t.u32()),
 });
 export type AppearanceFeaturesComponent = __Infer<typeof AppearanceFeaturesComponent>;
+
+export const AppearanceFeaturesComponentBlob = __t.object("AppearanceFeaturesComponentBlob", {
+  appearanceFeatureIndexes: __t.array(__t.u32()),
+});
+export type AppearanceFeaturesComponentBlob = __Infer<typeof AppearanceFeaturesComponentBlob>;
 
 export const AssetPack = __t.object("AssetPack", {
   get actions() {
@@ -158,6 +187,11 @@ export const AttackComponent = __t.object("AttackComponent", {
 });
 export type AttackComponent = __Infer<typeof AttackComponent>;
 
+export const AttackComponentBlob = __t.object("AttackComponentBlob", {
+  attack: __t.i32(),
+});
+export type AttackComponentBlob = __Infer<typeof AttackComponentBlob>;
+
 export const Baseline = __t.object("Baseline", {
   id: __t.u32(),
   name: __t.string(),
@@ -172,6 +206,11 @@ export const BaselineComponent = __t.object("BaselineComponent", {
   baselineId: __t.u32(),
 });
 export type BaselineComponent = __Infer<typeof BaselineComponent>;
+
+export const BaselineComponentBlob = __t.object("BaselineComponentBlob", {
+  baselineId: __t.u32(),
+});
+export type BaselineComponentBlob = __Infer<typeof BaselineComponentBlob>;
 
 // The tagged union or sum type for the algebraic type `Buff`.
 export const Buff = __t.enum("Buff", {
@@ -212,6 +251,9 @@ export const EnemyControllerComponent = __t.object("EnemyControllerComponent", {
 });
 export type EnemyControllerComponent = __Infer<typeof EnemyControllerComponent>;
 
+export const EnemyControllerComponentBlob = __t.object("EnemyControllerComponentBlob", {});
+export type EnemyControllerComponentBlob = __Infer<typeof EnemyControllerComponentBlob>;
+
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
 });
@@ -219,79 +261,79 @@ export type Entity = __Infer<typeof Entity>;
 
 export const EntityBlob = __t.object("EntityBlob", {
   get name() {
-    return __t.option(NameComponent);
+    return __t.option(NameComponentBlob);
   },
   get location() {
-    return __t.option(LocationComponent);
+    return __t.option(LocationComponentBlob);
   },
   get path() {
-    return __t.option(PathComponent);
+    return __t.option(PathComponentBlob);
   },
   get allegiance() {
-    return __t.option(AllegianceComponent);
+    return __t.option(AllegianceComponentBlob);
   },
   get baseline() {
-    return __t.option(BaselineComponent);
+    return __t.option(BaselineComponentBlob);
   },
   get traits() {
-    return __t.option(TraitsComponent);
+    return __t.option(TraitsComponentBlob);
   },
   get equipmentStatBlockCache() {
-    return __t.option(StatBlockCacheComponent);
+    return __t.option(StatBlockCacheComponentBlob);
   },
   get statusStatBlockCache() {
-    return __t.option(StatBlockCacheComponent);
+    return __t.option(StatBlockCacheComponentBlob);
   },
   get traitsStatBlockCache() {
-    return __t.option(StatBlockCacheComponent);
+    return __t.option(StatBlockCacheComponentBlob);
   },
   get traitsStatBlockDirtyFlag() {
-    return __t.option(FlagComponent);
+    return __t.option(FlagComponentBlob);
   },
   get totalStatBlockDirtyFlag() {
-    return __t.option(FlagComponent);
+    return __t.option(FlagComponentBlob);
   },
   get attack() {
-    return __t.option(AttackComponent);
+    return __t.option(AttackComponentBlob);
   },
   get hp() {
-    return __t.option(HpComponent);
+    return __t.option(HpComponentBlob);
   },
   get ep() {
-    return __t.option(EpComponent);
+    return __t.option(EpComponentBlob);
   },
   get playerController() {
-    return __t.option(PlayerControllerComponent);
+    return __t.option(PlayerControllerComponentBlob);
   },
   get enemyController() {
-    return __t.option(EnemyControllerComponent);
+    return __t.option(EnemyControllerComponentBlob);
   },
   get actionState() {
-    return __t.option(ActionStateComponent);
+    return __t.option(ActionStateComponentBlob);
   },
   get queuedActionState() {
-    return __t.option(ActionStateComponent);
+    return __t.option(ActionStateComponentBlob);
   },
   get actions() {
-    return __t.option(ActionsComponent);
+    return __t.option(ActionsComponentBlob);
   },
   get actionHotkeys() {
-    return __t.option(ActionHotkeysComponent);
+    return __t.option(ActionHotkeysComponentBlob);
   },
   get entityProminence() {
-    return __t.option(EntityProminenceComponent);
+    return __t.option(EntityProminenceComponentBlob);
   },
   get entityDeletionTimer() {
-    return __t.option(TimerComponent);
+    return __t.option(TimerComponentBlob);
   },
   get playerDeactivationTimer() {
-    return __t.option(TimerComponent);
+    return __t.option(TimerComponentBlob);
   },
   get locationMap() {
-    return __t.option(LocationMapComponent);
+    return __t.option(LocationMapComponentBlob);
   },
   get appearanceFeatures() {
-    return __t.option(AppearanceFeaturesComponent);
+    return __t.option(AppearanceFeaturesComponentBlob);
   },
 });
 export type EntityBlob = __Infer<typeof EntityBlob>;
@@ -328,12 +370,23 @@ export const EntityProminenceComponent = __t.object("EntityProminenceComponent",
 });
 export type EntityProminenceComponent = __Infer<typeof EntityProminenceComponent>;
 
+export const EntityProminenceComponentBlob = __t.object("EntityProminenceComponentBlob", {
+  prominence: __t.i32(),
+});
+export type EntityProminenceComponentBlob = __Infer<typeof EntityProminenceComponentBlob>;
+
 export const EpComponent = __t.object("EpComponent", {
   entityId: __t.u64(),
   ep: __t.i32(),
   mep: __t.i32(),
 });
 export type EpComponent = __Infer<typeof EpComponent>;
+
+export const EpComponentBlob = __t.object("EpComponentBlob", {
+  ep: __t.i32(),
+  mep: __t.i32(),
+});
+export type EpComponentBlob = __Infer<typeof EpComponentBlob>;
 
 // The tagged union or sum type for the algebraic type `EventType`.
 export const EventType = __t.enum("EventType", {
@@ -349,6 +402,9 @@ export const FlagComponent = __t.object("FlagComponent", {
 });
 export type FlagComponent = __Infer<typeof FlagComponent>;
 
+export const FlagComponentBlob = __t.object("FlagComponentBlob", {});
+export type FlagComponentBlob = __Infer<typeof FlagComponentBlob>;
+
 export const HpComponent = __t.object("HpComponent", {
   entityId: __t.u64(),
   hp: __t.i32(),
@@ -358,6 +414,15 @@ export const HpComponent = __t.object("HpComponent", {
   accumulatedHealing: __t.i32(),
 });
 export type HpComponent = __Infer<typeof HpComponent>;
+
+export const HpComponentBlob = __t.object("HpComponentBlob", {
+  hp: __t.i32(),
+  mhp: __t.i32(),
+  defense: __t.i32(),
+  accumulatedDamage: __t.i32(),
+  accumulatedHealing: __t.i32(),
+});
+export type HpComponentBlob = __Infer<typeof HpComponentBlob>;
 
 // The tagged union or sum type for the algebraic type `Layout`.
 export const Layout = __t.enum("Layout", {
@@ -371,6 +436,11 @@ export const LocationComponent = __t.object("LocationComponent", {
   locationEntityId: __t.u64(),
 });
 export type LocationComponent = __Infer<typeof LocationComponent>;
+
+export const LocationComponentBlob = __t.object("LocationComponentBlob", {
+  locationEntityId: __t.u64(),
+});
+export type LocationComponentBlob = __Infer<typeof LocationComponentBlob>;
 
 export const LocationMap = __t.object("LocationMap", {
   id: __t.u32(),
@@ -396,6 +466,11 @@ export const LocationMapComponent = __t.object("LocationMapComponent", {
   locationMapEntityId: __t.u64(),
 });
 export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
+
+export const LocationMapComponentBlob = __t.object("LocationMapComponentBlob", {
+  locationMapEntityId: __t.u64(),
+});
+export type LocationMapComponentBlob = __Infer<typeof LocationMapComponentBlob>;
 
 export const LocationMapConnection = __t.object("LocationMapConnection", {
   id: __t.u32(),
@@ -426,17 +501,32 @@ export const NameComponent = __t.object("NameComponent", {
 });
 export type NameComponent = __Infer<typeof NameComponent>;
 
+export const NameComponentBlob = __t.object("NameComponentBlob", {
+  name: __t.string(),
+});
+export type NameComponentBlob = __Infer<typeof NameComponentBlob>;
+
 export const PathComponent = __t.object("PathComponent", {
   entityId: __t.u64(),
   destinationEntityId: __t.u64(),
 });
 export type PathComponent = __Infer<typeof PathComponent>;
 
+export const PathComponentBlob = __t.object("PathComponentBlob", {
+  destinationEntityId: __t.u64(),
+});
+export type PathComponentBlob = __Infer<typeof PathComponentBlob>;
+
 export const PlayerControllerComponent = __t.object("PlayerControllerComponent", {
   entityId: __t.u64(),
   identity: __t.identity(),
 });
 export type PlayerControllerComponent = __Infer<typeof PlayerControllerComponent>;
+
+export const PlayerControllerComponentBlob = __t.object("PlayerControllerComponentBlob", {
+  identity: __t.identity(),
+});
+export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
 
 export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
   get key() {
@@ -472,6 +562,13 @@ export const StatBlockCacheComponent = __t.object("StatBlockCacheComponent", {
 });
 export type StatBlockCacheComponent = __Infer<typeof StatBlockCacheComponent>;
 
+export const StatBlockCacheComponentBlob = __t.object("StatBlockCacheComponentBlob", {
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type StatBlockCacheComponentBlob = __Infer<typeof StatBlockCacheComponentBlob>;
+
 export const SystemTimer = __t.object("SystemTimer", {
   scheduledId: __t.u64(),
   scheduledAt: __t.scheduleAt(),
@@ -483,6 +580,11 @@ export const TimerComponent = __t.object("TimerComponent", {
   timestamp: __t.timestamp(),
 });
 export type TimerComponent = __Infer<typeof TimerComponent>;
+
+export const TimerComponentBlob = __t.object("TimerComponentBlob", {
+  timestamp: __t.timestamp(),
+});
+export type TimerComponentBlob = __Infer<typeof TimerComponentBlob>;
 
 export const Trait = __t.object("Trait", {
   id: __t.u32(),
@@ -498,4 +600,9 @@ export const TraitsComponent = __t.object("TraitsComponent", {
   traitIds: __t.array(__t.u32()),
 });
 export type TraitsComponent = __Infer<typeof TraitsComponent>;
+
+export const TraitsComponentBlob = __t.object("TraitsComponentBlob", {
+  traitIds: __t.array(__t.u32()),
+});
+export type TraitsComponentBlob = __Infer<typeof TraitsComponentBlob>;
 
