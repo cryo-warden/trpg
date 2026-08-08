@@ -1,0 +1,1 @@
+"Implemented and fully verified: cargo test green (ecs + server), web check (stdb-generate + eslint + tsc) green, 103 web unit tests pass, cargo clippy no errors (only pre-existing style warnings), all 6 e2e phases pass against a real local SpacetimeDB with the new blob schema. Committed as 4abfd56 on master."
