@@ -1,4 +1,4 @@
-import { actions } from "../assets";
+import { ActionAsset } from "../assets";
 import { ActionId, EntityId } from "../trpg";
 
 /**
@@ -29,6 +29,9 @@ export const isAlly = ({
 
 export type ActionOptionInputs = AllegianceInputs & {
   actionIds: ActionId[];
+  /** Resolves a runtime action id to its local asset (via the subscribed
+   * actions table's id -> name mapping); null when unknown. */
+  actionAssetOf: (actionId: ActionId) => ActionAsset | null;
   targetHasHp: boolean;
   targetHasPath: boolean;
 };
@@ -36,6 +39,7 @@ export type ActionOptionInputs = AllegianceInputs & {
 /** The subset of the player's actions that are valid against the target. */
 export const getActionOptions = ({
   actionIds,
+  actionAssetOf,
   targetHasHp,
   targetHasPath,
   ...allegiance
@@ -43,7 +47,7 @@ export const getActionOptions = ({
   const ally = isAlly(allegiance);
 
   return actionIds.filter((id) => {
-    const action = actions[id];
+    const action = actionAssetOf(id);
     if (!action) return false;
 
     switch (action.type) {

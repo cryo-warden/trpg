@@ -1,5 +1,5 @@
 import type { Identity } from "spacetimedb";
-import type { AssetPack, EntityBlob } from "../src/stdb/types";
+import type { AssetPack, EntityBlobAuthor } from "../src/stdb/types";
 
 /**
  * Test-specific asset bundles for E2E scenarios — deliberately tiny and
@@ -9,7 +9,8 @@ import type { AssetPack, EntityBlob } from "../src/stdb/types";
  * (players, enemies) directly rather than going through map generation.
  */
 
-const blob = (partial: Partial<EntityBlob>): EntityBlob => partial as EntityBlob;
+const blob = (partial: Partial<EntityBlobAuthor>): EntityBlobAuthor =>
+  partial as EntityBlobAuthor;
 
 export const ATTACK_ACTION_ID = 0;
 
@@ -142,7 +143,7 @@ export const mapGenPack = (): AssetPack => ({
     { name: "allegiance2", blob: blob({}) },
   ],
   newPlayerBlob: blob({
-    baseline: { baselineId: 0 },
+    baselineName: "test_human",
     allegiance: { allegianceEntityId: { tag: "Named", value: "allegiance1" } },
   }),
 });
@@ -168,7 +169,7 @@ export const combatPack = (
     blob({
       playerController: { identity: playerIdentity },
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
-      actions: { actionIds: [ATTACK_ACTION_ID] },
+      actionNames: ["test_attack"],
       allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
     }),
     blob({

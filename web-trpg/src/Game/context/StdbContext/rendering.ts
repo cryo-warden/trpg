@@ -1,8 +1,8 @@
-import { actions } from "../../assets";
 import { ActionId } from "../../trpg";
+import { useActionAsset } from "./assetLookup";
 
 export const renderingQueries = ["select * from observable_events"];
 
 export const useActionName = (actionId: ActionId) => {
-  return actions[actionId]?.appearance.displayName ?? "Unknown Action";
+  return useActionAsset(actionId)?.appearance.displayName ?? "Unknown Action";
 };

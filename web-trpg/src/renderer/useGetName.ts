@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useAppearanceFeatureAssetsOf } from "../Game/context/StdbContext/assetLookup";
 import { useAppearanceFeaturesComponents } from "../Game/context/StdbContext/components";
 import { EntityId } from "../Game/trpg";
 import { getName } from "../Game/domain/appearance";
@@ -11,6 +12,7 @@ import { getName } from "../Game/domain/appearance";
  */
 export const useGetName = (viewpointEntityId: EntityId | null) => {
   const appearanceFeaturesComponents = useAppearanceFeaturesComponents();
+  const appearanceFeatureAssetsOf = useAppearanceFeatureAssetsOf();
 
   return useMemo(() => {
     const appearanceFeatureIndexesByEntityId = new Map(
@@ -27,8 +29,14 @@ export const useGetName = (viewpointEntityId: EntityId | null) => {
       getName({
         ...input,
         viewpoint: viewpointEntityId,
-        appearanceFeatureIndexesOf: (entityId) =>
-          appearanceFeatureIndexesByEntityId.get(entityId) ?? null,
+        appearanceFeaturesOf: (entityId) =>
+          appearanceFeatureAssetsOf(
+            appearanceFeatureIndexesByEntityId.get(entityId) ?? null,
+          ),
       });
-  }, [appearanceFeaturesComponents, viewpointEntityId]);
+  }, [
+    appearanceFeaturesComponents,
+    appearanceFeatureAssetsOf,
+    viewpointEntityId,
+  ]);
 };

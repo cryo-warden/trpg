@@ -1,15 +1,15 @@
 import { test, expect } from "bun:test";
 import { render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
-import { actions } from "./assets";
-import { mockTable } from "../testSupport/mockConnection";
+import { ACTIONS } from "./assets/actions";
+import { actionIdOf, mockTable } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { ActionButton } from "./ActionButton";
 
 test("ActionButton shows the action name and queues the action on click", () => {
   const identity = {} as Identity;
   const calls: unknown[] = [];
-  const bopId = actions.findIndex((a) => a.name === "bop");
+  const bopId = actionIdOf("bop");
   const wrapper = gameWrapper(
     {
       player_controller_components: mockTable([{ entityId: 1n, identity }]),
@@ -25,7 +25,7 @@ test("ActionButton shows the action name and queues the action on click", () => 
     wrapper,
   });
   const button = getByRole("button");
-  expect(button.textContent).toContain(actions[bopId].appearance.displayName);
+  expect(button.textContent).toContain(ACTIONS.bop.appearance.displayName);
 
   button.click();
   expect(calls).toEqual([{ actionId: bopId, targetEntityId: 2n }]);

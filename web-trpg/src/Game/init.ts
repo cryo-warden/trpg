@@ -12,7 +12,7 @@ import { APPEARANCE_FEATURES } from "./assets/appearance_features";
 import { BASELINES } from "./assets/baselines";
 import { TRAITS } from "./assets/traits";
 import { getEncounterAuthors, getEncounterBlobAuthors } from "./assets/encounters";
-import { getEntityBlob } from "./assets/entity_blobs";
+import { getEntityBlobAuthor } from "./assets/entity_blobs";
 import {
   getLocationMapAuthors,
   getLocationMapThemeAuthors,
@@ -77,11 +77,11 @@ export const init = (connection: DbConnection) => {
       locationMaps: getLocationMapAuthors(LOCATION_MAPS),
 
       namedInstantiateEntityBlobs: Object.entries(namedEntityBlobs).map(
-        ([name, blob]) => ({ name, blob: getEntityBlob(blob) }),
+        ([name, blob]) => ({ name, blob: getEntityBlobAuthor(blob) }),
       ),
       instantiateEntityBlobs: [],
 
-      newPlayerBlob: getEntityBlob(newPlayerBlob),
+      newPlayerBlob: getEntityBlobAuthor(newPlayerBlob),
     },
   });
 };

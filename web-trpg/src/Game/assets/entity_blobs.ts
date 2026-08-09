@@ -1,40 +1,40 @@
-import { ActionHotkey, EntityBlob } from "../../stdb/types";
-import { Simplify } from "../../structural/Simplify";
-import { ACTIONS, ActionName } from "./actions";
-import {
-  APPEARANCE_FEATURES,
-  AppearanceFeatureName,
-} from "./appearance_features";
-import { BASELINES, BaselineName } from "./baselines";
-import { TRAITS, TraitName } from "./traits";
+import { EntityBlobAuthor } from "../../stdb/types";
+import { ActionName } from "./actions";
+import { AppearanceFeatureName } from "./appearance_features";
+import { BaselineName } from "./baselines";
+import { TraitName } from "./traits";
 
 export type ActionHotkeyAsset = {
   actionName: ActionName;
   hotkey: string;
 };
 
-export type EntityBlobAsset = Simplify<
-  Partial<
-    Omit<
-      EntityBlob,
-      | "name"
-      | "baseline"
-      | "traits"
-      | "actionHotkeys"
-      | "appearanceFeatures"
-      | "allegiance"
-    >
-  > & {
-    name?: string;
-    baseline?: BaselineName;
-    traits?: TraitName[];
-    actionHotkeys?: ActionHotkeyAsset[];
-    appearanceFeatureNames?: AppearanceFeatureName[];
-    /** The registered name of the allegiance entity, resolved server-side at
-     * instantiation via the Named selector. */
-    allegiance?: string;
-  }
->;
+// All asset and entity references in a blob asset are NAMES. The client never
+// resolves any of them: the pushed EntityBlobAuthor carries the names, and
+// push_assets on the server converts them to ids (the forward half of the
+// name/id asymmetry — see server/src/asset/author.rs).
+export type EntityBlobAsset = Partial<
+  Omit<
+    EntityBlobAuthor,
+    | "name"
+    | "baselineName"
+    | "traitNames"
+    | "actionNames"
+    | "actionHotkeys"
+    | "appearanceFeatureNames"
+    | "allegiance"
+  >
+> & {
+  name?: string;
+  baseline?: BaselineName;
+  traits?: TraitName[];
+  actionNames?: ActionName[];
+  actionHotkeys?: ActionHotkeyAsset[];
+  appearanceFeatureNames?: AppearanceFeatureName[];
+  /** The registered name of the allegiance entity, resolved server-side at
+   * instantiation via the Named selector. */
+  allegiance?: string;
+};
 
 /** Blobs instantiated at push time and registered under their Record key, so
  * other blobs can reference them with Named selectors. */
@@ -54,66 +54,35 @@ export const NEW_PLAYER_BLOB = {
   allegiance: "allegiance1",
 } as const satisfies EntityBlobAsset;
 
-// Asset references INSIDE entity blobs (baseline, traits, actions,
-// appearance features) are still integer ids on the wire, so this one
-// forward conversion remains client-side: the ids below are the enumeration
-// order of this same push's Records, which is exactly how push_assets
-// assigns them. Once blob fields grow asset-name selectors (like the
-// entity-id Named selector), this moves server-side with the rest of the
-// forward conversion.
-const assetId = (record: Record<string, unknown>, name: string): number =>
-  Object.keys(record).indexOf(name);
-
-const getActionHotkeys = (
-  actionHotkeyAssets: ActionHotkeyAsset[],
-): ActionHotkey[] =>
-  actionHotkeyAssets.map(
-    (aha) =>
-      ({
-        actionId: assetId(ACTIONS, aha.actionName),
-        characterCode: aha.hotkey.charCodeAt(0),
-      }) as ActionHotkey,
-  );
-
-export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
-  return {
-    ...entityBlobAsset,
-    baseline: entityBlobAsset.baseline
-      ? {
-          baselineId: assetId(BASELINES, entityBlobAsset.baseline),
-        }
-      : undefined,
-    traits: entityBlobAsset.traits
-      ? {
-          traitIds: (entityBlobAsset.traits ?? []).map((name) =>
-            assetId(TRAITS, name),
-          ),
-        }
-      : undefined,
-    actionHotkeys: entityBlobAsset.actionHotkeys
-      ? {
-          actionHotkeys: getActionHotkeys(entityBlobAsset.actionHotkeys),
-        }
-      : undefined,
-    name: entityBlobAsset.name
-      ? {
-          name: entityBlobAsset.name,
-        }
-      : undefined,
-    allegiance: entityBlobAsset.allegiance
-      ? {
-          allegianceEntityId: {
-            tag: "Named",
-            value: entityBlobAsset.allegiance,
-          },
-        }
-      : undefined,
-    appearanceFeatures: entityBlobAsset.appearanceFeatureNames
-      ? {
-          appearanceFeatureIndexes: entityBlobAsset.appearanceFeatureNames.map(
-            (name) => assetId(APPEARANCE_FEATURES, name),
-          ),
-        }
-      : undefined,
-  } as EntityBlob;
-};
+export const getEntityBlobAuthor = (
+  entityBlobAsset: EntityBlobAsset,
+): EntityBlobAuthor => ({
+  name: entityBlobAsset.name ? { name: entityBlobAsset.name } : undefined,
+  location: entityBlobAsset.location,
+  path: entityBlobAsset.path,
+  allegiance: entityBlobAsset.allegiance
+    ? {
+        allegianceEntityId: {
+          tag: "Named",
+          value: entityBlobAsset.allegiance,
+        },
+      }
+    : undefined,
+  baselineName: entityBlobAsset.baseline,
+  traitNames: entityBlobAsset.traits ? [...entityBlobAsset.traits] : undefined,
+  actionNames: entityBlobAsset.actionNames
+    ? [...entityBlobAsset.actionNames]
+    : undefined,
+  actionHotkeys: entityBlobAsset.actionHotkeys?.map((hotkeyAsset) => ({
+    actionName: hotkeyAsset.actionName,
+    characterCode: hotkeyAsset.hotkey.charCodeAt(0),
+  })),
+  appearanceFeatureNames: entityBlobAsset.appearanceFeatureNames
+    ? [...entityBlobAsset.appearanceFeatureNames]
+    : undefined,
+  hp: entityBlobAsset.hp,
+  ep: entityBlobAsset.ep,
+  attack: entityBlobAsset.attack,
+  playerController: entityBlobAsset.playerController,
+  enemyController: entityBlobAsset.enemyController,
+});

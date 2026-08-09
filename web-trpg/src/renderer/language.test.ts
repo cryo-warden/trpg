@@ -1,11 +1,20 @@
 import { test, expect } from "bun:test";
 import type { EntityEvent } from "../stdb/types";
 import type { NarrationName } from "../Game/domain/narration";
-import { actions } from "../Game/assets";
+import { ACTIONS } from "../Game/assets/actions";
 import { textMarkup } from "./textMarkup";
 import { renderEventWith } from "./language";
-import { enUs } from "./en-us";
-import { debug } from "./debug";
+import { createEnUs } from "./en-us";
+import { createDebug } from "./debug";
+
+// The test plays both roles: ids follow the Records' enumeration order (as
+// push_assets interns them), and actionAssetOf is the id -> asset resolution
+// the hooks normally provide from the subscribed actions table.
+const orderedActions = Object.values(ACTIONS);
+const languageDeps = {
+  actionAssetOf: (id: number) => orderedActions[id] ?? null,
+};
+const bopId = Object.keys(ACTIONS).indexOf("bop");
 
 const names: Record<string, string> = { "1": "the goblin", "2": "the hero" };
 const getName: NarrationName = ({ named }) =>
@@ -37,8 +46,8 @@ const unknownEvent = (): EntityEvent =>
 
 // en-us and debug are intentionally identical copies; cover both.
 for (const [label, language] of [
-  ["en-us", enUs],
-  ["debug", debug],
+  ["en-us", createEnUs(languageDeps)],
+  ["debug", createDebug(languageDeps)],
 ] as const) {
   const render = renderEventWith({
     language,
@@ -84,7 +93,6 @@ for (const [label, language] of [
   });
 
   test(`${label}: renders StartAction with the action's begin template`, () => {
-    const bopId = actions.findIndex((a) => a.name === "bop");
     expect(render(startAction(bopId))).toBe(
       "The goblin wound up to bop the hero.",
     );

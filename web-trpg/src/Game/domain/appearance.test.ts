@@ -1,12 +1,6 @@
 import { test, expect } from "bun:test";
-import {
-  APPEARANCE_FEATURES,
-  AppearanceFeatureName,
-} from "../assets/appearance_features";
+import { APPEARANCE_FEATURES } from "../assets/appearance_features";
 import { describeAppearance, getName } from "./appearance";
-
-const featureIndex = (name: AppearanceFeatureName) =>
-  Object.keys(APPEARANCE_FEATURES).indexOf(name);
 
 const noAppearance = () => null;
 
@@ -15,7 +9,7 @@ test("returns null for an absent name", () => {
     getName({
       named: undefined,
       viewpoint: null,
-      appearanceFeatureIndexesOf: noAppearance,
+      appearanceFeaturesOf: noAppearance,
     }),
   ).toBeNull();
 });
@@ -25,7 +19,7 @@ test("passes literal string names through unchanged", () => {
     getName({
       named: "the oak door",
       viewpoint: null,
-      appearanceFeatureIndexesOf: noAppearance,
+      appearanceFeaturesOf: noAppearance,
     }),
   ).toBe("the oak door");
 });
@@ -35,7 +29,7 @@ test("names the viewpoint entity 'you', or 'yourself' when it is also the subjec
     getName({
       named: 1n,
       viewpoint: 1n,
-      appearanceFeatureIndexesOf: noAppearance,
+      appearanceFeaturesOf: noAppearance,
     }),
   ).toBe("you");
   expect(
@@ -43,36 +37,36 @@ test("names the viewpoint entity 'you', or 'yourself' when it is also the subjec
       named: 1n,
       subject: 1n,
       viewpoint: 1n,
-      appearanceFeatureIndexesOf: noAppearance,
+      appearanceFeaturesOf: noAppearance,
     }),
   ).toBe("yourself");
 });
 
 test("falls back to 'something' when appearance is unknown or empty", () => {
   expect(
-    getName({ named: 2n, viewpoint: 1n, appearanceFeatureIndexesOf: () => null }),
+    getName({ named: 2n, viewpoint: 1n, appearanceFeaturesOf: () => null }),
   ).toBe("something");
   expect(
-    getName({ named: 2n, viewpoint: 1n, appearanceFeatureIndexesOf: () => [] }),
+    getName({ named: 2n, viewpoint: 1n, appearanceFeaturesOf: () => [] }),
   ).toBe("something");
 });
 
-// describeAppearance resolves feature indexes into "adjective, adjective noun".
+// describeAppearance turns resolved features into "adjective, adjective noun".
 test("describeAppearance names a bare noun", () => {
-  expect(describeAppearance([featureIndex("human")])).toBe("human");
+  expect(describeAppearance([APPEARANCE_FEATURES.human])).toBe("human");
 });
 
 test("describeAppearance prefixes adjectives, highest priority last", () => {
   expect(
     describeAppearance([
-      featureIndex("human"),
-      featureIndex("tiny"), // priority 1000
-      featureIndex("small"), // priority 900
+      APPEARANCE_FEATURES.human,
+      APPEARANCE_FEATURES.tiny, // priority 1000
+      APPEARANCE_FEATURES.small, // priority 900
     ]),
   ).toBe("small, tiny human");
 });
 
-test("describeAppearance falls back to 'something' for null or unknown features", () => {
+test("describeAppearance falls back to 'something' for null or no features", () => {
   expect(describeAppearance(null)).toBe("something");
-  expect(describeAppearance([9999])).toBe("something");
+  expect(describeAppearance([])).toBe("something");
 });

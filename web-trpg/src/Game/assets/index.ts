@@ -1,10 +1,9 @@
 import { StatBlockAsset } from "./types";
 import { BASELINES } from "./baselines";
-import { ActionAsset, ACTIONS, ActionName } from "./actions";
+import { ActionAsset, ACTIONS } from "./actions";
 import {
   APPEARANCE_FEATURES,
   AppearanceFeatureAsset,
-  AppearanceFeatureName,
 } from "./appearance_features";
 import {
   NAMED_ENTITY_BLOBS,
@@ -29,23 +28,16 @@ export type {
   LocationMapAsset,
 };
 
-// Ordered views of the asset Records for code that starts from a runtime id
-// (component data): ids are assigned server-side by the enumeration order of
-// the pushed Records, so indexing these arrays by id is the backward
-// (id -> name/display) conversion for data from this same push. Once
-// incremental asset updates land (ids preserved across pushes by name), this
-// must switch to looking the name up in the subscribed asset tables instead.
-const ordered = <T>(record: Record<string, T>) =>
-  Object.entries(record).map(([name, body]) => ({ name, ...body }));
-
-export const actions: readonly ({ name: ActionName } & ActionAsset)[] =
-  ordered(ACTIONS) as ({ name: ActionName } & ActionAsset)[];
-export const appearanceFeatures: readonly ({
-  name: AppearanceFeatureName;
-} & AppearanceFeatureAsset)[] = ordered(APPEARANCE_FEATURES) as ({
-  name: AppearanceFeatureName;
-} & AppearanceFeatureAsset)[];
-
+// All assets are Records keyed by canonical name. The client never converts a
+// name to an id — the server interns names at push time — and code that holds
+// a runtime id from component data resolves it back to a name through the
+// subscribed asset tables (see context/StdbContext/assetLookup.ts), then
+// looks the asset up here.
+export const actions = ACTIONS as Record<string, ActionAsset>;
+export const appearanceFeatures = APPEARANCE_FEATURES as Record<
+  string,
+  AppearanceFeatureAsset
+>;
 export const baselines = BASELINES as Record<string, StatBlockAsset>;
 export const traits = TRAITS as Record<string, StatBlockAsset>;
 export const namedEntityBlobs = NAMED_ENTITY_BLOBS as Record<

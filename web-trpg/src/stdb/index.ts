@@ -46,6 +46,7 @@ import ActionStepsRow from "./action_steps_table";
 import ActionsRow from "./actions_table";
 import ActionsComponentsRow from "./actions_components_table";
 import AllegianceComponentsRow from "./allegiance_components_table";
+import AppearanceFeaturesRow from "./appearance_features_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
@@ -153,6 +154,21 @@ const tablesSchema = __schema({
       { name: 'allegiance_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, AllegianceComponentsRow),
+  appearance_features: __table({
+    name: 'appearance_features',
+    indexes: [
+      { accessor: 'index', name: 'appearance_features_index_idx_btree', algorithm: 'btree', columns: [
+        'index',
+      ] },
+      { accessor: 'name', name: 'appearance_features_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'appearance_features_index_key', constraint: 'unique', columns: ['index'] },
+      { name: 'appearance_features_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, AppearanceFeaturesRow),
   appearance_features_components: __table({
     name: 'appearance_features_components',
     indexes: [

@@ -1,14 +1,13 @@
 import { test, expect } from "bun:test";
 import { render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
-import { actions } from "./assets";
-import { mockTable } from "../testSupport/mockConnection";
+import { actionIdOf, mockTable } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { SelfPanel } from "./SelfPanel";
 
 test("SelfPanel renders the player's detailed panel with self-valid action buttons", () => {
   const identity = {} as Identity;
-  const buffId = actions.findIndex((a) => a.type === "Buff");
+  const buffId = actionIdOf("divine_heal");
   const wrapper = gameWrapper(
     {
       player_controller_components: mockTable([{ entityId: 1n, identity }]),

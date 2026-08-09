@@ -14,9 +14,9 @@ test("getEncounterAuthors passes names through for server-side resolution", () =
   expect(slime1?.blobNames).toEqual(["slime"]);
 });
 
-test("getEncounterBlobAuthors builds a named EntityBlob per blob asset", () => {
+test("getEncounterBlobAuthors builds a named blob author per blob asset", () => {
   const authors = getEncounterBlobAuthors();
   expect(authors.map((a) => a.name)).toEqual(Object.keys(ENCOUNTER_BLOBS));
   const slime = authors.find((a) => a.name === "slime");
-  expect(slime?.blob.baseline?.baselineId).toBeGreaterThanOrEqual(0);
+  expect(slime?.blob.baselineName).toBe("slime");
 });

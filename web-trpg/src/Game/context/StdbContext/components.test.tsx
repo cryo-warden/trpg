@@ -1,8 +1,12 @@
 import { test, expect } from "bun:test";
 import { renderHook, act } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
-import { actions } from "../../assets";
-import { mockTable, stdbWrapper } from "../../../testSupport/mockConnection";
+import { ACTIONS } from "../../assets/actions";
+import {
+  actionIdOf,
+  mockTable,
+  stdbWrapper,
+} from "../../../testSupport/mockConnection";
 import {
   useAction,
   useActionHotkey,
@@ -15,9 +19,9 @@ import {
   usePlayerEntity,
 } from "./components";
 
-const attackId = actions.findIndex((a) => a.type === "Attack");
-const buffId = actions.findIndex((a) => a.type === "Buff");
-const moveId = actions.findIndex((a) => a.type === "Move");
+const attackId = actionIdOf("bop");
+const buffId = actionIdOf("divine_heal");
+const moveId = actionIdOf("move");
 
 test("useLocationEntities returns entities in the location and updates on insert", () => {
   const table = mockTable([
@@ -109,11 +113,17 @@ test("useActionHotkey maps the player's bound character code to a key", () => {
   ).toBeUndefined();
 });
 
-test("useAction looks up an action asset by id", () => {
-  expect(renderHook(() => useAction(attackId)).result.current).toBe(
-    actions[attackId],
-  );
-  expect(renderHook(() => useAction(null)).result.current).toBeNull();
+test("useAction looks up an action asset by id through the actions table", () => {
+  const wrapper = stdbWrapper({});
+  expect(
+    renderHook(() => useAction(attackId), { wrapper }).result.current,
+  ).toEqual({
+    name: "bop",
+    ...ACTIONS.bop,
+  });
+  expect(
+    renderHook(() => useAction(null), { wrapper }).result.current,
+  ).toBeNull();
 });
 
 test("useActionOptions keeps only actions valid against the target", () => {

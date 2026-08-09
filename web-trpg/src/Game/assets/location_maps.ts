@@ -1,27 +1,27 @@
 import {
-  EntityBlobSample,
-  EntityBlobsSampler,
+  EntityBlobSampleAuthor,
+  EntityBlobsSamplerAuthor,
   Layout,
   LocationMapAuthor,
   LocationMapThemeAuthor,
 } from "../../stdb/types";
 import { EncountersSamplerAsset } from "./encounters";
-import { EntityBlobAsset, getEntityBlob } from "./entity_blobs";
+import { EntityBlobAsset, getEntityBlobAuthor } from "./entity_blobs";
 
 export type EntityBlobSampleAsset = {
   blob: EntityBlobAsset;
-} & Omit<EntityBlobSample, "blob">;
+} & Omit<EntityBlobSampleAuthor, "blob">;
 
 export type EntityBlobsSamplerAsset = EntityBlobSampleAsset[];
 
 export const getEntityBlobsSampler = (
   asset: EntityBlobsSamplerAsset,
-): EntityBlobsSampler => {
+): EntityBlobsSamplerAuthor => {
   return {
     selections: asset.map((s) => {
       return {
         ...s,
-        blob: getEntityBlob(s.blob),
+        blob: getEntityBlobAuthor(s.blob),
       };
     }),
   };

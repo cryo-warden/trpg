@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { actions } from "../../assets";
 import { getActionOptions } from "../../domain/actionOptions";
 import { ActionId, EntityId } from "../../trpg";
+import { useActionAsset, useActionAssetOf } from "./assetLookup";
 import { RowType } from "./RowType";
 import { useStdbIdentity } from "./useStdb";
 import { createUseTable } from "./useTable";
@@ -85,6 +85,7 @@ export const useLocation = (entityId: EntityId | null) => {
 export const useActionOptions = (target: Target): ActionId[] => {
   const playerEntity = usePlayerEntity();
   const actionsComponent = useActionsComponent(playerEntity);
+  const actionAssetOf = useActionAssetOf();
 
   const targetHp = useHpComponent(target);
   const playerAllegiance = useAllegianceComponent(playerEntity);
@@ -95,6 +96,7 @@ export const useActionOptions = (target: Target): ActionId[] => {
     () =>
       getActionOptions({
         actionIds: actionsComponent?.actionIds ?? [],
+        actionAssetOf,
         targetHasHp: !!targetHp,
         targetHasPath: !!targetPath,
         playerEntity,
@@ -104,6 +106,7 @@ export const useActionOptions = (target: Target): ActionId[] => {
       }),
     [
       actionsComponent,
+      actionAssetOf,
       playerEntity,
       targetHp,
       playerAllegiance,
@@ -175,5 +178,4 @@ export const usePlayerEntity = (): EntityId | null => {
   return playerControllerComponent.entityId;
 };
 
-export const useAction = (id: ActionId | null) =>
-  useMemo(() => (id == null ? null : (actions[id] ?? null)), [id]);
+export const useAction = (id: ActionId | null) => useActionAsset(id);

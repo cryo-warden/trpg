@@ -4,7 +4,7 @@ import type { Identity } from "spacetimedb";
 import type { EntityEvent } from "../stdb/types";
 import { mockTable, stdbWrapper } from "../testSupport/mockConnection";
 import { useLanguageRenderer } from "./useLanguageRenderer";
-import { enUs } from "./en-us";
+import { createEnUs } from "./en-us";
 
 const attackEvent = (
   owner: bigint,
@@ -31,7 +31,7 @@ test("useLanguageRenderer renders an event to React nodes for the player's viewp
     identity,
   );
 
-  const { renderEvent } = renderHook(() => useLanguageRenderer(enUs), {
+  const { renderEvent } = renderHook(() => useLanguageRenderer(createEnUs), {
     wrapper,
   }).result.current;
 

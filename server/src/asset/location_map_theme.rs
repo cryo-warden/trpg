@@ -10,8 +10,8 @@ use spacetimedb::{rand::rngs::StdRng, table, SpacetimeType};
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EntityBlobSample {
-    weight: u8,
-    blob: EntityBlob,
+    pub weight: u8,
+    pub blob: EntityBlob,
 }
 
 impl WeightedSample for EntityBlobSample {
@@ -26,7 +26,7 @@ impl WeightedSample for EntityBlobSample {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EntityBlobsSampler {
-    selections: Vec<EntityBlobSample>,
+    pub selections: Vec<EntityBlobSample>,
 }
 
 impl WeightedSampler for EntityBlobsSampler {

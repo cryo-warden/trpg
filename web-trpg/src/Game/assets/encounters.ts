@@ -1,5 +1,5 @@
 import { EncounterAuthor, EncounterBlobAuthor } from "../../stdb/types";
-import { EntityBlobAsset, getEntityBlob } from "./entity_blobs";
+import { EntityBlobAsset, getEntityBlobAuthor } from "./entity_blobs";
 
 export type EncounterBlobAsset = { blob: EntityBlobAsset };
 
@@ -52,7 +52,7 @@ export type EncounterName = keyof typeof ENCOUNTERS;
 export const getEncounterBlobAuthors = (): EncounterBlobAuthor[] =>
   Object.entries(ENCOUNTER_BLOBS).map(([name, asset]) => ({
     name,
-    blob: getEntityBlob(asset.blob),
+    blob: getEntityBlobAuthor(asset.blob),
   }));
 
 export type EncountersSamplerAsset = {

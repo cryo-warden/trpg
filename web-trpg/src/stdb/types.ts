@@ -52,6 +52,12 @@ export const ActionHotkey = __t.object("ActionHotkey", {
 });
 export type ActionHotkey = __Infer<typeof ActionHotkey>;
 
+export const ActionHotkeyAuthor = __t.object("ActionHotkeyAuthor", {
+  actionName: __t.string(),
+  characterCode: __t.u32(),
+});
+export type ActionHotkeyAuthor = __Infer<typeof ActionHotkeyAuthor>;
+
 export const ActionHotkeysComponent = __t.object("ActionHotkeysComponent", {
   entityId: __t.u64(),
   get actionHotkeys() {
@@ -193,13 +199,13 @@ export const AssetPack = __t.object("AssetPack", {
     return __t.array(LocationMapAuthor);
   },
   get namedInstantiateEntityBlobs() {
-    return __t.array(NamedEntityBlob);
+    return __t.array(NamedEntityBlobAuthor);
   },
   get instantiateEntityBlobs() {
-    return __t.array(EntityBlob);
+    return __t.array(EntityBlobAuthor);
   },
   get newPlayerBlob() {
-    return EntityBlob;
+    return EntityBlobAuthor;
   },
 });
 export type AssetPack = __Infer<typeof AssetPack>;
@@ -268,7 +274,7 @@ export type EncounterBlob = __Infer<typeof EncounterBlob>;
 export const EncounterBlobAuthor = __t.object("EncounterBlobAuthor", {
   name: __t.string(),
   get blob() {
-    return EntityBlob;
+    return EntityBlobAuthor;
   },
 });
 export type EncounterBlobAuthor = __Infer<typeof EncounterBlobAuthor>;
@@ -378,6 +384,42 @@ export const EntityBlob = __t.object("EntityBlob", {
 });
 export type EntityBlob = __Infer<typeof EntityBlob>;
 
+export const EntityBlobAuthor = __t.object("EntityBlobAuthor", {
+  get name() {
+    return __t.option(NameComponentBlob);
+  },
+  get location() {
+    return __t.option(LocationComponentBlob);
+  },
+  get path() {
+    return __t.option(PathComponentBlob);
+  },
+  get allegiance() {
+    return __t.option(AllegianceComponentBlob);
+  },
+  baselineName: __t.option(__t.string()),
+  traitNames: __t.option(__t.array(__t.string())),
+  actionNames: __t.option(__t.array(__t.string())),
+  actionHotkeys: __t.option(__t.array(ActionHotkeyAuthor)),
+  appearanceFeatureNames: __t.option(__t.array(__t.string())),
+  get hp() {
+    return __t.option(HpComponentBlob);
+  },
+  get ep() {
+    return __t.option(EpComponentBlob);
+  },
+  get attack() {
+    return __t.option(AttackComponentBlob);
+  },
+  get playerController() {
+    return __t.option(PlayerControllerComponentBlob);
+  },
+  get enemyController() {
+    return __t.option(EnemyControllerComponentBlob);
+  },
+});
+export type EntityBlobAuthor = __Infer<typeof EntityBlobAuthor>;
+
 export const EntityBlobSample = __t.object("EntityBlobSample", {
   weight: __t.u8(),
   get blob() {
@@ -386,12 +428,27 @@ export const EntityBlobSample = __t.object("EntityBlobSample", {
 });
 export type EntityBlobSample = __Infer<typeof EntityBlobSample>;
 
+export const EntityBlobSampleAuthor = __t.object("EntityBlobSampleAuthor", {
+  weight: __t.u8(),
+  get blob() {
+    return EntityBlobAuthor;
+  },
+});
+export type EntityBlobSampleAuthor = __Infer<typeof EntityBlobSampleAuthor>;
+
 export const EntityBlobsSampler = __t.object("EntityBlobsSampler", {
   get selections() {
     return __t.array(EntityBlobSample);
   },
 });
 export type EntityBlobsSampler = __Infer<typeof EntityBlobsSampler>;
+
+export const EntityBlobsSamplerAuthor = __t.object("EntityBlobsSamplerAuthor", {
+  get selections() {
+    return __t.array(EntityBlobSampleAuthor);
+  },
+});
+export type EntityBlobsSamplerAuthor = __Infer<typeof EntityBlobsSamplerAuthor>;
 
 export const EntityEvent = __t.object("EntityEvent", {
   id: __t.u64(),
@@ -570,15 +627,15 @@ export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 export const LocationMapThemeAuthor = __t.object("LocationMapThemeAuthor", {
   name: __t.string(),
   get decorationsSelector() {
-    return EntityBlobsSampler;
+    return EntityBlobsSamplerAuthor;
   },
   minDecorationCount: __t.u8(),
   maxDecorationCount: __t.u8(),
   get pathsSelector() {
-    return EntityBlobsSampler;
+    return EntityBlobsSamplerAuthor;
   },
   get roomsSelector() {
-    return EntityBlobsSampler;
+    return EntityBlobsSamplerAuthor;
   },
 });
 export type LocationMapThemeAuthor = __Infer<typeof LocationMapThemeAuthor>;
@@ -600,13 +657,13 @@ export const NamedEntity = __t.object("NamedEntity", {
 });
 export type NamedEntity = __Infer<typeof NamedEntity>;
 
-export const NamedEntityBlob = __t.object("NamedEntityBlob", {
+export const NamedEntityBlobAuthor = __t.object("NamedEntityBlobAuthor", {
   name: __t.string(),
   get blob() {
-    return EntityBlob;
+    return EntityBlobAuthor;
   },
 });
-export type NamedEntityBlob = __Infer<typeof NamedEntityBlob>;
+export type NamedEntityBlobAuthor = __Infer<typeof NamedEntityBlobAuthor>;
 
 export const PathComponent = __t.object("PathComponent", {
   entityId: __t.u64(),

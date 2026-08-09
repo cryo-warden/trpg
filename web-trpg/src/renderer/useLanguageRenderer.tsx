@@ -1,11 +1,12 @@
 import { useMemo, type ReactNode } from "react";
+import { useActionAssetOf } from "../Game/context/StdbContext/assetLookup";
 import { usePlayerEntity } from "../Game/context/StdbContext/components";
 import { EntityEvent } from "../stdb/types";
 import "./debug.css";
 import { reactMarkup } from "./reactMarkup";
 import { useGetClassName } from "./useGetClassName";
 import { useGetName } from "./useGetName";
-import { Language, renderEventWith } from "./language";
+import { CreateLanguage, renderEventWith } from "./language";
 
 /**
  * Binds a {@link Language} to the React rendering target and to the live game
@@ -19,15 +20,16 @@ import { Language, renderEventWith } from "./language";
  * via `renderEventWith` with `textMarkup`.
  */
 export const useLanguageRenderer = <TContext,>(
-  language: Language<TContext>,
+  createLanguage: CreateLanguage<TContext>,
 ) => {
   const playerEntity = usePlayerEntity();
   const getName = useGetName(playerEntity);
   const getClassName = useGetClassName(playerEntity);
+  const actionAssetOf = useActionAssetOf();
 
   const renderEvent = useMemo(() => {
     const render = renderEventWith({
-      language,
+      language: createLanguage({ actionAssetOf }),
       markup: reactMarkup,
       getName,
       getClassName,
@@ -35,7 +37,7 @@ export const useLanguageRenderer = <TContext,>(
     return (event: EntityEvent): ReactNode => (
       <div className="debug renderer">{render(event)}</div>
     );
-  }, [language, getName, getClassName]);
+  }, [createLanguage, actionAssetOf, getName, getClassName]);
 
   return { renderEvent };
 };

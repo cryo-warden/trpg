@@ -9,7 +9,8 @@ use crate::{
     asset::{
         author::{
             ActionAuthor, AppearanceFeatureAuthor, EncounterAuthor, EncounterBlobAuthor,
-            LocationMapAuthor, LocationMapThemeAuthor, StatBlockAuthor, StatBlockOwnerAuthor,
+            EntityBlobAuthor, EntityBlobsSamplerAuthor, LocationMapAuthor, LocationMapThemeAuthor,
+            NamedEntityBlobAuthor, StatBlockAuthor, StatBlockOwnerAuthor,
         },
         baseline::{baselines, Baseline},
         encounter::{encounter_blobs, encounters, Encounter, EncounterBlob},
@@ -17,12 +18,18 @@ use crate::{
             location_map_connections, location_maps, EncounterIdSample, EncounterIdsSampler,
             LocationMap, LocationMapConnection,
         },
-        location_map_theme::{location_map_themes, LocationMapTheme},
+        location_map_theme::{
+            location_map_themes, EntityBlobSample, EntityBlobsSampler, LocationMapTheme,
+        },
         r#trait::{traits, Trait},
         stat_block::StatBlock,
     },
     ecs_extension::EcsExtension,
-    entity::{EntityBlob, InstantiateEntityBlob, NewEntityHandle},
+    entity::{
+        ActionHotkey, ActionHotkeysComponentBlob, ActionsComponentBlob,
+        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob, InstantiateEntityBlob,
+        NewEntityHandle, TraitsComponentBlob,
+    },
 };
 
 pub mod author;
@@ -47,14 +54,6 @@ struct SpecialEntityBlob {
     blob: EntityBlob,
 }
 
-/// A blob instantiated at push time whose entity is registered under `name`,
-/// so later instantiations can reference it with a Named selector.
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct NamedEntityBlob {
-    pub name: String,
-    pub blob: EntityBlob,
-}
-
 #[derive(SpacetimeType)]
 pub struct AssetPack {
     actions: Vec<ActionAuthor>,
@@ -66,11 +65,11 @@ pub struct AssetPack {
     location_map_themes: Vec<LocationMapThemeAuthor>,
     location_maps: Vec<LocationMapAuthor>,
 
-    named_instantiate_entity_blobs: Vec<NamedEntityBlob>,
+    named_instantiate_entity_blobs: Vec<NamedEntityBlobAuthor>,
 
-    instantiate_entity_blobs: Vec<EntityBlob>,
+    instantiate_entity_blobs: Vec<EntityBlobAuthor>,
 
-    new_player_blob: EntityBlob,
+    new_player_blob: EntityBlobAuthor,
 }
 
 /// Assign ids to a kind's authored names by enumeration order, rejecting
@@ -94,11 +93,121 @@ fn resolve_name(ids: &HashMap<String, u32>, kind: &str, name: &str) -> Result<u3
         .ok_or_else(|| format!("Unknown {} name \"{}\".", kind, name))
 }
 
-fn resolve_stat_block(
-    author: StatBlockAuthor,
-    action_ids: &HashMap<String, u32>,
-    appearance_feature_ids: &HashMap<String, u32>,
-) -> Result<StatBlock, String> {
+/// The per-kind name -> id maps a blob author needs; built once per push.
+struct AssetNameMaps {
+    actions: HashMap<String, u32>,
+    appearance_features: HashMap<String, u32>,
+    baselines: HashMap<String, u32>,
+    traits: HashMap<String, u32>,
+}
+
+/// Resolve an authored blob's asset-name references into the stored
+/// EntityBlob's integer ids. Runtime-state components are never authored, so
+/// they are always None here.
+fn resolve_entity_blob(
+    author: EntityBlobAuthor,
+    maps: &AssetNameMaps,
+) -> Result<EntityBlob, String> {
+    Ok(EntityBlob {
+        name: author.name,
+        location: author.location,
+        path: author.path,
+        allegiance: author.allegiance,
+        baseline: author
+            .baseline_name
+            .map(|n| {
+                Ok::<_, String>(BaselineComponentBlob {
+                    baseline_id: resolve_name(&maps.baselines, "baseline", &n)?,
+                })
+            })
+            .transpose()?,
+        traits: author
+            .trait_names
+            .map(|names| {
+                Ok::<_, String>(TraitsComponentBlob {
+                    trait_ids: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.traits, "trait", n))
+                        .collect::<Result<_, _>>()?,
+                })
+            })
+            .transpose()?,
+        actions: author
+            .action_names
+            .map(|names| {
+                Ok::<_, String>(ActionsComponentBlob {
+                    action_ids: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.actions, "action", n))
+                        .collect::<Result<_, _>>()?,
+                })
+            })
+            .transpose()?,
+        action_hotkeys: author
+            .action_hotkeys
+            .map(|hotkeys| {
+                Ok::<_, String>(ActionHotkeysComponentBlob {
+                    action_hotkeys: hotkeys
+                        .into_iter()
+                        .map(|h| {
+                            Ok::<_, String>(ActionHotkey {
+                                action_id: resolve_name(&maps.actions, "action", &h.action_name)?,
+                                character_code: h.character_code,
+                            })
+                        })
+                        .collect::<Result<_, _>>()?,
+                })
+            })
+            .transpose()?,
+        appearance_features: author
+            .appearance_feature_names
+            .map(|names| {
+                Ok::<_, String>(AppearanceFeaturesComponentBlob {
+                    appearance_feature_indexes: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
+                        .collect::<Result<_, _>>()?,
+                })
+            })
+            .transpose()?,
+        hp: author.hp,
+        ep: author.ep,
+        attack: author.attack,
+        player_controller: author.player_controller,
+        enemy_controller: author.enemy_controller,
+        equipment_stat_block_cache: None,
+        status_stat_block_cache: None,
+        traits_stat_block_cache: None,
+        traits_stat_block_dirty_flag: None,
+        total_stat_block_dirty_flag: None,
+        action_state: None,
+        queued_action_state: None,
+        entity_prominence: None,
+        entity_deletion_timer: None,
+        player_deactivation_timer: None,
+        location_map: None,
+    })
+}
+
+fn resolve_entity_blobs_sampler(
+    author: EntityBlobsSamplerAuthor,
+    maps: &AssetNameMaps,
+) -> Result<EntityBlobsSampler, String> {
+    Ok(EntityBlobsSampler {
+        selections: author
+            .selections
+            .into_iter()
+            .map(|s| {
+                Ok::<_, String>(EntityBlobSample {
+                    weight: s.weight,
+                    blob: resolve_entity_blob(s.blob, maps)?,
+                })
+            })
+            .collect::<Result<_, _>>()?,
+    })
+}
+
+fn resolve_stat_block(author: StatBlockAuthor, maps: &AssetNameMaps) -> Result<StatBlock, String> {
     let StatBlockAuthor {
         attack,
         mhp,
@@ -114,11 +223,11 @@ fn resolve_stat_block(
         mep,
         action_ids: action_names
             .iter()
-            .map(|n| resolve_name(action_ids, "action", n))
+            .map(|n| resolve_name(&maps.actions, "action", n))
             .collect::<Result<_, _>>()?,
         appearance_feature_ids: appearance_feature_names
             .iter()
-            .map(|n| resolve_name(appearance_feature_ids, "appearance feature", n))
+            .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
             .collect::<Result<_, _>>()?,
     })
 }
@@ -161,6 +270,12 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         "appearance feature",
         asset_pack.appearance_features.iter().map(|a| &a.name),
     )?;
+    let maps = AssetNameMaps {
+        actions: action_ids,
+        appearance_features: appearance_feature_ids,
+        baselines: intern_names("baseline", asset_pack.baselines.iter().map(|b| &b.name))?,
+        traits: intern_names("trait", asset_pack.traits.iter().map(|t| &t.name))?,
+    };
     for (id, a) in asset_pack.appearance_features.into_iter().enumerate() {
         ctx.db.appearance_features().insert(AppearanceFeature {
             index: id as u32,
@@ -175,7 +290,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.baselines().insert(Baseline {
             id: id as u32,
             name: b.name,
-            stat_block: resolve_stat_block(b.stat_block, &action_ids, &appearance_feature_ids)?,
+            stat_block: resolve_stat_block(b.stat_block, &maps)?,
         });
     }
 
@@ -183,7 +298,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.traits().insert(Trait {
             id: id as u32,
             name: t.name,
-            stat_block: resolve_stat_block(t.stat_block, &action_ids, &appearance_feature_ids)?,
+            stat_block: resolve_stat_block(t.stat_block, &maps)?,
         });
     }
 
@@ -195,7 +310,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.encounter_blobs().insert(EncounterBlob {
             id: id as u32,
             name: b.name,
-            blob: b.blob,
+            blob: resolve_entity_blob(b.blob, &maps)?,
         });
     }
 
@@ -226,11 +341,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.location_map_themes().insert(LocationMapTheme {
             id: id as u32,
             name: t.name,
-            decorations_selector: t.decorations_selector,
+            decorations_selector: resolve_entity_blobs_sampler(t.decorations_selector, &maps)?,
             min_decoration_count: t.min_decoration_count,
             max_decoration_count: t.max_decoration_count,
-            paths_selector: t.paths_selector,
-            rooms_selector: t.rooms_selector,
+            paths_selector: resolve_entity_blobs_sampler(t.paths_selector, &maps)?,
+            rooms_selector: resolve_entity_blobs_sampler(t.rooms_selector, &maps)?,
         });
     }
 
@@ -285,19 +400,23 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     for nb in asset_pack.named_instantiate_entity_blobs {
         ctx.ecs()
             .new()
-            .instantiate_blob(nb.blob, &ctx.ecs().instantiation_scope())?
+            .instantiate_blob(
+                resolve_entity_blob(nb.blob, &maps)?,
+                &ctx.ecs().instantiation_scope(),
+            )?
             .register_name(nb.name)?;
     }
 
     for b in asset_pack.instantiate_entity_blobs {
-        ctx.ecs()
-            .new()
-            .instantiate_blob(b, &ctx.ecs().instantiation_scope())?;
+        ctx.ecs().new().instantiate_blob(
+            resolve_entity_blob(b, &maps)?,
+            &ctx.ecs().instantiation_scope(),
+        )?;
     }
 
     ctx.db.special_entity_blobs().insert(SpecialEntityBlob {
         key: SpecialEntityBlobKey::NewPlayer,
-        blob: asset_pack.new_player_blob,
+        blob: resolve_entity_blob(asset_pack.new_player_blob, &maps)?,
     });
 
     Ok(())

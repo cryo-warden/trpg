@@ -2,6 +2,11 @@ import { createElement, type ReactNode } from "react";
 import type { Identity } from "spacetimedb";
 import type { DbConnection } from "../stdb";
 import { StdbContext } from "../Game/context/StdbContext/StdbContext";
+import { ACTIONS, ActionName } from "../Game/assets/actions";
+import {
+  APPEARANCE_FEATURES,
+  AppearanceFeatureName,
+} from "../Game/assets/appearance_features";
 
 /**
  * Test-only, in-memory stand-ins for a live SpacetimeDB connection. They
@@ -24,6 +29,7 @@ export type MockTable<Row> = {
   removeOnUpdate: (cb: Callback) => void;
   entityId: { find: (id: bigint) => Row | undefined };
   identity: { find: (id: Identity) => Row | undefined };
+  id: { find: (id: number) => Row | undefined };
   /** Test drivers: mutate rows and fire the matching subscription. */
   insertRow: (row: Row) => void;
   updateRow: (match: (row: Row) => boolean, next: Row) => void;
@@ -52,6 +58,7 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
     removeOnUpdate: (cb) => void updates.delete(cb),
     entityId: { find: (id) => findBy("entityId", id) },
     identity: { find: (id) => findBy("identity", id) },
+    id: { find: (id) => findBy("id", id) },
     insertRow: (row) => {
       rows = [...rows, row];
       fire(inserts, row);
@@ -69,6 +76,24 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
   };
 };
 
+// Mock asset-table rows mirroring a push of the local Records: ids follow the
+// Records' enumeration order, exactly as push_assets interns them. Tests act
+// as the server here; app code never computes an asset id this way.
+export const mockAssetTables = () => ({
+  actions: mockTable(
+    Object.keys(ACTIONS).map((name, id) => ({ id, name })),
+  ),
+  appearance_features: mockTable(
+    Object.keys(APPEARANCE_FEATURES).map((name, index) => ({ index, name })),
+  ),
+});
+
+export const actionIdOf = (name: ActionName): number =>
+  Object.keys(ACTIONS).indexOf(name);
+
+export const appearanceFeatureIndexOf = (name: AppearanceFeatureName): number =>
+  Object.keys(APPEARANCE_FEATURES).indexOf(name);
+
 /**
  * A React wrapper (for `renderHook`/`render`) that injects a mock connection
  * built from the given tables (keyed by table name) and optional player
@@ -80,7 +105,10 @@ export const stdbWrapper = (
   identity: Identity = {} as Identity,
   reducers: Record<string, unknown> = {},
 ) => {
-  const connection = { db: tables, reducers } as unknown as DbConnection;
+  const connection = {
+    db: { ...mockAssetTables(), ...tables },
+    reducers,
+  } as unknown as DbConnection;
   const value = { connection, identity };
   return function StdbWrapper({ children }: { children: ReactNode }) {
     return createElement(StdbContext.Provider, { value }, children);

@@ -14,8 +14,11 @@ use crate::{
     action::{ActionEffect, ActionType},
     appearance::AppearanceFeatureType,
     asset::location_map::Layout,
-    asset::location_map_theme::EntityBlobsSampler,
-    entity::EntityBlob,
+    entity::{
+        AllegianceComponentBlob, AttackComponentBlob, EnemyControllerComponentBlob,
+        EpComponentBlob, HpComponentBlob, LocationComponentBlob, NameComponentBlob,
+        PathComponentBlob, PlayerControllerComponentBlob,
+    },
 };
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -53,9 +56,55 @@ pub struct StatBlockOwnerAuthor {
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
+pub struct ActionHotkeyAuthor {
+    pub action_name: String,
+    pub character_code: u32,
+}
+
+/// The author form of an entity blob: components whose fields reference other
+/// assets are authored by NAME, and only push_assets resolves them to the
+/// integer ids stored in the real EntityBlob. Runtime-state components (stat
+/// caches, dirty flags, action state, timers, prominence, location_map) are
+/// deliberately absent — a prefab never authors those.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct EntityBlobAuthor {
+    pub name: Option<NameComponentBlob>,
+    pub location: Option<LocationComponentBlob>,
+    pub path: Option<PathComponentBlob>,
+    pub allegiance: Option<AllegianceComponentBlob>,
+    pub baseline_name: Option<String>,
+    pub trait_names: Option<Vec<String>>,
+    pub action_names: Option<Vec<String>>,
+    pub action_hotkeys: Option<Vec<ActionHotkeyAuthor>>,
+    pub appearance_feature_names: Option<Vec<String>>,
+    pub hp: Option<HpComponentBlob>,
+    pub ep: Option<EpComponentBlob>,
+    pub attack: Option<AttackComponentBlob>,
+    pub player_controller: Option<PlayerControllerComponentBlob>,
+    pub enemy_controller: Option<EnemyControllerComponentBlob>,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct NamedEntityBlobAuthor {
+    pub name: String,
+    pub blob: EntityBlobAuthor,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct EntityBlobSampleAuthor {
+    pub weight: u8,
+    pub blob: EntityBlobAuthor,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct EntityBlobsSamplerAuthor {
+    pub selections: Vec<EntityBlobSampleAuthor>,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
 pub struct EncounterBlobAuthor {
     pub name: String,
-    pub blob: EntityBlob,
+    pub blob: EntityBlobAuthor,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -75,11 +124,11 @@ pub struct WeightedNameAuthor {
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct LocationMapThemeAuthor {
     pub name: String,
-    pub decorations_selector: EntityBlobsSampler,
+    pub decorations_selector: EntityBlobsSamplerAuthor,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,
-    pub paths_selector: EntityBlobsSampler,
-    pub rooms_selector: EntityBlobsSampler,
+    pub paths_selector: EntityBlobsSamplerAuthor,
+    pub rooms_selector: EntityBlobsSamplerAuthor,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

@@ -1,4 +1,3 @@
-import { actions } from "../Game/assets";
 import { ActionId } from "../Game/trpg";
 import { EntityEvent } from "../stdb/types";
 import {
@@ -7,7 +6,7 @@ import {
   Narration,
   NarrationContext,
 } from "../Game/domain/narration";
-import { Language } from "./language";
+import { CreateLanguage } from "./language";
 
 /**
  * The debug language plugin.
@@ -31,14 +30,16 @@ import { Language } from "./language";
 const DEFAULT_ACTION_TEMPLATE =
   "{0:sentence:subject} began a mysterious action toward {1:object}.";
 
-const getActionTemplate = (actionId: ActionId): string =>
-  actions[actionId]?.appearance.beginTemplate ?? DEFAULT_ACTION_TEMPLATE;
+export const createDebug: CreateLanguage<NarrationContext> = ({
+  actionAssetOf,
+}) => {
+  const getActionTemplate = (actionId: ActionId): string =>
+    actionAssetOf(actionId)?.appearance.beginTemplate ??
+    DEFAULT_ACTION_TEMPLATE;
 
-/**
- * The sentence for an event, or null when the event is not narrated (e.g.
- * resting, or an effect kind with no player-facing description yet).
- */
-const narrateEvent = (event: EntityEvent): Narration | null => {
+  // The sentence for an event, or null when the event is not narrated (e.g.
+  // resting, or an effect kind with no player-facing description yet).
+  const narrateEvent = (event: EntityEvent): Narration | null => {
   switch (event.eventType.tag) {
     case "StartAction":
       return {
@@ -93,10 +94,11 @@ const narrateEvent = (event: EntityEvent): Narration | null => {
     default:
       return null;
   }
-};
+  };
 
-export const debug: Language<NarrationContext> = {
-  narrateEvent,
-  initialContext: initialNarrationContext,
-  createRenderValue: createNarrationRenderValue,
+  return {
+    narrateEvent,
+    initialContext: initialNarrationContext,
+    createRenderValue: createNarrationRenderValue,
+  };
 };

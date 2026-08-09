@@ -1,12 +1,13 @@
 import { Identity } from "spacetimedb";
 import { ReactNode, useEffect, useState } from "react";
 import { DbConnection } from "../../../stdb";
+import { assetQueries } from "./assetLookup";
 import { componentQueries } from "./components";
 import { renderingQueries } from "./rendering";
 import { StdbContext } from "./StdbContext";
 import { init } from "../../init";
 
-const queries = [...renderingQueries, ...componentQueries];
+const queries = [...renderingQueries, ...componentQueries, ...assetQueries];
 
 type ConnectionStatus = "connecting" | "connected" | "error";
 

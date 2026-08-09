@@ -1,6 +1,14 @@
 import { test, expect } from "bun:test";
-import { actions } from "../assets";
+import { ACTIONS } from "../assets/actions";
 import { getActionOptions, isAlly } from "./actionOptions";
+
+// The test plays both roles: ids follow the Records' enumeration order (as
+// push_assets interns them), and actionAssetOf is the id -> asset resolution
+// the hooks normally provide from the subscribed actions table.
+const orderedActions = Object.values(ACTIONS);
+const actionAssetOf = (id: number) => orderedActions[id] ?? null;
+const actionIdOf = (name: keyof typeof ACTIONS) =>
+  Object.keys(ACTIONS).indexOf(name);
 
 test("an entity is always its own ally", () => {
   expect(
@@ -46,9 +54,9 @@ test("an unknown allegiance is not an ally (unless it is the entity itself)", ()
   ).toBe(false);
 });
 
-const attackId = actions.findIndex((a) => a.type === "Attack");
-const buffId = actions.findIndex((a) => a.type === "Buff");
-const moveId = actions.findIndex((a) => a.type === "Move");
+const attackId = actionIdOf("bop");
+const buffId = actionIdOf("divine_heal");
+const moveId = actionIdOf("move");
 const allIds = [attackId, buffId, moveId];
 const enemy = {
   playerEntity: 1n,
@@ -68,6 +76,7 @@ test("getActionOptions offers attacks and moves against a hostile, reachable tar
     getActionOptions({
       ...enemy,
       actionIds: allIds,
+      actionAssetOf,
       targetHasHp: true,
       targetHasPath: true,
     }),
@@ -79,6 +88,7 @@ test("getActionOptions offers buffs against an ally with hp", () => {
     getActionOptions({
       ...ally,
       actionIds: allIds,
+      actionAssetOf,
       targetHasHp: true,
       targetHasPath: false,
     }),
@@ -90,6 +100,7 @@ test("getActionOptions offers nothing when the target has no hp and no path", ()
     getActionOptions({
       ...enemy,
       actionIds: allIds,
+      actionAssetOf,
       targetHasHp: false,
       targetHasPath: false,
     }),
@@ -101,6 +112,7 @@ test("getActionOptions drops unknown action ids", () => {
     getActionOptions({
       ...enemy,
       actionIds: [9999],
+      actionAssetOf,
       targetHasHp: true,
       targetHasPath: true,
     }),
