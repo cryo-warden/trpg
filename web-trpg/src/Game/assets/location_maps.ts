@@ -33,7 +33,7 @@ export type LocationMapThemeAsset = {
   rooms: EntityBlobsSamplerAsset;
 } & Omit<
   LocationMapThemeAuthor,
-  "name" | "decorationsSelector" | "pathsSelector" | "roomsSelector"
+  "decorationsSelector" | "pathsSelector" | "roomsSelector"
 >;
 
 export const LOCATION_MAP_THEMES = {
@@ -84,7 +84,7 @@ export type LocationMapAsset = {
   connections?: string[];
 } & Omit<
   LocationMapAuthor,
-  "name" | "themeName" | "encounterNamesSampler" | "connectionNames"
+  "themeName" | "encounterNamesSampler" | "connectionNames"
 >;
 
 export const LOCATION_MAPS = {
@@ -135,34 +135,30 @@ export const LOCATION_MAPS = {
 
 export type LocationMapName = keyof typeof LOCATION_MAPS;
 
-export const getLocationMapThemeAuthors = (
-  assets: Record<string, LocationMapThemeAsset>,
-): LocationMapThemeAuthor[] =>
-  Object.entries(assets).map(([name, asset]) => ({
-    name,
-    decorationsSelector: getEntityBlobsSampler(asset.decorations),
-    minDecorationCount: asset.minDecorationCount,
-    maxDecorationCount: asset.maxDecorationCount,
-    pathsSelector: getEntityBlobsSampler(asset.paths),
-    roomsSelector: getEntityBlobsSampler(asset.rooms),
-  }));
+export const toLocationMapThemeAuthor = (
+  asset: LocationMapThemeAsset,
+): LocationMapThemeAuthor => ({
+  decorationsSelector: getEntityBlobsSampler(asset.decorations),
+  minDecorationCount: asset.minDecorationCount,
+  maxDecorationCount: asset.maxDecorationCount,
+  pathsSelector: getEntityBlobsSampler(asset.paths),
+  roomsSelector: getEntityBlobsSampler(asset.rooms),
+});
 
-export const getLocationMapAuthors = (
-  assets: Record<string, LocationMapAsset>,
-): LocationMapAuthor[] =>
-  Object.entries(assets).map(([name, asset]) => ({
-    name,
-    themeName: asset.themeName,
-    layout: asset.layout,
-    rngSeed: asset.rngSeed,
-    extraRoomCount: asset.extraRoomCount,
-    mainRoomCount: asset.mainRoomCount,
-    loopCount: asset.loopCount,
-    encounterNamesSampler: asset.encountersSampler.map((s) => ({
-      weight: s.weight,
-      name: s.name,
-    })),
-    minEncounterCount: asset.minEncounterCount,
-    maxEncounterCount: asset.maxEncounterCount,
-    connectionNames: [...(asset.connections ?? [])],
-  }));
+export const toLocationMapAuthor = (
+  asset: LocationMapAsset,
+): LocationMapAuthor => ({
+  themeName: asset.themeName,
+  layout: asset.layout,
+  rngSeed: asset.rngSeed,
+  extraRoomCount: asset.extraRoomCount,
+  mainRoomCount: asset.mainRoomCount,
+  loopCount: asset.loopCount,
+  encounterNamesSampler: asset.encountersSampler.map((s) => ({
+    weight: s.weight,
+    name: s.name,
+  })),
+  minEncounterCount: asset.minEncounterCount,
+  maxEncounterCount: asset.maxEncounterCount,
+  connectionNames: [...(asset.connections ?? [])],
+});

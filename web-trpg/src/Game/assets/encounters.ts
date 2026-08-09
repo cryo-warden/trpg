@@ -1,4 +1,4 @@
-import { EncounterAuthor, EncounterBlobAuthor } from "../../stdb/types";
+import { EncounterAuthor, EntityBlobAuthor } from "../../stdb/types";
 import { EntityBlobAsset, getEntityBlobAuthor } from "./entity_blobs";
 
 export type EncounterBlobAsset = { blob: EntityBlobAsset };
@@ -49,20 +49,16 @@ export const ENCOUNTERS = {
 
 export type EncounterName = keyof typeof ENCOUNTERS;
 
-export const getEncounterBlobAuthors = (): EncounterBlobAuthor[] =>
-  Object.entries(ENCOUNTER_BLOBS).map(([name, asset]) => ({
-    name,
-    blob: getEntityBlobAuthor(asset.blob),
-  }));
+export const toEncounterBlobAuthor = (
+  asset: EncounterBlobAsset,
+): EntityBlobAuthor => getEntityBlobAuthor(asset.blob);
 
 export type EncountersSamplerAsset = {
   weight: number;
   name: EncounterName;
 }[];
 
-export const getEncounterAuthors = (): EncounterAuthor[] =>
-  Object.entries(ENCOUNTERS).map(([name, asset]) => ({
-    name,
-    categoricBlobName: asset.categoricBlobName,
-    blobNames: [...asset.blobNames],
-  }));
+export const toEncounterAuthor = (asset: EncounterAsset): EncounterAuthor => ({
+  categoricBlobName: asset.categoricBlobName,
+  blobNames: [...asset.blobNames],
+});

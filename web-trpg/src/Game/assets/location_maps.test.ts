@@ -3,24 +3,22 @@ import {
   LOCATION_MAPS,
   LOCATION_MAP_THEMES,
   getEntityBlobsSampler,
-  getLocationMapAuthors,
-  getLocationMapThemeAuthors,
+  toLocationMapAuthor,
+  toLocationMapThemeAuthor,
 } from "./location_maps";
 
-test("getLocationMapThemeAuthors builds selectors for decorations, paths, and rooms", () => {
-  const themes = getLocationMapThemeAuthors(LOCATION_MAP_THEMES);
-  expect(themes.map((t) => t.name)).toEqual(Object.keys(LOCATION_MAP_THEMES));
-  expect(themes[0].decorationsSelector.selections.length).toBe(
+test("toLocationMapThemeAuthor builds selectors for decorations, paths, and rooms", () => {
+  const theme = toLocationMapThemeAuthor(LOCATION_MAP_THEMES.encampment);
+  expect(theme.decorationsSelector.selections.length).toBe(
     LOCATION_MAP_THEMES.encampment.decorations.length,
   );
 });
 
-test("getLocationMapAuthors passes theme and encounter names through", () => {
-  const maps = getLocationMapAuthors(LOCATION_MAPS);
-  const cave = maps.find((m) => m.name === "beginner_cave");
-  expect(cave?.themeName).toBe("cave");
-  expect(cave?.encounterNamesSampler.length).toBe(4);
-  expect(cave?.connectionNames).toEqual([]);
+test("toLocationMapAuthor passes theme and encounter names through", () => {
+  const cave = toLocationMapAuthor(LOCATION_MAPS.beginner_cave);
+  expect(cave.themeName).toBe("cave");
+  expect(cave.encounterNamesSampler.length).toBe(4);
+  expect(cave.connectionNames).toEqual([]);
 });
 
 test("getEntityBlobsSampler wraps each selection's blob", () => {

@@ -8,9 +8,10 @@ use crate::{
     appearance::{appearance_features, AppearanceFeature},
     asset::{
         author::{
-            ActionAuthor, AppearanceFeatureAuthor, EncounterAuthor, EncounterBlobAuthor,
-            EntityBlobAuthor, EntityBlobsSamplerAuthor, LocationMapAuthor, LocationMapThemeAuthor,
-            NamedEntityBlobAuthor, StatBlockAuthor, StatBlockOwnerAuthor,
+            EntityBlobAuthor, EntityBlobsSamplerAuthor, NamedActionAuthor,
+            NamedAppearanceFeatureAuthor, NamedEncounterAuthor, NamedEntityBlobAuthor,
+            NamedLocationMapAuthor, NamedLocationMapThemeAuthor, NamedStatBlockAuthor,
+            StatBlockAuthor,
         },
         baseline::{baselines, Baseline},
         encounter::{encounter_blobs, encounters, Encounter, EncounterBlob},
@@ -54,16 +55,19 @@ struct SpecialEntityBlob {
     blob: EntityBlob,
 }
 
+/// Every Record-authored kind arrives as a Vec of name+value pairs — the
+/// client's Record entries verbatim (SATS has no map type), names untouched
+/// by any client processing.
 #[derive(SpacetimeType)]
 pub struct AssetPack {
-    actions: Vec<ActionAuthor>,
-    appearance_features: Vec<AppearanceFeatureAuthor>,
-    baselines: Vec<StatBlockOwnerAuthor>,
-    traits: Vec<StatBlockOwnerAuthor>,
-    encounter_blobs: Vec<EncounterBlobAuthor>,
-    encounters: Vec<EncounterAuthor>,
-    location_map_themes: Vec<LocationMapThemeAuthor>,
-    location_maps: Vec<LocationMapAuthor>,
+    actions: Vec<NamedActionAuthor>,
+    appearance_features: Vec<NamedAppearanceFeatureAuthor>,
+    baselines: Vec<NamedStatBlockAuthor>,
+    traits: Vec<NamedStatBlockAuthor>,
+    encounter_blobs: Vec<NamedEntityBlobAuthor>,
+    encounters: Vec<NamedEncounterAuthor>,
+    location_map_themes: Vec<NamedLocationMapThemeAuthor>,
+    location_maps: Vec<NamedLocationMapAuthor>,
 
     named_instantiate_entity_blobs: Vec<NamedEntityBlobAuthor>,
 
@@ -253,9 +257,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.actions().insert(Action {
             id: action_id,
             name: a.name,
-            action_type: a.action_type,
+            action_type: a.value.action_type,
         });
-        for (sequence_index, action_effect) in a.steps.into_iter().enumerate() {
+        for (sequence_index, action_effect) in a.value.steps.into_iter().enumerate() {
             ctx.db.action_steps().insert(ActionStep {
                 id: next_action_step_id,
                 action_id,
@@ -280,9 +284,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.appearance_features().insert(AppearanceFeature {
             index: id as u32,
             name: a.name,
-            text: a.text,
-            appearance_feature_type: a.appearance_feature_type,
-            priority: a.priority,
+            text: a.value.text,
+            appearance_feature_type: a.value.appearance_feature_type,
+            priority: a.value.priority,
         });
     }
 
@@ -290,7 +294,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.baselines().insert(Baseline {
             id: id as u32,
             name: b.name,
-            stat_block: resolve_stat_block(b.stat_block, &maps)?,
+            stat_block: resolve_stat_block(b.value, &maps)?,
         });
     }
 
@@ -298,7 +302,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.traits().insert(Trait {
             id: id as u32,
             name: t.name,
-            stat_block: resolve_stat_block(t.stat_block, &maps)?,
+            stat_block: resolve_stat_block(t.value, &maps)?,
         });
     }
 
@@ -310,7 +314,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.encounter_blobs().insert(EncounterBlob {
             id: id as u32,
             name: b.name,
-            blob: resolve_entity_blob(b.blob, &maps)?,
+            blob: resolve_entity_blob(b.value, &maps)?,
         });
     }
 
@@ -323,9 +327,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             categoric_blob_id: resolve_name(
                 &encounter_blob_ids,
                 "encounter blob",
-                &e.categoric_blob_name,
+                &e.value.categoric_blob_name,
             )?,
             blob_ids: e
+                .value
                 .blob_names
                 .iter()
                 .map(|n| resolve_name(&encounter_blob_ids, "encounter blob", n))
@@ -341,11 +346,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.location_map_themes().insert(LocationMapTheme {
             id: id as u32,
             name: t.name,
-            decorations_selector: resolve_entity_blobs_sampler(t.decorations_selector, &maps)?,
-            min_decoration_count: t.min_decoration_count,
-            max_decoration_count: t.max_decoration_count,
-            paths_selector: resolve_entity_blobs_sampler(t.paths_selector, &maps)?,
-            rooms_selector: resolve_entity_blobs_sampler(t.rooms_selector, &maps)?,
+            decorations_selector: resolve_entity_blobs_sampler(
+                t.value.decorations_selector,
+                &maps,
+            )?,
+            min_decoration_count: t.value.min_decoration_count,
+            max_decoration_count: t.value.max_decoration_count,
+            paths_selector: resolve_entity_blobs_sampler(t.value.paths_selector, &maps)?,
+            rooms_selector: resolve_entity_blobs_sampler(t.value.rooms_selector, &maps)?,
         });
     }
 
@@ -356,6 +364,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     let mut next_connection_id: u32 = 0;
     for (id, m) in asset_pack.location_maps.into_iter().enumerate() {
         let exit_location_map_id = id as u32;
+        let NamedLocationMapAuthor { name, value: m } = m;
         for destination_name in &m.connection_names {
             ctx.db
                 .location_map_connections()
@@ -372,7 +381,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
         ctx.db.location_maps().insert(LocationMap {
             id: exit_location_map_id,
-            name: m.name,
+            name,
             theme_id: resolve_name(&theme_ids, "location map theme", &m.theme_name)?,
             layout: m.layout,
             rng_seed: m.rng_seed,
@@ -401,7 +410,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.ecs()
             .new()
             .instantiate_blob(
-                resolve_entity_blob(nb.blob, &maps)?,
+                resolve_entity_blob(nb.value, &maps)?,
                 &ctx.ecs().instantiation_scope(),
             )?
             .register_name(nb.name)?;

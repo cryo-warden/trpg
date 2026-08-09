@@ -3,28 +3,37 @@ import {
   type ActionAuthor,
   type AppearanceFeatureAuthor,
   type StatBlockAuthor,
-  type StatBlockOwnerAuthor,
   AppearanceFeatureType,
 } from "../stdb/types";
-import { namedEntityBlobs, newPlayerBlob, StatBlockAsset } from "./assets";
-import { ACTIONS } from "./assets/actions";
-import { APPEARANCE_FEATURES } from "./assets/appearance_features";
+import { namedPairs, newPlayerBlob, StatBlockAsset } from "./assets";
+import { ACTIONS, ActionAsset } from "./assets/actions";
+import {
+  APPEARANCE_FEATURES,
+  AppearanceFeatureAsset,
+} from "./assets/appearance_features";
 import { BASELINES } from "./assets/baselines";
 import { TRAITS } from "./assets/traits";
-import { getEncounterAuthors, getEncounterBlobAuthors } from "./assets/encounters";
-import { getEntityBlobAuthor } from "./assets/entity_blobs";
 import {
-  getLocationMapAuthors,
-  getLocationMapThemeAuthors,
+  ENCOUNTERS,
+  ENCOUNTER_BLOBS,
+  toEncounterAuthor,
+  toEncounterBlobAuthor,
+} from "./assets/encounters";
+import { NAMED_ENTITY_BLOBS, getEntityBlobAuthor } from "./assets/entity_blobs";
+import {
   LOCATION_MAPS,
   LOCATION_MAP_THEMES,
+  toLocationMapAuthor,
+  toLocationMapThemeAuthor,
 } from "./assets/location_maps";
 
-// Note the direction: all name -> id resolution happens on the server at
-// push time (see server/src/asset/author.rs). The pack below carries names
-// only; the client never assigns or computes asset ids.
+// Note the direction: the asset Records are pushed as name+value pairs (see
+// namedPairs) and ALL name -> id resolution happens on the server at push
+// time (see server/src/asset/author.rs). The converters below reshape only
+// asset BODIES (authoring sugar -> wire shape); no client code touches a
+// name or computes an id.
 
-const assetToStatBlockAuthor = (asset: StatBlockAsset): StatBlockAuthor => ({
+const toStatBlockAuthor = (asset: StatBlockAsset): StatBlockAuthor => ({
   attack: asset.attack ?? 0,
   mhp: asset.mhp ?? 0,
   defense: asset.defense ?? 0,
@@ -33,51 +42,48 @@ const assetToStatBlockAuthor = (asset: StatBlockAsset): StatBlockAuthor => ({
   appearanceFeatureNames: [...(asset.appearanceFeatureNames ?? [])],
 });
 
-const getActionAuthors = (): ActionAuthor[] =>
-  Object.entries(ACTIONS).map(([name, a]) => ({
-    name,
-    actionType: { tag: a.type },
-    steps: [...a.steps],
-  }));
+const toActionAuthor = (asset: ActionAsset): ActionAuthor => ({
+  actionType: { tag: asset.type },
+  steps: [...asset.steps],
+});
 
 const appearanceFeatureTypeMap = {
   noun: AppearanceFeatureType.Noun,
   adjective: AppearanceFeatureType.Adjective,
 } as const;
 
-const getAppearanceFeatureAuthors = (): AppearanceFeatureAuthor[] =>
-  Object.entries(APPEARANCE_FEATURES).map(([name, a]) => ({
-    name,
-    text: a.text,
-    appearanceFeatureType: appearanceFeatureTypeMap[a.type],
-    priority: a.priority,
-  }));
-
-const getStatBlockOwnerAuthors = (
-  record: Record<string, StatBlockAsset>,
-): StatBlockOwnerAuthor[] =>
-  Object.entries(record).map(([name, asset]) => ({
-    name,
-    statBlock: assetToStatBlockAuthor(asset),
-  }));
+const toAppearanceFeatureAuthor = (
+  asset: AppearanceFeatureAsset,
+): AppearanceFeatureAuthor => ({
+  text: asset.text,
+  appearanceFeatureType: appearanceFeatureTypeMap[asset.type],
+  priority: asset.priority,
+});
 
 export const init = (connection: DbConnection) => {
   connection.reducers.pushAssets({
     assetPack: {
-      actions: getActionAuthors(),
-      appearanceFeatures: getAppearanceFeatureAuthors(),
+      actions: namedPairs(ACTIONS, toActionAuthor),
+      appearanceFeatures: namedPairs(
+        APPEARANCE_FEATURES,
+        toAppearanceFeatureAuthor,
+      ),
 
-      baselines: getStatBlockOwnerAuthors(BASELINES),
-      traits: getStatBlockOwnerAuthors(TRAITS),
+      baselines: namedPairs(BASELINES, toStatBlockAuthor),
+      traits: namedPairs(TRAITS, toStatBlockAuthor),
 
-      encounterBlobs: getEncounterBlobAuthors(),
-      encounters: getEncounterAuthors(),
+      encounterBlobs: namedPairs(ENCOUNTER_BLOBS, toEncounterBlobAuthor),
+      encounters: namedPairs(ENCOUNTERS, toEncounterAuthor),
 
-      locationMapThemes: getLocationMapThemeAuthors(LOCATION_MAP_THEMES),
-      locationMaps: getLocationMapAuthors(LOCATION_MAPS),
+      locationMapThemes: namedPairs(
+        LOCATION_MAP_THEMES,
+        toLocationMapThemeAuthor,
+      ),
+      locationMaps: namedPairs(LOCATION_MAPS, toLocationMapAuthor),
 
-      namedInstantiateEntityBlobs: Object.entries(namedEntityBlobs).map(
-        ([name, blob]) => ({ name, blob: getEntityBlobAuthor(blob) }),
+      namedInstantiateEntityBlobs: namedPairs(
+        NAMED_ENTITY_BLOBS,
+        getEntityBlobAuthor,
       ),
       instantiateEntityBlobs: [],
 

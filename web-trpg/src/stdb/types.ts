@@ -20,7 +20,6 @@ export const Action = __t.object("Action", {
 export type Action = __Infer<typeof Action>;
 
 export const ActionAuthor = __t.object("ActionAuthor", {
-  name: __t.string(),
   get actionType() {
     return ActionType;
   },
@@ -146,7 +145,6 @@ export const AppearanceFeature = __t.object("AppearanceFeature", {
 export type AppearanceFeature = __Infer<typeof AppearanceFeature>;
 
 export const AppearanceFeatureAuthor = __t.object("AppearanceFeatureAuthor", {
-  name: __t.string(),
   text: __t.string(),
   get appearanceFeatureType() {
     return AppearanceFeatureType;
@@ -175,28 +173,28 @@ export type AppearanceFeaturesComponentBlob = __Infer<typeof AppearanceFeaturesC
 
 export const AssetPack = __t.object("AssetPack", {
   get actions() {
-    return __t.array(ActionAuthor);
+    return __t.array(NamedActionAuthor);
   },
   get appearanceFeatures() {
-    return __t.array(AppearanceFeatureAuthor);
+    return __t.array(NamedAppearanceFeatureAuthor);
   },
   get baselines() {
-    return __t.array(StatBlockOwnerAuthor);
+    return __t.array(NamedStatBlockAuthor);
   },
   get traits() {
-    return __t.array(StatBlockOwnerAuthor);
+    return __t.array(NamedStatBlockAuthor);
   },
   get encounterBlobs() {
-    return __t.array(EncounterBlobAuthor);
+    return __t.array(NamedEntityBlobAuthor);
   },
   get encounters() {
-    return __t.array(EncounterAuthor);
+    return __t.array(NamedEncounterAuthor);
   },
   get locationMapThemes() {
-    return __t.array(LocationMapThemeAuthor);
+    return __t.array(NamedLocationMapThemeAuthor);
   },
   get locationMaps() {
-    return __t.array(LocationMapAuthor);
+    return __t.array(NamedLocationMapAuthor);
   },
   get namedInstantiateEntityBlobs() {
     return __t.array(NamedEntityBlobAuthor);
@@ -256,7 +254,6 @@ export const Encounter = __t.object("Encounter", {
 export type Encounter = __Infer<typeof Encounter>;
 
 export const EncounterAuthor = __t.object("EncounterAuthor", {
-  name: __t.string(),
   categoricBlobName: __t.string(),
   blobNames: __t.array(__t.string()),
 });
@@ -270,14 +267,6 @@ export const EncounterBlob = __t.object("EncounterBlob", {
   },
 });
 export type EncounterBlob = __Infer<typeof EncounterBlob>;
-
-export const EncounterBlobAuthor = __t.object("EncounterBlobAuthor", {
-  name: __t.string(),
-  get blob() {
-    return EntityBlobAuthor;
-  },
-});
-export type EncounterBlobAuthor = __Infer<typeof EncounterBlobAuthor>;
 
 export const EncounterIdSample = __t.object("EncounterIdSample", {
   weight: __t.u8(),
@@ -569,7 +558,6 @@ export const LocationMap = __t.object("LocationMap", {
 export type LocationMap = __Infer<typeof LocationMap>;
 
 export const LocationMapAuthor = __t.object("LocationMapAuthor", {
-  name: __t.string(),
   themeName: __t.string(),
   get layout() {
     return Layout;
@@ -625,7 +613,6 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 
 export const LocationMapThemeAuthor = __t.object("LocationMapThemeAuthor", {
-  name: __t.string(),
   get decorationsSelector() {
     return EntityBlobsSamplerAuthor;
   },
@@ -651,6 +638,30 @@ export const NameComponentBlob = __t.object("NameComponentBlob", {
 });
 export type NameComponentBlob = __Infer<typeof NameComponentBlob>;
 
+export const NamedActionAuthor = __t.object("NamedActionAuthor", {
+  name: __t.string(),
+  get value() {
+    return ActionAuthor;
+  },
+});
+export type NamedActionAuthor = __Infer<typeof NamedActionAuthor>;
+
+export const NamedAppearanceFeatureAuthor = __t.object("NamedAppearanceFeatureAuthor", {
+  name: __t.string(),
+  get value() {
+    return AppearanceFeatureAuthor;
+  },
+});
+export type NamedAppearanceFeatureAuthor = __Infer<typeof NamedAppearanceFeatureAuthor>;
+
+export const NamedEncounterAuthor = __t.object("NamedEncounterAuthor", {
+  name: __t.string(),
+  get value() {
+    return EncounterAuthor;
+  },
+});
+export type NamedEncounterAuthor = __Infer<typeof NamedEncounterAuthor>;
+
 export const NamedEntity = __t.object("NamedEntity", {
   name: __t.string(),
   entityId: __t.u64(),
@@ -659,11 +670,35 @@ export type NamedEntity = __Infer<typeof NamedEntity>;
 
 export const NamedEntityBlobAuthor = __t.object("NamedEntityBlobAuthor", {
   name: __t.string(),
-  get blob() {
+  get value() {
     return EntityBlobAuthor;
   },
 });
 export type NamedEntityBlobAuthor = __Infer<typeof NamedEntityBlobAuthor>;
+
+export const NamedLocationMapAuthor = __t.object("NamedLocationMapAuthor", {
+  name: __t.string(),
+  get value() {
+    return LocationMapAuthor;
+  },
+});
+export type NamedLocationMapAuthor = __Infer<typeof NamedLocationMapAuthor>;
+
+export const NamedLocationMapThemeAuthor = __t.object("NamedLocationMapThemeAuthor", {
+  name: __t.string(),
+  get value() {
+    return LocationMapThemeAuthor;
+  },
+});
+export type NamedLocationMapThemeAuthor = __Infer<typeof NamedLocationMapThemeAuthor>;
+
+export const NamedStatBlockAuthor = __t.object("NamedStatBlockAuthor", {
+  name: __t.string(),
+  get value() {
+    return StatBlockAuthor;
+  },
+});
+export type NamedStatBlockAuthor = __Infer<typeof NamedStatBlockAuthor>;
 
 export const PathComponent = __t.object("PathComponent", {
   entityId: __t.u64(),
@@ -739,14 +774,6 @@ export const StatBlockCacheComponentBlob = __t.object("StatBlockCacheComponentBl
   },
 });
 export type StatBlockCacheComponentBlob = __Infer<typeof StatBlockCacheComponentBlob>;
-
-export const StatBlockOwnerAuthor = __t.object("StatBlockOwnerAuthor", {
-  name: __t.string(),
-  get statBlock() {
-    return StatBlockAuthor;
-  },
-});
-export type StatBlockOwnerAuthor = __Infer<typeof StatBlockOwnerAuthor>;
 
 export const SystemTimer = __t.object("SystemTimer", {
   scheduledId: __t.u64(),

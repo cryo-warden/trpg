@@ -1,5 +1,8 @@
-//! Author-form asset types: the shapes the client pushes. Cross-references
-//! BETWEEN top-level assets are by canonical NAME here, never by id.
+//! Author-form asset types: the shapes the client pushes. Assets are authored
+//! client-side as Records keyed by canonical name; SATS has no map type, so a
+//! Record<name, body> crosses the wire as Vec<Named<Body>> — the names come
+//! verbatim from the Record keys, and cross-references BETWEEN assets are by
+//! name here, never by id.
 //!
 //! The forward (name -> id) conversion happens in push_assets on the server,
 //! and only there: id assignment — and, later, migration of already-stored
@@ -23,7 +26,6 @@ use crate::{
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ActionAuthor {
-    pub name: String,
     pub action_type: ActionType,
     /// Ordered effects; push_assets derives the ActionStep rows (and their
     /// ids) from this sequence.
@@ -32,7 +34,6 @@ pub struct ActionAuthor {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct AppearanceFeatureAuthor {
-    pub name: String,
     pub text: String,
     pub appearance_feature_type: AppearanceFeatureType,
     pub priority: i32,
@@ -46,13 +47,6 @@ pub struct StatBlockAuthor {
     pub mep: i32,
     pub action_names: Vec<String>,
     pub appearance_feature_names: Vec<String>,
-}
-
-/// A named stat-block owner: the shared author form of baselines and traits.
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct StatBlockOwnerAuthor {
-    pub name: String,
-    pub stat_block: StatBlockAuthor,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -85,12 +79,6 @@ pub struct EntityBlobAuthor {
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct NamedEntityBlobAuthor {
-    pub name: String,
-    pub blob: EntityBlobAuthor,
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
 pub struct EntityBlobSampleAuthor {
     pub weight: u8,
     pub blob: EntityBlobAuthor,
@@ -102,14 +90,7 @@ pub struct EntityBlobsSamplerAuthor {
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct EncounterBlobAuthor {
-    pub name: String,
-    pub blob: EntityBlobAuthor,
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
 pub struct EncounterAuthor {
-    pub name: String,
     pub categoric_blob_name: String,
     pub blob_names: Vec<String>,
 }
@@ -123,7 +104,6 @@ pub struct WeightedNameAuthor {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct LocationMapThemeAuthor {
-    pub name: String,
     pub decorations_selector: EntityBlobsSamplerAuthor,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,
@@ -133,7 +113,6 @@ pub struct LocationMapThemeAuthor {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct LocationMapAuthor {
-    pub name: String,
     pub theme_name: String,
     pub layout: Layout,
     pub rng_seed: Option<u64>,
@@ -147,3 +126,28 @@ pub struct LocationMapAuthor {
     /// LocationMapConnection rows from these.
     pub connection_names: Vec<String>,
 }
+
+// One entry of an authored Record: `name` is the Record key, taken verbatim
+// from the client's asset Record. SATS has no map type (and codegen cannot
+// monomorphize a generic Named<T>), so a Record<name, body> crosses the wire
+// as a Vec of these per-kind pairs.
+secador::secador!(
+    (Body, NamedBody),
+    [
+        (ActionAuthor, NamedActionAuthor),
+        (AppearanceFeatureAuthor, NamedAppearanceFeatureAuthor),
+        (StatBlockAuthor, NamedStatBlockAuthor),
+        (EntityBlobAuthor, NamedEntityBlobAuthor),
+        (EncounterAuthor, NamedEncounterAuthor),
+        (LocationMapThemeAuthor, NamedLocationMapThemeAuthor),
+        (LocationMapAuthor, NamedLocationMapAuthor),
+    ],
+    {
+        seca!(1);
+        #[derive(Debug, Clone, SpacetimeType)]
+        pub struct __NamedBody {
+            pub name: String,
+            pub value: __Body,
+        }
+    }
+);
