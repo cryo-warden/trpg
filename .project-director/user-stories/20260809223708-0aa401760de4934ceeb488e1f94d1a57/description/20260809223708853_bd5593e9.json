@@ -1,0 +1,1 @@
+"As a game master, I want asset pushes and other privileged actions gated behind an admin role that is claimed with a publish-time secret token, so that no ordinary client can alter game content or timing."

@@ -3,16 +3,15 @@ import type { AssetPack, EntityBlobAuthor } from "../src/stdb/types";
 
 /**
  * Test-specific asset bundles for E2E scenarios — deliberately tiny and
- * independent of the production assets. Entity blobs carry only the components a
- * scenario needs (absent option components serialize as None, exactly as the
- * app's getEntityBlob relies on), so we can seed fully-formed world entities
- * (players, enemies) directly rather than going through map generation.
+ * independent of the production assets. Entity blob authors carry only the
+ * components a scenario needs (absent option components serialize as None),
+ * so we can seed fully-formed world entities (players, enemies) directly
+ * rather than going through map generation. All references are by name; runtime
+ * ids come only from the subscribed tables.
  */
 
 const blob = (partial: Partial<EntityBlobAuthor>): EntityBlobAuthor =>
   partial as EntityBlobAuthor;
-
-export const ATTACK_ACTION_ID = 0;
 
 /** A location id both fighters share. Co-location compares these values, so it
  * need not correspond to a real room entity. */

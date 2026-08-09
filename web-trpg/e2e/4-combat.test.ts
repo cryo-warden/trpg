@@ -3,7 +3,7 @@ import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
-import { ATTACK_ACTION_ID, combatPack } from "./testAssets";
+import { combatPack } from "./testAssets";
 
 // Phase 4: combat, using a test-specific bundle (no production assets). Seed a
 // player owned by the connecting identity and a co-located enemy, then attack
@@ -25,6 +25,7 @@ beforeAll(async () => {
     .subscribe([
       "SELECT * FROM hp_components",
       "SELECT * FROM player_controller_components",
+      "SELECT * FROM actions",
     ]);
 
   player.reducers.pushAssets({ assetPack: combatPack(identity, { enemyHp: 10 }) });
@@ -43,7 +44,13 @@ test("attacking a co-located enemy reduces its hp", async () => {
   const before = enemyHp();
   expect(before).toBe(10);
 
-  player.reducers.act({ actionId: ATTACK_ACTION_ID, targetEntityId: enemyId });
+  // The proper backward conversion: resolve the action id from the subscribed
+  // actions table by name, never by assuming an enumeration order.
+  await waitFor(() => player.db.actions.count() > 0, 30000);
+  const attackActionId = [...player.db.actions.iter()].find(
+    (row) => row.name === "test_attack",
+  )!.id;
+  player.reducers.act({ actionId: attackActionId, targetEntityId: enemyId });
 
   await waitFor(() => (enemyHp() ?? 10) < 10, 30000);
   expect(enemyHp()).toBeLessThan(10);
