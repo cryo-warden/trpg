@@ -13,6 +13,8 @@ pub enum AppearanceFeatureType {
 pub struct AppearanceFeature {
     #[primary_key]
     pub index: u32,
+    #[unique]
+    pub name: String,
     pub text: String,
     pub appearance_feature_type: AppearanceFeatureType,
     pub priority: i32,

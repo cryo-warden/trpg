@@ -1,5 +1,12 @@
 import { test, expect } from "bun:test";
+import {
+  APPEARANCE_FEATURES,
+  AppearanceFeatureName,
+} from "../assets/appearance_features";
 import { describeAppearance, getName } from "./appearance";
+
+const featureIndex = (name: AppearanceFeatureName) =>
+  Object.keys(APPEARANCE_FEATURES).indexOf(name);
 
 const noAppearance = () => null;
 
@@ -51,14 +58,18 @@ test("falls back to 'something' when appearance is unknown or empty", () => {
 });
 
 // describeAppearance resolves feature indexes into "adjective, adjective noun".
-// In the appearance asset, index 0 is the noun "human"; indexes 19 and 20 are
-// the adjectives "tiny" (priority 1000) and "small" (900).
 test("describeAppearance names a bare noun", () => {
-  expect(describeAppearance([0])).toBe("human");
+  expect(describeAppearance([featureIndex("human")])).toBe("human");
 });
 
 test("describeAppearance prefixes adjectives, highest priority last", () => {
-  expect(describeAppearance([0, 19, 20])).toBe("small, tiny human");
+  expect(
+    describeAppearance([
+      featureIndex("human"),
+      featureIndex("tiny"), // priority 1000
+      featureIndex("small"), // priority 900
+    ]),
+  ).toBe("small, tiny human");
 });
 
 test("describeAppearance falls back to 'something' for null or unknown features", () => {

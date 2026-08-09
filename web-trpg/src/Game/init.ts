@@ -1,140 +1,81 @@
 import { DbConnection } from "../stdb";
 import {
-  type Action,
-  type ActionEffect,
-  type Baseline,
-  type Trait,
-  type StatBlock,
-  type ActionStep,
-  AppearanceFeature,
+  type ActionAuthor,
+  type AppearanceFeatureAuthor,
+  type StatBlockAuthor,
+  type StatBlockOwnerAuthor,
   AppearanceFeatureType,
 } from "../stdb/types";
-import {
-  actions,
-  appearanceFeatures,
-  baselines,
-  locationMaps,
-  locationMapThemes,
-  namedEntityBlobs,
-  newPlayerBlob,
-  StatBlockAsset,
-  traits,
-} from "./assets";
-import { getEncounterBlobs, getEncounters } from "./assets/encounters";
+import { namedEntityBlobs, newPlayerBlob, StatBlockAsset } from "./assets";
+import { ACTIONS } from "./assets/actions";
+import { APPEARANCE_FEATURES } from "./assets/appearance_features";
+import { BASELINES } from "./assets/baselines";
+import { TRAITS } from "./assets/traits";
+import { getEncounterAuthors, getEncounterBlobAuthors } from "./assets/encounters";
 import { getEntityBlob } from "./assets/entity_blobs";
 import {
-  getLocationMapConnections,
-  getLocationMaps,
-  getLocationMapThemes,
+  getLocationMapAuthors,
+  getLocationMapThemeAuthors,
+  LOCATION_MAPS,
+  LOCATION_MAP_THEMES,
 } from "./assets/location_maps";
 
-const assetToStatBlock = (asset: StatBlockAsset): StatBlock => {
-  return {
-    attack: asset.attack ?? 0,
-    mhp: asset.mhp ?? 0,
-    defense: asset.defense ?? 0,
-    mep: asset.mep ?? 0,
-    actionIds: (asset.actionNames ?? []).map((name) =>
-      actions.findIndex((a) => a.name === name),
-    ),
-    appearanceFeatureIds: (asset.appearanceFeatureNames ?? []).map((name) =>
-      appearanceFeatures.findIndex((af) => af.name === name),
-    ),
-  } as StatBlock;
-};
+// Note the direction: all name -> id resolution happens on the server at
+// push time (see server/src/asset/author.rs). The pack below carries names
+// only; the client never assigns or computes asset ids.
 
-const getActions = () =>
-  actions.map((a, id): Action => {
-    return {
-      id,
-      name: a.name,
-      actionType: { tag: a.type },
-    };
-  });
+const assetToStatBlockAuthor = (asset: StatBlockAsset): StatBlockAuthor => ({
+  attack: asset.attack ?? 0,
+  mhp: asset.mhp ?? 0,
+  defense: asset.defense ?? 0,
+  mep: asset.mep ?? 0,
+  actionNames: [...(asset.actionNames ?? [])],
+  appearanceFeatureNames: [...(asset.appearanceFeatureNames ?? [])],
+});
 
-const getActionSteps = () => {
-  let nextStepId = 1n;
-  return actions.flatMap((a, actionId) => {
-    const effects = a.steps.map((s): ActionEffect => {
-      switch (s.tag) {
-        case "Rest":
-          return { tag: "Rest" };
-        case "Move":
-          return { tag: "Move" };
-        case "Attack":
-          return {
-            tag: "Attack",
-            value: s.value ?? 0,
-          };
-        case "Heal":
-          return {
-            tag: "Heal",
-            value: s.value ?? 0,
-          };
-        default:
-          throw new Error(`Unknown action effect tag: ${s.tag}`);
-      }
-    });
-    return effects.map(
-      (actionEffect, sequenceIndex): ActionStep => ({
-        id: nextStepId++,
-        actionId: actionId,
-        sequenceIndex,
-        actionEffect,
-      }),
-    );
-  });
-};
+const getActionAuthors = (): ActionAuthor[] =>
+  Object.entries(ACTIONS).map(([name, a]) => ({
+    name,
+    actionType: { tag: a.type },
+    steps: [...a.steps],
+  }));
 
 const appearanceFeatureTypeMap = {
   noun: AppearanceFeatureType.Noun,
   adjective: AppearanceFeatureType.Adjective,
 } as const;
 
-const getAppearanceFeatures = () =>
-  appearanceFeatures.map((a, index) => {
-    return {
-      index,
-      text: a.text,
-      appearanceFeatureType: appearanceFeatureTypeMap[a.type],
-      priority: a.priority,
-    } as AppearanceFeature;
-  });
+const getAppearanceFeatureAuthors = (): AppearanceFeatureAuthor[] =>
+  Object.entries(APPEARANCE_FEATURES).map(([name, a]) => ({
+    name,
+    text: a.text,
+    appearanceFeatureType: appearanceFeatureTypeMap[a.type],
+    priority: a.priority,
+  }));
 
-const getBaselines = () =>
-  baselines.map((b, id) => {
-    return {
-      id,
-      name: b.name,
-      statBlock: assetToStatBlock(b),
-    } as Baseline;
-  });
-
-const getTraits = () =>
-  traits.map((t, id) => {
-    return {
-      id,
-      name: t.name,
-      statBlock: assetToStatBlock(t),
-    } as Trait;
-  });
+const getStatBlockOwnerAuthors = (
+  record: Record<string, StatBlockAsset>,
+): StatBlockOwnerAuthor[] =>
+  Object.entries(record).map(([name, asset]) => ({
+    name,
+    statBlock: assetToStatBlockAuthor(asset),
+  }));
 
 export const init = (connection: DbConnection) => {
   connection.reducers.pushAssets({
     assetPack: {
-      actions: getActions(),
-      actionSteps: getActionSteps(),
-      appearanceFeatures: getAppearanceFeatures(),
+      actions: getActionAuthors(),
+      appearanceFeatures: getAppearanceFeatureAuthors(),
 
-      baselines: getBaselines(),
-      traits: getTraits(),
+      baselines: getStatBlockOwnerAuthors(BASELINES),
+      traits: getStatBlockOwnerAuthors(TRAITS),
 
-      encounterBlobs: getEncounterBlobs(),
-      encounters: getEncounters(),
+      encounterBlobs: getEncounterBlobAuthors(),
+      encounters: getEncounterAuthors(),
 
-      locationMapThemes: getLocationMapThemes(locationMapThemes),
-      locationMaps: getLocationMaps(locationMaps),
-      locationMapConnections: getLocationMapConnections(locationMaps),
+      locationMapThemes: getLocationMapThemeAuthors(LOCATION_MAP_THEMES),
+      locationMaps: getLocationMapAuthors(LOCATION_MAPS),
+
       namedInstantiateEntityBlobs: Object.entries(namedEntityBlobs).map(
         ([name, blob]) => ({ name, blob: getEntityBlob(blob) }),
       ),

@@ -19,7 +19,6 @@ const SHARED_LOCATION_ID = 999n;
 
 const emptyPack = (): AssetPack => ({
   actions: [],
-  actionSteps: [],
   appearanceFeatures: [],
   baselines: [],
   traits: [],
@@ -27,7 +26,6 @@ const emptyPack = (): AssetPack => ({
   encounters: [],
   locationMapThemes: [],
   locationMaps: [],
-  locationMapConnections: [],
   namedInstantiateEntityBlobs: [],
   instantiateEntityBlobs: [],
   // Never instantiated in these scenarios (no client triggers new_player), but
@@ -38,9 +36,7 @@ const emptyPack = (): AssetPack => ({
 /** The smallest valid bundle: a single action and no world entities. */
 export const minimalPack = (): AssetPack => ({
   ...emptyPack(),
-  actions: [
-    { id: ATTACK_ACTION_ID, name: "test_action", actionType: { tag: "Attack" } },
-  ],
+  actions: [{ name: "test_action", actionType: { tag: "Attack" }, steps: [] }],
 });
 
 /**
@@ -98,26 +94,23 @@ export const graphPack = (): AssetPack => ({
 export const mapGenPack = (): AssetPack => ({
   ...emptyPack(),
   // A public action so tests can await "assets landed".
-  actions: [
-    { id: ATTACK_ACTION_ID, name: "test_action", actionType: { tag: "Move" } },
-  ],
+  actions: [{ name: "test_action", actionType: { tag: "Move" }, steps: [] }],
   baselines: [
     {
-      id: 0,
       name: "test_human",
       statBlock: {
         attack: 1,
         mhp: 5,
         defense: 0,
         mep: 5,
-        actionIds: [],
-        appearanceFeatureIds: [],
+        actionNames: [],
+        appearanceFeatureNames: [],
       },
     },
   ],
   locationMapThemes: [
     {
-      id: 0,
+      name: "test_theme",
       // Nameless blobs: NameComponent.name is unique, so a generator that
       // stamps out many rooms/paths must not give them a fixed name.
       decorationsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
@@ -129,17 +122,17 @@ export const mapGenPack = (): AssetPack => ({
   ],
   locationMaps: [
     {
-      id: 0,
       name: "tiny",
-      themeId: 0,
+      themeName: "test_theme",
       layout: { tag: "Path" },
       rngSeed: 0n,
       extraRoomCount: 0,
       mainRoomCount: 3,
       loopCount: 1,
-      encounterIdsSampler: { selections: [] },
+      encounterNamesSampler: [],
       minEncounterCount: 0,
       maxEncounterCount: 0,
+      connectionNames: [],
     },
   ],
   // new_player's blob resolves its starting allegiance through the registry
@@ -165,14 +158,10 @@ export const combatPack = (
 ): AssetPack => ({
   ...emptyPack(),
   actions: [
-    { id: ATTACK_ACTION_ID, name: "test_attack", actionType: { tag: "Attack" } },
-  ],
-  actionSteps: [
     {
-      id: 1n,
-      actionId: ATTACK_ACTION_ID,
-      sequenceIndex: 0,
-      actionEffect: { tag: "Attack", value: attackDamage },
+      name: "test_attack",
+      actionType: { tag: "Attack" },
+      steps: [{ tag: "Attack", value: attackDamage }],
     },
   ],
   instantiateEntityBlobs: [

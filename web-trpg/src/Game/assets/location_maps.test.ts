@@ -1,30 +1,26 @@
 import { test, expect } from "bun:test";
-import { locationMapThemes } from ".";
 import {
   LOCATION_MAPS,
   LOCATION_MAP_THEMES,
   getEntityBlobsSampler,
-  getLocationMapConnections,
-  getLocationMapThemes,
-  getLocationMaps,
+  getLocationMapAuthors,
+  getLocationMapThemeAuthors,
 } from "./location_maps";
 
-test("getLocationMapThemes builds selectors for decorations, paths, and rooms", () => {
-  const themes = getLocationMapThemes(LOCATION_MAP_THEMES);
-  expect(themes.length).toBe(LOCATION_MAP_THEMES.length);
-  expect(themes[0].id).toBe(0);
+test("getLocationMapThemeAuthors builds selectors for decorations, paths, and rooms", () => {
+  const themes = getLocationMapThemeAuthors(LOCATION_MAP_THEMES);
+  expect(themes.map((t) => t.name)).toEqual(Object.keys(LOCATION_MAP_THEMES));
   expect(themes[0].decorationsSelector.selections.length).toBe(
-    LOCATION_MAP_THEMES[0].decorations.length,
+    LOCATION_MAP_THEMES.encampment.decorations.length,
   );
 });
 
-test("getLocationMaps resolves theme names to ids and builds the encounter sampler", () => {
-  const maps = getLocationMaps(LOCATION_MAPS);
+test("getLocationMapAuthors passes theme and encounter names through", () => {
+  const maps = getLocationMapAuthors(LOCATION_MAPS);
   const cave = maps.find((m) => m.name === "beginner_cave");
-  expect(cave?.themeId).toBe(
-    locationMapThemes.findIndex((t) => t.name === "cave"),
-  );
-  expect(cave?.encounterIdsSampler.selections.length).toBe(4);
+  expect(cave?.themeName).toBe("cave");
+  expect(cave?.encounterNamesSampler.length).toBe(4);
+  expect(cave?.connectionNames).toEqual([]);
 });
 
 test("getEntityBlobsSampler wraps each selection's blob", () => {
@@ -33,8 +29,4 @@ test("getEntityBlobsSampler wraps each selection's blob", () => {
   ]);
   expect(sampler.selections.length).toBe(1);
   expect(sampler.selections[0].weight).toBe(3);
-});
-
-test("getLocationMapConnections returns no rows when none are configured", () => {
-  expect(getLocationMapConnections(LOCATION_MAPS)).toEqual([]);
 });

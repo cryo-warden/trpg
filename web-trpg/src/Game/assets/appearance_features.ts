@@ -1,54 +1,46 @@
 export type AppearanceFeatureType = "noun" | "adjective";
 
 export type AppearanceFeatureAsset = {
-  name: string;
   type: AppearanceFeatureType;
   text: string;
   priority: number;
 };
 
-const NOUN_APPEARANCE_FEATURES = [
-  { name: "human", text: "human", priority: -100 },
-  { name: "slime", text: "slime", priority: 100 },
-  { name: "bat", text: "slime", priority: 100 },
-  { name: "path", text: "path", priority: 10000 },
-  { name: "rock", text: "rock", priority: 10000 },
-  { name: "stone", text: "stone", priority: 10000 },
-  { name: "boulder", text: "boulder", priority: 10000 },
-  { name: "trail", text: "trail", priority: 10000 },
-  { name: "path", text: "path", priority: 10000 },
-  { name: "opening", text: "opening", priority: 10000 },
-  { name: "hole", text: "hole", priority: 10000 },
-  { name: "chasm", text: "chasm", priority: 10000 },
-  { name: "crack", text: "crack", priority: 10000 },
-  { name: "room", text: "room", priority: 10000 },
-  { name: "enclosure", text: "enclosure", priority: 10000 },
-  { name: "tent", text: "tent", priority: 10000 },
-  { name: "chamber", text: "chamber", priority: 10000 },
-  { name: "dome", text: "dome", priority: 10000 },
-  { name: "cavern", text: "cavern", priority: 10000 },
-] as const;
+const noun = (text: string, priority: number): AppearanceFeatureAsset => ({
+  type: "noun",
+  text,
+  priority,
+});
 
-const ADJECTIVE_APPEARANCE_FEATURES = [
-  { name: "tiny", text: "tiny", priority: 1000 },
-  { name: "small", text: "small", priority: 900 },
-  { name: "big", text: "big", priority: 900 },
-  { name: "huge", text: "huge", priority: 1000 },
-] as const;
+const adjective = (text: string, priority: number): AppearanceFeatureAsset => ({
+  type: "adjective",
+  text,
+  priority,
+});
 
-export const APPEARANCE_FEATURES = [
-  ...NOUN_APPEARANCE_FEATURES.map(
-    (af) =>
-      ({
-        ...af,
-        type: "noun",
-      }) as const,
-  ),
-  ...ADJECTIVE_APPEARANCE_FEATURES.map(
-    (af) =>
-      ({
-        ...af,
-        type: "adjective",
-      }) as const,
-  ),
-] as const satisfies readonly AppearanceFeatureAsset[];
+export const APPEARANCE_FEATURES = {
+  human: noun("human", -100),
+  slime: noun("slime", 100),
+  bat: noun("slime", 100),
+  path: noun("path", 10000),
+  rock: noun("rock", 10000),
+  stone: noun("stone", 10000),
+  boulder: noun("boulder", 10000),
+  trail: noun("trail", 10000),
+  opening: noun("opening", 10000),
+  hole: noun("hole", 10000),
+  chasm: noun("chasm", 10000),
+  crack: noun("crack", 10000),
+  room: noun("room", 10000),
+  enclosure: noun("enclosure", 10000),
+  tent: noun("tent", 10000),
+  chamber: noun("chamber", 10000),
+  dome: noun("dome", 10000),
+  cavern: noun("cavern", 10000),
+  tiny: adjective("tiny", 1000),
+  small: adjective("small", 900),
+  big: adjective("big", 900),
+  huge: adjective("huge", 1000),
+} as const satisfies Record<string, AppearanceFeatureAsset>;
+
+export type AppearanceFeatureName = keyof typeof APPEARANCE_FEATURES;

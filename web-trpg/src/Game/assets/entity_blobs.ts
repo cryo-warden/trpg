@@ -1,16 +1,17 @@
-import { actions, appearanceFeatures, baselines, traits } from ".";
 import { ActionHotkey, EntityBlob } from "../../stdb/types";
 import { Simplify } from "../../structural/Simplify";
-import { APPEARANCE_FEATURES } from "./appearance_features";
-import { BASELINES } from "./baselines";
-import { TRAITS } from "./traits";
+import { ACTIONS, ActionName } from "./actions";
+import {
+  APPEARANCE_FEATURES,
+  AppearanceFeatureName,
+} from "./appearance_features";
+import { BASELINES, BaselineName } from "./baselines";
+import { TRAITS, TraitName } from "./traits";
 
 export type ActionHotkeyAsset = {
-  actionName: (typeof actions)[number]["name"];
+  actionName: ActionName;
   hotkey: string;
 };
-
-type AppearanceFeatureName = (typeof APPEARANCE_FEATURES)[number]["name"];
 
 export type EntityBlobAsset = Simplify<
   Partial<
@@ -25,8 +26,8 @@ export type EntityBlobAsset = Simplify<
     >
   > & {
     name?: string;
-    baseline?: (typeof BASELINES)[number]["name"];
-    traits?: (typeof TRAITS)[number]["name"][];
+    baseline?: BaselineName;
+    traits?: TraitName[];
     actionHotkeys?: ActionHotkeyAsset[];
     appearanceFeatureNames?: AppearanceFeatureName[];
     /** The registered name of the allegiance entity, resolved server-side at
@@ -53,22 +54,25 @@ export const NEW_PLAYER_BLOB = {
   allegiance: "allegiance1",
 } as const satisfies EntityBlobAsset;
 
+// Asset references INSIDE entity blobs (baseline, traits, actions,
+// appearance features) are still integer ids on the wire, so this one
+// forward conversion remains client-side: the ids below are the enumeration
+// order of this same push's Records, which is exactly how push_assets
+// assigns them. Once blob fields grow asset-name selectors (like the
+// entity-id Named selector), this moves server-side with the rest of the
+// forward conversion.
+const assetId = (record: Record<string, unknown>, name: string): number =>
+  Object.keys(record).indexOf(name);
+
 const getActionHotkeys = (
   actionHotkeyAssets: ActionHotkeyAsset[],
 ): ActionHotkey[] =>
   actionHotkeyAssets.map(
     (aha) =>
       ({
-        actionId: actions.findIndex((a) => a.name === aha.actionName),
+        actionId: assetId(ACTIONS, aha.actionName),
         characterCode: aha.hotkey.charCodeAt(0),
       }) as ActionHotkey,
-  );
-
-const getAppearanceFeatures = (
-  appearanceFeatureNames: AppearanceFeatureName[],
-) =>
-  appearanceFeatureNames.map((name) =>
-    appearanceFeatures.findIndex((feature) => feature.name === name),
   );
 
 export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
@@ -76,15 +80,13 @@ export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
     ...entityBlobAsset,
     baseline: entityBlobAsset.baseline
       ? {
-          baselineId: baselines.findIndex(
-            (b) => b.name === entityBlobAsset.baseline,
-          ),
+          baselineId: assetId(BASELINES, entityBlobAsset.baseline),
         }
       : undefined,
     traits: entityBlobAsset.traits
       ? {
           traitIds: (entityBlobAsset.traits ?? []).map((name) =>
-            traits.findIndex((t) => t.name === name),
+            assetId(TRAITS, name),
           ),
         }
       : undefined,
@@ -108,8 +110,8 @@ export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
       : undefined,
     appearanceFeatures: entityBlobAsset.appearanceFeatureNames
       ? {
-          appearanceFeatureIndexes: getAppearanceFeatures(
-            entityBlobAsset.appearanceFeatureNames,
+          appearanceFeatureIndexes: entityBlobAsset.appearanceFeatureNames.map(
+            (name) => assetId(APPEARANCE_FEATURES, name),
           ),
         }
       : undefined,

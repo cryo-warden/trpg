@@ -1,13 +1,11 @@
-import { locationMapThemes } from ".";
 import {
-  Layout,
-  LocationMap,
-  LocationMapTheme,
   EntityBlobSample,
   EntityBlobsSampler,
-  LocationMapConnection,
+  Layout,
+  LocationMapAuthor,
+  LocationMapThemeAuthor,
 } from "../../stdb/types";
-import { getEncounterIdsSampler, EncountersSamplerAsset } from "./encounters";
+import { EncountersSamplerAsset } from "./encounters";
 import { EntityBlobAsset, getEntityBlob } from "./entity_blobs";
 
 export type EntityBlobSampleAsset = {
@@ -30,25 +28,16 @@ export const getEntityBlobsSampler = (
 };
 
 export type LocationMapThemeAsset = {
-  name: string;
   decorations: EntityBlobsSamplerAsset;
   paths: EntityBlobsSamplerAsset;
   rooms: EntityBlobsSamplerAsset;
 } & Omit<
-  LocationMapTheme,
-  "id" | "decorationsSelector" | "pathsSelector" | "roomsSelector"
+  LocationMapThemeAuthor,
+  "name" | "decorationsSelector" | "pathsSelector" | "roomsSelector"
 >;
 
-export type LocationMapAsset = {
-  themeName: (typeof LOCATION_MAP_THEMES)[number]["name"];
-  encountersSampler: EncountersSamplerAsset;
-  // Can't derive specific type from const without circularity error.
-  connections?: string[];
-} & Omit<LocationMap, "id" | "themeId" | "encounterIdsSampler">;
-
-export const LOCATION_MAP_THEMES = [
-  {
-    name: "encampment",
+export const LOCATION_MAP_THEMES = {
+  encampment: {
     decorations: [
       { weight: 5, blob: { appearanceFeatureNames: ["rock"] } },
       { weight: 4, blob: { appearanceFeatureNames: ["stone"] } },
@@ -64,8 +53,7 @@ export const LOCATION_MAP_THEMES = [
       { weight: 4, blob: { appearanceFeatureNames: ["tent"] } },
     ],
   },
-  {
-    name: "cave",
+  cave: {
     decorations: [
       { weight: 5, blob: { appearanceFeatureNames: ["rock"] } },
       { weight: 4, blob: { appearanceFeatureNames: ["stone"] } },
@@ -85,11 +73,22 @@ export const LOCATION_MAP_THEMES = [
       { weight: 2, blob: { appearanceFeatureNames: ["cavern"] } },
     ],
   },
-] as const satisfies readonly LocationMapThemeAsset[];
+} as const satisfies Record<string, LocationMapThemeAsset>;
 
-export const LOCATION_MAPS = [
-  {
-    name: "start_zone",
+export type LocationMapThemeName = keyof typeof LOCATION_MAP_THEMES;
+
+export type LocationMapAsset = {
+  themeName: LocationMapThemeName;
+  encountersSampler: EncountersSamplerAsset;
+  // Can't derive specific type from const without circularity error.
+  connections?: string[];
+} & Omit<
+  LocationMapAuthor,
+  "name" | "themeName" | "encounterNamesSampler" | "connectionNames"
+>;
+
+export const LOCATION_MAPS = {
+  start_zone: {
     layout: Layout.Hub,
     rngSeed: 0n,
     mainRoomCount: 10,
@@ -101,8 +100,7 @@ export const LOCATION_MAPS = [
     maxEncounterCount: 0,
     connections: [],
   },
-  {
-    name: "beginner_cave",
+  beginner_cave: {
     layout: Layout.Path,
     rngSeed: 0n,
     mainRoomCount: 10,
@@ -119,10 +117,9 @@ export const LOCATION_MAPS = [
     maxEncounterCount: 12,
     connections: [],
   },
-  {
+  triangle_loop: {
     // Smallest case that produces a triangular join: three main rooms chained
     // 0-1-2, plus one loop that adds the closing 0-2 edge to form a triangle.
-    name: "triangle_loop",
     layout: Layout.Path,
     rngSeed: 0n,
     mainRoomCount: 3,
@@ -134,40 +131,38 @@ export const LOCATION_MAPS = [
     maxEncounterCount: 0,
     connections: [],
   },
-] as const satisfies readonly LocationMapAsset[];
+} as const satisfies Record<string, LocationMapAsset>;
 
-export const getLocationMapThemes = (
-  assets: readonly LocationMapThemeAsset[],
-): LocationMapTheme[] =>
-  assets.map((asset, id) => ({
-    ...asset,
-    id,
+export type LocationMapName = keyof typeof LOCATION_MAPS;
+
+export const getLocationMapThemeAuthors = (
+  assets: Record<string, LocationMapThemeAsset>,
+): LocationMapThemeAuthor[] =>
+  Object.entries(assets).map(([name, asset]) => ({
+    name,
     decorationsSelector: getEntityBlobsSampler(asset.decorations),
+    minDecorationCount: asset.minDecorationCount,
+    maxDecorationCount: asset.maxDecorationCount,
     pathsSelector: getEntityBlobsSampler(asset.paths),
     roomsSelector: getEntityBlobsSampler(asset.rooms),
   }));
 
-export const getLocationMaps = (
-  assets: readonly LocationMapAsset[],
-): LocationMap[] =>
-  assets.map((asset, id) => ({
-    ...asset,
-    id,
-    themeId: locationMapThemes.findIndex((t) => t.name === asset.themeName),
-    encounterIdsSampler: getEncounterIdsSampler(asset.encountersSampler),
+export const getLocationMapAuthors = (
+  assets: Record<string, LocationMapAsset>,
+): LocationMapAuthor[] =>
+  Object.entries(assets).map(([name, asset]) => ({
+    name,
+    themeName: asset.themeName,
+    layout: asset.layout,
+    rngSeed: asset.rngSeed,
+    extraRoomCount: asset.extraRoomCount,
+    mainRoomCount: asset.mainRoomCount,
+    loopCount: asset.loopCount,
+    encounterNamesSampler: asset.encountersSampler.map((s) => ({
+      weight: s.weight,
+      name: s.name,
+    })),
+    minEncounterCount: asset.minEncounterCount,
+    maxEncounterCount: asset.maxEncounterCount,
+    connectionNames: [...(asset.connections ?? [])],
   }));
-
-export const getLocationMapConnections = (
-  assets: readonly LocationMapAsset[],
-): LocationMapConnection[] => {
-  let id = 0;
-  return assets.flatMap((a) =>
-    (a.connections ?? []).map(
-      (c): LocationMapConnection => ({
-        id: id++,
-        exitLocationMapId: LOCATION_MAPS.findIndex((m) => m.name === a.name),
-        destinationLocationMapId: LOCATION_MAPS.findIndex((m) => m.name === c),
-      }),
-    ),
-  );
-};

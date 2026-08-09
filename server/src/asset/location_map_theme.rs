@@ -41,6 +41,8 @@ impl WeightedSampler for EntityBlobsSampler {
 pub struct LocationMapTheme {
     #[primary_key]
     pub id: u32,
+    #[unique]
+    pub name: String,
     pub decorations_selector: EntityBlobsSampler,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,

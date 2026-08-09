@@ -14,6 +14,8 @@ use crate::{
 pub struct EncounterBlob {
     #[primary_key]
     pub id: u32,
+    #[unique]
+    pub name: String,
     pub blob: EntityBlob,
 }
 
@@ -21,6 +23,8 @@ pub struct EncounterBlob {
 pub struct Encounter {
     #[primary_key]
     pub id: u32,
+    #[unique]
+    pub name: String,
     pub categoric_blob_id: u32,
     pub blob_ids: Vec<u32>,
 }

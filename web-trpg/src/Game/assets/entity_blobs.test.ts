@@ -1,5 +1,6 @@
 import { test, expect } from "bun:test";
-import { actions, appearanceFeatures, baselines } from ".";
+import { actions, appearanceFeatures } from ".";
+import { BASELINES } from "./baselines";
 import { getEntityBlob, NEW_PLAYER_BLOB } from "./entity_blobs";
 
 test("getEntityBlob resolves baseline, traits, and action hotkeys by name", () => {
@@ -10,7 +11,7 @@ test("getEntityBlob resolves baseline, traits, and action hotkeys by name", () =
   });
 
   expect(blob.baseline?.baselineId).toBe(
-    baselines.findIndex((b) => b.name === "human"),
+    Object.keys(BASELINES).indexOf("human"),
   );
   expect(blob.traits?.traitIds.length).toBe(NEW_PLAYER_BLOB.traits.length);
   const hotkeys = blob.actionHotkeys?.actionHotkeys ?? [];

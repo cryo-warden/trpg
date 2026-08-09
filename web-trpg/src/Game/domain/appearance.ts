@@ -16,7 +16,7 @@ const byPriorityDescending = (
 const resolveFeatures = (indexes: number[]): AppearanceFeatureAsset[] =>
   indexes
     .map((index) => appearanceFeatures[index])
-    .filter((feature): feature is AppearanceFeatureAsset => feature != null);
+    .filter((feature) => feature != null);
 
 const MAX_ADJECTIVES = 3;
 const UNKNOWN_NOUN = "something";

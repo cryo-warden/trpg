@@ -1,108 +1,68 @@
-import {
-  Encounter,
-  EncounterBlob,
-  EncounterIdSample,
-  EncounterIdsSampler,
-} from "../../stdb/types";
-import { Simplify } from "../../structural/Simplify";
+import { EncounterAuthor, EncounterBlobAuthor } from "../../stdb/types";
 import { EntityBlobAsset, getEntityBlob } from "./entity_blobs";
 
-export type EncounterBlobAsset = Simplify<
-  { name: string; blob: EntityBlobAsset } & Omit<EncounterBlob, "id" | "blob">
->;
+export type EncounterBlobAsset = { blob: EntityBlobAsset };
 
-export const CATEGORICAL_BLOBS = [
-  {
-    name: "encounter_enemy",
-    /* TODO Add enemy allegiance component */
-    blob: {
-      enemyController: {},
-    },
-  },
-] as const satisfies EncounterBlobAsset[];
+export const ENCOUNTER_BLOBS = {
+  /* TODO Add enemy allegiance component */
+  encounter_enemy: { blob: { enemyController: {} } },
+  slime: { blob: { baseline: "slime" } },
+  slimeSmall: { blob: { baseline: "slime", traits: ["small"] } },
+  slimeBig: { blob: { baseline: "slime", traits: ["big"] } },
+  bat: { blob: { baseline: "bat" } },
+  batBig: { blob: { baseline: "bat", traits: ["big"] } },
+} as const satisfies Record<string, EncounterBlobAsset>;
 
-export const ENEMY_ENCOUNTER_BLOBS = [
-  { name: "slime", blob: { baseline: "slime" } },
-  { name: "slimeSmall", blob: { baseline: "slime", traits: ["small"] } },
-  { name: "slimeBig", blob: { baseline: "slime", traits: ["big"] } },
-  { name: "bat", blob: { baseline: "bat" } },
-  { name: "batBig", blob: { baseline: "bat", traits: ["big"] } },
-] as const satisfies EncounterBlobAsset[];
+export type EncounterBlobName = keyof typeof ENCOUNTER_BLOBS;
 
-export const ENCOUNTER_BLOBS = [
-  ...CATEGORICAL_BLOBS,
-  ...ENEMY_ENCOUNTER_BLOBS,
-] as const satisfies readonly EncounterBlobAsset[];
+export type EncounterAsset = {
+  categoricBlobName: EncounterBlobName;
+  blobNames: EncounterBlobName[];
+};
 
-export const getEncounterBlobs = (): EncounterBlob[] =>
-  ENCOUNTER_BLOBS.map((asset, id) => ({
-    id,
-    blob: getEntityBlob(asset.blob),
-  }));
-
-export type EncounterAsset = Simplify<
-  {
-    name: string;
-    categoricBlobName: (typeof CATEGORICAL_BLOBS)[number]["name"];
-    blobNames: (typeof ENCOUNTER_BLOBS)[number]["name"][];
-  } & Omit<Encounter, "id" | "categoricBlobId" | "blobIds">
->;
-
-export const ENCOUNTERS = [
-  {
-    name: "slime1",
+export const ENCOUNTERS = {
+  slime1: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["slime"],
   },
-  {
-    name: "slime2",
+  slime2: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["slime", "slime"],
   },
-  {
-    name: "slime3",
+  slime3: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["slime", "slime", "slime"],
   },
-  {
-    name: "slime4",
+  slime4: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["slime", "slime", "slime", "slime"],
   },
-  {
-    name: "slime2_bat1",
+  slime2_bat1: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["slime", "slime", "bat"],
   },
-  {
-    name: "batBig1",
+  batBig1: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["batBig"],
   },
-] as const satisfies readonly EncounterAsset[];
+} as const satisfies Record<string, EncounterAsset>;
 
-export const getEncounters = (): Encounter[] =>
-  ENCOUNTERS.map((asset, id) => ({
-    id,
-    categoricBlobId: ENCOUNTER_BLOBS.findIndex(
-      (b) => b.name === asset.categoricBlobName,
-    ),
-    blobIds: asset.blobNames.map((name) =>
-      ENCOUNTER_BLOBS.findIndex((b) => b.name === name),
-    ),
+export type EncounterName = keyof typeof ENCOUNTERS;
+
+export const getEncounterBlobAuthors = (): EncounterBlobAuthor[] =>
+  Object.entries(ENCOUNTER_BLOBS).map(([name, asset]) => ({
+    name,
+    blob: getEntityBlob(asset.blob),
   }));
 
-export type EncountersSamplerAsset = Simplify<
-  {
-    name: (typeof ENCOUNTERS)[number]["name"];
-  } & Omit<EncounterIdSample, "id">
->[];
+export type EncountersSamplerAsset = {
+  weight: number;
+  name: EncounterName;
+}[];
 
-export const getEncounterIdsSampler = (
-  asset: EncountersSamplerAsset,
-): EncounterIdsSampler => ({
-  selections: asset.map((s) => ({
-    id: ENCOUNTERS.findIndex((e) => e.name === s.name),
-    weight: s.weight,
-  })),
-});
+export const getEncounterAuthors = (): EncounterAuthor[] =>
+  Object.entries(ENCOUNTERS).map(([name, asset]) => ({
+    name,
+    categoricBlobName: asset.categoricBlobName,
+    blobNames: [...asset.blobNames],
+  }));

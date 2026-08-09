@@ -22,8 +22,8 @@ pub enum Layout {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EncounterIdSample {
-    weight: u8,
-    id: u32,
+    pub weight: u8,
+    pub id: u32,
 }
 
 impl WeightedSample for EncounterIdSample {
@@ -38,7 +38,7 @@ impl WeightedSample for EncounterIdSample {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EncounterIdsSampler {
-    selections: Vec<EncounterIdSample>,
+    pub selections: Vec<EncounterIdSample>,
 }
 
 impl WeightedSampler for EncounterIdsSampler {
@@ -53,6 +53,7 @@ impl WeightedSampler for EncounterIdsSampler {
 pub struct LocationMap {
     #[primary_key]
     pub id: u32,
+    #[unique]
     pub name: String,
     pub theme_id: u32,
     pub layout: Layout,

@@ -1,7 +1,6 @@
-import { Action, ActionEffect, ActionType } from "../../stdb/types";
+import { ActionEffect, ActionType } from "../../stdb/types";
 
 export type ActionAsset = {
-  name: Action["name"];
   type: ActionType["tag"]; // WIP Remove actionType, and derive it from steps.
   appearance: { displayName: string; beginTemplate: string };
   steps: ActionEffect[];
@@ -14,9 +13,8 @@ const Attack = (value: number) =>
 const Heal = (value: number) =>
   ({ tag: "Heal", value }) as const satisfies ActionEffect;
 
-export const ACTIONS = [
-  {
-    name: "move",
+export const ACTIONS = {
+  move: {
     type: "Move",
     appearance: {
       displayName: "Move",
@@ -24,8 +22,7 @@ export const ACTIONS = [
     },
     steps: [Rest, Rest, Move, Rest],
   },
-  {
-    name: "quick_move",
+  quick_move: {
     type: "Move",
     appearance: {
       displayName: "Quick Move",
@@ -33,8 +30,7 @@ export const ACTIONS = [
     },
     steps: [Move],
   },
-  {
-    name: "bop",
+  bop: {
     type: "Attack",
     appearance: {
       displayName: "Bop",
@@ -42,8 +38,7 @@ export const ACTIONS = [
     },
     steps: [Rest, Rest, Attack(1), Rest],
   },
-  {
-    name: "boppity_bop",
+  boppity_bop: {
     type: "Attack",
     appearance: {
       displayName: "Boppity Bop",
@@ -51,8 +46,7 @@ export const ACTIONS = [
     },
     steps: [Rest, Rest, Attack(1), Rest, Attack(1), Rest, Rest],
   },
-  {
-    name: "divine_heal",
+  divine_heal: {
     type: "Buff",
     appearance: {
       displayName: "Divine Heal",
@@ -61,8 +55,7 @@ export const ACTIONS = [
     },
     steps: [Heal(500)],
   },
-  {
-    name: "slime_spray",
+  slime_spray: {
     type: "Attack",
     appearance: {
       displayName: "Slime Spray",
@@ -71,8 +64,7 @@ export const ACTIONS = [
     },
     steps: [Rest, Rest, Rest, Attack(1), Rest, Rest],
   },
-  {
-    name: "scratch",
+  scratch: {
     type: "Attack",
     appearance: {
       displayName: "Scratch",
@@ -80,4 +72,6 @@ export const ACTIONS = [
     },
     steps: [Rest, Rest, Attack(1), Rest, Rest, Rest, Rest],
   },
-] as const satisfies readonly ActionAsset[];
+} as const satisfies Record<string, ActionAsset>;
+
+export type ActionName = keyof typeof ACTIONS;

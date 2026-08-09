@@ -11,3 +11,4 @@ pub struct Baseline {
     pub name: String,
     pub stat_block: StatBlock,
 }
+

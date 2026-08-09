@@ -47,10 +47,10 @@ pub enum ActionEffect {
 #[derive(Debug, Clone)]
 pub struct ActionStep {
     #[primary_key]
-    id: u64,
-    action_id: ActionId,
-    sequence_index: i32,
-    action_effect: ActionEffect,
+    pub id: u64,
+    pub action_id: ActionId,
+    pub sequence_index: i32,
+    pub action_effect: ActionEffect,
 }
 
 pub struct ActionHandle<'a> {
