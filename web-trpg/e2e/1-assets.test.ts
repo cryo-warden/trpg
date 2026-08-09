@@ -27,3 +27,49 @@ test("pushing a minimal asset bundle populates the action catalog", async () => 
   await waitFor(() => connection.db.actions.count() > 0);
   expect(connection.db.actions.count()).toBeGreaterThan(0);
 });
+
+test("re-pushing matches by name: ids kept, bodies updated, new assets added", async () => {
+  // An identical re-push is a valid no-op update.
+  await connection.reducers.pushAssets({ assetPack: minimalPack() });
+
+  // A modified re-push: a new action listed FIRST (so any enumeration-based
+  // id assignment would misnumber it) plus a body change to the existing one.
+  const pack = {
+    ...minimalPack(),
+    actions: [
+      {
+        name: "another_action",
+        value: { actionType: { tag: "Move" } as const, steps: [] },
+      },
+      {
+        name: "test_action",
+        value: { actionType: { tag: "Buff" } as const, steps: [] },
+      },
+    ],
+  };
+  await connection.reducers.pushAssets({ assetPack: pack });
+  await waitFor(() => connection.db.actions.count() === 2n);
+
+  const rows = [...connection.db.actions.iter()];
+  const existing = rows.find((row) => row.name === "test_action");
+  const added = rows.find((row) => row.name === "another_action");
+  expect(existing?.id).toBe(0); // kept its id despite the reordering
+  expect(existing?.actionType.tag).toBe("Buff"); // body updated
+  expect(added?.id).toBe(1); // fresh id, never a reindex
+});
+
+test("a push omitting an existing asset fails fast and changes nothing", async () => {
+  const pack = {
+    ...minimalPack(),
+    actions: [
+      {
+        name: "another_action",
+        value: { actionType: { tag: "Move" } as const, steps: [] },
+      },
+    ],
+  };
+  await expect(
+    connection.reducers.pushAssets({ assetPack: pack }),
+  ).rejects.toThrow(/missing from the pushed assets/);
+  expect(connection.db.actions.count()).toBe(2n);
+});

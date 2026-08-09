@@ -27,9 +27,9 @@ use crate::{
     },
     ecs_extension::EcsExtension,
     entity::{
-        ActionHotkey, ActionHotkeysComponentBlob, ActionsComponentBlob,
-        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob, InstantiateEntityBlob,
-        NewEntityHandle, TraitsComponentBlob,
+        named_entities, ActionHotkey, ActionHotkeysComponentBlob, ActionsComponentBlob,
+        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob, FindEntityHandle,
+        InstantiateEntityBlob, NewEntityHandle, TraitsComponentBlob,
     },
 };
 
@@ -76,16 +76,35 @@ pub struct AssetPack {
     new_player_blob: EntityBlobAuthor,
 }
 
-/// Assign ids to a kind's authored names by enumeration order, rejecting
-/// duplicates. The resulting map is what name references resolve through.
-fn intern_names<'a>(
+/// Match a kind's authored names against its existing rows: a matched name
+/// keeps its id forever, a new name gets a fresh id (ids are never reused or
+/// reindexed). Fails fast on a duplicate authored name — and on an existing
+/// name that the push omits: assets are never dropped implicitly, so removal
+/// has to become an explicit operation, never a push side effect.
+fn match_names<'a>(
     kind: &str,
-    names: impl Iterator<Item = &'a String>,
+    existing: impl Iterator<Item = (String, u32)>,
+    incoming: impl Iterator<Item = &'a String>,
 ) -> Result<HashMap<String, u32>, String> {
+    let existing: HashMap<String, u32> = existing.collect();
+    let mut next_id = existing.values().max().map_or(0, |max| max + 1);
     let mut ids = HashMap::new();
-    for (id, name) in names.enumerate() {
-        if ids.insert(name.to_owned(), id as u32).is_some() {
+    for name in incoming {
+        let id = existing.get(name).copied().unwrap_or_else(|| {
+            let id = next_id;
+            next_id += 1;
+            id
+        });
+        if ids.insert(name.to_owned(), id).is_some() {
             return Err(format!("Duplicate {} name \"{}\".", kind, name));
+        }
+    }
+    for name in existing.keys() {
+        if !ids.contains_key(name) {
+            return Err(format!(
+                "The {} \"{}\" exists but is missing from the pushed assets; assets cannot be removed implicitly.",
+                kind, name
+            ));
         }
     }
     Ok(ids)
@@ -237,28 +256,45 @@ fn resolve_stat_block(author: StatBlockAuthor, maps: &AssetNameMaps) -> Result<S
 }
 
 // The forward (name -> id) conversion lives HERE and only here. The server
-// owns id assignment — and, once incremental updates land, the migration of
-// already-stored rows — so it is the only party that can resolve authored
-// names against the authoritative id space. The client only ever converts the
-// other way (id -> name, from its subscription of these tables) for display.
+// owns id assignment and the migration of already-stored rows, so it is the
+// only party that can resolve authored names against the authoritative id
+// space. The client only ever converts the other way (id -> name, from its
+// subscription of these tables) for display.
+//
+// A push is incremental and strict: matched names keep their ids and get
+// their bodies rewritten, new names get fresh ids, and anything that cannot
+// be applied exactly — an omitted existing asset, an unknown reference, an
+// anonymous blob on an update — fails the whole reducer immediately.
 #[reducer]
 fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String> {
     log::debug!("Loading asset pack from {}.", ctx.sender());
 
-    if ctx.get_new_player_blob().is_some() {
-        log::debug!("Assets are already populated. Skipped loading.");
-        return Ok(());
-    }
+    let is_update = ctx.get_new_player_blob().is_some();
 
-    let action_ids = intern_names("action", asset_pack.actions.iter().map(|a| &a.name))?;
+    let action_ids = match_names(
+        "action",
+        ctx.db.actions().iter().map(|a| (a.name, a.id)),
+        asset_pack.actions.iter().map(|a| &a.name),
+    )?;
+    // Action steps are derived rows and nothing references their ids, so each
+    // push rebuilds them wholesale.
+    let stale_step_ids: Vec<u64> = ctx.db.action_steps().iter().map(|s| s.id).collect();
+    for id in stale_step_ids {
+        ctx.db.action_steps().id().delete(id);
+    }
     let mut next_action_step_id: u64 = 1;
-    for (id, a) in asset_pack.actions.into_iter().enumerate() {
-        let action_id = id as u32;
-        ctx.db.actions().insert(Action {
+    for a in asset_pack.actions {
+        let action_id = action_ids[&a.name];
+        let row = Action {
             id: action_id,
             name: a.name,
             action_type: a.value.action_type,
-        });
+        };
+        if ctx.db.actions().id().find(action_id).is_some() {
+            ctx.db.actions().id().update(row);
+        } else {
+            ctx.db.actions().insert(row);
+        }
         for (sequence_index, action_effect) in a.value.steps.into_iter().enumerate() {
             ctx.db.action_steps().insert(ActionStep {
                 id: next_action_step_id,
@@ -270,59 +306,97 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    let appearance_feature_ids = intern_names(
+    let appearance_feature_ids = match_names(
         "appearance feature",
+        ctx.db.appearance_features().iter().map(|a| (a.name, a.index)),
         asset_pack.appearance_features.iter().map(|a| &a.name),
     )?;
     let maps = AssetNameMaps {
         actions: action_ids,
         appearance_features: appearance_feature_ids,
-        baselines: intern_names("baseline", asset_pack.baselines.iter().map(|b| &b.name))?,
-        traits: intern_names("trait", asset_pack.traits.iter().map(|t| &t.name))?,
+        baselines: match_names(
+            "baseline",
+            ctx.db.baselines().iter().map(|b| (b.name, b.id)),
+            asset_pack.baselines.iter().map(|b| &b.name),
+        )?,
+        traits: match_names(
+            "trait",
+            ctx.db.traits().iter().map(|t| (t.name, t.id)),
+            asset_pack.traits.iter().map(|t| &t.name),
+        )?,
     };
-    for (id, a) in asset_pack.appearance_features.into_iter().enumerate() {
-        ctx.db.appearance_features().insert(AppearanceFeature {
-            index: id as u32,
+    for a in asset_pack.appearance_features {
+        let index = maps.appearance_features[&a.name];
+        let row = AppearanceFeature {
+            index,
             name: a.name,
             text: a.value.text,
             appearance_feature_type: a.value.appearance_feature_type,
             priority: a.value.priority,
-        });
+        };
+        if ctx.db.appearance_features().index().find(index).is_some() {
+            ctx.db.appearance_features().index().update(row);
+        } else {
+            ctx.db.appearance_features().insert(row);
+        }
     }
 
-    for (id, b) in asset_pack.baselines.into_iter().enumerate() {
-        ctx.db.baselines().insert(Baseline {
-            id: id as u32,
+    for b in asset_pack.baselines {
+        let id = maps.baselines[&b.name];
+        let row = Baseline {
+            id,
             name: b.name,
             stat_block: resolve_stat_block(b.value, &maps)?,
-        });
+        };
+        if ctx.db.baselines().id().find(id).is_some() {
+            ctx.db.baselines().id().update(row);
+        } else {
+            ctx.db.baselines().insert(row);
+        }
     }
 
-    for (id, t) in asset_pack.traits.into_iter().enumerate() {
-        ctx.db.traits().insert(Trait {
-            id: id as u32,
+    for t in asset_pack.traits {
+        let id = maps.traits[&t.name];
+        let row = Trait {
+            id,
             name: t.name,
             stat_block: resolve_stat_block(t.value, &maps)?,
-        });
+        };
+        if ctx.db.traits().id().find(id).is_some() {
+            ctx.db.traits().id().update(row);
+        } else {
+            ctx.db.traits().insert(row);
+        }
     }
 
-    let encounter_blob_ids = intern_names(
+    let encounter_blob_ids = match_names(
         "encounter blob",
+        ctx.db.encounter_blobs().iter().map(|b| (b.name, b.id)),
         asset_pack.encounter_blobs.iter().map(|b| &b.name),
     )?;
-    for (id, b) in asset_pack.encounter_blobs.into_iter().enumerate() {
-        ctx.db.encounter_blobs().insert(EncounterBlob {
-            id: id as u32,
+    for b in asset_pack.encounter_blobs {
+        let id = encounter_blob_ids[&b.name];
+        let row = EncounterBlob {
+            id,
             name: b.name,
             blob: resolve_entity_blob(b.value, &maps)?,
-        });
+        };
+        if ctx.db.encounter_blobs().id().find(id).is_some() {
+            ctx.db.encounter_blobs().id().update(row);
+        } else {
+            ctx.db.encounter_blobs().insert(row);
+        }
     }
 
-    let encounter_ids =
-        intern_names("encounter", asset_pack.encounters.iter().map(|e| &e.name))?;
-    for (id, e) in asset_pack.encounters.into_iter().enumerate() {
-        ctx.db.encounters().insert(Encounter {
-            id: id as u32,
+    let encounter_ids = match_names(
+        "encounter",
+        ctx.db.encounters().iter().map(|e| (e.name, e.id)),
+        asset_pack.encounters.iter().map(|e| &e.name),
+    )?;
+    for e in asset_pack.encounters {
+        let id = encounter_ids[&e.name];
+        let row = Encounter {
+            id,
             name: e.name,
             categoric_blob_id: resolve_name(
                 &encounter_blob_ids,
@@ -335,16 +409,23 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 .iter()
                 .map(|n| resolve_name(&encounter_blob_ids, "encounter blob", n))
                 .collect::<Result<_, _>>()?,
-        });
+        };
+        if ctx.db.encounters().id().find(id).is_some() {
+            ctx.db.encounters().id().update(row);
+        } else {
+            ctx.db.encounters().insert(row);
+        }
     }
 
-    let theme_ids = intern_names(
+    let theme_ids = match_names(
         "location map theme",
+        ctx.db.location_map_themes().iter().map(|t| (t.name, t.id)),
         asset_pack.location_map_themes.iter().map(|t| &t.name),
     )?;
-    for (id, t) in asset_pack.location_map_themes.into_iter().enumerate() {
-        ctx.db.location_map_themes().insert(LocationMapTheme {
-            id: id as u32,
+    for t in asset_pack.location_map_themes {
+        let id = theme_ids[&t.name];
+        let row = LocationMapTheme {
+            id,
             name: t.name,
             decorations_selector: resolve_entity_blobs_sampler(
                 t.value.decorations_selector,
@@ -354,23 +435,40 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             max_decoration_count: t.value.max_decoration_count,
             paths_selector: resolve_entity_blobs_sampler(t.value.paths_selector, &maps)?,
             rooms_selector: resolve_entity_blobs_sampler(t.value.rooms_selector, &maps)?,
-        });
+        };
+        if ctx.db.location_map_themes().id().find(id).is_some() {
+            ctx.db.location_map_themes().id().update(row);
+        } else {
+            ctx.db.location_map_themes().insert(row);
+        }
     }
 
-    let location_map_ids = intern_names(
+    let location_map_ids = match_names(
         "location map",
+        ctx.db.location_maps().iter().map(|m| (m.name, m.id)),
         asset_pack.location_maps.iter().map(|m| &m.name),
     )?;
+    // Connections are derived rows and nothing references their ids, so each
+    // push rebuilds them wholesale.
+    let stale_connection_ids: Vec<u32> = ctx
+        .db
+        .location_map_connections()
+        .iter()
+        .map(|c| c.id)
+        .collect();
+    for id in stale_connection_ids {
+        ctx.db.location_map_connections().id().delete(id);
+    }
     let mut next_connection_id: u32 = 0;
-    for (id, m) in asset_pack.location_maps.into_iter().enumerate() {
-        let exit_location_map_id = id as u32;
+    for m in asset_pack.location_maps {
         let NamedLocationMapAuthor { name, value: m } = m;
+        let id = location_map_ids[&name];
         for destination_name in &m.connection_names {
             ctx.db
                 .location_map_connections()
                 .insert(LocationMapConnection {
                     id: next_connection_id,
-                    exit_location_map_id,
+                    exit_location_map_id: id,
                     destination_location_map_id: resolve_name(
                         &location_map_ids,
                         "location map",
@@ -379,8 +477,8 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 });
             next_connection_id += 1;
         }
-        ctx.db.location_maps().insert(LocationMap {
-            id: exit_location_map_id,
+        let row = LocationMap {
+            id,
             name,
             theme_id: resolve_name(&theme_ids, "location map theme", &m.theme_name)?,
             layout: m.layout,
@@ -402,20 +500,59 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             },
             min_encounter_count: m.min_encounter_count,
             max_encounter_count: m.max_encounter_count,
-        });
+        };
+        if ctx.db.location_maps().id().find(id).is_some() {
+            ctx.db.location_maps().id().update(row);
+        } else {
+            ctx.db.location_maps().insert(row);
+        }
     }
 
-    // Named blobs first: anonymous blobs may reference them by name.
+    // Named blobs first: anonymous blobs may reference them by name. A name
+    // already in the registry means the entity exists: the blob is imprinted
+    // onto it (components upserted) rather than instantiated again. And like
+    // every other named kind, an existing registration missing from the push
+    // is an error.
+    let pushed_names: std::collections::HashSet<&String> = asset_pack
+        .named_instantiate_entity_blobs
+        .iter()
+        .map(|nb| &nb.name)
+        .collect();
+    for row in ctx.db.named_entities().iter() {
+        if !pushed_names.contains(&row.name) {
+            return Err(format!(
+                "The named entity \"{}\" is registered but missing from the pushed assets; assets cannot be removed implicitly.",
+                row.name
+            ));
+        }
+    }
     for nb in asset_pack.named_instantiate_entity_blobs {
-        ctx.ecs()
-            .new()
-            .instantiate_blob(
-                resolve_entity_blob(nb.value, &maps)?,
-                &ctx.ecs().instantiation_scope(),
-            )?
-            .register_name(nb.name)?;
+        let blob = resolve_entity_blob(nb.value, &maps)?;
+        match ctx.db.named_entities().name().find(nb.name.to_owned()) {
+            Some(registered) => {
+                ctx.ecs()
+                    .find(registered.entity_id)
+                    .instantiate_blob(blob, &ctx.ecs().instantiation_scope())?;
+            }
+            None => {
+                ctx.ecs()
+                    .new()
+                    .instantiate_blob(blob, &ctx.ecs().instantiation_scope())?
+                    .register_name(nb.name)?;
+            }
+        }
     }
 
+    // Anonymous blobs have no name to match, so on an update push there is no
+    // way to tell "already instantiated" from "new" — instantiating would
+    // silently duplicate world entities. Fail instead: recurring content must
+    // be named.
+    if is_update && !asset_pack.instantiate_entity_blobs.is_empty() {
+        return Err(
+            "Anonymous instantiate blobs cannot be re-pushed; name them to make updates addressable."
+                .to_string(),
+        );
+    }
     for b in asset_pack.instantiate_entity_blobs {
         ctx.ecs().new().instantiate_blob(
             resolve_entity_blob(b, &maps)?,
@@ -423,10 +560,15 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         )?;
     }
 
-    ctx.db.special_entity_blobs().insert(SpecialEntityBlob {
+    let new_player_blob = SpecialEntityBlob {
         key: SpecialEntityBlobKey::NewPlayer,
         blob: resolve_entity_blob(asset_pack.new_player_blob, &maps)?,
-    });
+    };
+    if is_update {
+        ctx.db.special_entity_blobs().key().update(new_player_blob);
+    } else {
+        ctx.db.special_entity_blobs().insert(new_player_blob);
+    }
 
     Ok(())
 }
