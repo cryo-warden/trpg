@@ -44,24 +44,51 @@ impl ToTokens for PassthroughWithComponentStruct {
         } = &self.with_component_struct;
         let gen_trait::OptionComponentTrait {
             option_component_trait,
+            component_field_args,
+            component_field_names,
             component,
             component_ty,
             component_blob_ty,
             insert_fn,
             update_fn,
             delete_fn,
+            insert_new_fn,
+            update_new_fn,
+            insert_row_fn,
+            update_row_fn,
             ..
         } = &self.option_component_trait;
+        let scope = gen_struct::scope_ident();
         tokens.extend(quote! {
           impl<T: #option_component_trait> #option_component_trait for #with_component_struct<T> {
-            fn #insert_fn(&self, #component: #component_blob_ty) -> #component_ty {
-              self.value.#insert_fn(#component)
+            fn #insert_fn(
+              &self,
+              #component: #component_blob_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#component_ty, ::std::string::String> {
+              self.value.#insert_fn(#component, scope)
             }
-            fn #update_fn(&self, #component: #component_blob_ty) -> #component_ty {
-              self.value.#update_fn(#component)
+            fn #update_fn(
+              &self,
+              #component: #component_blob_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#component_ty, ::std::string::String> {
+              self.value.#update_fn(#component, scope)
+            }
+            fn #insert_row_fn(&self, #component: #component_ty) -> #component_ty {
+              self.value.#insert_row_fn(#component)
+            }
+            fn #update_row_fn(&self, #component: #component_ty) -> #component_ty {
+              self.value.#update_row_fn(#component)
             }
             fn #delete_fn(&self) {
               self.value.#delete_fn();
+            }
+            fn #insert_new_fn(&self, #component_field_args) -> #component_ty {
+              self.value.#insert_new_fn(#component_field_names)
+            }
+            fn #update_new_fn(&self, #component_field_args) -> #component_ty {
+              self.value.#update_new_fn(#component_field_names)
             }
           }
         });
@@ -104,25 +131,66 @@ impl ToTokens for EntityHandleStruct {
         } = &self.entity_handle_struct;
         let gen_trait::OptionComponentTrait {
             option_component_trait,
+            component_field_args,
+            component_field_names,
             component,
             component_ty,
             component_blob_ty,
             insert_fn,
             update_fn,
             delete_fn,
+            insert_new_fn,
+            update_new_fn,
+            insert_row_fn,
+            update_row_fn,
             table,
             ..
         } = &self.option_component_trait;
+        let scope = gen_struct::scope_ident();
         tokens.extend(quote! {
           impl<'a> #option_component_trait for #entity_handle_struct<'a> {
-            fn #insert_fn(&self, #component: #component_blob_ty) -> #component_ty {
-              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component.into_component(self.#id))
+            fn #insert_fn(
+              &self,
+              #component: #component_blob_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#component_ty, ::std::string::String> {
+              ::core::result::Result::Ok(::spacetimedb::Table::insert(
+                self.ecs.db.#table(),
+                #component.into_component(self.#id, scope)?,
+              ))
             }
-            fn #update_fn(&self, #component: #component_blob_ty) -> #component_ty {
-              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component.into_component(self.#id))
+            fn #update_fn(
+              &self,
+              #component: #component_blob_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#component_ty, ::std::string::String> {
+              ::core::result::Result::Ok(::spacetimedb::UniqueColumn::update(
+                &self.ecs.db.#table().#id(),
+                #component.into_component(self.#id, scope)?,
+              ))
+            }
+            fn #insert_row_fn(&self, mut #component: #component_ty) -> #component_ty {
+              #component.#id = self.#id;
+              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component)
+            }
+            fn #update_row_fn(&self, mut #component: #component_ty) -> #component_ty {
+              #component.#id = self.#id;
+              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component)
             }
             fn #delete_fn(&self) {
               ::spacetimedb::UniqueColumn::delete(&self.ecs.db.#table().#id(), self.#id);
+            }
+            fn #insert_new_fn(&self, #component_field_args) -> #component_ty {
+              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component_ty {
+                #id: self.#id,
+                #component_field_names
+              })
+            }
+            fn #update_new_fn(&self, #component_field_args) -> #component_ty {
+              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component_ty {
+                #id: self.#id,
+                #component_field_names
+              })
             }
           }
         });

@@ -16,7 +16,12 @@ export type EntityBlobAsset = Simplify<
   Partial<
     Omit<
       EntityBlob,
-      "name" | "baseline" | "traits" | "actionHotkeys" | "appearanceFeatures"
+      | "name"
+      | "baseline"
+      | "traits"
+      | "actionHotkeys"
+      | "appearanceFeatures"
+      | "allegiance"
     >
   > & {
     name?: string;
@@ -24,13 +29,18 @@ export type EntityBlobAsset = Simplify<
     traits?: (typeof TRAITS)[number]["name"][];
     actionHotkeys?: ActionHotkeyAsset[];
     appearanceFeatureNames?: AppearanceFeatureName[];
+    /** The registered name of the allegiance entity, resolved server-side at
+     * instantiation via the Named selector. */
+    allegiance?: string;
   }
 >;
 
-export const ENTITY_BLOBS = [
-  { name: "allegiance1" },
-  { name: "allegiance2" },
-] as const satisfies readonly EntityBlobAsset[];
+/** Blobs instantiated at push time and registered under their Record key, so
+ * other blobs can reference them with Named selectors. */
+export const NAMED_ENTITY_BLOBS = {
+  allegiance1: {},
+  allegiance2: {},
+} as const satisfies Record<string, EntityBlobAsset>;
 
 export const NEW_PLAYER_BLOB = {
   actionHotkeys: [
@@ -40,6 +50,7 @@ export const NEW_PLAYER_BLOB = {
   ],
   baseline: "human",
   traits: ["admin", "mobile", "bopper"],
+  allegiance: "allegiance1",
 } as const satisfies EntityBlobAsset;
 
 const getActionHotkeys = (
@@ -85,6 +96,14 @@ export const getEntityBlob = (entityBlobAsset: EntityBlobAsset): EntityBlob => {
     name: entityBlobAsset.name
       ? {
           name: entityBlobAsset.name,
+        }
+      : undefined,
+    allegiance: entityBlobAsset.allegiance
+      ? {
+          allegianceEntityId: {
+            tag: "Named",
+            value: entityBlobAsset.allegiance,
+          },
         }
       : undefined,
     appearanceFeatures: entityBlobAsset.appearanceFeatureNames

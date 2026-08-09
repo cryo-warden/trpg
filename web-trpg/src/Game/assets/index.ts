@@ -6,7 +6,7 @@ import {
   AppearanceFeatureAsset,
 } from "./appearance_features";
 import {
-  ENTITY_BLOBS,
+  NAMED_ENTITY_BLOBS,
   EntityBlobAsset,
   ActionHotkeyAsset,
   NEW_PLAYER_BLOB,
@@ -32,7 +32,10 @@ export const actions = ACTIONS as readonly ActionAsset[];
 export const appearanceFeatures =
   APPEARANCE_FEATURES as readonly AppearanceFeatureAsset[];
 export const baselines = BASELINES as readonly StatBlockAsset[];
-export const entityBlobs = ENTITY_BLOBS as readonly EntityBlobAsset[];
+export const namedEntityBlobs = NAMED_ENTITY_BLOBS as Record<
+  string,
+  EntityBlobAsset
+>;
 export const traits = TRAITS as readonly StatBlockAsset[];
 export const newPlayerBlob = NEW_PLAYER_BLOB as EntityBlobAsset;
 export const locationMaps = LOCATION_MAPS as readonly LocationMapAsset[];
@@ -43,7 +46,7 @@ export const assets = {
   actions,
   appearanceFeatures,
   baselines,
-  entityBlobs,
+  namedEntityBlobs,
   newPlayerBlob,
   traits,
   locationMapThemes,

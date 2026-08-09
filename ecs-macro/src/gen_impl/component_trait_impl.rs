@@ -68,7 +68,7 @@ impl ToTokens for ReplacementWithComponentStruct {
         } = &self.component_trait;
         let gen_trait::OptionComponentTrait {
             option_component_trait,
-            update_fn: option_update_fn,
+            update_row_fn,
             ..
         } = &self.option_component_trait;
         tokens.extend(quote! {
@@ -80,9 +80,7 @@ impl ToTokens for ReplacementWithComponentStruct {
               &self.#component
             }
             fn #update_fn(mut self) -> Self {
-              self.#component = self
-                .value
-                .#option_update_fn(::core::convert::Into::into(self.#component));
+              self.#component = self.value.#update_row_fn(self.#component);
               self
             }
           }

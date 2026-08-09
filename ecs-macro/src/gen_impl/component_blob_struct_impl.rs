@@ -35,13 +35,23 @@ impl ToTokens for ComponentBlobStruct {
             component_fields,
             ..
         } = &self.component_blob_struct;
+        let selector = gen_struct::selector_ident();
+        let scope = gen_struct::scope_ident();
         let from_fields = component_fields.iter().map(|f| {
             let ident = &f.ident;
-            quote! { #ident: value.#ident }
+            if gen_struct::is_entity_ref(f, id_ty) {
+                quote! { #ident: #selector::Literal(value.#ident) }
+            } else {
+                quote! { #ident: value.#ident }
+            }
         });
         let into_fields = component_fields.iter().map(|f| {
             let ident = &f.ident;
-            quote! { #ident: self.#ident }
+            if gen_struct::is_entity_ref(f, id_ty) {
+                quote! { #ident: self.#ident.resolve(scope)? }
+            } else {
+                quote! { #ident: self.#ident }
+            }
         });
         tokens.extend(quote! {
           impl ::core::convert::From<#component_struct> for #component_blob_struct {
@@ -50,8 +60,12 @@ impl ToTokens for ComponentBlobStruct {
             }
           }
           impl #component_blob_struct {
-            pub fn into_component(self, #id: #id_ty) -> #component_struct {
-              #component_struct { #id, #(#into_fields,)* }
+            pub fn into_component(
+              self,
+              #id: #id_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#component_struct, ::std::string::String> {
+              ::core::result::Result::Ok(#component_struct { #id, #(#into_fields,)* })
             }
           }
         });

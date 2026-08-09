@@ -60,6 +60,7 @@ import HpComponentsRow from "./hp_components_table";
 import LocationComponentsRow from "./location_components_table";
 import LocationMapComponentsRow from "./location_map_components_table";
 import NameComponentsRow from "./name_components_table";
+import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
 import PathComponentsRow from "./path_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
@@ -309,6 +310,17 @@ const tablesSchema = __schema({
       { name: 'name_components_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, NameComponentsRow),
+  named_entities: __table({
+    name: 'named_entities',
+    indexes: [
+      { accessor: 'name', name: 'named_entities_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'named_entities_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, NamedEntitiesRow),
   observable_events: __table({
     name: 'observable_events',
     indexes: [

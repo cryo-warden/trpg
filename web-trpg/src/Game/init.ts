@@ -13,9 +13,9 @@ import {
   actions,
   appearanceFeatures,
   baselines,
-  entityBlobs,
   locationMaps,
   locationMapThemes,
+  namedEntityBlobs,
   newPlayerBlob,
   StatBlockAsset,
   traits,
@@ -135,7 +135,10 @@ export const init = (connection: DbConnection) => {
       locationMapThemes: getLocationMapThemes(locationMapThemes),
       locationMaps: getLocationMaps(locationMaps),
       locationMapConnections: getLocationMapConnections(locationMaps),
-      instantiateEntityBlobs: entityBlobs.map(getEntityBlob),
+      namedInstantiateEntityBlobs: Object.entries(namedEntityBlobs).map(
+        ([name, blob]) => ({ name, blob: getEntityBlob(blob) }),
+      ),
+      instantiateEntityBlobs: [],
 
       newPlayerBlob: getEntityBlob(newPlayerBlob),
     },

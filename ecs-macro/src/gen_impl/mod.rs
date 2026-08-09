@@ -19,6 +19,7 @@ secador::secador!(
         option_component_trait_impl,
         option_get_component_trait_impl,
         option_with_component_trait_impl,
+        reference_impl,
         with_entity_handle_trait_impl,
     ],
     {

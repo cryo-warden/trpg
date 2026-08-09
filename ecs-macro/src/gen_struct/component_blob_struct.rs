@@ -1,3 +1,4 @@
+use super::reference::selector_ident;
 use crate::{fundamental, macro_input, rc_slice::RcSlice};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
@@ -11,11 +12,30 @@ pub fn blob_ident(component_ty: &Ident) -> Ident {
     format_ident!("{}Blob", component_ty)
 }
 
+/// Type-based reference detection: a declared component field is an entity
+/// reference exactly when its type is the entity declaration's id type.
+pub fn is_entity_ref(field: &Field, id_ty: &Type) -> bool {
+    let field_ty = &field.ty;
+    quote!(#field_ty).to_string() == quote!(#id_ty).to_string()
+}
+
 fn strip_column_attrs(field: &Field) -> Field {
     let mut field = field.to_owned();
     field
         .attrs
         .retain(|attr| !COLUMN_ATTRS.iter().any(|c| attr.path().is_ident(c)));
+    field
+}
+
+/// Blob fields differ from the declared component fields in two ways: column
+/// attrs are stripped, and entity-reference fields hold a selector instead of
+/// a raw id.
+fn to_blob_field(field: &Field, id_ty: &Type) -> Field {
+    let mut field = strip_column_attrs(field);
+    if is_entity_ref(&field, id_ty) {
+        let selector = selector_ident();
+        field.ty = Type::Verbatim(quote!(#selector));
+    }
     field
 }
 
@@ -44,7 +64,10 @@ impl ComponentBlobStruct {
             id_ty: ewa.id_ty.to_owned(),
             component_fields: cwa.fields.to_owned(),
             blob_fields: fundamental::Fields(
-                cwa.fields.iter().map(strip_column_attrs).collect(),
+                cwa.fields
+                    .iter()
+                    .map(|f| to_blob_field(f, &ewa.id_ty))
+                    .collect(),
             ),
         }
     }

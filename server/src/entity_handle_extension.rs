@@ -36,7 +36,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {
             hp.mhp = mhp;
-            e.update_hp(hp.into());
+            e.update_hp_row(hp);
         } else {
             e.insert_new_hp(mhp, mhp, 0, 0, 0);
         }
@@ -47,7 +47,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut hp_component) = e.hp() {
             hp_component.defense = defense;
-            e.update_hp(hp_component.into());
+            e.update_hp_row(hp_component);
         } else {
             e.insert_new_hp(0, 0, defense, 0, 0);
         }
@@ -58,7 +58,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut ep_component) = e.ep() {
             ep_component.mep = mep;
-            e.update_ep(ep_component.into());
+            e.update_ep_row(ep_component);
         } else {
             e.insert_new_ep(mep, mep);
         }
@@ -69,7 +69,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(mut c) = e.actions() {
             c.action_ids = action_ids;
-            e.update_actions(c.into());
+            e.update_actions_row(c);
         } else {
             e.insert_new_actions(action_ids);
         }
@@ -129,7 +129,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
         let e = self.to_handle();
         e.delete_queued_action_state();
-        e.insert_queued_action_state(ActionStateComponentBlob {
+        e.insert_queued_action_state_row(ActionStateComponent {
+            entity_id: e.entity_id(),
             action_id,
             sequence_index: 0,
             target_entity_id,
@@ -141,7 +142,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         if let Some(queued_action_state) = e.queued_action_state() {
             e.delete_queued_action_state();
-            e.insert_action_state(queued_action_state.into());
+            e.insert_action_state_row(queued_action_state);
         }
         self
     }
@@ -164,17 +165,25 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     }
 }
 
-pub trait InstantiateEntityBlobExtension {
-    fn instantiate_blob_dirty(self, blob: EntityBlob) -> Self;
+pub trait InstantiateEntityBlobExtension: Sized {
+    fn instantiate_blob_dirty(
+        self,
+        blob: EntityBlob,
+        scope: &InstantiationScope<'_>,
+    ) -> Result<Self, String>;
 }
 
 impl<'a, T: WithEntityHandle<'a> + EntityHandleExtension + InstantiateEntityBlob>
     InstantiateEntityBlobExtension for T
 {
-    fn instantiate_blob_dirty(self, blob: EntityBlob) -> Self {
+    fn instantiate_blob_dirty(
+        self,
+        blob: EntityBlob,
+        scope: &InstantiationScope<'_>,
+    ) -> Result<Self, String> {
         let e = self.to_handle();
         e.insert_new_traits_stat_block_dirty_flag();
         e.insert_new_total_stat_block_dirty_flag();
-        self.instantiate_blob(blob)
+        self.instantiate_blob(blob, scope)
     }
 }

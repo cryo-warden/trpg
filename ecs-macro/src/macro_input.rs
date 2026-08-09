@@ -165,6 +165,45 @@ impl ToTokens for EntityDeclaration {
     }
 }
 
+pub struct RegistryDeclaration {
+    pub registry_row: Ident,
+    pub table: Ident,
+}
+
+impl fundamental::AddAttrs for RegistryDeclaration {}
+
+impl TryFrom<ItemStruct> for fundamental::WithAttrs<RegistryDeclaration> {
+    type Error = syn::Error;
+    fn try_from(value: ItemStruct) -> syn::Result<Self> {
+        let (registry_attr, attrs) = try_extract_attr("registry", value.attrs.clone(), &value)?;
+
+        let table = registry_attr.parse_args_with(|input: ParseStream| {
+            input.parse::<kw::table>()?;
+            input.parse::<Token![=]>()?;
+            input.parse::<Ident>()
+        })?;
+        if !value.fields.is_empty() {
+            return Err(Error::new(
+                value.span(),
+                "Registry type must not declare fields; they are generated.",
+            ));
+        }
+        Ok(RegistryDeclaration {
+            registry_row: value.ident.clone(),
+            table,
+        }
+        .add_attrs(attrs))
+    }
+}
+
+/// Implement Spanned for RegistryDeclaration
+impl ToTokens for RegistryDeclaration {
+    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
+        let Self { registry_row, .. } = self;
+        registry_row.to_tokens(tokens);
+    }
+}
+
 pub struct BlobDeclaration {
     pub table: Ident,
 }
@@ -207,6 +246,7 @@ pub struct EntityMacroInput {
     pub component_declarations: RcSlice<fundamental::WithAttrs<ComponentDeclaration>>,
     pub struct_attrs: fundamental::WithAttrs<StructAttrsDeclaration>,
     pub blob_declaration: Option<fundamental::WithAttrs<BlobDeclaration>>,
+    pub registry_declaration: fundamental::WithAttrs<RegistryDeclaration>,
 }
 
 trait HasAttr {
@@ -242,6 +282,7 @@ impl Parse for EntityMacroInput {
         let mut component_declarations = vec![];
         let mut struct_attrses = vec![];
         let mut blob_declarations = vec![];
+        let mut registry_declarations = vec![];
 
         while !input.is_empty() {
             let item: Item = input.parse()?;
@@ -255,6 +296,8 @@ impl Parse for EntityMacroInput {
                         struct_attrses.push(item_struct.try_into()?);
                     } else if item_struct.has_attr("blob") {
                         blob_declarations.push(item_struct.try_into()?);
+                    } else if item_struct.has_attr("registry") {
+                        registry_declarations.push(item_struct.try_into()?);
                     } else {
                         items.push(Item::Struct(item_struct));
                     }
@@ -268,6 +311,7 @@ impl Parse for EntityMacroInput {
         validate_unary_slice("entity_declaration", &entity_declarations)?;
         validate_unary_slice("struct_attrs", &struct_attrses)?;
         validate_unary_slice("blob_declaration", &blob_declarations)?;
+        validate_unary_slice("registry_declaration", &registry_declarations)?;
 
         Ok(EntityMacroInput {
             items: items.into_iter().collect(),
@@ -278,6 +322,10 @@ impl Parse for EntityMacroInput {
             component_declarations: component_declarations.into(),
             struct_attrs: struct_attrses.into_iter().next().unwrap_or_default(),
             blob_declaration: blob_declarations.into_iter().next(),
+            registry_declaration: registry_declarations.into_iter().next().ok_or(Error::new(
+                input.span(),
+                "A registry declaration must be specified: entity references in blobs resolve names through the registry.",
+            ))?,
         })
     }
 }

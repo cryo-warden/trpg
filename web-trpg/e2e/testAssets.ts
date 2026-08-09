@@ -28,6 +28,7 @@ const emptyPack = (): AssetPack => ({
   locationMapThemes: [],
   locationMaps: [],
   locationMapConnections: [],
+  namedInstantiateEntityBlobs: [],
   instantiateEntityBlobs: [],
   // Never instantiated in these scenarios (no client triggers new_player), but
   // AssetPack requires one; a name-only blob is a valid placeholder.
@@ -52,7 +53,7 @@ export const playerPack = (playerIdentity: Identity): AssetPack => ({
   instantiateEntityBlobs: [
     blob({
       playerController: { identity: playerIdentity },
-      location: { locationEntityId: 999n },
+      location: { locationEntityId: { tag: "Literal", value: 999n } },
       hp: {
         hp: 5,
         mhp: 5,
@@ -74,15 +75,15 @@ export const graphPack = (): AssetPack => ({
   instantiateEntityBlobs: [
     blob({
       name: { name: "occupant_a" },
-      location: { locationEntityId: 1n },
+      location: { locationEntityId: { tag: "Literal", value: 1n } },
     }),
     blob({
       name: { name: "occupant_b" },
-      location: { locationEntityId: 1n },
+      location: { locationEntityId: { tag: "Literal", value: 1n } },
     }),
     blob({
-      path: { destinationEntityId: 2n },
-      location: { locationEntityId: 1n },
+      path: { destinationEntityId: { tag: "Literal", value: 2n } },
+      location: { locationEntityId: { tag: "Literal", value: 1n } },
     }),
   ],
 });
@@ -141,12 +142,16 @@ export const mapGenPack = (): AssetPack => ({
       maxEncounterCount: 0,
     },
   ],
-  // new_player resolves its starting allegiance by the name "allegiance1".
-  instantiateEntityBlobs: [
-    blob({ name: { name: "allegiance1" } }),
-    blob({ name: { name: "allegiance2" } }),
+  // new_player's blob resolves its starting allegiance through the registry
+  // by the name "allegiance1", so the allegiance entities are named blobs.
+  namedInstantiateEntityBlobs: [
+    { name: "allegiance1", blob: blob({}) },
+    { name: "allegiance2", blob: blob({}) },
   ],
-  newPlayerBlob: blob({ baseline: { baselineId: 0 } }),
+  newPlayerBlob: blob({
+    baseline: { baselineId: 0 },
+    allegiance: { allegianceEntityId: { tag: "Named", value: "allegiance1" } },
+  }),
 });
 
 /**
@@ -173,13 +178,13 @@ export const combatPack = (
   instantiateEntityBlobs: [
     blob({
       playerController: { identity: playerIdentity },
-      location: { locationEntityId: SHARED_LOCATION_ID },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
       actions: { actionIds: [ATTACK_ACTION_ID] },
-      allegiance: { allegianceEntityId: 100n },
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
     }),
     blob({
       enemyController: {},
-      location: { locationEntityId: SHARED_LOCATION_ID },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
       hp: {
         hp: enemyHp,
         mhp: enemyHp,
@@ -187,7 +192,7 @@ export const combatPack = (
         accumulatedDamage: 0,
         accumulatedHealing: 0,
       },
-      allegiance: { allegianceEntityId: 200n },
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
   ],
 });

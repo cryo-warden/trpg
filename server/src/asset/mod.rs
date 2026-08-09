@@ -13,6 +13,7 @@ use crate::{
         location_map_theme::{location_map_themes, LocationMapTheme},
         r#trait::{traits, Trait},
     },
+    ecs_extension::EcsExtension,
     entity::{EntityBlob, InstantiateEntityBlob, NewEntityHandle},
 };
 
@@ -37,6 +38,14 @@ struct SpecialEntityBlob {
     blob: EntityBlob,
 }
 
+/// A blob instantiated at push time whose entity is registered under `name`,
+/// so later instantiations can reference it with a Named selector.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct NamedEntityBlob {
+    pub name: String,
+    pub blob: EntityBlob,
+}
+
 secador::secador!(
     (assets, Asset),
     [
@@ -57,6 +66,8 @@ secador::secador!(
             __seca: __1,
             __assets: Vec<__Asset>,
 
+            named_instantiate_entity_blobs: Vec<NamedEntityBlob>,
+
             instantiate_entity_blobs: Vec<EntityBlob>,
 
             new_player_blob: EntityBlob,
@@ -75,8 +86,18 @@ secador::secador!(
                 ctx.db.__assets().insert(asset);
             }
 
+            // Named blobs first: anonymous blobs may reference them by name.
+            for nb in asset_pack.named_instantiate_entity_blobs {
+                ctx.ecs()
+                    .new()
+                    .instantiate_blob(nb.blob, &ctx.ecs().instantiation_scope())?
+                    .register_name(nb.name)?;
+            }
+
             for b in asset_pack.instantiate_entity_blobs {
-                ctx.ecs().new().instantiate_blob(b);
+                ctx.ecs()
+                    .new()
+                    .instantiate_blob(b, &ctx.ecs().instantiation_scope())?;
             }
 
             ctx.db.special_entity_blobs().insert(SpecialEntityBlob {

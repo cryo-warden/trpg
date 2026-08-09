@@ -1,4 +1,5 @@
 use crate::gen_struct;
+use crate::gen_struct::scope_ident;
 use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::Ident;
@@ -27,9 +28,14 @@ impl ToTokens for InstantiateEntityBlobTrait {
                     entity_blob_struct, ..
                 },
         } = self;
+        let scope = scope_ident();
         tokens.extend(quote! {
-          pub trait #instantiate_entity_blob_trait {
-              fn instantiate_blob(self, blob: #entity_blob_struct) -> Self;
+          pub trait #instantiate_entity_blob_trait: Sized {
+              fn instantiate_blob(
+                self,
+                blob: #entity_blob_struct,
+                scope: &#scope<'_>,
+              ) -> ::core::result::Result<Self, ::std::string::String>;
           }
         })
     }

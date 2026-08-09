@@ -47,11 +47,16 @@ impl ToTokens for WithComponentStruct {
                     entity_blob_struct, ..
                 },
         } = &self.instantiate_entity_blob_trait;
+        let scope = crate::gen_struct::scope_ident();
         tokens.extend(quote! {
           impl<T: #instantiate_entity_blob_trait> #instantiate_entity_blob_trait for #with_component_struct<T> {
-              fn instantiate_blob(mut self, blob: #entity_blob_struct) -> Self {
-                self.value = self.value.instantiate_blob(blob);
-                self
+              fn instantiate_blob(
+                mut self,
+                blob: #entity_blob_struct,
+                scope: &#scope<'_>,
+              ) -> ::core::result::Result<Self, ::std::string::String> {
+                self.value = self.value.instantiate_blob(blob, scope)?;
+                ::core::result::Result::Ok(self)
               }
           }
         });
@@ -104,9 +109,9 @@ impl ToTokens for EntityHandleStruct {
                   if let Some(c) = blob.#component
                   {
                     if ::core::option::Option::is_some(&self.#getter_fn()) {
-                      self.#update_fn(c);
+                      self.#update_fn(c, scope)?;
                     } else {
-                      self.#insert_fn(c);
+                      self.#insert_fn(c, scope)?;
                     };
                   }
                 })
@@ -115,11 +120,16 @@ impl ToTokens for EntityHandleStruct {
         let gen_struct::EntityBlobStruct {
             entity_blob_struct, ..
         } = entity_blob_struct;
+        let scope = crate::gen_struct::scope_ident();
         tokens.extend(quote! {
           impl<'a> #instantiate_entity_blob_trait for #entity_handle_struct<'a> {
-              fn instantiate_blob(self, blob: #entity_blob_struct) -> Self {
+              fn instantiate_blob(
+                self,
+                blob: #entity_blob_struct,
+                scope: &#scope<'_>,
+              ) -> ::core::result::Result<Self, ::std::string::String> {
                   #(#upsert_components;)*
-                  self
+                  ::core::result::Result::Ok(self)
               }
           }
         });

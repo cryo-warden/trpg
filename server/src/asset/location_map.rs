@@ -78,7 +78,7 @@ pub struct MapGenerationResult {
     pub extra_room_ids: Vec<u64>,
 }
 impl LocationMap {
-    pub fn generate_entities(&self, ecs: Ecs) -> MapGenerationResult {
+    pub fn generate_entities(&self, ecs: Ecs) -> Result<MapGenerationResult, String> {
         match self.layout {
             Layout::Path => self.generate_path_layout(ecs),
             // WIP Create hub generation algorithm.
@@ -88,14 +88,14 @@ impl LocationMap {
     fn rng(&self) -> StdRng {
         StdRng::seed_from_u64(self.rng_seed.unwrap_or_default())
     }
-    fn generate_path_layout(&self, ecs: Ecs) -> MapGenerationResult {
+    fn generate_path_layout(&self, ecs: Ecs) -> Result<MapGenerationResult, String> {
         let theme = if let Some(theme) = ecs.db.location_map_themes().id().find(self.theme_id) {
             theme
         } else {
-            return MapGenerationResult {
+            return Ok(MapGenerationResult {
                 main_room_ids: vec![],
                 extra_room_ids: vec![],
-            };
+            });
         };
 
         let location_map_entity = ecs.new();
@@ -111,14 +111,12 @@ impl LocationMap {
 
         // Rooms: skip any the (possibly empty) selector cannot fill. A theme
         // offering no room blob simply yields no rooms rather than panicking.
-        let room_handles: Vec<EntityHandle> = (0..total_room_count)
-            .filter_map(|_| {
-                theme
-                    .rooms_selector
-                    .sample(&mut rng)
-                    .map(|r| ecs.new_room(r.to_owned(), location_map_entity_id))
-            })
-            .collect();
+        let mut room_handles: Vec<EntityHandle> = Vec::new();
+        for _ in 0..total_room_count {
+            if let Some(r) = theme.rooms_selector.sample(&mut rng) {
+                room_handles.push(ecs.new_room(r.to_owned(), location_map_entity_id)?);
+            }
+        }
         let room_count = room_handles.len();
         // Clamp the main/extra split to the rooms actually produced.
         let main_room_count = (main_room_count as usize).min(room_count);
@@ -127,8 +125,8 @@ impl LocationMap {
         for i in 0..main_room_count.saturating_sub(1) {
             if let Some(p) = theme.paths_selector.sample(&mut rng) {
                 let (a, b) = (room_handles[i].entity_id(), room_handles[i + 1].entity_id());
-                ecs.new_path(p.to_owned(), a, b);
-                ecs.new_path(p.to_owned(), b, a);
+                ecs.new_path(p.to_owned(), a, b)?;
+                ecs.new_path(p.to_owned(), b, a)?;
             }
         }
 
@@ -137,8 +135,8 @@ impl LocationMap {
             if let Some(p) = theme.paths_selector.sample(&mut rng) {
                 let a = room_handles[i].entity_id();
                 let b = room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
-                ecs.new_path(p.to_owned(), a, b);
-                ecs.new_path(p.to_owned(), b, a);
+                ecs.new_path(p.to_owned(), a, b)?;
+                ecs.new_path(p.to_owned(), b, a)?;
             }
         }
 
@@ -154,8 +152,8 @@ impl LocationMap {
                 if let Some(p) = theme.paths_selector.sample(&mut rng) {
                     let a = room_handles[a_index].entity_id();
                     let b = room_handles[a_index + 2].entity_id();
-                    ecs.new_path(p.to_owned(), a, b);
-                    ecs.new_path(p.to_owned(), b, a);
+                    ecs.new_path(p.to_owned(), a, b)?;
+                    ecs.new_path(p.to_owned(), b, a)?;
                 }
             }
         }
@@ -169,17 +167,17 @@ impl LocationMap {
         for r in encounter_room_handles {
             if let Some(encounter_id) = self.encounter_ids_sampler.sample(&mut rng) {
                 if let Some(encounter) = ecs.db.encounters().id().find(*encounter_id) {
-                    encounter.populate(&r);
+                    encounter.populate(r)?;
                 }
             }
         }
 
         // Decorate after other steps so that decoration changes do not impact rng.
         for r in &room_handles {
-            theme.decorate(r, &mut rng);
+            theme.decorate(r, &mut rng)?;
         }
 
-        MapGenerationResult {
+        Ok(MapGenerationResult {
             main_room_ids: room_handles[..main_room_count]
                 .iter()
                 .map(|h| h.entity_id())
@@ -188,6 +186,6 @@ impl LocationMap {
                 .iter()
                 .map(|h| h.entity_id())
                 .collect(),
-        }
+        })
     }
 }

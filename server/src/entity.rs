@@ -17,6 +17,9 @@ entity!(
     #[blob(table = entity_blobs)]
     pub struct EntityBlob;
 
+    #[registry(table = named_entities)]
+    pub struct NamedEntity;
+
     #[component(name in name_components)]
     struct NameComponent {
         #[unique]

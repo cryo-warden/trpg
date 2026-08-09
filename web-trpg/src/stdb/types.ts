@@ -65,7 +65,9 @@ export const ActionStateComponent = __t.object("ActionStateComponent", {
 export type ActionStateComponent = __Infer<typeof ActionStateComponent>;
 
 export const ActionStateComponentBlob = __t.object("ActionStateComponentBlob", {
-  targetEntityId: __t.u64(),
+  get targetEntityId() {
+    return EntityIdSelector;
+  },
   actionId: __t.u32(),
   sequenceIndex: __t.i32(),
 });
@@ -109,7 +111,9 @@ export const AllegianceComponent = __t.object("AllegianceComponent", {
 export type AllegianceComponent = __Infer<typeof AllegianceComponent>;
 
 export const AllegianceComponentBlob = __t.object("AllegianceComponentBlob", {
-  allegianceEntityId: __t.u64(),
+  get allegianceEntityId() {
+    return EntityIdSelector;
+  },
 });
 export type AllegianceComponentBlob = __Infer<typeof AllegianceComponentBlob>;
 
@@ -171,6 +175,9 @@ export const AssetPack = __t.object("AssetPack", {
   },
   get locationMapConnections() {
     return __t.array(LocationMapConnection);
+  },
+  get namedInstantiateEntityBlobs() {
+    return __t.array(NamedEntityBlob);
   },
   get instantiateEntityBlobs() {
     return __t.array(EntityBlob);
@@ -364,6 +371,14 @@ export const EntityEvent = __t.object("EntityEvent", {
 });
 export type EntityEvent = __Infer<typeof EntityEvent>;
 
+// The tagged union or sum type for the algebraic type `EntityIdSelector`.
+export const EntityIdSelector = __t.enum("EntityIdSelector", {
+  Literal: __t.u64(),
+  Local: __t.u32(),
+  Named: __t.string(),
+});
+export type EntityIdSelector = __Infer<typeof EntityIdSelector>;
+
 export const EntityProminenceComponent = __t.object("EntityProminenceComponent", {
   entityId: __t.u64(),
   prominence: __t.i32(),
@@ -438,7 +453,9 @@ export const LocationComponent = __t.object("LocationComponent", {
 export type LocationComponent = __Infer<typeof LocationComponent>;
 
 export const LocationComponentBlob = __t.object("LocationComponentBlob", {
-  locationEntityId: __t.u64(),
+  get locationEntityId() {
+    return EntityIdSelector;
+  },
 });
 export type LocationComponentBlob = __Infer<typeof LocationComponentBlob>;
 
@@ -468,7 +485,9 @@ export const LocationMapComponent = __t.object("LocationMapComponent", {
 export type LocationMapComponent = __Infer<typeof LocationMapComponent>;
 
 export const LocationMapComponentBlob = __t.object("LocationMapComponentBlob", {
-  locationMapEntityId: __t.u64(),
+  get locationMapEntityId() {
+    return EntityIdSelector;
+  },
 });
 export type LocationMapComponentBlob = __Infer<typeof LocationMapComponentBlob>;
 
@@ -506,6 +525,20 @@ export const NameComponentBlob = __t.object("NameComponentBlob", {
 });
 export type NameComponentBlob = __Infer<typeof NameComponentBlob>;
 
+export const NamedEntity = __t.object("NamedEntity", {
+  name: __t.string(),
+  entityId: __t.u64(),
+});
+export type NamedEntity = __Infer<typeof NamedEntity>;
+
+export const NamedEntityBlob = __t.object("NamedEntityBlob", {
+  name: __t.string(),
+  get blob() {
+    return EntityBlob;
+  },
+});
+export type NamedEntityBlob = __Infer<typeof NamedEntityBlob>;
+
 export const PathComponent = __t.object("PathComponent", {
   entityId: __t.u64(),
   destinationEntityId: __t.u64(),
@@ -513,7 +546,9 @@ export const PathComponent = __t.object("PathComponent", {
 export type PathComponent = __Infer<typeof PathComponent>;
 
 export const PathComponentBlob = __t.object("PathComponentBlob", {
-  destinationEntityId: __t.u64(),
+  get destinationEntityId() {
+    return EntityIdSelector;
+  },
 });
 export type PathComponentBlob = __Infer<typeof PathComponentBlob>;
 

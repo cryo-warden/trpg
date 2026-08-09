@@ -28,6 +28,8 @@ beforeAll(async () => {
       "SELECT * FROM player_controller_components",
       "SELECT * FROM location_components",
       "SELECT * FROM path_components",
+      "SELECT * FROM allegiance_components",
+      "SELECT * FROM named_entities",
     ]);
 }, 60000);
 
@@ -53,4 +55,27 @@ test("new_player + map generation builds a room/path graph and places the player
   );
 
   expect(player.db.path_components.count()).toBeGreaterThan(0);
+}, 40000);
+
+test("the new player's allegiance resolved through the Named selector", async () => {
+  const entityId = [
+    ...player.db.player_controller_components.iter(),
+  ][0].entityId;
+
+  await waitFor(
+    () =>
+      [...player.db.allegiance_components.iter()].some(
+        (row) => row.entityId === entityId,
+      ),
+    30000,
+  );
+
+  const allegianceEntityId = [...player.db.allegiance_components.iter()].find(
+    (row) => row.entityId === entityId,
+  )?.allegianceEntityId;
+  const registered = [...player.db.named_entities.iter()].find(
+    (row) => row.name === "allegiance1",
+  );
+  expect(registered).toBeDefined();
+  expect(allegianceEntityId).toBe(registered!.entityId);
 }, 40000);

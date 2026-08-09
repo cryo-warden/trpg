@@ -188,11 +188,19 @@ pub fn player_activation_system(ecs: Ecs) {
         if p.location().is_none() {
             // WIP Add checkpoint component to select a specific location map.
             if let Some(m) = ecs.db.location_maps().iter().next() {
-                let map_generation_result = m.generate_entities(ecs);
-                // WIP Add checkpoint location to select a specific room.
-                // WIP Consider adding rng seed to checkpoint to allow same map to regen.
-                if let Some(location_entity_id) = map_generation_result.main_room_ids.first() {
-                    p.insert_new_location(*location_entity_id);
+                match m.generate_entities(ecs) {
+                    // WIP Add checkpoint location to select a specific room.
+                    // WIP Consider adding rng seed to checkpoint to allow same map to regen.
+                    Ok(map_generation_result) => {
+                        if let Some(location_entity_id) =
+                            map_generation_result.main_room_ids.first()
+                        {
+                            p.insert_new_location(*location_entity_id);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Map generation failed: {}", e);
+                    }
                 }
             }
         }

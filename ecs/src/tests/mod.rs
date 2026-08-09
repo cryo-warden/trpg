@@ -23,6 +23,9 @@ entity!(
     #[blob(table = entity_blobs)]
     pub struct EntityBlob;
 
+    #[registry(table = named_entities)]
+    pub struct NamedEntity;
+
     #[component(
       location in location_components,
       secondary_location in secondary_location_components,
@@ -47,19 +50,42 @@ impl<'a> EntityHandle<'a> {
 #[allow(dead_code, unused_must_use, unused_variables, path_statements)]
 fn sandbox(ctx: &spacetimedb::ReducerContext) -> Option<()> {
     let e = ctx.ecs().find(0);
-    let blob = LocationComponentBlob {
-        location_entity_id: 1,
+    let scope = InstantiationScope {
+        ecs: ctx.ecs(),
+        locals: vec![4, 5],
     };
-    let component: LocationComponent = blob.clone().into_component(7);
+    let blob = LocationComponentBlob {
+        location_entity_id: EntityIdSelector::Literal(1),
+    };
+    let component: LocationComponent = blob.clone().into_component(7, &scope).ok()?;
     let round_tripped: LocationComponentBlob = component.clone().into();
-    assert_eq!(round_tripped.location_entity_id, 1);
+    assert!(matches!(
+        round_tripped.location_entity_id,
+        EntityIdSelector::Literal(1)
+    ));
+    assert_eq!(EntityIdSelector::Local(1).resolve(&scope).ok()?, 5);
+    assert!(EntityIdSelector::Local(2).resolve(&scope).is_err());
+    EntityIdSelector::Named("the_place".to_string())
+        .resolve(&scope)
+        .ok();
     ctx.ecs().into_location_handle(component);
-    ctx.ecs().new().instantiate_blob(EntityBlob {
-        location: Some(blob),
-        secondary_location: None,
-        path: None,
-        excess_path: None,
-    });
+    ctx.ecs().new().register_name("thing1".to_string()).ok()?;
+    ctx.ecs()
+        .new()
+        .instantiate_blob(
+            EntityBlob {
+                location: Some(blob),
+                secondary_location: Some(LocationComponentBlob {
+                    location_entity_id: EntityIdSelector::Named("the_place".to_string()),
+                }),
+                path: Some(PathComponentBlob {
+                    destination_entity_id: EntityIdSelector::Local(0),
+                }),
+                excess_path: None,
+            },
+            &scope,
+        )
+        .ok()?;
     assert_eq!(
         ctx.ecs()
             .new()

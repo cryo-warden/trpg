@@ -3,6 +3,7 @@ use crate::{
         rng_range::RngRange,
         weighted_sampler::{WeightedSample, WeightedSampler},
     },
+    ecs_extension::EcsExtension,
     entity::*,
 };
 use spacetimedb::{rand::rngs::StdRng, table, SpacetimeType};
@@ -48,7 +49,7 @@ pub struct LocationMapTheme {
 }
 
 impl LocationMapTheme {
-    pub fn decorate(&self, room: &EntityHandle, rng: &mut StdRng) {
+    pub fn decorate(&self, room: &EntityHandle, rng: &mut StdRng) -> Result<(), String> {
         let decoration_count: usize =
             rng.get_range(self.min_decoration_count, self.max_decoration_count);
 
@@ -56,9 +57,10 @@ impl LocationMapTheme {
             if let Some(d) = self.decorations_selector.sample(rng) {
                 room.ecs()
                     .new()
-                    .instantiate_blob(d.to_owned())
+                    .instantiate_blob(d.to_owned(), &room.ecs().instantiation_scope())?
                     .insert_new_location(room.entity_id());
             }
         }
+        Ok(())
     }
 }

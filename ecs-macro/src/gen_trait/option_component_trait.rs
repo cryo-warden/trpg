@@ -22,6 +22,8 @@ pub struct OptionComponentTrait {
     pub delete_fn: Ident,
     pub insert_new_fn: Ident,
     pub update_new_fn: Ident,
+    pub insert_row_fn: Ident,
+    pub update_row_fn: Ident,
 }
 
 impl OptionComponentTrait {
@@ -49,6 +51,8 @@ impl OptionComponentTrait {
             delete_fn: format_ident!("delete_{}", ctp.component),
             insert_new_fn: format_ident!("insert_new_{}", ctp.component),
             update_new_fn: format_ident!("update_new_{}", ctp.component),
+            insert_row_fn: format_ident!("insert_{}_row", ctp.component),
+            update_row_fn: format_ident!("update_{}_row", ctp.component),
         }
     }
 
@@ -102,33 +106,54 @@ impl ToTokens for OptionComponentTrait {
             delete_fn,
             insert_new_fn,
             update_new_fn,
+            insert_row_fn,
+            update_row_fn,
         } = self;
+        let scope = gen_struct::scope_ident();
         tokens.extend(quote! {
           #[allow(non_camel_case_types)]
           pub trait #option_component_trait: Sized + #option_get_component_trait {
-            fn #upsert_fn(self, #component: #component_blob_ty) -> #with_component_struct<Self> {
+            fn #upsert_fn(
+              self,
+              #component: #component_blob_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#with_component_struct<Self>, ::std::string::String> {
               let #component = if ::core::option::Option::is_some(&self.#getter_fn()) {
-                self.#update_fn(#component)
+                self.#update_fn(#component, scope)?
               } else {
-                self.#insert_fn(#component)
+                self.#insert_fn(#component, scope)?
+              };
+              ::core::result::Result::Ok(#with_component_struct {
+                #component,
+                value: self,
+              })
+            }
+            fn #upsert_new_fn(self, #component_field_args) -> #with_component_struct<Self> {
+              let #component = if ::core::option::Option::is_some(&self.#getter_fn()) {
+                self.#update_new_fn(#component_field_names)
+              } else {
+                self.#insert_new_fn(#component_field_names)
               };
               #with_component_struct {
                 #component,
                 value: self,
               }
             }
-            fn #upsert_new_fn(self, #component_field_args) -> #with_component_struct<Self> {
-              self.#upsert_fn(#component_blob_ty { #component_field_names })
-            }
-            fn #insert_fn(&self, #component: #component_blob_ty) -> #component_ty;
-            fn #update_fn(&self, #component: #component_blob_ty) -> #component_ty;
+            fn #insert_fn(
+              &self,
+              #component: #component_blob_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#component_ty, ::std::string::String>;
+            fn #update_fn(
+              &self,
+              #component: #component_blob_ty,
+              scope: &#scope<'_>,
+            ) -> ::core::result::Result<#component_ty, ::std::string::String>;
+            fn #insert_row_fn(&self, #component: #component_ty) -> #component_ty;
+            fn #update_row_fn(&self, #component: #component_ty) -> #component_ty;
             fn #delete_fn(&self);
-            fn #insert_new_fn(&self, #component_field_args) -> #component_ty {
-              self.#insert_fn(#component_blob_ty { #component_field_names })
-            }
-            fn #update_new_fn(&self, #component_field_args) -> #component_ty {
-              self.#update_fn(#component_blob_ty { #component_field_names })
-            }
+            fn #insert_new_fn(&self, #component_field_args) -> #component_ty;
+            fn #update_new_fn(&self, #component_field_args) -> #component_ty;
           }
         })
     }
