@@ -1,27 +1,34 @@
 import { ReactNode } from "react";
 import { Panel } from "../structural/Panel";
 import { AccountPanel } from "./AccountPanel";
+import { AdminControls } from "./AdminControls";
 import { WithDynamicPanel } from "./context/WithDynamicPanel";
 import { WithStdb } from "./context/StdbContext";
-import { useMyAccountId } from "./context/StdbContext/account";
+import { useMyAccount } from "./context/StdbContext/account";
 import { DynamicPanel } from "./DynamicPanel";
 import { EventsPanel } from "./EventsPanel";
 import "./index.css";
 import { LoginRequestsPrompt } from "./LoginRequestsPrompt";
+import { RotatePasswordPanel } from "./RotatePasswordPanel";
 import { SelfPanel } from "./SelfPanel";
 import { TargetPanel } from "./TargetPanel";
 import { TargetProvider } from "./context/TargetProvider";
 
 /** No implicit accounts: an unattached connection sees only the account
- * screen; an attached one plays, and is prompted about pending logins. */
+ * screen; a provisional password blocks everything until rotated; an
+ * attached account plays, and is prompted about pending logins. */
 const AccountGate = ({ children }: { children: ReactNode }) => {
-  const accountId = useMyAccountId();
-  if (accountId == null) {
+  const account = useMyAccount();
+  if (account == null) {
     return <AccountPanel />;
+  }
+  if (account.requiresPasswordRotation) {
+    return <RotatePasswordPanel />;
   }
   return (
     <>
       <LoginRequestsPrompt />
+      <AdminControls />
       {children}
     </>
   );

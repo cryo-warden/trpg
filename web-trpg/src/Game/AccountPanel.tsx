@@ -21,6 +21,7 @@ export const AccountPanel = () => {
   const request = useMyLoginRequest();
   const [newAccountName, setNewAccountName] = useState("");
   const [loginAccountName, setLoginAccountName] = useState("");
+  const [password, setPassword] = useState("");
   const [verificationCode, setVerificationCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +68,24 @@ export const AccountPanel = () => {
           onChange={(event) => setLoginAccountName(event.target.value)}
         />
         <button onClick={requestLogin}>Request login</button>
+        <input
+          aria-label="password"
+          type="password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <button
+          onClick={() =>
+            run(
+              connection.reducers.loginWithPassword({
+                accountName: loginAccountName,
+                password,
+              }),
+            )
+          }
+        >
+          Log in with password
+        </button>
         {verificationCode != null && (
           <div className="verification-code">
             Verification code: <strong>{verificationCode}</strong> — read this

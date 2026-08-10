@@ -19,6 +19,8 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
         scheduled_at: ScheduleAt::Interval(TimeDuration::from_micros(1000000)),
     });
 
+    crate::role::seed_roles(ctx);
+
     Ok(())
 }
 

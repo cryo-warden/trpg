@@ -3,6 +3,7 @@ import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
+import { claimAdmin } from "./admin";
 import { mapGenPack } from "./testAssets";
 
 // Phase 5: exercise the real new_player + map-generation flow on a tiny
@@ -18,6 +19,7 @@ beforeAll(async () => {
 
   seeder = (await connect()).connection;
   seeder.subscriptionBuilder().subscribe(["SELECT * FROM actions"]);
+  await claimAdmin(seeder);
   await seeder.reducers.pushAssets({ assetPack: mapGenPack() });
   await waitFor(() => seeder.db.actions.count() > 0);
 

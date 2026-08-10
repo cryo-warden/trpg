@@ -3,6 +3,7 @@ import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
+import { claimAdmin } from "./admin";
 import { graphPack } from "./testAssets";
 
 // Phase 3: a direct-seeded world graph (no production assets, no map generator).
@@ -21,7 +22,8 @@ beforeAll(async () => {
       "SELECT * FROM location_components",
       "SELECT * FROM path_components",
     ]);
-  world.reducers.pushAssets({ assetPack: graphPack() });
+  await claimAdmin(world);
+  await world.reducers.pushAssets({ assetPack: graphPack() });
   await waitFor(() => world.db.path_components.count() > 0, 30000);
 }, 60000);
 

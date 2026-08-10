@@ -3,12 +3,14 @@ import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
+import { claimAdmin } from "./admin";
 import { combatPack } from "./testAssets";
 
 // Phase 4: combat, using a test-specific bundle (no production assets). Seed a
 // player owned by the connecting identity and a co-located enemy, then attack
 // and watch the enemy's hp fall through the real tick pipeline.
 
+let admin: DbConnection;
 let player: DbConnection;
 
 const enemyHp = (): number | undefined =>
@@ -18,8 +20,11 @@ beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
 
-  const { connection } = await connect();
-  player = connection;
+  admin = (await connect()).connection;
+  await claimAdmin(admin);
+  await admin.reducers.pushAssets({ assetPack: combatPack({ enemyHp: 10 }) });
+
+  player = (await connect()).connection;
   player
     .subscriptionBuilder()
     .subscribe([
@@ -27,8 +32,6 @@ beforeAll(async () => {
       "SELECT * FROM player_controller_components",
       "SELECT * FROM actions",
     ]);
-
-  await player.reducers.pushAssets({ assetPack: combatPack({ enemyHp: 10 }) });
   await player.reducers.createAccount({ name: "fighter" });
 
   // The only entity with hp is the seeded enemy; the player controller is ours.
@@ -37,6 +40,7 @@ beforeAll(async () => {
 }, 60000);
 
 afterAll(() => {
+  admin?.disconnect();
   player?.disconnect();
 });
 

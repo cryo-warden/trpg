@@ -11,8 +11,6 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  id: __t.u64().primaryKey(),
+  id: __t.u32().primaryKey(),
   name: __t.string(),
-  createdAt: __t.timestamp().name("created_at"),
-  requiresPasswordRotation: __t.bool().name("requires_password_rotation"),
 });

@@ -12,7 +12,6 @@ import {
 
 export default __t.row({
   id: __t.u64().primaryKey(),
-  name: __t.string(),
-  createdAt: __t.timestamp().name("created_at"),
-  requiresPasswordRotation: __t.bool().name("requires_password_rotation"),
+  accountId: __t.u64().name("account_id"),
+  roleId: __t.u32().name("role_id"),
 });

@@ -1,18 +1,21 @@
 import { Identity } from "spacetimedb";
-import { LoginRequest } from "../../../stdb/types";
+import { Account, LoginRequest } from "../../../stdb/types";
 import { useStdbIdentity } from "./useStdb";
 import { useTableData } from "./useTableData";
 
 // The accounts layer: identities are per-connection/device, so everything
 // durable hangs off accounts. These tables are public by design — a login
 // request is visible to every attached device by construction, so no
-// connection can be attached in secret.
+// connection can be attached in secret. (Password HASHES live in a private
+// server-only table and are never subscribed.)
 export const accountQueries = [
   "select * from accounts",
   "select * from account_identities",
   "select * from login_requests",
   "select * from login_request_voters",
   "select * from login_responses",
+  "select * from roles",
+  "select * from account_roles",
 ];
 
 const sameIdentity = (a: Identity, b: Identity): boolean =>
@@ -25,6 +28,38 @@ export const useMyAccountId = (): bigint | null => {
     "account_identities",
     (table) => table.identity.find(identity)?.accountId ?? null,
     [identity],
+  );
+};
+
+/** The connected identity's account row, or null while unattached. */
+export const useMyAccount = (): Account | null => {
+  const accountId = useMyAccountId();
+  return useTableData(
+    "accounts",
+    (table) => (accountId == null ? null : (table.id.find(accountId) ?? null)),
+    [accountId],
+  );
+};
+
+/** Whether my account holds the admin role. (The rotation gate is separate:
+ * the server refuses privileged actions until the password is rotated.) */
+export const useIsAdmin = (): boolean => {
+  const accountId = useMyAccountId();
+  const adminRoleId = useTableData(
+    "roles",
+    (table) =>
+      [...table.iter()].find((role) => role.name === "admin")?.id ?? null,
+    [],
+  );
+  return useTableData(
+    "account_roles",
+    (table) =>
+      accountId != null &&
+      adminRoleId != null &&
+      [...table.iter()].some(
+        (row) => row.accountId === accountId && row.roleId === adminRoleId,
+      ),
+    [accountId, adminRoleId],
   );
 };
 

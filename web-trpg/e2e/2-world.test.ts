@@ -3,12 +3,14 @@ import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
+import { claimAdmin } from "./admin";
 import { playerPack } from "./testAssets";
 
 // Phase 2: a small world under the accounts model (no production assets, no
 // map generation). Creating an account creates the player entity from the
 // pack's new-player blob, with vitals and a location.
 
+let admin: DbConnection;
 let player: DbConnection;
 
 const rowFor = <Row extends { entityId: bigint }>(
@@ -20,8 +22,11 @@ beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
 
-  const { connection } = await connect();
-  player = connection;
+  admin = (await connect()).connection;
+  await claimAdmin(admin);
+  await admin.reducers.pushAssets({ assetPack: playerPack() });
+
+  player = (await connect()).connection;
   player
     .subscriptionBuilder()
     .subscribe([
@@ -29,12 +34,12 @@ beforeAll(async () => {
       "SELECT * FROM hp_components",
       "SELECT * FROM location_components",
     ]);
-  await player.reducers.pushAssets({ assetPack: playerPack() });
   await player.reducers.createAccount({ name: "world_tester" });
   await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
 }, 60000);
 
 afterAll(() => {
+  admin?.disconnect();
   player?.disconnect();
 });
 

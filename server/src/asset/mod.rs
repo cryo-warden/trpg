@@ -267,6 +267,9 @@ fn resolve_stat_block(author: StatBlockAuthor, maps: &AssetNameMaps) -> Result<S
 // anonymous blob on an update — fails the whole reducer immediately.
 #[reducer]
 fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String> {
+    // Only an admin account is trusted to alter game content; clients never
+    // push automatically.
+    crate::role::require_admin(ctx)?;
     log::debug!("Loading asset pack from {}.", ctx.sender());
 
     let is_update = ctx.get_new_player_blob().is_some();

@@ -112,13 +112,9 @@
     },
     "publish": {
       "command": [
-        "spacetime",
-        "publish",
-        "--module-path",
-        "./server",
-        "trpg",
-        "--delete-data",
-        "--yes"
+        "bash",
+        "scripts/publish.sh",
+        "trpg"
       ],
       "dir": "."
     },

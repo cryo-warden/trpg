@@ -6,7 +6,7 @@ import { assetQueries } from "./assetLookup";
 import { componentQueries } from "./components";
 import { renderingQueries } from "./rendering";
 import { StdbContext } from "./StdbContext";
-import { init } from "../../init";
+import { pushProductionAssets } from "../../init";
 
 const queries = [
   ...renderingQueries,
@@ -42,7 +42,7 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).dev.connection = connection;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (window as any).dev.init = () => init(connection);
+        (window as any).dev.pushAssets = () => pushProductionAssets(connection);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (window as any).dev.getAll = () => {
           return Object.fromEntries(

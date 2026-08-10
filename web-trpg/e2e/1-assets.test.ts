@@ -3,11 +3,12 @@ import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
+import { TEST_ADMIN_TOKEN } from "./admin";
 import { minimalPack } from "./testAssets";
 
-// Phase 1: seed a real instance with a tiny, test-specific bundle (not the
-// production assets) and confirm it lands. Just the connect + push_assets round
-// trip — no world, no ticks.
+// Phase 1: the admin claim + asset pipeline against a real instance: pushes
+// are admin-gated, the publish-time token is a provisional password that dies
+// on rotation, and pushes are strict incremental updates.
 
 let connection: DbConnection;
 
@@ -22,10 +23,49 @@ afterAll(() => {
   connection?.disconnect();
 });
 
-test("pushing a minimal asset bundle populates the action catalog", async () => {
-  connection.reducers.pushAssets({ assetPack: minimalPack() });
+test("pushing is admin-gated and the bootstrap token dies on rotation", async () => {
+  // Unattached connections cannot push.
+  await expect(
+    connection.reducers.pushAssets({ assetPack: minimalPack() }),
+  ).rejects.toThrow(/not attached/);
+
+  // The publish action bootstraps the admin account exactly once.
+  await connection.reducers.bootstrapAdmin({ adminToken: TEST_ADMIN_TOKEN });
+  await expect(
+    connection.reducers.bootstrapAdmin({ adminToken: "other" }),
+  ).rejects.toThrow(/already exists/);
+
+  // A wrong token cannot claim the account.
+  await expect(
+    connection.reducers.loginWithPassword({
+      accountName: "admin",
+      password: "wrong",
+    }),
+  ).rejects.toThrow(/does not match/);
+  await connection.reducers.loginWithPassword({
+    accountName: "admin",
+    password: TEST_ADMIN_TOKEN,
+  });
+
+  // Claimed but not rotated: still no privileged actions.
+  await expect(
+    connection.reducers.pushAssets({ assetPack: minimalPack() }),
+  ).rejects.toThrow(/rotated/);
+
+  // Rotation destroys the provisional credential and unlocks the account.
+  await connection.reducers.setPassword({ newPassword: "fresh-secret" });
+  await connection.reducers.pushAssets({ assetPack: minimalPack() });
   await waitFor(() => connection.db.actions.count() > 0);
   expect(connection.db.actions.count()).toBeGreaterThan(0);
+
+  // The old token is gone: it can no longer claim anything, and the account
+  // is held, so password login is closed entirely.
+  await expect(
+    connection.reducers.loginWithPassword({
+      accountName: "admin",
+      password: TEST_ADMIN_TOKEN,
+    }),
+  ).rejects.toThrow();
 });
 
 test("re-pushing matches by name: ids kept, bodies updated, new assets added", async () => {

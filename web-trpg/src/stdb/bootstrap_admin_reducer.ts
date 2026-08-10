@@ -10,9 +10,6 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
-export default __t.row({
-  id: __t.u64().primaryKey(),
-  name: __t.string(),
-  createdAt: __t.timestamp().name("created_at"),
-  requiresPasswordRotation: __t.bool().name("requires_password_rotation"),
-});
+export default {
+  adminToken: __t.string(),
+};

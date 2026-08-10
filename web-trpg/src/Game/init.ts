@@ -60,7 +60,10 @@ const toAppearanceFeatureAuthor = (
   priority: asset.priority,
 });
 
-export const init = (connection: DbConnection) => {
+/** Pushes the production asset pack. Admin-gated server-side: only an
+ * attached, rotated admin account may call this — clients never push
+ * automatically. */
+export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
   connection.reducers.pushAssets({
     assetPack: {
       actions: namedPairs(ACTIONS, toActionAuthor),
@@ -90,4 +93,3 @@ export const init = (connection: DbConnection) => {
       newPlayerBlob: getEntityBlobAuthor(newPlayerBlob),
     },
   });
-};

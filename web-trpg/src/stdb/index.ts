@@ -36,15 +36,19 @@ import {
 // Import all reducer arg schemas
 import AcceptLoginRequestReducer from "./accept_login_request_reducer";
 import ActReducer from "./act_reducer";
+import BootstrapAdminReducer from "./bootstrap_admin_reducer";
 import CreateAccountReducer from "./create_account_reducer";
+import LoginWithPasswordReducer from "./login_with_password_reducer";
 import PushAssetsReducer from "./push_assets_reducer";
 import RefuseLoginRequestReducer from "./refuse_login_request_reducer";
 import RequestLoginReducer from "./request_login_reducer";
+import SetPasswordReducer from "./set_password_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
 import AccountIdentitiesRow from "./account_identities_table";
+import AccountRolesRow from "./account_roles_table";
 import AccountsRow from "./accounts_table";
 import ActionHotkeysComponentsRow from "./action_hotkeys_components_table";
 import ActionStateComponentsRow from "./action_state_components_table";
@@ -76,6 +80,7 @@ import PathComponentsRow from "./path_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
+import RolesRow from "./roles_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
 import TraitsComponentsRow from "./traits_components_table";
@@ -100,6 +105,20 @@ const tablesSchema = __schema({
       { name: 'account_identities_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, AccountIdentitiesRow),
+  account_roles: __table({
+    name: 'account_roles',
+    indexes: [
+      { accessor: 'account_id', name: 'account_roles_account_id_idx_btree', algorithm: 'btree', columns: [
+        'accountId',
+      ] },
+      { accessor: 'id', name: 'account_roles_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'account_roles_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, AccountRolesRow),
   accounts: __table({
     name: 'accounts',
     indexes: [
@@ -480,6 +499,21 @@ const tablesSchema = __schema({
       { name: 'queued_action_state_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, QueuedActionStateComponentsRow),
+  roles: __table({
+    name: 'roles',
+    indexes: [
+      { accessor: 'id', name: 'roles_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'name', name: 'roles_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'roles_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'roles_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, RolesRow),
   status_stat_block_cache_components: __table({
     name: 'status_stat_block_cache_components',
     indexes: [
@@ -541,10 +575,13 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_login_request", AcceptLoginRequestReducer),
   __reducerSchema("act", ActReducer),
+  __reducerSchema("bootstrap_admin", BootstrapAdminReducer),
   __reducerSchema("create_account", CreateAccountReducer),
+  __reducerSchema("login_with_password", LoginWithPasswordReducer),
   __reducerSchema("push_assets", PushAssetsReducer),
   __reducerSchema("refuse_login_request", RefuseLoginRequestReducer),
   __reducerSchema("request_login", RequestLoginReducer),
+  __reducerSchema("set_password", SetPasswordReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

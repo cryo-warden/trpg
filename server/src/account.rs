@@ -39,6 +39,23 @@ pub struct Account {
     #[unique]
     pub name: String,
     pub created_at: Timestamp,
+    /// True while the account's password is a provisional secret (e.g. the
+    /// publish-time admin token): privileged actions are blocked until the
+    /// holder rotates it, which destroys the provisional credential.
+    pub requires_password_rotation: bool,
+}
+
+/// PRIVATE (server-only): the salted password hash for accounts that have a
+/// password. The plaintext is never stored; rotation replaces this row, so
+/// a provisional secret ceases to exist the moment it is rotated away.
+#[table(accessor = account_passwords)]
+#[derive(Debug, Clone)]
+pub struct AccountPassword {
+    #[primary_key]
+    pub account_id: AccountId,
+    pub salt: String,
+    pub password_hash: String,
+    pub updated_at: Timestamp,
 }
 
 /// One identity belongs to at most one account, forever (detachment would be
@@ -158,23 +175,140 @@ fn attach_identity(ctx: &ReducerContext, identity: Identity, account_id: Account
         .map_err(|e| format!("{}", e))
 }
 
-#[reducer]
-pub fn create_account(ctx: &ReducerContext, name: String) -> Result<(), String> {
-    require_unattached(ctx, ctx.sender())?;
+fn hash_password(salt: &str, password: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(salt.as_bytes());
+    hasher.update(password.as_bytes());
+    hasher
+        .finalize()
+        .iter()
+        .map(|byte| format!("{:02x}", byte))
+        .fold(String::new(), |acc, hex| acc + &hex)
+}
+
+fn new_salt(ctx: &ReducerContext) -> String {
+    use spacetimedb::rand::Rng;
+    let bytes: [u8; 16] = ctx.rng().gen();
+    bytes
+        .iter()
+        .map(|byte| format!("{:02x}", byte))
+        .fold(String::new(), |acc, hex| acc + &hex)
+}
+
+pub fn store_password(
+    ctx: &ReducerContext,
+    account_id: AccountId,
+    password: &str,
+) -> Result<(), String> {
+    if password.trim().is_empty() {
+        return Err("A password must not be empty.".to_string());
+    }
+    let salt = new_salt(ctx);
+    let row = AccountPassword {
+        account_id,
+        password_hash: hash_password(&salt, password),
+        salt,
+        updated_at: ctx.timestamp,
+    };
+    if ctx
+        .db
+        .account_passwords()
+        .account_id()
+        .find(account_id)
+        .is_some()
+    {
+        ctx.db.account_passwords().account_id().update(row);
+    } else {
+        ctx.db.account_passwords().insert(row);
+    }
+    Ok(())
+}
+
+/// Creates the account ROW only — attachment, players, passwords, and roles
+/// are the callers' concerns.
+pub fn insert_account(ctx: &ReducerContext, name: String) -> Result<Account, String> {
     if name.trim().is_empty() {
         return Err("An account name must not be empty.".to_string());
     }
-    let account = ctx
-        .db
+    ctx.db
         .accounts()
         .try_insert(Account {
             id: 0,
             name,
             created_at: ctx.timestamp,
+            requires_password_rotation: false,
         })
-        .map_err(|e| format!("{}", e))?;
+        .map_err(|e| format!("{}", e))
+}
+
+#[reducer]
+pub fn create_account(ctx: &ReducerContext, name: String) -> Result<(), String> {
+    require_unattached(ctx, ctx.sender())?;
+    let account = insert_account(ctx, name)?;
     attach_identity(ctx, ctx.sender(), account.id)?;
     crate::reducers::on_account_created(ctx, account.id)
+}
+
+/// Password login exists ONLY to bootstrap an account that no device holds
+/// yet (e.g. the publish-time admin account). The moment any identity is
+/// attached, this path closes: further devices must pass the visible,
+/// confirmed login protocol — a password alone can never become a secret
+/// lurking connection.
+#[reducer]
+pub fn login_with_password(
+    ctx: &ReducerContext,
+    account_name: String,
+    password: String,
+) -> Result<(), String> {
+    let identity = ctx.sender();
+    require_unattached(ctx, identity)?;
+    let account = ctx
+        .db
+        .accounts()
+        .name()
+        .find(account_name.to_owned())
+        .ok_or_else(|| format!("No account is named \"{}\".", account_name))?;
+    if ctx
+        .db
+        .account_identities()
+        .account_id()
+        .filter(account.id)
+        .next()
+        .is_some()
+    {
+        return Err(
+            "This account already has attached connections; request a confirmed login instead."
+                .to_string(),
+        );
+    }
+    let stored = ctx
+        .db
+        .account_passwords()
+        .account_id()
+        .find(account.id)
+        .ok_or_else(|| "This account has no password.".to_string())?;
+    if hash_password(&stored.salt, &password) != stored.password_hash {
+        return Err("The password does not match.".to_string());
+    }
+    attach_identity(ctx, identity, account.id)
+}
+
+/// Sets the calling account's password and clears the rotation flag; the
+/// previous credential's hash is overwritten and ceases to exist.
+#[reducer]
+pub fn set_password(ctx: &ReducerContext, new_password: String) -> Result<(), String> {
+    let account_id = require_account(ctx, ctx.sender())?;
+    store_password(ctx, account_id, &new_password)?;
+    let mut account = ctx
+        .db
+        .accounts()
+        .id()
+        .find(account_id)
+        .ok_or_else(|| format!("Account {} is missing its row.", account_id))?;
+    account.requires_password_rotation = false;
+    ctx.db.accounts().id().update(account);
+    Ok(())
 }
 
 #[reducer]

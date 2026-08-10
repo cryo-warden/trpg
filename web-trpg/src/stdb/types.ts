@@ -14,6 +14,7 @@ export const Account = __t.object("Account", {
   id: __t.u64(),
   name: __t.string(),
   createdAt: __t.timestamp(),
+  requiresPasswordRotation: __t.bool(),
 });
 export type Account = __Infer<typeof Account>;
 
@@ -23,6 +24,21 @@ export const AccountIdentity = __t.object("AccountIdentity", {
   attachedAt: __t.timestamp(),
 });
 export type AccountIdentity = __Infer<typeof AccountIdentity>;
+
+export const AccountPassword = __t.object("AccountPassword", {
+  accountId: __t.u64(),
+  salt: __t.string(),
+  passwordHash: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type AccountPassword = __Infer<typeof AccountPassword>;
+
+export const AccountRole = __t.object("AccountRole", {
+  id: __t.u64(),
+  accountId: __t.u64(),
+  roleId: __t.u32(),
+});
+export type AccountRole = __Infer<typeof AccountRole>;
 
 export const Action = __t.object("Action", {
   id: __t.u32(),
@@ -787,6 +803,12 @@ export const PlayerControllerComponentBlob = __t.object("PlayerControllerCompone
   accountId: __t.u64(),
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
+
+export const Role = __t.object("Role", {
+  id: __t.u32(),
+  name: __t.string(),
+});
+export type Role = __Infer<typeof Role>;
 
 export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
   get key() {
