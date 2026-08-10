@@ -7,9 +7,10 @@ import { minimalPack } from "./testAssets";
 
 // Phase 6: the accounts layer and the confirmed multi-device login protocol.
 // Device A creates the account; device B may only join once A accepts its
-// visible login request; a refusal kills a request outright; unattached
-// connections own nothing. (The 30-second post-quorum delay branch needs a
-// silent third voter and a real clock, so it is not exercised here.)
+// visible login request with the matching verification code; a refusal kills
+// a request outright; unattached connections own nothing. (The 30-second
+// post-quorum delay branch needs a silent third voter and a real clock, so it
+// is not exercised here.)
 
 let deviceA: DbConnection;
 let deviceB: DbConnection;
@@ -53,18 +54,35 @@ test("an account name cannot be taken twice", async () => {
   ).rejects.toThrow();
 });
 
-test("a second device attaches only after an existing device accepts", async () => {
-  await deviceB.reducers.requestLogin({ accountName: "multi" });
+test("a second device attaches only after a code-verified acceptance", async () => {
+  await deviceB.reducers.requestLogin({
+    accountName: "multi",
+    verificationCode: "271828",
+  });
   await waitFor(() => deviceA.db.login_requests.count() === 1n, 30000);
   const request = [...deviceA.db.login_requests.iter()][0];
   expect(request.status.tag).toBe("Pending");
   expect(deviceB.db.account_identities.count()).toBe(1n);
 
-  // The single previous connection accepts: quorum AND all-responded, so the
-  // attachment is immediate.
-  await deviceA.reducers.respondLogin({
+  // A mismatched code means the approval does not count: the request stays
+  // pending and no response is recorded.
+  await expect(
+    deviceA.reducers.acceptLoginRequest({
+      loginRequestId: request.id,
+      verificationCode: "000000",
+    }),
+  ).rejects.toThrow(/verification code/);
+  expect(
+    [...deviceA.db.login_requests.iter()][0]?.status.tag,
+  ).toBe("Pending");
+  expect(deviceA.db.login_responses.count()).toBe(0n);
+
+  // With the matching code from the requesting device's screen, the single
+  // previous connection accepts: quorum AND all-responded, so the attachment
+  // is immediate.
+  await deviceA.reducers.acceptLoginRequest({
     loginRequestId: request.id,
-    accept: true,
+    verificationCode: "271828",
   });
   await waitFor(() => deviceB.db.account_identities.count() === 2n, 30000);
   await waitFor(
@@ -74,8 +92,11 @@ test("a second device attaches only after an existing device accepts", async () 
   );
 });
 
-test("any explicit refusal fails a login request", async () => {
-  await deviceC.reducers.requestLogin({ accountName: "multi" });
+test("any explicit refusal fails a login request, no code needed", async () => {
+  await deviceC.reducers.requestLogin({
+    accountName: "multi",
+    verificationCode: "314159",
+  });
   await waitFor(() => deviceA.db.login_requests.count() === 2n, 30000);
   const request = [...deviceA.db.login_requests.iter()].find(
     (row) => row.status.tag === "Pending",
@@ -83,10 +104,7 @@ test("any explicit refusal fails a login request", async () => {
 
   // Two previous connections now hold the account; one refusal ends it even
   // though the other never responded.
-  await deviceB.reducers.respondLogin({
-    loginRequestId: request.id,
-    accept: false,
-  });
+  await deviceB.reducers.refuseLoginRequest({ loginRequestId: request.id });
   await waitFor(
     () =>
       [...deviceA.db.login_requests.iter()].find((row) => row.id === request.id)
@@ -97,19 +115,28 @@ test("any explicit refusal fails a login request", async () => {
 
   // Late responses to a resolved request fail fast.
   await expect(
-    deviceA.reducers.respondLogin({ loginRequestId: request.id, accept: true }),
+    deviceA.reducers.acceptLoginRequest({
+      loginRequestId: request.id,
+      verificationCode: "314159",
+    }),
   ).rejects.toThrow(/already resolved/);
 });
 
 test("the requesting connection has no vote and outsiders cannot respond", async () => {
-  await deviceC.reducers.requestLogin({ accountName: "multi" });
+  await deviceC.reducers.requestLogin({
+    accountName: "multi",
+    verificationCode: "161803",
+  });
   await waitFor(() => deviceA.db.login_requests.count() === 3n, 30000);
   const request = [...deviceA.db.login_requests.iter()].find(
     (row) => row.status.tag === "Pending",
   )!;
 
   await expect(
-    deviceC.reducers.respondLogin({ loginRequestId: request.id, accept: true }),
+    deviceC.reducers.acceptLoginRequest({
+      loginRequestId: request.id,
+      verificationCode: "161803",
+    }),
   ).rejects.toThrow(/previously attached/);
 });
 

@@ -661,6 +661,12 @@ export const LoginRequest = __t.object("LoginRequest", {
 });
 export type LoginRequest = __Infer<typeof LoginRequest>;
 
+export const LoginRequestCode = __t.object("LoginRequestCode", {
+  loginRequestId: __t.u64(),
+  verificationCode: __t.string(),
+});
+export type LoginRequestCode = __Infer<typeof LoginRequestCode>;
+
 // The tagged union or sum type for the algebraic type `LoginRequestStatus`.
 export const LoginRequestStatus = __t.enum("LoginRequestStatus", {
   Pending: __t.unit(),

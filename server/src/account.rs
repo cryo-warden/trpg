@@ -104,6 +104,18 @@ pub struct LoginResponse {
     pub responded_at: Timestamp,
 }
 
+/// The request's verification code, chosen by the requesting device and shown
+/// only on its screen. PRIVATE (server-only) on purpose: voters must get the
+/// code out-of-band from the requesting device — a person, not a UI — so an
+/// approval proves access to that device's screen, not a blind click.
+#[table(accessor = login_request_codes)]
+#[derive(Debug, Clone)]
+pub struct LoginRequestCode {
+    #[primary_key]
+    pub login_request_id: u64,
+    pub verification_code: String,
+}
+
 /// Schedules the post-quorum finalization delay.
 #[table(accessor = login_finalize_timers, scheduled(finalize_login))]
 pub struct LoginFinalizeTimer {
@@ -166,9 +178,16 @@ pub fn create_account(ctx: &ReducerContext, name: String) -> Result<(), String> 
 }
 
 #[reducer]
-pub fn request_login(ctx: &ReducerContext, account_name: String) -> Result<(), String> {
+pub fn request_login(
+    ctx: &ReducerContext,
+    account_name: String,
+    verification_code: String,
+) -> Result<(), String> {
     let identity = ctx.sender();
     require_unattached(ctx, identity)?;
+    if verification_code.trim().is_empty() {
+        return Err("A login request requires a verification code.".to_string());
+    }
     let account = ctx
         .db
         .accounts()
@@ -191,6 +210,10 @@ pub fn request_login(ctx: &ReducerContext, account_name: String) -> Result<(), S
         status: LoginRequestStatus::Pending,
         quorum_reached_at: None,
         resolved_at: None,
+    });
+    ctx.db.login_request_codes().insert(LoginRequestCode {
+        login_request_id: request.id,
+        verification_code,
     });
     for attached in ctx.db.account_identities().account_id().filter(account.id) {
         ctx.db.login_request_voters().insert(LoginRequestVoter {
@@ -229,12 +252,14 @@ fn refuse_login(ctx: &ReducerContext, mut request: LoginRequest) {
     ctx.db.login_requests().id().update(request);
 }
 
-#[reducer]
-pub fn respond_login(
+/// The shared entry checks for a voter responding to a pending request:
+/// the request must be pending, the caller must be in the voter snapshot,
+/// and must not have responded yet. Returns the request, the voter count,
+/// and the prior responses.
+fn open_response(
     ctx: &ReducerContext,
     login_request_id: u64,
-    accept: bool,
-) -> Result<(), String> {
+) -> Result<(LoginRequest, usize, Vec<LoginResponse>), String> {
     let identity = ctx.sender();
     let request = ctx
         .db
@@ -266,24 +291,40 @@ pub fn respond_login(
     if responses.iter().any(|r| r.identity == identity) {
         return Err("This connection has already responded to that login request.".to_string());
     }
+    Ok((request, voters.len(), responses))
+}
+
+#[reducer]
+pub fn accept_login_request(
+    ctx: &ReducerContext,
+    login_request_id: u64,
+    verification_code: String,
+) -> Result<(), String> {
+    let (request, voter_count, responses) = open_response(ctx, login_request_id)?;
+    // An approval only counts with the matching code, which is shown only on
+    // the requesting device's screen: matching proves the approver actually
+    // coordinated with that device.
+    let code = ctx
+        .db
+        .login_request_codes()
+        .login_request_id()
+        .find(login_request_id)
+        .ok_or_else(|| format!("Login request {} has no verification code.", login_request_id))?;
+    if code.verification_code != verification_code {
+        return Err("The verification code does not match the login request.".to_string());
+    }
     ctx.db.login_responses().insert(LoginResponse {
         id: 0,
         login_request_id,
-        identity,
-        accepted: accept,
+        identity: ctx.sender(),
+        accepted: true,
         responded_at: ctx.timestamp,
     });
 
-    // Any explicit refusal fails the request immediately.
-    if !accept {
-        refuse_login(ctx, request);
-        return Ok(());
-    }
-
     let accepted_count = responses.iter().filter(|r| r.accepted).count() + 1;
     let responded_count = responses.len() + 1;
-    let quorum_reached = accepted_count * 2 >= voters.len();
-    if responded_count == voters.len() {
+    let quorum_reached = accepted_count * 2 >= voter_count;
+    if responded_count == voter_count {
         // Every previous connection has responded, none refused: accept now.
         if quorum_reached {
             return accept_login(ctx, request);
@@ -309,6 +350,23 @@ pub fn respond_login(
             login_request_id,
         });
     }
+    Ok(())
+}
+
+/// Refusal deliberately needs NO verification code: rejecting an intruder
+/// must always be the easy path, and any explicit refusal fails the request
+/// immediately.
+#[reducer]
+pub fn refuse_login_request(ctx: &ReducerContext, login_request_id: u64) -> Result<(), String> {
+    let (request, _, _) = open_response(ctx, login_request_id)?;
+    ctx.db.login_responses().insert(LoginResponse {
+        id: 0,
+        login_request_id,
+        identity: ctx.sender(),
+        accepted: false,
+        responded_at: ctx.timestamp,
+    });
+    refuse_login(ctx, request);
     Ok(())
 }
 

@@ -12,5 +12,5 @@ import {
 
 export default {
   loginRequestId: __t.u64(),
-  accept: __t.bool(),
+  verificationCode: __t.string(),
 };

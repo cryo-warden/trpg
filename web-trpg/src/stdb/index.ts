@@ -34,11 +34,12 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AcceptLoginRequestReducer from "./accept_login_request_reducer";
 import ActReducer from "./act_reducer";
 import CreateAccountReducer from "./create_account_reducer";
 import PushAssetsReducer from "./push_assets_reducer";
+import RefuseLoginRequestReducer from "./refuse_login_request_reducer";
 import RequestLoginReducer from "./request_login_reducer";
-import RespondLoginReducer from "./respond_login_reducer";
 
 // Import all procedure arg schemas
 
@@ -538,11 +539,12 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("accept_login_request", AcceptLoginRequestReducer),
   __reducerSchema("act", ActReducer),
   __reducerSchema("create_account", CreateAccountReducer),
   __reducerSchema("push_assets", PushAssetsReducer),
+  __reducerSchema("refuse_login_request", RefuseLoginRequestReducer),
   __reducerSchema("request_login", RequestLoginReducer),
-  __reducerSchema("respond_login", RespondLoginReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

@@ -11,6 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  accountName: __t.string(),
-  verificationCode: __t.string(),
+  loginRequestId: __t.u64(),
 };

@@ -5,7 +5,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "stdb-generate": "spacetime generate --module-path ../server --lang typescript --out-dir ./src/stdb",
+    "stdb-generate": "spacetime generate --module-path ../server --lang typescript --out-dir ./src/stdb --yes",
     "ts-check": "bun tsc -b",
     "test": "bun test",
     "lint": "bun run eslint .",

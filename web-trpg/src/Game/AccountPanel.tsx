@@ -9,16 +9,35 @@ import { useStdbConnection } from "./context/StdbContext/useStdb";
  * account's previously attached devices. Both input sets are offered, per the
  * no-implicit-accounts rule.
  */
+/** A short human-relayable code, shown only on this (requesting) device. */
+const newVerificationCode = (): string => {
+  const values = new Uint32Array(1);
+  crypto.getRandomValues(values);
+  return (values[0] % 1000000).toString().padStart(6, "0");
+};
+
 export const AccountPanel = () => {
   const connection = useStdbConnection();
   const request = useMyLoginRequest();
   const [newAccountName, setNewAccountName] = useState("");
   const [loginAccountName, setLoginAccountName] = useState("");
+  const [verificationCode, setVerificationCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const run = (action: Promise<void>) => {
     setError(null);
     action.catch((reason) => setError(String(reason)));
+  };
+
+  const requestLogin = () => {
+    const code = newVerificationCode();
+    setVerificationCode(code);
+    run(
+      connection.reducers.requestLogin({
+        accountName: loginAccountName,
+        verificationCode: code,
+      }),
+    );
   };
 
   return (
@@ -47,17 +66,13 @@ export const AccountPanel = () => {
           value={loginAccountName}
           onChange={(event) => setLoginAccountName(event.target.value)}
         />
-        <button
-          onClick={() =>
-            run(
-              connection.reducers.requestLogin({
-                accountName: loginAccountName,
-              }),
-            )
-          }
-        >
-          Request login
-        </button>
+        <button onClick={requestLogin}>Request login</button>
+        {verificationCode != null && (
+          <div className="verification-code">
+            Verification code: <strong>{verificationCode}</strong> — read this
+            to your already-logged-in device; approving requires it.
+          </div>
+        )}
         {request != null && (
           <div className="login-request-status">
             {request.status.tag === "Pending"
