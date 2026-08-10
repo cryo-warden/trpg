@@ -1,0 +1,1 @@
+"As an application developer, I want a dev-only escape hatch that injects accounts and other pre-made state (players, roles, world snapshots) appropriate to the task I am working on, so that development and testing are not slowed by walking the full account-creation and multi-device confirmation flows every time."
