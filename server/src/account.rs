@@ -250,6 +250,28 @@ pub fn create_account(ctx: &ReducerContext, name: String) -> Result<(), String> 
     crate::reducers::on_account_created(ctx, account.id)
 }
 
+/// Admin provisioning: creates a CLAIMABLE account — password set, player
+/// created, no identity attached — so its first device attaches through the
+/// ordinary password login. This is how dev bundles seed playtest accounts
+/// and how a GM will hand out accounts; the same no-lurking rule applies the
+/// moment the first device claims it.
+#[reducer]
+pub fn provision_account(
+    ctx: &ReducerContext,
+    name: String,
+    password: String,
+    require_rotation: bool,
+) -> Result<(), String> {
+    crate::role::require_admin(ctx)?;
+    let mut account = insert_account(ctx, name)?;
+    store_password(ctx, account.id, &password)?;
+    if require_rotation {
+        account.requires_password_rotation = true;
+        ctx.db.accounts().id().update(account.clone());
+    }
+    crate::reducers::on_account_created(ctx, account.id)
+}
+
 /// Password login exists ONLY to bootstrap an account that no device holds
 /// yet (e.g. the publish-time admin account). The moment any identity is
 /// attached, this path closes: further devices must pass the visible,

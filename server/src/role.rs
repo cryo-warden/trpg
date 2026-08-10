@@ -91,6 +91,32 @@ pub fn require_admin(ctx: &ReducerContext) -> Result<AccountId, String> {
     Ok(account_id)
 }
 
+/// Admin-gated role assignment (e.g. dev bundles making their claimable
+/// playtest account an admin, or a GM promoting another account).
+#[reducer]
+pub fn grant_role(ctx: &ReducerContext, account_name: String, role_name: String) -> Result<(), String> {
+    require_admin(ctx)?;
+    let account = ctx
+        .db
+        .accounts()
+        .name()
+        .find(account_name.to_owned())
+        .ok_or_else(|| format!("No account is named \"{}\".", account_name))?;
+    let role_id = role_id(ctx, &role_name)?;
+    if account_has_role(ctx, account.id, role_id) {
+        return Err(format!(
+            "Account \"{}\" already has the \"{}\" role.",
+            account_name, role_name
+        ));
+    }
+    ctx.db.account_roles().insert(AccountRole {
+        id: 0,
+        account_id: account.id,
+        role_id,
+    });
+    Ok(())
+}
+
 /// Called by the publish action, once, right after publishing. Creates the
 /// admin account with the token as its provisional password and flags it for
 /// rotation. Refuses to run twice; between publish and this call there is a

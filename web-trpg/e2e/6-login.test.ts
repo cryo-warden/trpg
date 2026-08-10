@@ -152,3 +152,42 @@ test("an unattached connection owns nothing and cannot act", async () => {
     deviceC.reducers.act({ actionId: 0, targetEntityId: 1n }),
   ).rejects.toThrow(/Cannot find a player entity/);
 });
+
+test("admins provision claimable accounts; a fresh device claims by password", async () => {
+  // Provisioning and role granting are admin-gated.
+  await expect(
+    deviceA.reducers.provisionAccount({
+      name: "nope",
+      password: "x",
+      requireRotation: false,
+    }),
+  ).rejects.toThrow(/admin role/);
+
+  await admin.reducers.provisionAccount({
+    name: "provisioned",
+    password: "hunter2",
+    requireRotation: false,
+  });
+  await admin.reducers.grantRole({
+    accountName: "provisioned",
+    roleName: "admin",
+  });
+
+  // No identity holds the provisioned account, so password login claims it —
+  // with the right password only.
+  await expect(
+    deviceC.reducers.loginWithPassword({
+      accountName: "provisioned",
+      password: "wrong",
+    }),
+  ).rejects.toThrow(/does not match/);
+  await deviceC.reducers.loginWithPassword({
+    accountName: "provisioned",
+    password: "hunter2",
+  });
+  await waitFor(() => deviceC.db.account_identities.count() === 4n, 30000);
+
+  // With the granted role and no rotation pending, the claimed account holds
+  // real admin power.
+  await deviceC.reducers.pushAssets({ assetPack: minimalPack() });
+});

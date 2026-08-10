@@ -12,13 +12,17 @@ export const ROTATED_ADMIN_PASSWORD = "e2e-rotated-password";
  * no identity holds the account), then rotate — destroying the token's hash
  * and unlocking privileged actions for this connection.
  */
-export const claimAdmin = async (connection: DbConnection): Promise<void> => {
-  await connection.reducers.bootstrapAdmin({ adminToken: TEST_ADMIN_TOKEN });
+export const claimAdmin = async (
+  connection: DbConnection,
+  {
+    token = TEST_ADMIN_TOKEN,
+    newPassword = ROTATED_ADMIN_PASSWORD,
+  }: { token?: string; newPassword?: string } = {},
+): Promise<void> => {
+  await connection.reducers.bootstrapAdmin({ adminToken: token });
   await connection.reducers.loginWithPassword({
     accountName: "admin",
-    password: TEST_ADMIN_TOKEN,
+    password: token,
   });
-  await connection.reducers.setPassword({
-    newPassword: ROTATED_ADMIN_PASSWORD,
-  });
+  await connection.reducers.setPassword({ newPassword });
 };

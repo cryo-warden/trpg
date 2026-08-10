@@ -38,7 +38,9 @@ import AcceptLoginRequestReducer from "./accept_login_request_reducer";
 import ActReducer from "./act_reducer";
 import BootstrapAdminReducer from "./bootstrap_admin_reducer";
 import CreateAccountReducer from "./create_account_reducer";
+import GrantRoleReducer from "./grant_role_reducer";
 import LoginWithPasswordReducer from "./login_with_password_reducer";
+import ProvisionAccountReducer from "./provision_account_reducer";
 import PushAssetsReducer from "./push_assets_reducer";
 import RefuseLoginRequestReducer from "./refuse_login_request_reducer";
 import RequestLoginReducer from "./request_login_reducer";
@@ -577,7 +579,9 @@ const reducersSchema = __reducers(
   __reducerSchema("act", ActReducer),
   __reducerSchema("bootstrap_admin", BootstrapAdminReducer),
   __reducerSchema("create_account", CreateAccountReducer),
+  __reducerSchema("grant_role", GrantRoleReducer),
   __reducerSchema("login_with_password", LoginWithPasswordReducer),
+  __reducerSchema("provision_account", ProvisionAccountReducer),
   __reducerSchema("push_assets", PushAssetsReducer),
   __reducerSchema("refuse_login_request", RefuseLoginRequestReducer),
   __reducerSchema("request_login", RequestLoginReducer),

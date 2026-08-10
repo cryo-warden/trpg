@@ -118,6 +118,38 @@
       ],
       "dir": "."
     },
+    "publish-dev-bare": {
+      "command": [
+        "bun",
+        "scripts/dev-publish.ts",
+        "bare"
+      ],
+      "dir": "web-trpg"
+    },
+    "publish-dev-seeded": {
+      "command": [
+        "bun",
+        "scripts/dev-publish.ts",
+        "seeded"
+      ],
+      "dir": "web-trpg"
+    },
+    "publish-dev-combat": {
+      "command": [
+        "bun",
+        "scripts/dev-publish.ts",
+        "combat"
+      ],
+      "dir": "web-trpg"
+    },
+    "publish-dev-mapgen": {
+      "command": [
+        "bun",
+        "scripts/dev-publish.ts",
+        "mapgen"
+      ],
+      "dir": "web-trpg"
+    },
     "test": {
       "bundle": [
         "test-web",

@@ -27,9 +27,10 @@ const emptyPack = (): AssetPack => ({
   locationMaps: [],
   namedInstantiateEntityBlobs: [],
   instantiateEntityBlobs: [],
-  // Never instantiated in these scenarios (no client triggers new_player), but
-  // AssetPack requires one; a name-only blob is a valid placeholder.
-  newPlayerBlob: blob({ name: { name: "unused" } }),
+  // An empty blob: accounts created against this pack get a bare player
+  // entity. Deliberately nameless — names are unique, and any number of
+  // accounts may be created.
+  newPlayerBlob: blob({}),
 });
 
 /** The smallest valid bundle: a single action and no world entities. */
