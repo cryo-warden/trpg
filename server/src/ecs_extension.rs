@@ -1,5 +1,7 @@
 use crate::{
-    asset::ReducerContextExtension, entity::*,
+    account::{account_of, AccountId},
+    asset::ReducerContextExtension,
+    entity::*,
     entity_handle_extension::InstantiateEntityBlobExtension,
 };
 use ecs::Ecs;
@@ -18,13 +20,19 @@ pub trait EcsExtension<'a> {
         location_entity_id: u64,
         destination_entity_id: u64,
     ) -> Result<EntityHandle<'a>, String>;
+    fn from_player_account(
+        self,
+        account_id: AccountId,
+    ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>>;
+    /// Resolves the identity to its account at this boundary; an unattached
+    /// identity has no player.
     fn from_player_identity(
         self,
         identity: Identity,
     ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>>;
     fn new_player(
         self,
-        identity: Identity,
+        account_id: AccountId,
     ) -> Result<player_controller_component::WithComponent<EntityHandle<'a>>, String>;
 }
 
@@ -59,20 +67,27 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             .upsert_new_path(destination_entity_id)
             .into_handle())
     }
+    fn from_player_account(
+        self,
+        account_id: AccountId,
+    ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>> {
+        self.db
+            .player_controller_components()
+            .account_id()
+            .find(account_id)
+            .map(|p| self.into_player_controller_handle(p))
+    }
+
     fn from_player_identity(
         self,
         identity: Identity,
     ) -> Option<player_controller_component::WithComponent<EntityHandle<'a>>> {
-        self.db
-            .player_controller_components()
-            .identity()
-            .find(identity)
-            .map(|p| self.into_player_controller_handle(p))
+        account_of(self.ctx, identity).and_then(|account_id| self.from_player_account(account_id))
     }
 
     fn new_player(
         self,
-        identity: Identity,
+        account_id: AccountId,
     ) -> Result<player_controller_component::WithComponent<EntityHandle<'a>>, String> {
         // The new-player blob carries its own references (e.g. the starting
         // allegiance as a Named selector), so instantiation needs nothing
@@ -84,6 +99,6 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
                     .ok_or("Failed to obtain the new player entity blob.")?,
                 &self.instantiation_scope(),
             )?
-            .upsert_new_player_controller(identity))
+            .upsert_new_player_controller(account_id))
     }
 }

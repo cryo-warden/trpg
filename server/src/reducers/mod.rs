@@ -2,7 +2,7 @@ use ecs::WithEcs;
 use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table, TimeDuration};
 
 use crate::{
-    asset::ReducerContextExtension,
+    account::{account_of, AccountId},
     ecs_extension::EcsExtension,
     entity::*,
     reducers::system_timer::{system_timers, SystemTimer},
@@ -22,42 +22,36 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
+/// A player exists per ACCOUNT and is created exactly once, when the account
+/// is created — never implicitly at connect. Called from create_account.
+pub fn on_account_created(ctx: &ReducerContext, account_id: AccountId) -> Result<(), String> {
+    let p = ctx.ecs().new_player(account_id)?;
+    log::debug!("Created player {} for account {}.", p.entity_id(), account_id);
+    Ok(())
+}
+
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
-    if ctx.get_new_player_blob().is_none() {
-        log::debug!("Connected {} before asset initialization.", ctx.sender());
-        Ok(())
-    } else if let Some(p) = ctx.ecs().from_player_identity(ctx.sender()) {
-        p.delete_player_deactivation_timer();
-        log::debug!(
-            "Reconnected {} to {} and removed deactivation timer.",
-            ctx.sender(),
-            p.entity_id()
-        );
-        Ok(())
-    } else {
-        match ctx.ecs().new_player(ctx.sender()) {
-            Ok(p) => {
-                log::debug!(
-                    "Connected {} to new player {}.",
-                    ctx.sender(),
-                    p.entity_id()
-                );
-                Ok(())
-            }
-            Err(err) => {
-                // WIP Check if connected user is admin and DB is not initialized.
-                // If admin and DB is not ready, do not emit any error.
-                // Otherwise, emit the error.
-                log::debug!(
-                    "Connected {}, but no player could be found or created. {}",
-                    ctx.sender(),
-                    err
-                );
-                Err(err)
-            }
-        }
-    }
+    // An unattached identity may connect (it needs the connection to create an
+    // account or request a login) but owns nothing and triggers nothing.
+    let Some(account_id) = account_of(ctx, ctx.sender()) else {
+        log::debug!("Connected unattached identity {}.", ctx.sender());
+        return Ok(());
+    };
+    let Some(p) = ctx.ecs().from_player_account(account_id) else {
+        return Err(format!(
+            "Account {} has no player entity; account creation should have made one.",
+            account_id
+        ));
+    };
+    p.delete_player_deactivation_timer();
+    log::debug!(
+        "Reconnected {} (account {}) to {} and removed deactivation timer.",
+        ctx.sender(),
+        account_id,
+        p.entity_id()
+    );
+    Ok(())
 }
 
 #[reducer(client_disconnected)]

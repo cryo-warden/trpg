@@ -22,7 +22,7 @@ test("EventsPanel narrates observable events as they arrive", () => {
   const observableEvents = mockTable<EntityEvent>([]);
   const wrapper = gameWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
       location_components: mockTable([{ entityId: 1n, locationEntityId: 10n }]),
       appearance_features_components: mockTable([
         { entityId: 2n, appearanceFeatureIndexes: [3] }, // "path"
@@ -46,7 +46,7 @@ test("EventsPanel clears the panel selection when clicked", () => {
   const modes: string[] = [];
   const wrapper = gameWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
       location_components: mockTable([{ entityId: 1n, locationEntityId: 10n }]),
       appearance_features_components: mockTable([]),
       allegiance_components: mockTable([]),

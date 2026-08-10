@@ -7,8 +7,14 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import ActReducer from "../act_reducer";
+import CreateAccountReducer from "../create_account_reducer";
 import PushAssetsReducer from "../push_assets_reducer";
+import RequestLoginReducer from "../request_login_reducer";
+import RespondLoginReducer from "../respond_login_reducer";
 
 export type ActParams = __Infer<typeof ActReducer>;
+export type CreateAccountParams = __Infer<typeof CreateAccountReducer>;
 export type PushAssetsParams = __Infer<typeof PushAssetsReducer>;
+export type RequestLoginParams = __Infer<typeof RequestLoginReducer>;
+export type RespondLoginParams = __Infer<typeof RespondLoginReducer>;
 

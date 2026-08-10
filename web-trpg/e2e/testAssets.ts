@@ -1,4 +1,3 @@
-import type { Identity } from "spacetimedb";
 import type { AssetPack, EntityBlobAuthor } from "../src/stdb/types";
 
 /**
@@ -42,25 +41,23 @@ export const minimalPack = (): AssetPack => ({
 });
 
 /**
- * A direct-seeded player world: a player entity owned by `playerIdentity`, in a
- * location, with hp — no new_player flow, no map generation, no production
- * assets. Because it carries no baseline, the stats system leaves its hp alone.
+ * A player world under the accounts model: the player entity is created by
+ * create_account from this new-player blob (a located, hp-carrying body — no
+ * baseline, so the stats system leaves its hp alone). No map generation, no
+ * production assets.
  */
-export const playerPack = (playerIdentity: Identity): AssetPack => ({
+export const playerPack = (): AssetPack => ({
   ...emptyPack(),
-  instantiateEntityBlobs: [
-    blob({
-      playerController: { identity: playerIdentity },
-      location: { locationEntityId: { tag: "Literal", value: 999n } },
-      hp: {
-        hp: 5,
-        mhp: 5,
-        defense: 0,
-        accumulatedDamage: 0,
-        accumulatedHealing: 0,
-      },
-    }),
-  ],
+  newPlayerBlob: blob({
+    location: { locationEntityId: { tag: "Literal", value: 999n } },
+    hp: {
+      hp: 5,
+      mhp: 5,
+      defense: 0,
+      accumulatedDamage: 0,
+      accumulatedHealing: 0,
+    },
+  }),
 });
 
 /**
@@ -156,14 +153,15 @@ export const mapGenPack = (): AssetPack => ({
 });
 
 /**
- * A minimal combat world: one attack action, a player owned by `playerIdentity`,
- * and a co-located hostile enemy with hp. Neither fighter has a baseline, so the
- * stats system leaves their seeded hp alone (only damage changes it).
+ * A minimal combat world: one attack action, a new-player blob for the
+ * account the test creates, and a co-located hostile enemy with hp. Neither
+ * fighter has a baseline, so the stats system leaves their seeded hp alone
+ * (only damage changes it).
  */
-export const combatPack = (
-  playerIdentity: Identity,
-  { attackDamage = 3, enemyHp = 10 }: { attackDamage?: number; enemyHp?: number } = {},
-): AssetPack => ({
+export const combatPack = ({
+  attackDamage = 3,
+  enemyHp = 10,
+}: { attackDamage?: number; enemyHp?: number } = {}): AssetPack => ({
   ...emptyPack(),
   actions: [
     {
@@ -174,13 +172,12 @@ export const combatPack = (
       },
     },
   ],
+  newPlayerBlob: blob({
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    actionNames: ["test_attack"],
+    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+  }),
   instantiateEntityBlobs: [
-    blob({
-      playerController: { identity: playerIdentity },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
-      actionNames: ["test_attack"],
-      allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
-    }),
     blob({
       enemyController: {},
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },

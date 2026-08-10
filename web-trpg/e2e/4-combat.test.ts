@@ -18,7 +18,7 @@ beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
 
-  const { connection, identity } = await connect();
+  const { connection } = await connect();
   player = connection;
   player
     .subscriptionBuilder()
@@ -28,7 +28,8 @@ beforeAll(async () => {
       "SELECT * FROM actions",
     ]);
 
-  player.reducers.pushAssets({ assetPack: combatPack(identity, { enemyHp: 10 }) });
+  await player.reducers.pushAssets({ assetPack: combatPack({ enemyHp: 10 }) });
+  await player.reducers.createAccount({ name: "fighter" });
 
   // The only entity with hp is the seeded enemy; the player controller is ours.
   await waitFor(() => player.db.hp_components.count() > 0, 30000);

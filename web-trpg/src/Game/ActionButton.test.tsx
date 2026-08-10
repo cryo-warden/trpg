@@ -12,7 +12,7 @@ test("ActionButton shows the action name and queues the action on click", () => 
   const bopId = actionIdOf("bop");
   const wrapper = gameWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
       location_components: mockTable([{ entityId: 1n, locationEntityId: 10n }]),
       action_state_components: mockTable([]),
       queued_action_state_components: mockTable([]),

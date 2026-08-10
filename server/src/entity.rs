@@ -1,6 +1,6 @@
 use crate::{action::ActionId, asset::stat_block::StatBlock};
 use ecs::entity;
-use spacetimedb::{Identity, SpacetimeType, Timestamp};
+use spacetimedb::{SpacetimeType, Timestamp};
 
 entity!(
     #[struct_attrs]
@@ -92,8 +92,12 @@ entity!(
 
     #[component(player_controller in player_controller_components)]
     struct PlayerControllerComponent {
+        // The owning ACCOUNT (durable principal), never a connection
+        // identity: identities resolve to accounts at the reducer boundary.
+        // Deliberately a raw u64, not EntityId — accounts are not entities,
+        // and this must not become an entity-reference selector in blobs.
         #[unique]
-        pub identity: Identity,
+        pub account_id: u64,
     }
 
     #[component(enemy_controller in enemy_controller_components)]

@@ -18,7 +18,7 @@ beforeAll(async () => {
 
   seeder = (await connect()).connection;
   seeder.subscriptionBuilder().subscribe(["SELECT * FROM actions"]);
-  seeder.reducers.pushAssets({ assetPack: mapGenPack() });
+  await seeder.reducers.pushAssets({ assetPack: mapGenPack() });
   await waitFor(() => seeder.db.actions.count() > 0);
 
   player = (await connect()).connection;
@@ -31,6 +31,7 @@ beforeAll(async () => {
       "SELECT * FROM allegiance_components",
       "SELECT * FROM named_entities",
     ]);
+  await player.reducers.createAccount({ name: "explorer" });
 }, 60000);
 
 afterAll(() => {

@@ -32,7 +32,7 @@ test("TargetProvider clears a target that is not co-located with the player", ()
   const identity = {} as Identity;
   const Stdb = stdbWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
       location_components: mockTable([
         { entityId: 1n, locationEntityId: 10n }, // player
         { entityId: 2n, locationEntityId: 20n }, // elsewhere

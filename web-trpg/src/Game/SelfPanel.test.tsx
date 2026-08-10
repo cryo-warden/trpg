@@ -10,7 +10,7 @@ test("SelfPanel renders the player's detailed panel with self-valid action butto
   const buffId = actionIdOf("divine_heal");
   const wrapper = gameWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
       location_components: mockTable([{ entityId: 1n, locationEntityId: 10n }]),
       appearance_features_components: mockTable([
         { entityId: 1n, appearanceFeatureIndexes: [0] },

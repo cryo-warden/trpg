@@ -9,7 +9,7 @@ test("EntitiesDisplay renders an EntityPanel per entity id", () => {
   const identity = {} as Identity;
   const wrapper = gameWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
       location_components: mockTable([{ entityId: 1n, locationEntityId: 10n }]),
       appearance_features_components: mockTable([
         { entityId: 2n, appearanceFeatureIndexes: [0] },

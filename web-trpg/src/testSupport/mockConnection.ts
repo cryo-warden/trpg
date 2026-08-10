@@ -30,6 +30,7 @@ export type MockTable<Row> = {
   entityId: { find: (id: bigint) => Row | undefined };
   identity: { find: (id: Identity) => Row | undefined };
   id: { find: (id: number) => Row | undefined };
+  account_id: { find: (id: bigint) => Row | undefined };
   /** Test drivers: mutate rows and fire the matching subscription. */
   insertRow: (row: Row) => void;
   updateRow: (match: (row: Row) => boolean, next: Row) => void;
@@ -59,6 +60,7 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
     entityId: { find: (id) => findBy("entityId", id) },
     identity: { find: (id) => findBy("identity", id) },
     id: { find: (id) => findBy("id", id) },
+    account_id: { find: (id) => findBy("accountId", id) },
     insertRow: (row) => {
       rows = [...rows, row];
       fire(inserts, row);
@@ -91,6 +93,10 @@ export const mockAssetTables = () => ({
 export const actionIdOf = (name: ActionName): number =>
   Object.keys(ACTIONS).indexOf(name);
 
+/** The account every mocked identity belongs to unless a test overrides the
+ * account_identities table. */
+export const MOCK_ACCOUNT_ID = 1n;
+
 export const appearanceFeatureIndexOf = (name: AppearanceFeatureName): number =>
   Object.keys(APPEARANCE_FEATURES).indexOf(name);
 
@@ -106,7 +112,15 @@ export const stdbWrapper = (
   reducers: Record<string, unknown> = {},
 ) => {
   const connection = {
-    db: { ...mockAssetTables(), ...tables },
+    db: {
+      ...mockAssetTables(),
+      account_identities: mockTable([
+        { identity, accountId: MOCK_ACCOUNT_ID },
+      ]),
+      login_requests: mockTable([]),
+      login_responses: mockTable([]),
+      ...tables,
+    },
     reducers,
   } as unknown as DbConnection;
   const value = { connection, identity };

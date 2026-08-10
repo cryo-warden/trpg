@@ -5,9 +5,9 @@ import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
 import { playerPack } from "./testAssets";
 
-// Phase 2: a small world seeded directly (no production assets, no new_player /
-// map generation). A player entity owned by the connecting identity is present
-// with vitals and a location.
+// Phase 2: a small world under the accounts model (no production assets, no
+// map generation). Creating an account creates the player entity from the
+// pack's new-player blob, with vitals and a location.
 
 let player: DbConnection;
 
@@ -20,7 +20,7 @@ beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
 
-  const { connection, identity } = await connect();
+  const { connection } = await connect();
   player = connection;
   player
     .subscriptionBuilder()
@@ -29,7 +29,8 @@ beforeAll(async () => {
       "SELECT * FROM hp_components",
       "SELECT * FROM location_components",
     ]);
-  player.reducers.pushAssets({ assetPack: playerPack(identity) });
+  await player.reducers.pushAssets({ assetPack: playerPack() });
+  await player.reducers.createAccount({ name: "world_tester" });
   await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
 }, 60000);
 

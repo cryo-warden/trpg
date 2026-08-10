@@ -35,11 +35,16 @@ import {
 
 // Import all reducer arg schemas
 import ActReducer from "./act_reducer";
+import CreateAccountReducer from "./create_account_reducer";
 import PushAssetsReducer from "./push_assets_reducer";
+import RequestLoginReducer from "./request_login_reducer";
+import RespondLoginReducer from "./respond_login_reducer";
 
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import AccountIdentitiesRow from "./account_identities_table";
+import AccountsRow from "./accounts_table";
 import ActionHotkeysComponentsRow from "./action_hotkeys_components_table";
 import ActionStateComponentsRow from "./action_state_components_table";
 import ActionStepsRow from "./action_steps_table";
@@ -60,6 +65,9 @@ import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_c
 import HpComponentsRow from "./hp_components_table";
 import LocationComponentsRow from "./location_components_table";
 import LocationMapComponentsRow from "./location_map_components_table";
+import LoginRequestVotersRow from "./login_request_voters_table";
+import LoginRequestsRow from "./login_requests_table";
+import LoginResponsesRow from "./login_responses_table";
 import NameComponentsRow from "./name_components_table";
 import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
@@ -77,6 +85,35 @@ import TraitsStatBlockDirtyFlagComponentsRow from "./traits_stat_block_dirty_fla
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
+  account_identities: __table({
+    name: 'account_identities',
+    indexes: [
+      { accessor: 'account_id', name: 'account_identities_account_id_idx_btree', algorithm: 'btree', columns: [
+        'accountId',
+      ] },
+      { accessor: 'identity', name: 'account_identities_identity_idx_btree', algorithm: 'btree', columns: [
+        'identity',
+      ] },
+    ],
+    constraints: [
+      { name: 'account_identities_identity_key', constraint: 'unique', columns: ['identity'] },
+    ],
+  }, AccountIdentitiesRow),
+  accounts: __table({
+    name: 'accounts',
+    indexes: [
+      { accessor: 'id', name: 'accounts_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'name', name: 'accounts_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'accounts_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'accounts_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, AccountsRow),
   action_hotkeys_components: __table({
     name: 'action_hotkeys_components',
     indexes: [
@@ -311,6 +348,48 @@ const tablesSchema = __schema({
       { name: 'location_map_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, LocationMapComponentsRow),
+  login_request_voters: __table({
+    name: 'login_request_voters',
+    indexes: [
+      { accessor: 'id', name: 'login_request_voters_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'login_request_id', name: 'login_request_voters_login_request_id_idx_btree', algorithm: 'btree', columns: [
+        'loginRequestId',
+      ] },
+    ],
+    constraints: [
+      { name: 'login_request_voters_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, LoginRequestVotersRow),
+  login_requests: __table({
+    name: 'login_requests',
+    indexes: [
+      { accessor: 'account_id', name: 'login_requests_account_id_idx_btree', algorithm: 'btree', columns: [
+        'accountId',
+      ] },
+      { accessor: 'id', name: 'login_requests_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'login_requests_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, LoginRequestsRow),
+  login_responses: __table({
+    name: 'login_responses',
+    indexes: [
+      { accessor: 'id', name: 'login_responses_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'login_request_id', name: 'login_responses_login_request_id_idx_btree', algorithm: 'btree', columns: [
+        'loginRequestId',
+      ] },
+    ],
+    constraints: [
+      { name: 'login_responses_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, LoginResponsesRow),
   name_components: __table({
     name: 'name_components',
     indexes: [
@@ -366,16 +445,16 @@ const tablesSchema = __schema({
   player_controller_components: __table({
     name: 'player_controller_components',
     indexes: [
+      { accessor: 'account_id', name: 'player_controller_components_account_id_idx_btree', algorithm: 'btree', columns: [
+        'accountId',
+      ] },
       { accessor: 'entity_id', name: 'player_controller_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
-      { accessor: 'identity', name: 'player_controller_components_identity_idx_btree', algorithm: 'btree', columns: [
-        'identity',
-      ] },
     ],
     constraints: [
+      { name: 'player_controller_components_account_id_key', constraint: 'unique', columns: ['accountId'] },
       { name: 'player_controller_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-      { name: 'player_controller_components_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, PlayerControllerComponentsRow),
   player_deactivation_timer_components: __table({
@@ -460,7 +539,10 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("act", ActReducer),
+  __reducerSchema("create_account", CreateAccountReducer),
   __reducerSchema("push_assets", PushAssetsReducer),
+  __reducerSchema("request_login", RequestLoginReducer),
+  __reducerSchema("respond_login", RespondLoginReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

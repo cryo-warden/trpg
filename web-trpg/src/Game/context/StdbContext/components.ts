@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { getActionOptions } from "../../domain/actionOptions";
 import { ActionId, EntityId } from "../../trpg";
+import { useMyAccountId } from "./account";
 import { useActionAsset, useActionAssetOf } from "./assetLookup";
 import { RowType } from "./RowType";
-import { useStdbIdentity } from "./useStdb";
 import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
 import {
@@ -151,21 +151,19 @@ export const useLocationEntities = (locationEntityId: EntityId | null) => {
 };
 
 const usePlayerControllerComponent = () => {
-  const identity = useStdbIdentity();
+  // Ownership hangs off the ACCOUNT, never the connection identity.
+  const accountId = useMyAccountId();
   return useTableData(
     "player_controller_components",
     (table) => {
+      if (accountId == null) {
+        return null;
+      }
       // TODO Remove "as any" cast after ranged index is correctly replaced with unique index in generated type.
-      // type Flat<T> = {
-      //   [k in keyof T]: T[k];
-      // };
-      // type A = Flat<typeof table>;
-      // type AK = keyof A;
-      // type B = Flat<typeof table.identity>;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (table.identity as any).find(identity) ?? null;
+      return (table.account_id as any).find(accountId) ?? null;
     },
-    [identity],
+    [accountId],
   );
 };
 

@@ -10,6 +10,7 @@
 #![deny(clippy::unimplemented)]
 #![deny(clippy::unreachable)]
 
+mod account;
 mod action;
 mod appearance;
 mod asset;

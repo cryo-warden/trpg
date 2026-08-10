@@ -9,7 +9,7 @@ test("EntityPanel shows an entity's name and vitals, and targets it on click", (
   const identity = {} as Identity;
   const wrapper = gameWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 1n, identity }]),
+      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
       location_components: mockTable([
         { entityId: 1n, locationEntityId: 10n },
         { entityId: 2n, locationEntityId: 10n },

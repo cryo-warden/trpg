@@ -10,6 +10,20 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const Account = __t.object("Account", {
+  id: __t.u64(),
+  name: __t.string(),
+  createdAt: __t.timestamp(),
+});
+export type Account = __Infer<typeof Account>;
+
+export const AccountIdentity = __t.object("AccountIdentity", {
+  identity: __t.identity(),
+  accountId: __t.u64(),
+  attachedAt: __t.timestamp(),
+});
+export type AccountIdentity = __Infer<typeof AccountIdentity>;
+
 export const Action = __t.object("Action", {
   id: __t.u32(),
   name: __t.string(),
@@ -627,6 +641,50 @@ export const LocationMapThemeAuthor = __t.object("LocationMapThemeAuthor", {
 });
 export type LocationMapThemeAuthor = __Infer<typeof LocationMapThemeAuthor>;
 
+export const LoginFinalizeTimer = __t.object("LoginFinalizeTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+  loginRequestId: __t.u64(),
+});
+export type LoginFinalizeTimer = __Infer<typeof LoginFinalizeTimer>;
+
+export const LoginRequest = __t.object("LoginRequest", {
+  id: __t.u64(),
+  accountId: __t.u64(),
+  identity: __t.identity(),
+  requestedAt: __t.timestamp(),
+  get status() {
+    return LoginRequestStatus;
+  },
+  quorumReachedAt: __t.option(__t.timestamp()),
+  resolvedAt: __t.option(__t.timestamp()),
+});
+export type LoginRequest = __Infer<typeof LoginRequest>;
+
+// The tagged union or sum type for the algebraic type `LoginRequestStatus`.
+export const LoginRequestStatus = __t.enum("LoginRequestStatus", {
+  Pending: __t.unit(),
+  Accepted: __t.unit(),
+  Refused: __t.unit(),
+});
+export type LoginRequestStatus = __Infer<typeof LoginRequestStatus>;
+
+export const LoginRequestVoter = __t.object("LoginRequestVoter", {
+  id: __t.u64(),
+  loginRequestId: __t.u64(),
+  identity: __t.identity(),
+});
+export type LoginRequestVoter = __Infer<typeof LoginRequestVoter>;
+
+export const LoginResponse = __t.object("LoginResponse", {
+  id: __t.u64(),
+  loginRequestId: __t.u64(),
+  identity: __t.identity(),
+  accepted: __t.bool(),
+  respondedAt: __t.timestamp(),
+});
+export type LoginResponse = __Infer<typeof LoginResponse>;
+
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),
   name: __t.string(),
@@ -715,12 +773,12 @@ export type PathComponentBlob = __Infer<typeof PathComponentBlob>;
 
 export const PlayerControllerComponent = __t.object("PlayerControllerComponent", {
   entityId: __t.u64(),
-  identity: __t.identity(),
+  accountId: __t.u64(),
 });
 export type PlayerControllerComponent = __Infer<typeof PlayerControllerComponent>;
 
 export const PlayerControllerComponentBlob = __t.object("PlayerControllerComponentBlob", {
-  identity: __t.identity(),
+  accountId: __t.u64(),
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
 

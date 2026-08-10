@@ -11,6 +11,7 @@ import {
 } from "spacetimedb";
 
 export default __t.row({
-  entityId: __t.u64().primaryKey().name("entity_id"),
+  identity: __t.identity().primaryKey(),
   accountId: __t.u64().name("account_id"),
+  attachedAt: __t.timestamp().name("attached_at"),
 });

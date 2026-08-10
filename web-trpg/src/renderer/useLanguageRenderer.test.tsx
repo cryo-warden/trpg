@@ -21,7 +21,7 @@ test("useLanguageRenderer renders an event to React nodes for the player's viewp
   const identity = {} as Identity;
   const wrapper = stdbWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 99n, identity }]),
+      player_controller_components: mockTable([{ entityId: 99n, accountId: 1n }]),
       appearance_features_components: mockTable([
         { entityId: 1n, appearanceFeatureIndexes: [0] }, // noun "human"
         { entityId: 2n, appearanceFeatureIndexes: [3] }, // noun "path"

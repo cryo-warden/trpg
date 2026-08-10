@@ -78,7 +78,7 @@ test("useLocation returns the location entity id, or null when absent", () => {
 test("usePlayerEntity resolves the player's entity via the connected identity", () => {
   const identity = {} as Identity;
   const withPlayer = stdbWrapper(
-    { player_controller_components: mockTable([{ entityId: 5n, identity }]) },
+    { player_controller_components: mockTable([{ entityId: 5n, accountId: 1n }]) },
     identity,
   );
   expect(renderHook(() => usePlayerEntity(), { wrapper: withPlayer }).result.current).toBe(5n);
@@ -96,7 +96,7 @@ test("useActionHotkey maps the player's bound character code to a key", () => {
   const identity = {} as Identity;
   const wrapper = stdbWrapper(
     {
-      player_controller_components: mockTable([{ entityId: 5n, identity }]),
+      player_controller_components: mockTable([{ entityId: 5n, accountId: 1n }]),
       action_hotkeys_components: mockTable([
         { entityId: 5n, actionHotkeys: [{ actionId: attackId, characterCode: 65 }] },
       ]),
@@ -132,7 +132,9 @@ test("useActionOptions keeps only actions valid against the target", () => {
   const target = 2n;
   const wrapper = stdbWrapper(
     {
-      player_controller_components: mockTable([{ entityId: player, identity }]),
+      player_controller_components: mockTable([
+        { entityId: player, accountId: 1n },
+      ]),
       actions_components: mockTable([
         { entityId: player, actionIds: [attackId, buffId, moveId] },
       ]),
