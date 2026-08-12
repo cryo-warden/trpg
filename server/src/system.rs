@@ -99,7 +99,9 @@ pub fn action_system(ecs: Ecs) {
         // lands BEFORE this tick's blows.
         {
             let actor = ecs.find(entity_id);
-            let actor_size = actor.size().map_or(0, |c| i32::from(c.size));
+            let actor_size = actor
+                .total_stat_block()
+                .map_or(0, |t| i32::from(t.stat_block.size));
             let authored: i32 = effects
                 .iter()
                 .map(|effect| match effect {
@@ -121,10 +123,14 @@ pub fn action_system(ecs: Ecs) {
                         continue;
                     }
                     let victim = ecs.find(cohabitant.entity_id);
-                    if victim.morale().is_none() {
+                    // Only something that fights from a stance can be
+                    // forced into one: stanceless scenery is immune.
+                    if victim.active_stance().is_none() {
                         continue;
                     }
-                    let victim_size = victim.size().map_or(0, |c| i32::from(c.size));
+                    let victim_size = victim
+                        .total_stat_block()
+                        .map_or(0, |t| i32::from(t.stat_block.size));
                     let magnitude = max(0, actor_size - victim_size) + authored;
                     if magnitude > 0 {
                         queue.emit_early(ecs.new_event(

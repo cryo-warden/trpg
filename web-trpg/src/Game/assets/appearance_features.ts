@@ -106,3 +106,26 @@ export const APPEARANCE_FEATURES = {
 } satisfies Record<string, AppearanceFeatureAsset>;
 
 export type AppearanceFeatureName = keyof typeof APPEARANCE_FEATURES;
+
+/** Client-only language vocabulary, like ACTION_APPEARANCES: the possessive
+ * pronoun for each PERSON noun ("their" until an entity carries a gender —
+ * then "her"/"his" entries appear here). Anything unlisted is a thing or a
+ * beast: "its". */
+import type { PossessivePronoun } from "../domain/appearance";
+
+const PERSON_POSSESSIVES: Partial<
+  Record<AppearanceFeatureName, PossessivePronoun>
+> = {
+  human: "their",
+  bandit: "their",
+};
+
+const possessiveByNounText = new Map<string, PossessivePronoun>(
+  Object.entries(PERSON_POSSESSIVES).map(([name, possessive]) => [
+    APPEARANCE_FEATURES[name as AppearanceFeatureName].text,
+    possessive,
+  ]),
+);
+
+export const possessiveForNoun = (noun: string | null): PossessivePronoun =>
+  (noun != null ? possessiveByNounText.get(noun) : undefined) ?? "its";

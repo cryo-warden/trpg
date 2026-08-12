@@ -9,8 +9,14 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  StatBlock,
+} from "./types";
+
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  size: __t.i8(),
+  get statBlock() {
+    return StatBlock.name("stat_block");
+  },
 });

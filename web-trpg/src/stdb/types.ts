@@ -458,11 +458,8 @@ export const EntityBlob = __t.object("EntityBlob", {
   get ep() {
     return __t.option(EpComponentBlob);
   },
-  get size() {
-    return __t.option(SizeComponentBlob);
-  },
-  get morale() {
-    return __t.option(MoraleComponentBlob);
+  get totalStatBlock() {
+    return __t.option(TotalStatBlockComponentBlob);
   },
   get fearStatus() {
     return __t.option(FearStatusComponentBlob);
@@ -873,17 +870,6 @@ export const LoginResponse = __t.object("LoginResponse", {
 });
 export type LoginResponse = __Infer<typeof LoginResponse>;
 
-export const MoraleComponent = __t.object("MoraleComponent", {
-  entityId: __t.u64(),
-  morale: __t.i16(),
-});
-export type MoraleComponent = __Infer<typeof MoraleComponent>;
-
-export const MoraleComponentBlob = __t.object("MoraleComponentBlob", {
-  morale: __t.i16(),
-});
-export type MoraleComponentBlob = __Infer<typeof MoraleComponentBlob>;
-
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),
   name: __t.string(),
@@ -1025,17 +1011,6 @@ export const Role = __t.object("Role", {
   name: __t.string(),
 });
 export type Role = __Infer<typeof Role>;
-
-export const SizeComponent = __t.object("SizeComponent", {
-  entityId: __t.u64(),
-  size: __t.i8(),
-});
-export type SizeComponent = __Infer<typeof SizeComponent>;
-
-export const SizeComponentBlob = __t.object("SizeComponentBlob", {
-  size: __t.i8(),
-});
-export type SizeComponentBlob = __Infer<typeof SizeComponentBlob>;
 
 export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
   get key() {
@@ -1205,6 +1180,21 @@ export const TimerComponentBlob = __t.object("TimerComponentBlob", {
   timestamp: __t.timestamp(),
 });
 export type TimerComponentBlob = __Infer<typeof TimerComponentBlob>;
+
+export const TotalStatBlockComponent = __t.object("TotalStatBlockComponent", {
+  entityId: __t.u64(),
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type TotalStatBlockComponent = __Infer<typeof TotalStatBlockComponent>;
+
+export const TotalStatBlockComponentBlob = __t.object("TotalStatBlockComponentBlob", {
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type TotalStatBlockComponentBlob = __Infer<typeof TotalStatBlockComponentBlob>;
 
 export const Trait = __t.object("Trait", {
   id: __t.u32(),

@@ -6,6 +6,7 @@ import "./debug.css";
 import { reactMarkup } from "./reactMarkup";
 import { useGetClassName } from "./useGetClassName";
 import { useGetName } from "./useGetName";
+import { useGetPossessive } from "./useGetPossessive";
 import { CreateLanguage, renderEventWith } from "./language";
 
 /**
@@ -25,6 +26,7 @@ export const useLanguageRenderer = <TContext,>(
   const playerEntity = usePlayerEntity();
   const getName = useGetName(playerEntity);
   const getClassName = useGetClassName(playerEntity);
+  const getPossessive = useGetPossessive(playerEntity);
   const actionAppearanceOf = useActionAppearanceOf();
 
   const renderEvent = useMemo(() => {
@@ -33,11 +35,12 @@ export const useLanguageRenderer = <TContext,>(
       markup: reactMarkup,
       getName,
       getClassName,
+      getPossessive,
     });
     return (event: EntityEvent): ReactNode => (
       <div className="debug renderer">{render(event)}</div>
     );
-  }, [createLanguage, actionAppearanceOf, getName, getClassName]);
+  }, [createLanguage, actionAppearanceOf, getName, getClassName, getPossessive]);
 
   return { renderEvent };
 };

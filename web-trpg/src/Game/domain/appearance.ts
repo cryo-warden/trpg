@@ -21,6 +21,16 @@ const UNKNOWN_NOUN = "something";
  * The display name for an entity's appearance features: the highest-priority
  * noun, prefixed with up to three highest-priority adjectives.
  */
+/** The defining noun of a feature set, or null when featureless. */
+export const nounOf = (
+  features: AppearanceFeatureAsset[] | null,
+): string | null =>
+  features == null
+    ? null
+    : (features
+        .filter((feature) => feature.appearanceFeatureType.tag === "Noun")
+        .sort(byPriorityDescending)[0]?.text ?? null);
+
 export const describeAppearance = (
   features: AppearanceFeatureAsset[] | null,
 ): string => {
@@ -28,10 +38,7 @@ export const describeAppearance = (
     return UNKNOWN_NOUN;
   }
 
-  const noun =
-    features
-      .filter((feature) => feature.appearanceFeatureType.tag === "Noun")
-      .sort(byPriorityDescending)[0]?.text ?? UNKNOWN_NOUN;
+  const noun = nounOf(features) ?? UNKNOWN_NOUN;
 
   const adjectives = features
     .filter((feature) => feature.appearanceFeatureType.tag === "Adjective")
@@ -74,4 +81,36 @@ export const getName = ({
     return subject === named ? "yourself" : "you";
   }
   return describeAppearance(appearanceFeaturesOf(named));
+};
+
+/** Third-person possessives, chosen by personhood and gender. */
+export type PossessivePronoun = "their" | "its" | "her" | "his";
+
+export type PossessiveInputs = {
+  named: EntityId | string | undefined;
+  viewpoint: EntityId | null;
+  appearanceFeaturesOf: (entityId: EntityId) => AppearanceFeatureAsset[] | null;
+  /** The language vocabulary: possessive for a defining noun (null =
+   * unknown noun). */
+  possessiveForNoun: (noun: string | null) => PossessivePronoun;
+};
+
+/**
+ * The possessive pronoun for an entity from a viewpoint: second person gets
+ * "your"; third person defers to the vocabulary's personhood/gender choice
+ * for the entity's defining noun.
+ */
+export const getPossessive = ({
+  named,
+  viewpoint,
+  appearanceFeaturesOf,
+  possessiveForNoun,
+}: PossessiveInputs): string => {
+  if (named == null || typeof named === "string") {
+    return "its";
+  }
+  if (viewpoint === named) {
+    return "your";
+  }
+  return possessiveForNoun(nounOf(appearanceFeaturesOf(named)));
 };

@@ -29,6 +29,8 @@ export type Narration = {
 export const SUBJECT_RULE = "subject";
 export const OBJECT_RULE = "object";
 export const SENTENCE_RULE = "sentence";
+/** Render the slot as the entity's possessive pronoun ("your", "its", ...). */
+export const POSSESSIVE_RULE = "possessive";
 
 /** Tracks the current grammatical subject/object as a sentence is rendered. */
 export type NarrationContext = {
@@ -53,6 +55,9 @@ export type NarrationClassName = (
   entity: NarrationValue | undefined,
 ) => string;
 
+/** Resolves an entity to its possessive pronoun from the viewpoint. */
+export type NarrationPossessive = (entity: NarrationValue | undefined) => string;
+
 /**
  * Builds the per-value renderer for narration templates. Entity values are
  * named (respecting subject/object grammar and sentence capitalization) and
@@ -65,10 +70,12 @@ export const createNarrationRenderValue = <Node>({
   markup,
   getName,
   getClassName,
+  getPossessive,
 }: {
   markup: Markup<Node>;
   getName: NarrationName;
   getClassName: NarrationClassName;
+  getPossessive: NarrationPossessive;
 }): RenderValue<NarrationValue, NarrationContext, Node> => {
   return (value, ruleSet, context) => {
     if (typeof value !== "bigint") {
@@ -81,13 +88,14 @@ export const createNarrationRenderValue = <Node>({
         ? { ...context, object: value }
         : context;
 
-    const name =
-      getName({
-        named: value,
-        subject: ruleSet.has(OBJECT_RULE)
-          ? (context.subject ?? undefined)
-          : undefined,
-      }) ?? "";
+    const name = ruleSet.has(POSSESSIVE_RULE)
+      ? getPossessive(value)
+      : (getName({
+          named: value,
+          subject: ruleSet.has(OBJECT_RULE)
+            ? (context.subject ?? undefined)
+            : undefined,
+        }) ?? "");
 
     const text = ruleSet.has(SENTENCE_RULE) ? capitalize(name) : name;
 

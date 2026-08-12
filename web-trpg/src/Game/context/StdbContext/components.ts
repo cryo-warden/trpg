@@ -42,7 +42,7 @@ export const componentQueries = [
   "select * from actions_components",
   "select * from active_stance_components",
   "select * from known_stances_components",
-  "select * from morale_components",
+  "select * from total_stat_block_components",
   "select * from fear_status_components",
   "select * from courage_status_components",
   "select * from item_components",
@@ -51,6 +51,7 @@ export const componentQueries = [
   "select * from stance_loadouts_components",
   "select * from action_state_components",
   "select * from allegiance_components",
+  "select * from enemy_controller_components",
   "select * from appearance_features_components",
   "select * from attack_components",
   "select * from ep_components",
@@ -69,7 +70,11 @@ export const useActionStateComponent = createUseComponent(
 );
 export const useActionsComponent = createUseComponent("actions_components");
 export const useAttackComponent = createUseComponent("attack_components");
-export const useMoraleComponent = createUseComponent("morale_components");
+/** The stored applied total: rigid stats (morale, size, properties) read
+ * straight from here rather than per-stat components. */
+export const useTotalStatBlockComponent = createUseComponent(
+  "total_stat_block_components",
+);
 export const useFearStatusComponent = createUseComponent(
   "fear_status_components",
 );
@@ -152,8 +157,16 @@ export const useHostiles = (): EntityId[] => {
     (table) => [...table.iter()],
     [],
   );
+  const enemyControllerRows = useTableData(
+    "enemy_controller_components",
+    (table) => [...table.iter()],
+    [],
+  );
   return useMemo(() => {
     const hpIds = new Set(hpRows.map((row) => row.entityId));
+    const controllerIds = new Set(
+      enemyControllerRows.map((row) => row.entityId),
+    );
     const allegianceById = new Map(
       allegianceRows.map((row) => [row.entityId, row.allegianceEntityId]),
     );
@@ -163,10 +176,18 @@ export const useHostiles = (): EntityId[] => {
       cohabitants: cohabitantIds.map((entityId) => ({
         entityId,
         hasHp: hpIds.has(entityId),
+        canAct: controllerIds.has(entityId),
         allegianceId: allegianceById.get(entityId) ?? null,
       })),
     });
-  }, [playerEntity, playerAllegiance, cohabitantIds, hpRows, allegianceRows]);
+  }, [
+    playerEntity,
+    playerAllegiance,
+    cohabitantIds,
+    hpRows,
+    allegianceRows,
+    enemyControllerRows,
+  ]);
 };
 
 const useActiveStanceComponent = createUseComponent("active_stance_components");

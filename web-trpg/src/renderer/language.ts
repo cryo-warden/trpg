@@ -7,6 +7,7 @@ import {
   Narration,
   NarrationClassName,
   NarrationName,
+  NarrationPossessive,
   NarrationValue,
 } from "../Game/domain/narration";
 
@@ -55,6 +56,7 @@ export type Language<TContext> = {
     markup: Markup<Node>;
     getName: NarrationName;
     getClassName: NarrationClassName;
+    getPossessive: NarrationPossessive;
   }) => RenderValue<NarrationValue, TContext, Node>;
 };
 
@@ -69,16 +71,19 @@ export const renderEventWith = <TContext, Node>({
   markup,
   getName,
   getClassName,
+  getPossessive,
 }: {
   language: Language<TContext>;
   markup: Markup<Node>;
   getName: NarrationName;
   getClassName: NarrationClassName;
+  getPossessive: NarrationPossessive;
 }): ((event: EntityEvent) => Node | null) => {
   const renderValue = language.createRenderValue({
     markup,
     getName,
     getClassName,
+    getPossessive,
   });
   const compileTemplate = renderTemplate({ markup, renderValue });
 

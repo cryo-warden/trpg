@@ -27,8 +27,7 @@ import {
   AttackComponentBlob,
   HpComponentBlob,
   EpComponentBlob,
-  SizeComponentBlob,
-  MoraleComponentBlob,
+  TotalStatBlockComponentBlob,
   FearStatusComponentBlob,
   CourageStatusComponentBlob,
   BracedStatusComponentBlob,
@@ -111,11 +110,8 @@ export default __t.row({
   get ep() {
     return __t.option(EpComponentBlob);
   },
-  get size() {
-    return __t.option(SizeComponentBlob);
-  },
-  get morale() {
-    return __t.option(MoraleComponentBlob);
+  get totalStatBlock() {
+    return __t.option(TotalStatBlockComponentBlob).name("total_stat_block");
   },
   get fearStatus() {
     return __t.option(FearStatusComponentBlob).name("fear_status");

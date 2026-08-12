@@ -26,10 +26,12 @@ const myStanceId = (): number | undefined =>
     (row) => row.entityId === playerEntityId,
   )?.stanceId;
 
-const myMorale = () =>
-  [...player.db.morale_components.iter()].find(
+const myMorale = (): number | undefined => {
+  const total = [...player.db.total_stat_block_components.iter()].find(
     (row) => row.entityId === playerEntityId,
   );
+  return total?.statBlock.morale;
+};
 
 const myFear = () =>
   [...player.db.fear_status_components.iter()].find(
@@ -62,7 +64,7 @@ beforeAll(async () => {
       "SELECT * FROM stances",
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
-      "SELECT * FROM morale_components",
+      "SELECT * FROM total_stat_block_components",
       "SELECT * FROM fear_status_components",
       "SELECT * FROM courage_status_components",
       "SELECT * FROM ep_components",
@@ -91,7 +93,7 @@ test("the giant's attack breaks the mouse: fear status, forced cower, morale RIG
   // authored 3); rigid morale is untouched.
   await waitFor(() => myFear() != null, 30000);
   expect(myFear()?.intimidation).toBe(7);
-  expect(myMorale()?.morale).toBe(5);
+  expect(myMorale()).toBe(5);
 }, 60000);
 
 test("standing up under the giant's looming pressure is refused", async () => {
@@ -110,8 +112,8 @@ test("rally spends EP dynamically: exactly the deficit against the fear", async 
     targetEntityId: playerEntityId,
   });
   // Deficit = fear 7 + 1 - morale 5 = 3: EP drops by 3, and the courage
-  // status folds through the status cache into rigid morale (5 + 3 = 8).
-  await waitFor(() => (myMorale()?.morale ?? 0) === 8, 30000);
+  // status folds through the status cache into the stored total (5 + 3 = 8).
+  await waitFor(() => myMorale() === 8, 30000);
   expect(myEp()!.ep).toBe(epBefore - 3);
 }, 60000);
 
@@ -131,5 +133,5 @@ test("crawling away from the pressure lets the mouse stand back up", async () =>
   // Standing up shed the statuses: fear gone, courage spent, morale back
   // to its rigid 5.
   await waitFor(() => myFear() == null, 30000);
-  await waitFor(() => myMorale()?.morale === 5, 30000);
+  await waitFor(() => myMorale() === 5, 30000);
 }, 60000);

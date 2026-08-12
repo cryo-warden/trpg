@@ -173,7 +173,9 @@ secador::secador!(
                         // still rally and crawl.
                         ActionEffect::Intimidate(magnitude) => {
                             let victim = ecs.find(target_entity_id);
-                            if victim.morale().is_none() {
+                            // Only something that fights from a stance can
+                            // be forced into one.
+                            if victim.active_stance().is_none() {
                                 false
                             } else if let Some(mut fear) = victim.fear_status() {
                                 if *magnitude > fear.intimidation {
@@ -295,6 +297,8 @@ secador::secador!(
                         ActionEffect::Rally => {
                             let target = ecs.find(target_entity_id);
                             match (target.fear_status(), target.ep()) {
+                                // (Effective morale below reads the stored
+                                // total, courage already folded in.)
                                 (Some(fear), Some(mut ep_component)) => {
                                     let deficit = i32::from(fear.intimidation) + 1
                                         - target.effective_morale();

@@ -25,6 +25,7 @@ const getName: NarrationName = ({ named }) =>
     ? (names[named.toString()] ?? `entity ${named}`)
     : String(named ?? "");
 const getClassName = () => "entity";
+const getPossessive = (named: unknown) => (named === 1n ? "its" : "their");
 
 const actionEffect = (effect: { tag: string; value?: number }): EntityEvent =>
   ({
@@ -57,6 +58,7 @@ for (const [label, language] of [
     markup: textMarkup,
     getName,
     getClassName,
+    getPossessive,
   });
 
   test(`${label}: narrates an attack, capitalizing the subject and inlining damage`, () => {

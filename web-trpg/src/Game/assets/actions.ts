@@ -205,7 +205,8 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   },
   scratch: {
     displayName: "Scratch",
-    beginTemplate: "{0:sentence:subject} brandished its claws at {1:object}.",
+    beginTemplate:
+      "{0:sentence:subject} brandished {0:possessive} claws at {1:object}.",
   },
   guard: {
     displayName: "Guard",
@@ -213,7 +214,8 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   },
   bite: {
     displayName: "Bite",
-    beginTemplate: "{0:sentence:subject} snapped its jaws at {1:object}.",
+    beginTemplate:
+      "{0:sentence:subject} snapped {0:possessive} jaws at {1:object}.",
   },
   smash: {
     displayName: "Smash",
@@ -265,7 +267,7 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   },
   rally: {
     displayName: "Rally",
-    beginTemplate: "{0:sentence:subject} steadied their nerve.",
+    beginTemplate: "{0:sentence:subject} steadied {0:possessive} nerve.",
   },
   dive: {
     displayName: "Dive",

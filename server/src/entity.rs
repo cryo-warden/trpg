@@ -143,19 +143,14 @@ entity!(
         pub mep: i16,
     }
 
-    // Granular size, applied from the total stat block; every size rule
-    // (intimidation now; contests, pickup, and gear gating later) compares
-    // DELTAS between two entities' sizes.
-    #[component(size in size_components)]
-    struct SizeComponent {
-        pub size: i8,
-    }
-
-    // Nerve, RIGID like attack/defense: applied straight from the total
-    // stat block. The fluid layer is the status effects below.
-    #[component(morale in morale_components)]
-    struct MoraleComponent {
-        pub morale: i16,
+    // The APPLIED total stat block, stored whole: rigid stats (morale,
+    // size, and future property reads like pickup gating) are read straight
+    // from here instead of each getting its own component. Fluid values
+    // (hp, ep) still live in their own components; the total only moves
+    // their ceilings.
+    #[component(total_stat_block in total_stat_block_components)]
+    struct TotalStatBlockComponent {
+        pub stat_block: StatBlock,
     }
 
     // FEAR: the first real status effect. Holds the HIGHEST intimidation

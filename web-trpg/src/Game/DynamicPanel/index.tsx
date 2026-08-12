@@ -11,8 +11,8 @@ import {
   useHpComponent,
   useLocation,
   useLocationEntities,
-  useMoraleComponent,
   usePlayerEntity,
+  useTotalStatBlockComponent,
 } from "../context/StdbContext/components";
 import { EntityName } from "../EntityName";
 import { EPBar } from "../EntityPanel/EPBar";
@@ -29,7 +29,7 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const playerContents = useLocationEntities(playerEntity);
   const hpComponent = useHpComponent(playerEntity);
   const attackComponent = useAttackComponent(playerEntity);
-  const moraleComponent = useMoraleComponent(playerEntity);
+  const totalStatBlock = useTotalStatBlockComponent(playerEntity);
   const fearStatus = useFearStatusComponent(playerEntity);
   const courageStatus = useCourageStatusComponent(playerEntity);
   const entities: EntityId[] =
@@ -70,8 +70,8 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
         <div>Attack: {attackComponent?.attack ?? 0}</div>
         <div>Defense: {hpComponent?.defense ?? 0}</div>
         <div>
-          Morale: {moraleComponent?.morale ?? 0}
-          {courageStatus != null && ` (+${courageStatus.morale} courage)`}
+          Morale: {totalStatBlock?.statBlock.morale ?? 0}
+          {courageStatus != null && ` (incl. +${courageStatus.morale} courage)`}
           {fearStatus != null && ` — fear ${fearStatus.intimidation}`}
         </div>
       </Panel>

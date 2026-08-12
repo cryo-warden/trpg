@@ -69,8 +69,10 @@ test("FocusProvider auto-focuses a lone hostile but never overrides a choice", (
     () => ({ focus: useFocus(), setFocus: useSetFocus() }),
     {
       wrapper: providerWrapper({
-        // Entity 3 is a co-located hp-bearing non-ally: the lone hostile.
+        // Entity 3 is a co-located hp-bearing, ACTING non-ally: the lone
+        // hostile (hp alone is just attackable scenery).
         hp_components: mockTable([{ entityId: 3n, hp: 2, mhp: 2 }]),
+        enemy_controller_components: mockTable([{ entityId: 3n }]),
       }),
     },
   );

@@ -14,8 +14,6 @@ pub trait EntityHandleExtension {
     fn set_mhp(self, mhp: i16) -> Self;
     fn set_defense(self, defense: i8) -> Self;
     fn set_mep(self, mep: i16) -> Self;
-    fn set_size(self, size: i8) -> Self;
-    fn set_morale(self, morale: i8) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
     fn set_known_stances(self, stance_ids: Vec<u32>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
@@ -53,12 +51,12 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     fn apply_stat_block(self, stat_block: StatBlock) -> Self {
         self.to_handle()
             .clone()
+            .upsert_new_total_stat_block(stat_block.clone())
+            .into_handle()
             .upsert_new_attack(stat_block.attack)
             .set_mhp(stat_block.mhp)
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
-            .set_size(stat_block.size)
-            .set_morale(stat_block.morale)
             .set_actions(stat_block.action_ids)
             .set_known_stances(stat_block.stance_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids);
@@ -109,30 +107,6 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
-    fn set_size(self, size: i8) -> Self {
-        let e = self.to_handle();
-        if let Some(mut c) = e.size() {
-            c.size = size;
-            e.update_size_row(c);
-        } else {
-            e.insert_new_size(size);
-        }
-        self
-    }
-
-    // Rigid, like attack: the stat total IS the value.
-    fn set_morale(self, morale: i8) -> Self {
-        let e = self.to_handle();
-        let morale = i16::from(morale);
-        if let Some(mut c) = e.morale() {
-            c.morale = morale;
-            e.update_morale_row(c);
-        } else {
-            e.insert_new_morale(morale);
-        }
-        self
-    }
-
     fn set_known_stances(self, stance_ids: Vec<u32>) -> Self {
         let e = self.to_handle();
         if let Some(mut c) = e.known_stances() {
@@ -179,7 +153,13 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
 
     fn effective_morale(&self) -> i32 {
         let e = self.to_handle();
-        let own = e.morale().map_or(0, |m| i32::from(m.morale));
+        let morale_of = |entity_id: u64| {
+            e.ecs()
+                .find(entity_id)
+                .total_stat_block()
+                .map(|t| i32::from(t.stat_block.morale))
+        };
+        let own = morale_of(e.entity_id()).unwrap_or(0);
         let location = match e.location() {
             None => return own,
             Some(location) => location.location_entity_id,
@@ -190,8 +170,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .location_entity_id()
             .filter(location)
             .filter(|c| e.is_ally(c.entity_id))
-            .filter_map(|c| e.ecs().find(c.entity_id).morale())
-            .map(|m| i32::from(m.morale))
+            .filter_map(|c| morale_of(c.entity_id))
             .fold(own, i32::max)
     }
 

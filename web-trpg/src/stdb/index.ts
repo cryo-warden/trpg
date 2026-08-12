@@ -89,7 +89,6 @@ import LocationMapComponentsRow from "./location_map_components_table";
 import LoginRequestVotersRow from "./login_request_voters_table";
 import LoginRequestsRow from "./login_requests_table";
 import LoginResponsesRow from "./login_responses_table";
-import MoraleComponentsRow from "./morale_components_table";
 import NameComponentsRow from "./name_components_table";
 import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
@@ -101,11 +100,11 @@ import QueuedActionStateComponentsRow from "./queued_action_state_components_tab
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
 import RolesRow from "./roles_table";
-import SizeComponentsRow from "./size_components_table";
 import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import StatusStatBlockDirtyFlagComponentsRow from "./status_stat_block_dirty_flag_components_table";
+import TotalStatBlockComponentsRow from "./total_stat_block_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
 import TraitsComponentsRow from "./traits_components_table";
 import TraitsStatBlockCacheComponentsRow from "./traits_stat_block_cache_components_table";
@@ -541,17 +540,6 @@ const tablesSchema = __schema({
       { name: 'login_responses_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, LoginResponsesRow),
-  morale_components: __table({
-    name: 'morale_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'morale_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'morale_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, MoraleComponentsRow),
   name_components: __table({
     name: 'name_components',
     indexes: [
@@ -693,17 +681,6 @@ const tablesSchema = __schema({
       { name: 'roles_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, RolesRow),
-  size_components: __table({
-    name: 'size_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'size_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'size_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, SizeComponentsRow),
   stance_loadouts_components: __table({
     name: 'stance_loadouts_components',
     indexes: [
@@ -752,6 +729,17 @@ const tablesSchema = __schema({
       { name: 'status_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, StatusStatBlockDirtyFlagComponentsRow),
+  total_stat_block_components: __table({
+    name: 'total_stat_block_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'total_stat_block_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'total_stat_block_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, TotalStatBlockComponentsRow),
   total_stat_block_dirty_flag_components: __table({
     name: 'total_stat_block_dirty_flag_components',
     indexes: [
