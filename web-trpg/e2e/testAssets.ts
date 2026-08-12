@@ -1,4 +1,9 @@
 import type { AssetPack, EntityBlobAsset } from "../src/stdb/types";
+import {
+  NO_REQUIREMENTS,
+  requirements,
+} from "../src/Game/assets/stat_requirements";
+import { statBlock } from "../src/Game/assets/stat_block";
 
 /**
  * Test-specific asset bundles for E2E scenarios — deliberately tiny and
@@ -21,6 +26,7 @@ const emptyPack = (): AssetPack => ({
   appearanceFeatures: [],
   baselines: [],
   traits: [],
+  stances: [],
   encounterBlobs: [],
   encounters: [],
   locationMapThemes: [],
@@ -39,7 +45,11 @@ export const minimalPack = (): AssetPack => ({
   actions: [
     {
       name: "test_action",
-      value: { actionType: { tag: "Attack" }, rounds: [] },
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [],
+      },
     },
   ],
 });
@@ -98,19 +108,19 @@ export const mapGenPack = (): AssetPack => ({
   ...emptyPack(),
   // A public action so tests can await "assets landed".
   actions: [
-    { name: "test_action", value: { actionType: { tag: "Move" }, rounds: [] } },
+    {
+      name: "test_action",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [],
+      },
+    },
   ],
   baselines: [
     {
       name: "test_human",
-      value: {
-        attack: 1,
-        mhp: 5,
-        defense: 0,
-        mep: 5,
-        actionNames: [],
-        appearanceFeatureNames: [],
-      },
+      value: statBlock({ attack: 1, mhp: 5, mep: 5 }),
     },
   ],
   locationMapThemes: [
@@ -157,6 +167,73 @@ export const mapGenPack = (): AssetPack => ({
 });
 
 /**
+ * A stance world: a body baseline providing hand/gait, actions gated on
+ * those properties, and three stances — the default, a prone-like stance
+ * whose gait penalty starves the movement action out of the derived set, and
+ * one whose requirements no human body can meet.
+ */
+export const stancePack = (): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    {
+      name: "test_punch",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: requirements({ hand: 1 }),
+        rounds: [{ effects: [{ tag: "Attack", value: 1 }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_shuffle",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: requirements({ gait: 1 }),
+        rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_human",
+      value: statBlock({
+        mhp: 5,
+        hand: 2,
+        gait: 2,
+        actionNames: ["test_punch", "test_shuffle"],
+      }),
+    },
+  ],
+  stances: [
+    {
+      name: "test_brawler",
+      value: {
+        requirements: requirements({ hand: 1 }),
+        statBlock: statBlock({}),
+      },
+    },
+    {
+      name: "test_prone",
+      value: {
+        requirements: NO_REQUIREMENTS,
+        statBlock: statBlock({ gait: -2 }),
+      },
+    },
+    {
+      name: "test_four_arms",
+      value: {
+        requirements: requirements({ hand: 4 }),
+        statBlock: statBlock({}),
+      },
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_human",
+    stanceName: "test_brawler",
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+  }),
+});
+
+/**
  * A minimal combat world: one attack action, a new-player blob for the
  * account the test creates, and a co-located hostile enemy with hp. Neither
  * fighter has a baseline, so the stats system leaves their seeded hp alone
@@ -172,6 +249,7 @@ export const combatPack = ({
       name: "test_attack",
       value: {
         actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
         rounds: [
           {
             effects: [{ tag: "Attack", value: attackDamage }],

@@ -7,6 +7,7 @@ import {
   APPEARANCE_FEATURES,
   AppearanceFeatureName,
 } from "../Game/assets/appearance_features";
+import { STANCES, StanceName } from "../Game/assets/stances";
 
 /**
  * Test-only, in-memory stand-ins for a live SpacetimeDB connection. They
@@ -98,10 +99,14 @@ export const mockAssetTables = () => ({
   appearance_features: mockTable(
     Object.keys(APPEARANCE_FEATURES).map((name, index) => ({ index, name })),
   ),
+  stances: mockTable(Object.keys(STANCES).map((name, id) => ({ id, name }))),
 });
 
 export const actionIdOf = (name: ActionName): number =>
   Object.keys(ACTIONS).indexOf(name);
+
+export const stanceIdOf = (name: StanceName): number =>
+  Object.keys(STANCES).indexOf(name);
 
 /** The account every mocked identity belongs to unless a test overrides the
  * account_identities table. */
@@ -139,6 +144,7 @@ export const stdbWrapper = (
       allegiance_components: mockTable([]),
       path_components: mockTable([]),
       actions_components: mockTable([]),
+      active_stance_components: mockTable([]),
       action_state_components: mockTable([]),
       queued_action_state_components: mockTable([]),
       action_hotkeys_components: mockTable([]),

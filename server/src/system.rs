@@ -1,7 +1,7 @@
 use crate::{
-    action::{ActionEffect, ActionHandle},
+    action::{actions, ActionEffect, ActionHandle},
     asset::{
-        baseline::baselines, location_map::location_maps, r#trait::traits, stat_block::StatBlock,
+        location_map::location_maps, r#trait::traits, stance::stances, stat_block::StatBlock,
     },
     entity::*,
     entity_handle_extension::EntityHandleExtension,
@@ -185,13 +185,28 @@ pub fn entity_stats_system(ecs: Ecs) {
 
     for f in ecs.iter_total_stat_block_dirty_flag() {
         log::debug!("Entity {} is computing total stat block.", f.entity_id());
-        let mut stat_block = { f.baseline() }
-            .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
-            .map_or_else(|| StatBlock::default(), |b| b.stat_block);
+        let mut stat_block = f.base_stat_block();
 
-        if let Some(t) = f.traits_stat_block_cache() {
-            stat_block += &t.stat_block;
+        if let Some(s) = { f.active_stance() }
+            .and_then(|active| ecs.db.stances().id().find(active.stance_id))
+        {
+            stat_block += &s.stat_block;
         }
+
+        // Derived availability: an action the total's requirements check
+        // rejects is granted but not currently usable, so it never reaches
+        // the ActionsComponent. Swapping stances (or any stat change)
+        // re-derives this through the same dirty flag.
+        let total = stat_block.clone();
+        stat_block.action_ids.retain(|id| {
+            match ecs.db.actions().id().find(id) {
+                Some(action) => total.meets(&action.requirements),
+                None => {
+                    log::error!("Granted action id {} has no action row.", id);
+                    false
+                }
+            }
+        });
 
         f.delete_total_stat_block_dirty_flag()
             .into_handle()

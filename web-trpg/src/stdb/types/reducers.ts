@@ -17,6 +17,7 @@ import PushAssetsReducer from "../push_assets_reducer";
 import RefuseLoginRequestReducer from "../refuse_login_request_reducer";
 import RequestLoginReducer from "../request_login_reducer";
 import SetPasswordReducer from "../set_password_reducer";
+import SetStanceReducer from "../set_stance_reducer";
 
 export type AcceptLoginRequestParams = __Infer<typeof AcceptLoginRequestReducer>;
 export type ActParams = __Infer<typeof ActReducer>;
@@ -29,4 +30,5 @@ export type PushAssetsParams = __Infer<typeof PushAssetsReducer>;
 export type RefuseLoginRequestParams = __Infer<typeof RefuseLoginRequestReducer>;
 export type RequestLoginParams = __Infer<typeof RequestLoginReducer>;
 export type SetPasswordParams = __Infer<typeof SetPasswordReducer>;
+export type SetStanceParams = __Infer<typeof SetStanceReducer>;
 

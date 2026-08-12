@@ -15,6 +15,7 @@ export const NAMED_ENTITY_BLOBS = {
 
 export const NEW_PLAYER_BLOB = blob({
   baselineName: "human",
+  stanceName: "brawler",
   traitNames: ["admin", "mobile", "bopper"],
   // Ordered: bar position auto-assigns the numeric hotkey (1..9, then 0).
   pinnedActionNames: ["boppity_bop", "quick_move", "divine_heal"],

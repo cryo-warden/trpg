@@ -1,4 +1,5 @@
 import { ActionAsset, ActionEffect } from "../../stdb/types";
+import { NO_REQUIREMENTS, requirements } from "./stat_requirements";
 
 // The TS assets ARE the generated wire types; the only client-side step is
 // bundling the Records into entries arrays (see namedPairs). The helpers
@@ -27,32 +28,39 @@ const interruptibleRound = (...effects: ActionEffect[]) => ({
 export const ACTIONS = {
   move: {
     actionType: { tag: "Move" },
+    requirements: requirements({ gait: 1 }),
     rounds: [interruptibleRound(), round(Move)],
   },
   quick_move: {
     actionType: { tag: "Move" },
+    requirements: requirements({ gait: 1 }),
     rounds: [round(Move)],
   },
   bop: {
     actionType: { tag: "Attack" },
+    requirements: requirements({ hand: 1 }),
     rounds: [round(Attack(1))],
   },
   boppity_bop: {
     actionType: { tag: "Attack" },
+    requirements: requirements({ hand: 1 }),
     // A heavy: interruptible preparation, then the double hit.
     rounds: [interruptibleRound(), round(Attack(1), Attack(1))],
   },
   divine_heal: {
     actionType: { tag: "Buff" },
+    requirements: NO_REQUIREMENTS,
     rounds: [round(Heal(500))],
   },
   slime_spray: {
     actionType: { tag: "Attack" },
+    requirements: NO_REQUIREMENTS,
     // A heavy with a committed (uninterruptible) telegraph, then recovery.
     rounds: [round(), round(Attack(1)), round()],
   },
   scratch: {
     actionType: { tag: "Attack" },
+    requirements: NO_REQUIREMENTS,
     rounds: [round(Attack(1))],
   },
 } satisfies Record<string, ActionAsset>;

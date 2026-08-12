@@ -16,6 +16,7 @@ import {
   AllegianceComponentBlob,
   BaselineComponentBlob,
   TraitsComponentBlob,
+  ActiveStanceComponentBlob,
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
   AttackComponentBlob,
@@ -50,6 +51,9 @@ export default __t.row({
   },
   get traits() {
     return __t.option(TraitsComponentBlob);
+  },
+  get activeStance() {
+    return __t.option(ActiveStanceComponentBlob).name("active_stance");
   },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob).name("equipment_stat_block_cache");

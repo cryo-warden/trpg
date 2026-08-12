@@ -1,10 +1,15 @@
 use crate::{
     action::{actions, ActionId, ActionType},
-    asset::stat_block::StatBlock,
+    asset::{baseline::baselines, stat_block::StatBlock},
     entity::*,
 };
 
 pub trait EntityHandleExtension {
+    /// The entity's stat context WITHOUT any stance: baseline plus the
+    /// trait/equipment/status caches. This is both the base the total builds
+    /// on and the context stance-adoption requirements are checked against —
+    /// a stance never provides the properties needed to enter itself.
+    fn base_stat_block(&self) -> StatBlock;
     fn apply_stat_block(self, stat_block: StatBlock) -> Self;
     fn set_mhp(self, mhp: i16) -> Self;
     fn set_defense(self, defense: i8) -> Self;
@@ -19,6 +24,24 @@ pub trait EntityHandleExtension {
 }
 
 impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension for T {
+    fn base_stat_block(&self) -> StatBlock {
+        let e = self.to_handle();
+        let mut stat_block = e
+            .baseline()
+            .and_then(|b| e.ecs().db.baselines().id().find(b.baseline_id))
+            .map_or_else(StatBlock::default, |b| b.stat_block);
+        if let Some(c) = e.traits_stat_block_cache() {
+            stat_block += &c.stat_block;
+        }
+        if let Some(c) = e.equipment_stat_block_cache() {
+            stat_block += &c.stat_block;
+        }
+        if let Some(c) = e.status_stat_block_cache() {
+            stat_block += &c.stat_block;
+        }
+        stat_block
+    }
+
     fn apply_stat_block(self, stat_block: StatBlock) -> Self {
         self.to_handle()
             .clone()

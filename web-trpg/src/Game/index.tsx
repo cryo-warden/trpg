@@ -11,6 +11,7 @@ import { LoginRequestsPrompt } from "./LoginRequestsPrompt";
 import { PinnedActionsPanel } from "./PinnedActionsPanel";
 import { RotatePasswordPanel } from "./RotatePasswordPanel";
 import { SelfPanel } from "./SelfPanel";
+import { StancePanel } from "./StancePanel";
 import { FocusPanel } from "./FocusPanel";
 import { FocusProvider } from "./context/FocusProvider";
 
@@ -44,6 +45,7 @@ export const Game = () => (
             <DynamicPanel className="dynamic" />
             <SelfPanel className="self" />
             <FocusPanel className="focus" />
+            <StancePanel className="stances" />
             <PinnedActionsPanel className="pinned" />
           </div>
         </FocusProvider>

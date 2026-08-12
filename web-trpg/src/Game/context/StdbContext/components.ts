@@ -40,6 +40,7 @@ const createUseComponent =
 export const componentQueries = [
   "select * from pinned_actions_components",
   "select * from actions_components",
+  "select * from active_stance_components",
   "select * from action_state_components",
   "select * from allegiance_components",
   "select * from appearance_features_components",
@@ -147,6 +148,15 @@ export const useHostiles = (): EntityId[] => {
       })),
     });
   }, [playerEntity, playerAllegiance, cohabitantIds, hpRows, allegianceRows]);
+};
+
+const useActiveStanceComponent = createUseComponent("active_stance_components");
+
+/** The player's active stance id, or null before one is adopted. */
+export const useMyActiveStanceId = (): number | null => {
+  const playerEntity = usePlayerEntity();
+  const activeStance = useActiveStanceComponent(playerEntity);
+  return activeStance?.stanceId ?? null;
 };
 
 /** The player's ordered pinned actions; bar position auto-assigns the

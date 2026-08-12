@@ -10,8 +10,8 @@ use crate::{
         types::{
             EntityBlobAsset, EntityBlobsSamplerAsset, NamedActionAsset,
             NamedAppearanceFeatureAsset, NamedEncounterAsset, NamedEntityBlobAsset,
-            NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedStatBlockAsset,
-            StatBlockAsset,
+            NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedStanceAsset,
+            NamedStatBlockAsset, StatBlockAsset,
         },
         baseline::{baselines, Baseline},
         encounter::{encounter_blobs, encounters, Encounter, EncounterBlob},
@@ -23,13 +23,14 @@ use crate::{
             location_map_themes, EntityBlobSample, EntityBlobsSampler, LocationMapTheme,
         },
         r#trait::{traits, Trait},
+        stance::{stances, Stance},
         stat_block::StatBlock,
     },
     ecs_extension::EcsExtension,
     entity::{
-        named_entities, ActionsComponentBlob, AppearanceFeaturesComponentBlob,
-        BaselineComponentBlob, EntityBlob, FindEntityHandle, InstantiateEntityBlob,
-        NewEntityHandle, PinnedActionsComponentBlob, TraitsComponentBlob,
+        named_entities, ActionsComponentBlob, ActiveStanceComponentBlob,
+        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob, FindEntityHandle,
+        InstantiateEntityBlob, NewEntityHandle, PinnedActionsComponentBlob, TraitsComponentBlob,
     },
 };
 
@@ -39,6 +40,7 @@ pub mod encounter;
 pub mod location_map;
 pub mod location_map_theme;
 pub mod rng_range;
+pub mod stance;
 pub mod stat_block;
 pub mod r#trait;
 pub mod weighted_sampler;
@@ -64,6 +66,7 @@ pub struct AssetPack {
     appearance_features: Vec<NamedAppearanceFeatureAsset>,
     baselines: Vec<NamedStatBlockAsset>,
     traits: Vec<NamedStatBlockAsset>,
+    stances: Vec<NamedStanceAsset>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
@@ -122,6 +125,7 @@ struct AssetNameMaps {
     appearance_features: HashMap<String, u32>,
     baselines: HashMap<String, u32>,
     traits: HashMap<String, u32>,
+    stances: HashMap<String, u32>,
 }
 
 /// Resolve an authored blob's asset-name references into the stored
@@ -141,6 +145,14 @@ fn resolve_entity_blob(
             .map(|n| {
                 Ok::<_, String>(BaselineComponentBlob {
                     baseline_id: resolve_name(&maps.baselines, "baseline", &n)?,
+                })
+            })
+            .transpose()?,
+        active_stance: author
+            .stance_name
+            .map(|n| {
+                Ok::<_, String>(ActiveStanceComponentBlob {
+                    stance_id: resolve_name(&maps.stances, "stance", &n)?,
                 })
             })
             .transpose()?,
@@ -230,6 +242,9 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         mhp,
         defense,
         mep,
+        hand,
+        gait,
+        reach,
         action_names,
         appearance_feature_names,
     } = author;
@@ -238,6 +253,9 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         mhp,
         defense,
         mep,
+        hand,
+        gait,
+        reach,
         action_ids: action_names
             .iter()
             .map(|n| resolve_name(&maps.actions, "action", n))
@@ -288,6 +306,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             id: action_id,
             name: a.name,
             action_type: a.value.action_type,
+            requirements: a.value.requirements,
         };
         if ctx.db.actions().id().find(action_id).is_some() {
             ctx.db.actions().id().update(row);
@@ -323,6 +342,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             "trait",
             ctx.db.traits().iter().map(|t| (t.name, t.id)),
             asset_pack.traits.iter().map(|t| &t.name),
+        )?,
+        stances: match_names(
+            "stance",
+            ctx.db.stances().iter().map(|s| (s.name, s.id)),
+            asset_pack.stances.iter().map(|s| &s.name),
         )?,
     };
     for a in asset_pack.appearance_features {
@@ -366,6 +390,31 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.traits().id().update(row);
         } else {
             ctx.db.traits().insert(row);
+        }
+    }
+
+    for s in asset_pack.stances {
+        let id = maps.stances[&s.name];
+        let stat_block = resolve_stat_block(s.value.stat_block, &maps)?;
+        // Six is the design ceiling for simultaneously available battle
+        // actions; a stance authoring more can never fit them.
+        if stat_block.action_ids.len() > 6 {
+            return Err(format!(
+                "Stance \"{}\" grants {} actions; the ceiling is 6.",
+                s.name,
+                stat_block.action_ids.len()
+            ));
+        }
+        let row = Stance {
+            id,
+            name: s.name,
+            requirements: s.value.requirements,
+            stat_block,
+        };
+        if ctx.db.stances().id().find(id).is_some() {
+            ctx.db.stances().id().update(row);
+        } else {
+            ctx.db.stances().insert(row);
         }
     }
 

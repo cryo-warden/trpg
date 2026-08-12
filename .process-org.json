@@ -95,6 +95,14 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-stances": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/7-stances.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -172,7 +180,8 @@
         "test-e2e-map",
         "test-e2e-combat",
         "test-e2e-mapgen",
-        "test-e2e-login"
+        "test-e2e-login",
+        "test-e2e-stances"
       ]
     }
   }

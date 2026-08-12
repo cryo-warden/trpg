@@ -9,6 +9,7 @@ import {
   LOCATION_MAPS,
   LOCATION_MAP_THEMES,
 } from "./assets/location_maps";
+import { STANCES } from "./assets/stances";
 import { TRAITS } from "./assets/traits";
 
 /** Pushes the production asset pack. Admin-gated server-side: only an
@@ -23,6 +24,7 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       appearanceFeatures: namedPairs(APPEARANCE_FEATURES),
       baselines: namedPairs(BASELINES),
       traits: namedPairs(TRAITS),
+      stances: namedPairs(STANCES),
       encounterBlobs: namedPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),
       locationMapThemes: namedPairs(LOCATION_MAP_THEMES),

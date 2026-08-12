@@ -5,7 +5,7 @@
   grid-template:
     "events dynamic" 10fr
     "self focus" 3fr
-    "pinned pinned" 1fr
+    "stances pinned" 1fr
     / 1fr 1fr;
 
   .events {
@@ -22,6 +22,10 @@
 
   .focus {
     grid-area: focus;
+  }
+
+  .stances {
+    grid-area: stances;
   }
 
   .pinned {

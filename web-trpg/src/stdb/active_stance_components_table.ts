@@ -9,19 +9,8 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  ActionType,
-  StatRequirements,
-} from "./types";
-
 
 export default __t.row({
-  id: __t.u32().primaryKey(),
-  name: __t.string(),
-  get actionType() {
-    return ActionType.name("action_type");
-  },
-  get requirements() {
-    return StatRequirements;
-  },
+  entityId: __t.u64().primaryKey().name("entity_id"),
+  stanceId: __t.u32().name("stance_id"),
 });

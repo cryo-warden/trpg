@@ -22,7 +22,19 @@ export const assetQueries = [
   "select * from actions",
   "select * from action_rounds",
   "select * from appearance_features",
+  "select * from stances",
 ];
+
+/** The subscribed stance rows (id + name), ordered by id. */
+export const useStanceRows = (): { id: number; name: string }[] =>
+  useTableData(
+    "stances",
+    (table) =>
+      [...table.iter()]
+        .map(({ id, name }) => ({ id, name }))
+        .sort((a, b) => a.id - b.id),
+    [],
+  );
 
 export type NamedActionAsset = { name: ActionName } & ActionAsset;
 

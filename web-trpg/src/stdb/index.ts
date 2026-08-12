@@ -45,6 +45,7 @@ import PushAssetsReducer from "./push_assets_reducer";
 import RefuseLoginRequestReducer from "./refuse_login_request_reducer";
 import RequestLoginReducer from "./request_login_reducer";
 import SetPasswordReducer from "./set_password_reducer";
+import SetStanceReducer from "./set_stance_reducer";
 
 // Import all procedure arg schemas
 
@@ -56,6 +57,7 @@ import ActionRoundsRow from "./action_rounds_table";
 import ActionStateComponentsRow from "./action_state_components_table";
 import ActionsRow from "./actions_table";
 import ActionsComponentsRow from "./actions_components_table";
+import ActiveStanceComponentsRow from "./active_stance_components_table";
 import AllegianceComponentsRow from "./allegiance_components_table";
 import AppearanceFeaturesRow from "./appearance_features_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
@@ -82,6 +84,7 @@ import PlayerControllerComponentsRow from "./player_controller_components_table"
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RolesRow from "./roles_table";
+import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
 import TraitsComponentsRow from "./traits_components_table";
@@ -187,6 +190,17 @@ const tablesSchema = __schema({
       { name: 'actions_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, ActionsComponentsRow),
+  active_stance_components: __table({
+    name: 'active_stance_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'active_stance_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'active_stance_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ActiveStanceComponentsRow),
   allegiance_components: __table({
     name: 'allegiance_components',
     indexes: [
@@ -504,6 +518,21 @@ const tablesSchema = __schema({
       { name: 'roles_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, RolesRow),
+  stances: __table({
+    name: 'stances',
+    indexes: [
+      { accessor: 'id', name: 'stances_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'name', name: 'stances_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'stances_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'stances_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, StancesRow),
   status_stat_block_cache_components: __table({
     name: 'status_stat_block_cache_components',
     indexes: [
@@ -574,6 +603,7 @@ const reducersSchema = __reducers(
   __reducerSchema("refuse_login_request", RefuseLoginRequestReducer),
   __reducerSchema("request_login", RequestLoginReducer),
   __reducerSchema("set_password", SetPasswordReducer),
+  __reducerSchema("set_stance", SetStanceReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

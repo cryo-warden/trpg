@@ -10,18 +10,18 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  ActionType,
   StatRequirements,
+  StatBlock,
 } from "./types";
 
 
 export default __t.row({
   id: __t.u32().primaryKey(),
   name: __t.string(),
-  get actionType() {
-    return ActionType.name("action_type");
-  },
   get requirements() {
     return StatRequirements;
+  },
+  get statBlock() {
+    return StatBlock.name("stat_block");
   },
 });

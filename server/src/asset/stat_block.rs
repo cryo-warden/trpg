@@ -2,8 +2,13 @@
 // -20..20 realm, so i8 covers them; only the HP/EP pools merit i16. Merging
 // saturates instead of wrapping so extreme stacking clamps at the type's
 // bounds rather than corrupting the total.
+//
+// The small-int section also holds the counted PROPERTY stats (hand, gait,
+// reach, ...): bodies, traits, stances, and equipment provide them as
+// positive contributions, circumstances consume them as negative ones, and
+// action/stance requirements check thresholds against the merged total.
 secador::secador_multi!(
-    seca_small_int!(stat, [attack, defense]),
+    seca_small_int!(stat, [attack, defense, hand, gait, reach]),
     seca_wide_int!(stat, [mhp, mep]),
     seca_id_vec!(
         (stat, StatType),
@@ -27,6 +32,34 @@ secador::secador_multi!(
             pub __stat: Vec<__StatType>,
         }
 
+        /// Explicitly named minimum thresholds over the int stats: an absent
+        /// entry means "this stat is not checked" — never inferred from a
+        /// zero, because stats are signed and a debuffed stat must not fail a
+        /// requirement that never meant to check it. The same type serves
+        /// assets and stored rows: thresholds carry no asset-name references,
+        /// so there is nothing for a push to resolve.
+        #[derive(Debug, Clone, SpacetimeType, Default)]
+        pub struct StatRequirements {
+            __seca_small_int: __1,
+            pub __stat: Option<i8>,
+            __seca_wide_int: __1,
+            pub __stat: Option<i16>,
+        }
+
+        impl StatBlock {
+            pub fn meets(&self, requirements: &StatRequirements) -> bool {
+                seca_small_int!(1);
+                if requirements.__stat.is_some_and(|min| self.__stat < min) {
+                    return false;
+                }
+                seca_wide_int!(1);
+                if requirements.__stat.is_some_and(|min| self.__stat < min) {
+                    return false;
+                }
+                true
+            }
+        }
+
         impl AddAssign<&Self> for StatBlock {
             fn add_assign(&mut self, other: &Self) {
                 seca_small_int!(1);
@@ -48,7 +81,43 @@ secador::secador_multi!(
 
 #[cfg(test)]
 mod tests {
-    use super::StatBlock;
+    use super::{StatBlock, StatRequirements};
+
+    #[test]
+    fn meets_checks_only_named_thresholds() {
+        let mut block = StatBlock::default();
+        block.attack = -5; // Debuffed, but no requirement names attack.
+        block.gait = 2;
+
+        let mut requirements = StatRequirements::default();
+        requirements.gait = Some(1);
+
+        assert!(block.meets(&requirements));
+
+        requirements.gait = Some(3);
+        assert!(!block.meets(&requirements));
+    }
+
+    #[test]
+    fn meets_with_no_thresholds_always_passes() {
+        let mut block = StatBlock::default();
+        block.attack = -10;
+        block.mhp = -10;
+        assert!(block.meets(&StatRequirements::default()));
+    }
+
+    #[test]
+    fn meets_checks_wide_stats_too() {
+        let mut block = StatBlock::default();
+        block.mhp = 10;
+
+        let mut requirements = StatRequirements::default();
+        requirements.mhp = Some(11);
+        assert!(!block.meets(&requirements));
+
+        requirements.mhp = Some(10);
+        assert!(block.meets(&requirements));
+    }
 
     #[test]
     fn add_assign_sums_int_stats() {

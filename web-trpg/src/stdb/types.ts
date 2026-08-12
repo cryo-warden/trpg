@@ -46,12 +46,18 @@ export const Action = __t.object("Action", {
   get actionType() {
     return ActionType;
   },
+  get requirements() {
+    return StatRequirements;
+  },
 });
 export type Action = __Infer<typeof Action>;
 
 export const ActionAsset = __t.object("ActionAsset", {
   get actionType() {
     return ActionType;
+  },
+  get requirements() {
+    return StatRequirements;
   },
   get rounds() {
     return __t.array(ActionRoundAsset);
@@ -131,6 +137,17 @@ export const ActionsComponentBlob = __t.object("ActionsComponentBlob", {
 });
 export type ActionsComponentBlob = __Infer<typeof ActionsComponentBlob>;
 
+export const ActiveStanceComponent = __t.object("ActiveStanceComponent", {
+  entityId: __t.u64(),
+  stanceId: __t.u32(),
+});
+export type ActiveStanceComponent = __Infer<typeof ActiveStanceComponent>;
+
+export const ActiveStanceComponentBlob = __t.object("ActiveStanceComponentBlob", {
+  stanceId: __t.u32(),
+});
+export type ActiveStanceComponentBlob = __Infer<typeof ActiveStanceComponentBlob>;
+
 export const AllegianceComponent = __t.object("AllegianceComponent", {
   entityId: __t.u64(),
   allegianceEntityId: __t.u64(),
@@ -194,6 +211,9 @@ export const AssetPack = __t.object("AssetPack", {
   },
   get traits() {
     return __t.array(NamedStatBlockAsset);
+  },
+  get stances() {
+    return __t.array(NamedStanceAsset);
   },
   get encounterBlobs() {
     return __t.array(NamedEntityBlobAsset);
@@ -324,6 +344,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get traits() {
     return __t.option(TraitsComponentBlob);
   },
+  get activeStance() {
+    return __t.option(ActiveStanceComponentBlob);
+  },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob);
   },
@@ -395,6 +418,7 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
     return __t.option(AllegianceComponentBlob);
   },
   baselineName: __t.option(__t.string()),
+  stanceName: __t.option(__t.string()),
   traitNames: __t.option(__t.array(__t.string())),
   actionNames: __t.option(__t.array(__t.string())),
   pinnedActionNames: __t.option(__t.array(__t.string())),
@@ -739,6 +763,14 @@ export const NamedLocationMapThemeAsset = __t.object("NamedLocationMapThemeAsset
 });
 export type NamedLocationMapThemeAsset = __Infer<typeof NamedLocationMapThemeAsset>;
 
+export const NamedStanceAsset = __t.object("NamedStanceAsset", {
+  name: __t.string(),
+  get value() {
+    return StanceAsset;
+  },
+});
+export type NamedStanceAsset = __Infer<typeof NamedStanceAsset>;
+
 export const NamedStatBlockAsset = __t.object("NamedStatBlockAsset", {
   name: __t.string(),
   get value() {
@@ -804,9 +836,34 @@ export const SpecialEntityBlobKey = __t.enum("SpecialEntityBlobKey", {
 });
 export type SpecialEntityBlobKey = __Infer<typeof SpecialEntityBlobKey>;
 
+export const Stance = __t.object("Stance", {
+  id: __t.u32(),
+  name: __t.string(),
+  get requirements() {
+    return StatRequirements;
+  },
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type Stance = __Infer<typeof Stance>;
+
+export const StanceAsset = __t.object("StanceAsset", {
+  get requirements() {
+    return StatRequirements;
+  },
+  get statBlock() {
+    return StatBlockAsset;
+  },
+});
+export type StanceAsset = __Infer<typeof StanceAsset>;
+
 export const StatBlock = __t.object("StatBlock", {
   attack: __t.i8(),
   defense: __t.i8(),
+  hand: __t.i8(),
+  gait: __t.i8(),
+  reach: __t.i8(),
   mhp: __t.i16(),
   mep: __t.i16(),
   actionIds: __t.array(__t.u32()),
@@ -819,6 +876,9 @@ export const StatBlockAsset = __t.object("StatBlockAsset", {
   mhp: __t.i16(),
   defense: __t.i8(),
   mep: __t.i16(),
+  hand: __t.i8(),
+  gait: __t.i8(),
+  reach: __t.i8(),
   actionNames: __t.array(__t.string()),
   appearanceFeatureNames: __t.array(__t.string()),
 });
@@ -838,6 +898,17 @@ export const StatBlockCacheComponentBlob = __t.object("StatBlockCacheComponentBl
   },
 });
 export type StatBlockCacheComponentBlob = __Infer<typeof StatBlockCacheComponentBlob>;
+
+export const StatRequirements = __t.object("StatRequirements", {
+  attack: __t.option(__t.i8()),
+  defense: __t.option(__t.i8()),
+  hand: __t.option(__t.i8()),
+  gait: __t.option(__t.i8()),
+  reach: __t.option(__t.i8()),
+  mhp: __t.option(__t.i16()),
+  mep: __t.option(__t.i16()),
+});
+export type StatRequirements = __Infer<typeof StatRequirements>;
 
 export const SystemTimer = __t.object("SystemTimer", {
   scheduledId: __t.u64(),

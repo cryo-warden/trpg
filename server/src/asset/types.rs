@@ -17,6 +17,7 @@ use crate::{
     action::{ActionEffect, ActionType},
     appearance::AppearanceFeatureType,
     asset::location_map::Layout,
+    asset::stat_block::StatRequirements,
     entity::{
         AllegianceComponentBlob, AttackComponentBlob, EnemyControllerComponentBlob,
         EpComponentBlob, HpComponentBlob, LocationComponentBlob, NameComponentBlob,
@@ -39,6 +40,10 @@ pub struct ActionRoundAsset {
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ActionAsset {
     pub action_type: ActionType,
+    /// Thresholds the entity's TOTAL stat block must meet for this action to
+    /// appear in its derived available actions. (StatRequirements carries no
+    /// asset-name references, so the wire type is the stored type.)
+    pub requirements: StatRequirements,
     /// Ordered rounds; push_assets derives the ActionRound rows (and their
     /// ids) from this. An action lives exactly as many ticks as it has
     /// rounds.
@@ -58,8 +63,21 @@ pub struct StatBlockAsset {
     pub mhp: i16,
     pub defense: i8,
     pub mep: i16,
+    pub hand: i8,
+    pub gait: i8,
+    pub reach: i8,
     pub action_names: Vec<String>,
     pub appearance_feature_names: Vec<String>,
+}
+
+/// A stance as authored. Its stat block contributes to the entity's total
+/// like a baseline or trait — including granted action_ids, the stance's
+/// techniques (at most 6; enforced at push). Its requirements gate adopting
+/// the stance and are checked WITHOUT the stance's own contributions.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct StanceAsset {
+    pub requirements: StatRequirements,
+    pub stat_block: StatBlockAsset,
 }
 
 /// The authored form of an entity blob: components whose fields reference
@@ -74,6 +92,7 @@ pub struct EntityBlobAsset {
     pub path: Option<PathComponentBlob>,
     pub allegiance: Option<AllegianceComponentBlob>,
     pub baseline_name: Option<String>,
+    pub stance_name: Option<String>,
     pub trait_names: Option<Vec<String>>,
     pub action_names: Option<Vec<String>>,
     pub pinned_action_names: Option<Vec<String>>,
@@ -144,6 +163,7 @@ secador::secador!(
         (ActionAsset, NamedActionAsset),
         (AppearanceFeatureAsset, NamedAppearanceFeatureAsset),
         (StatBlockAsset, NamedStatBlockAsset),
+        (StanceAsset, NamedStanceAsset),
         (EntityBlobAsset, NamedEntityBlobAsset),
         (EncounterAsset, NamedEncounterAsset),
         (LocationMapThemeAsset, NamedLocationMapThemeAsset),

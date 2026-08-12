@@ -5,6 +5,7 @@ import { publishTestModule } from "./harness";
 import { connect, waitFor } from "./client";
 import { TEST_ADMIN_TOKEN } from "./admin";
 import { minimalPack } from "./testAssets";
+import { NO_REQUIREMENTS } from "../src/Game/assets/stat_requirements";
 
 // Phase 1: the admin claim + asset pipeline against a real instance: pushes
 // are admin-gated, the publish-time token is a provisional password that dies
@@ -79,11 +80,19 @@ test("re-pushing matches by name: ids kept, bodies updated, new assets added", a
     actions: [
       {
         name: "another_action",
-        value: { actionType: { tag: "Move" } as const, rounds: [] },
+        value: {
+          actionType: { tag: "Move" } as const,
+          requirements: NO_REQUIREMENTS,
+          rounds: [],
+        },
       },
       {
         name: "test_action",
-        value: { actionType: { tag: "Buff" } as const, rounds: [] },
+        value: {
+          actionType: { tag: "Buff" } as const,
+          requirements: NO_REQUIREMENTS,
+          rounds: [],
+        },
       },
     ],
   };
@@ -104,7 +113,11 @@ test("a push omitting an existing asset fails fast and changes nothing", async (
     actions: [
       {
         name: "another_action",
-        value: { actionType: { tag: "Move" } as const, rounds: [] },
+        value: {
+          actionType: { tag: "Move" } as const,
+          requirements: NO_REQUIREMENTS,
+          rounds: [],
+        },
       },
     ],
   };

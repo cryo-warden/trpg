@@ -1,15 +1,6 @@
 import { StatBlockAsset } from "../../stdb/types";
 import { ACTIONS } from "./actions";
-
-const statBlock = (partial: Partial<StatBlockAsset>): StatBlockAsset => ({
-  attack: 0,
-  mhp: 0,
-  defense: 0,
-  mep: 0,
-  actionNames: [],
-  appearanceFeatureNames: [],
-  ...partial,
-});
+import { statBlock } from "./stat_block";
 
 export const TRAITS = {
   admin: statBlock({ actionNames: Object.keys(ACTIONS) }),

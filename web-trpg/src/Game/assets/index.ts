@@ -4,6 +4,7 @@ import { BASELINES } from "./baselines";
 import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./encounters";
 import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./entity_blobs";
 import { LOCATION_MAPS, LOCATION_MAP_THEMES } from "./location_maps";
+import { STANCES } from "./stances";
 import { TRAITS } from "./traits";
 
 // The TS assets ARE the generated wire types, authored as Records keyed by
@@ -28,6 +29,7 @@ export const assets = {
   appearanceFeatures: APPEARANCE_FEATURES,
   baselines: BASELINES,
   traits: TRAITS,
+  stances: STANCES,
   encounterBlobs: ENCOUNTER_BLOBS,
   encounters: ENCOUNTERS,
   locationMapThemes: LOCATION_MAP_THEMES,
