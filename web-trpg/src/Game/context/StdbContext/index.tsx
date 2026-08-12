@@ -19,6 +19,12 @@ const queries = [
 
 type ConnectionStatus = "connecting" | "connected" | "error";
 
+// The database URI: explicit override first, else SpacetimeDB on the same
+// host that served this client — localhost stays localhost, and a LAN
+// browser reaches the LAN host, with no per-device configuration.
+const STDB_URI: string =
+  import.meta.env.VITE_STDB_URI ?? `ws://${window.location.hostname}:3000`;
+
 export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [connection, setConnection] = useState<DbConnection | null>(null);
@@ -28,7 +34,7 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
     DbConnection.builder()
       .withDatabaseName("trpg")
       .withToken(localStorage.getItem("auth_token") || "")
-      .withUri("ws://localhost:3000") // TODO Use process arg.
+      .withUri(STDB_URI)
       .onConnect((connection, identity, token) => {
         localStorage.setItem("auth_token", token);
 
