@@ -1,4 +1,4 @@
-import type { AssetPack, EntityBlobAuthor } from "../src/stdb/types";
+import type { AssetPack, EntityBlobAsset } from "../src/stdb/types";
 
 /**
  * Test-specific asset bundles for E2E scenarios — deliberately tiny and
@@ -9,8 +9,8 @@ import type { AssetPack, EntityBlobAuthor } from "../src/stdb/types";
  * ids come only from the subscribed tables.
  */
 
-const blob = (partial: Partial<EntityBlobAuthor>): EntityBlobAuthor =>
-  partial as EntityBlobAuthor;
+const blob = (partial: Partial<EntityBlobAsset>): EntityBlobAsset =>
+  partial as EntityBlobAsset;
 
 /** A location id both fighters share. Co-location compares these values, so it
  * need not correspond to a real room entity. */

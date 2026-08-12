@@ -1,20 +1,20 @@
-export type AppearanceFeatureType = "noun" | "adjective";
+import { AppearanceFeatureAsset } from "../../stdb/types";
 
-export type AppearanceFeatureAsset = {
-  type: AppearanceFeatureType;
-  text: string;
-  priority: number;
-};
+// The TS assets ARE the generated wire types; the helpers just construct
+// those generated shapes.
 
 const noun = (text: string, priority: number): AppearanceFeatureAsset => ({
-  type: "noun",
   text,
+  appearanceFeatureType: { tag: "Noun" },
   priority,
 });
 
-const adjective = (text: string, priority: number): AppearanceFeatureAsset => ({
-  type: "adjective",
+const adjective = (
+  text: string,
+  priority: number,
+): AppearanceFeatureAsset => ({
   text,
+  appearanceFeatureType: { tag: "Adjective" },
   priority,
 });
 
@@ -41,6 +41,6 @@ export const APPEARANCE_FEATURES = {
   small: adjective("small", 900),
   big: adjective("big", 900),
   huge: adjective("huge", 1000),
-} as const satisfies Record<string, AppearanceFeatureAsset>;
+} satisfies Record<string, AppearanceFeatureAsset>;
 
 export type AppearanceFeatureName = keyof typeof APPEARANCE_FEATURES;

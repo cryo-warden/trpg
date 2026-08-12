@@ -25,11 +25,10 @@ const DEFAULT_ACTION_TEMPLATE =
   "{0:sentence:subject} began a mysterious action toward {1:object}.";
 
 export const createEnUs: CreateLanguage<NarrationContext> = ({
-  actionAssetOf,
+  actionAppearanceOf,
 }) => {
   const getActionTemplate = (actionId: ActionId): string =>
-    actionAssetOf(actionId)?.appearance.beginTemplate ??
-    DEFAULT_ACTION_TEMPLATE;
+    actionAppearanceOf(actionId)?.beginTemplate ?? DEFAULT_ACTION_TEMPLATE;
 
   // The sentence for an event, or null when the event is not narrated (e.g.
   // resting, or an effect kind with no player-facing description yet).

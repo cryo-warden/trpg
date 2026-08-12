@@ -1,20 +1,23 @@
 import { test, expect } from "bun:test";
 import type { EntityEvent } from "../stdb/types";
 import type { NarrationName } from "../Game/domain/narration";
-import { ACTIONS } from "../Game/assets/actions";
+import { ACTIONS, ACTION_APPEARANCES } from "../Game/assets/actions";
 import { textMarkup } from "./textMarkup";
 import { renderEventWith } from "./language";
 import { createEnUs } from "./en-us";
 import { createDebug } from "./debug";
 
 // The test plays both roles: ids follow the Records' enumeration order (as
-// push_assets interns them), and actionAssetOf is the id -> asset resolution
-// the hooks normally provide from the subscribed actions table.
-const orderedActions = Object.values(ACTIONS);
+// push_assets interns them), and actionAppearanceOf is the id -> vocabulary
+// resolution the hooks normally provide from the subscribed actions table.
+const orderedNames = Object.keys(ACTIONS) as (keyof typeof ACTIONS)[];
 const languageDeps = {
-  actionAssetOf: (id: number) => orderedActions[id] ?? null,
+  actionAppearanceOf: (id: number) => {
+    const name = orderedNames[id];
+    return name == null ? null : ACTION_APPEARANCES[name];
+  },
 };
-const bopId = Object.keys(ACTIONS).indexOf("bop");
+const bopId = orderedNames.indexOf("bop");
 
 const names: Record<string, string> = { "1": "the goblin", "2": "the hero" };
 const getName: NarrationName = ({ named }) =>

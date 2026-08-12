@@ -1,8 +1,8 @@
-//! Author-form asset types: the shapes the client pushes. Assets are authored
-//! client-side as Records keyed by canonical name; SATS has no map type, so a
-//! Record<name, body> crosses the wire as Vec<Named<Body>> — the names come
-//! verbatim from the Record keys, and cross-references BETWEEN assets are by
-//! name here, never by id.
+//! The asset types as authored: the shapes the client pushes. Assets are
+//! authored client-side as Records keyed by canonical name; SATS has no map
+//! type, so a Record<name, body> crosses the wire as Vec<Named<Body>> — the
+//! names come verbatim from the Record keys, and cross-references BETWEEN
+//! assets are by name here, never by id.
 //!
 //! The forward (name -> id) conversion happens in push_assets on the server,
 //! and only there: id assignment — and, later, migration of already-stored
@@ -29,7 +29,7 @@ use crate::{
 /// bare Vec<Vec<..>> because the TS codegen cannot lazily reference an enum
 /// inside a nested array.)
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct ActionRoundAuthor {
+pub struct ActionRoundAsset {
     pub effects: Vec<ActionEffect>,
     /// While this round is the active one, queuing a new action cancels the
     /// action immediately instead of waiting it out.
@@ -37,23 +37,23 @@ pub struct ActionRoundAuthor {
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct ActionAuthor {
+pub struct ActionAsset {
     pub action_type: ActionType,
-    /// Ordered rounds; push_assets derives the ActionStep rows (and their
+    /// Ordered rounds; push_assets derives the ActionRound rows (and their
     /// ids) from this. An action lives exactly as many ticks as it has
     /// rounds.
-    pub rounds: Vec<ActionRoundAuthor>,
+    pub rounds: Vec<ActionRoundAsset>,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct AppearanceFeatureAuthor {
+pub struct AppearanceFeatureAsset {
     pub text: String,
     pub appearance_feature_type: AppearanceFeatureType,
     pub priority: i32,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct StatBlockAuthor {
+pub struct StatBlockAsset {
     pub attack: i32,
     pub mhp: i32,
     pub defense: i32,
@@ -62,13 +62,13 @@ pub struct StatBlockAuthor {
     pub appearance_feature_names: Vec<String>,
 }
 
-/// The author form of an entity blob: components whose fields reference other
-/// assets are authored by NAME, and only push_assets resolves them to the
-/// integer ids stored in the real EntityBlob. Runtime-state components (stat
-/// caches, dirty flags, action state, timers, location_map) are deliberately
-/// absent — a prefab never authors those.
+/// The authored form of an entity blob: components whose fields reference
+/// other assets are authored by NAME, and only push_assets resolves them to
+/// the integer ids stored in the real EntityBlob. Runtime-state components
+/// (stat caches, dirty flags, action state, timers, location_map) are
+/// deliberately absent — a prefab never authors those.
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct EntityBlobAuthor {
+pub struct EntityBlobAsset {
     pub name: Option<NameComponentBlob>,
     pub location: Option<LocationComponentBlob>,
     pub path: Option<PathComponentBlob>,
@@ -86,47 +86,47 @@ pub struct EntityBlobAuthor {
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct EntityBlobSampleAuthor {
+pub struct EntityBlobSampleAsset {
     pub weight: u8,
-    pub blob: EntityBlobAuthor,
+    pub blob: EntityBlobAsset,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct EntityBlobsSamplerAuthor {
-    pub selections: Vec<EntityBlobSampleAuthor>,
+pub struct EntityBlobsSamplerAsset {
+    pub selections: Vec<EntityBlobSampleAsset>,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct EncounterAuthor {
+pub struct EncounterAsset {
     pub categoric_blob_name: String,
     pub blob_names: Vec<String>,
 }
 
 /// A weighted reference to another asset by name, resolved at push time.
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct WeightedNameAuthor {
+pub struct WeightedNameAsset {
     pub weight: u8,
     pub name: String,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct LocationMapThemeAuthor {
-    pub decorations_selector: EntityBlobsSamplerAuthor,
+pub struct LocationMapThemeAsset {
+    pub decorations_selector: EntityBlobsSamplerAsset,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,
-    pub paths_selector: EntityBlobsSamplerAuthor,
-    pub rooms_selector: EntityBlobsSamplerAuthor,
+    pub paths_selector: EntityBlobsSamplerAsset,
+    pub rooms_selector: EntityBlobsSamplerAsset,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct LocationMapAuthor {
+pub struct LocationMapAsset {
     pub theme_name: String,
     pub layout: Layout,
     pub rng_seed: Option<u64>,
     pub extra_room_count: u8,
     pub main_room_count: u8,
     pub loop_count: u8,
-    pub encounter_names_sampler: Vec<WeightedNameAuthor>,
+    pub encounter_names_sampler: Vec<WeightedNameAsset>,
     pub min_encounter_count: u8,
     pub max_encounter_count: u8,
     /// Names of destination maps; push_assets derives the
@@ -141,13 +141,13 @@ pub struct LocationMapAuthor {
 secador::secador!(
     (Body, NamedBody),
     [
-        (ActionAuthor, NamedActionAuthor),
-        (AppearanceFeatureAuthor, NamedAppearanceFeatureAuthor),
-        (StatBlockAuthor, NamedStatBlockAuthor),
-        (EntityBlobAuthor, NamedEntityBlobAuthor),
-        (EncounterAuthor, NamedEncounterAuthor),
-        (LocationMapThemeAuthor, NamedLocationMapThemeAuthor),
-        (LocationMapAuthor, NamedLocationMapAuthor),
+        (ActionAsset, NamedActionAsset),
+        (AppearanceFeatureAsset, NamedAppearanceFeatureAsset),
+        (StatBlockAsset, NamedStatBlockAsset),
+        (EntityBlobAsset, NamedEntityBlobAsset),
+        (EncounterAsset, NamedEncounterAsset),
+        (LocationMapThemeAsset, NamedLocationMapThemeAsset),
+        (LocationMapAsset, NamedLocationMapAsset),
     ],
     {
         seca!(1);

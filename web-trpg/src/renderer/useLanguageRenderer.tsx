@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import { useActionAssetOf } from "../Game/context/StdbContext/assetLookup";
+import { useActionAppearanceOf } from "../Game/context/StdbContext/assetLookup";
 import { usePlayerEntity } from "../Game/context/StdbContext/components";
 import { EntityEvent } from "../stdb/types";
 import "./debug.css";
@@ -25,11 +25,11 @@ export const useLanguageRenderer = <TContext,>(
   const playerEntity = usePlayerEntity();
   const getName = useGetName(playerEntity);
   const getClassName = useGetClassName(playerEntity);
-  const actionAssetOf = useActionAssetOf();
+  const actionAppearanceOf = useActionAppearanceOf();
 
   const renderEvent = useMemo(() => {
     const render = renderEventWith({
-      language: createLanguage({ actionAssetOf }),
+      language: createLanguage({ actionAppearanceOf }),
       markup: reactMarkup,
       getName,
       getClassName,
@@ -37,7 +37,7 @@ export const useLanguageRenderer = <TContext,>(
     return (event: EntityEvent): ReactNode => (
       <div className="debug renderer">{render(event)}</div>
     );
-  }, [createLanguage, actionAssetOf, getName, getClassName]);
+  }, [createLanguage, actionAppearanceOf, getName, getClassName]);
 
   return { renderEvent };
 };

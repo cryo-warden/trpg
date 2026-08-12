@@ -7,11 +7,11 @@ use crate::{
     action::{action_rounds, actions, Action, ActionRound},
     appearance::{appearance_features, AppearanceFeature},
     asset::{
-        author::{
-            EntityBlobAuthor, EntityBlobsSamplerAuthor, NamedActionAuthor,
-            NamedAppearanceFeatureAuthor, NamedEncounterAuthor, NamedEntityBlobAuthor,
-            NamedLocationMapAuthor, NamedLocationMapThemeAuthor, NamedStatBlockAuthor,
-            StatBlockAuthor,
+        types::{
+            EntityBlobAsset, EntityBlobsSamplerAsset, NamedActionAsset,
+            NamedAppearanceFeatureAsset, NamedEncounterAsset, NamedEntityBlobAsset,
+            NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedStatBlockAsset,
+            StatBlockAsset,
         },
         baseline::{baselines, Baseline},
         encounter::{encounter_blobs, encounters, Encounter, EncounterBlob},
@@ -33,7 +33,7 @@ use crate::{
     },
 };
 
-pub mod author;
+pub mod types;
 pub mod baseline;
 pub mod encounter;
 pub mod location_map;
@@ -60,20 +60,20 @@ struct SpecialEntityBlob {
 /// by any client processing.
 #[derive(SpacetimeType)]
 pub struct AssetPack {
-    actions: Vec<NamedActionAuthor>,
-    appearance_features: Vec<NamedAppearanceFeatureAuthor>,
-    baselines: Vec<NamedStatBlockAuthor>,
-    traits: Vec<NamedStatBlockAuthor>,
-    encounter_blobs: Vec<NamedEntityBlobAuthor>,
-    encounters: Vec<NamedEncounterAuthor>,
-    location_map_themes: Vec<NamedLocationMapThemeAuthor>,
-    location_maps: Vec<NamedLocationMapAuthor>,
+    actions: Vec<NamedActionAsset>,
+    appearance_features: Vec<NamedAppearanceFeatureAsset>,
+    baselines: Vec<NamedStatBlockAsset>,
+    traits: Vec<NamedStatBlockAsset>,
+    encounter_blobs: Vec<NamedEntityBlobAsset>,
+    encounters: Vec<NamedEncounterAsset>,
+    location_map_themes: Vec<NamedLocationMapThemeAsset>,
+    location_maps: Vec<NamedLocationMapAsset>,
 
-    named_instantiate_entity_blobs: Vec<NamedEntityBlobAuthor>,
+    named_instantiate_entity_blobs: Vec<NamedEntityBlobAsset>,
 
-    instantiate_entity_blobs: Vec<EntityBlobAuthor>,
+    instantiate_entity_blobs: Vec<EntityBlobAsset>,
 
-    new_player_blob: EntityBlobAuthor,
+    new_player_blob: EntityBlobAsset,
 }
 
 /// Match a kind's authored names against its existing rows: a matched name
@@ -128,7 +128,7 @@ struct AssetNameMaps {
 /// EntityBlob's integer ids. Runtime-state components are never authored, so
 /// they are always None here.
 fn resolve_entity_blob(
-    author: EntityBlobAuthor,
+    author: EntityBlobAsset,
     maps: &AssetNameMaps,
 ) -> Result<EntityBlob, String> {
     Ok(EntityBlob {
@@ -207,7 +207,7 @@ fn resolve_entity_blob(
 }
 
 fn resolve_entity_blobs_sampler(
-    author: EntityBlobsSamplerAuthor,
+    author: EntityBlobsSamplerAsset,
     maps: &AssetNameMaps,
 ) -> Result<EntityBlobsSampler, String> {
     Ok(EntityBlobsSampler {
@@ -224,8 +224,8 @@ fn resolve_entity_blobs_sampler(
     })
 }
 
-fn resolve_stat_block(author: StatBlockAuthor, maps: &AssetNameMaps) -> Result<StatBlock, String> {
-    let StatBlockAuthor {
+fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<StatBlock, String> {
+    let StatBlockAsset {
         attack,
         mhp,
         defense,
@@ -461,7 +461,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     }
     let mut next_connection_id: u32 = 0;
     for m in asset_pack.location_maps {
-        let NamedLocationMapAuthor { name, value: m } = m;
+        let NamedLocationMapAsset { name, value: m } = m;
         let id = location_map_ids[&name];
         for destination_name in &m.connection_names {
             ctx.db

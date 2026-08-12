@@ -1,4 +1,4 @@
-import { ActionAsset } from "../assets";
+import { ActionAsset } from "../../stdb/types";
 import { ActionId, EntityId } from "../trpg";
 
 /**
@@ -50,7 +50,7 @@ export const getActionOptions = ({
     const action = actionAssetOf(id);
     if (!action) return false;
 
-    switch (action.type) {
+    switch (action.actionType.tag) {
       case "Attack":
         return targetHasHp && !ally;
       case "Buff":

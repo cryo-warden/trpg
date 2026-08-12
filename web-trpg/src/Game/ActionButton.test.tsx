@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
-import { ACTIONS } from "./assets/actions";
+import { ACTION_APPEARANCES } from "./assets/actions";
 import { actionIdOf, mockTable } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { ActionButton } from "./ActionButton";
@@ -25,7 +25,7 @@ test("ActionButton shows the action name and queues the action on click", () => 
     wrapper,
   });
   const button = getByRole("button");
-  expect(button.textContent).toContain(ACTIONS.bop.appearance.displayName);
+  expect(button.textContent).toContain(ACTION_APPEARANCES.bop.displayName);
 
   button.click();
   expect(calls).toEqual([{ actionId: bopId, targetEntityId: 2n }]);

@@ -1,4 +1,4 @@
-import { ActionAsset } from "../Game/assets";
+import { ActionAppearance } from "../Game/assets/actions";
 import { ActionId } from "../Game/trpg";
 import { EntityEvent } from "../stdb/types";
 import { Markup } from "./markup";
@@ -31,11 +31,12 @@ import {
  */
 /**
  * The data accessors a language needs to narrate runtime ids. Action ids in
- * events resolve to local assets through the subscribed actions table's
- * id -> name mapping (the backward half of the asset name/id asymmetry).
+ * events resolve to the client's display vocabulary through the subscribed
+ * actions table's id -> name mapping (the backward half of the asset name/id
+ * asymmetry).
  */
 export type LanguageDeps = {
-  actionAssetOf: (actionId: ActionId) => ActionAsset | null;
+  actionAppearanceOf: (actionId: ActionId) => ActionAppearance | null;
 };
 
 export type CreateLanguage<TContext> = (deps: LanguageDeps) => Language<TContext>;

@@ -1,24 +1,17 @@
-import { EncounterAuthor, EntityBlobAuthor } from "../../stdb/types";
-import { EntityBlobAsset, getEntityBlobAuthor } from "./entity_blobs";
-
-export type EncounterBlobAsset = { blob: EntityBlobAsset };
+import { EncounterAsset, EntityBlobAsset } from "../../stdb/types";
+import { blob } from "./entity_blobs";
 
 export const ENCOUNTER_BLOBS = {
   /* TODO Add enemy allegiance component */
-  encounter_enemy: { blob: { enemyController: {} } },
-  slime: { blob: { baseline: "slime" } },
-  slimeSmall: { blob: { baseline: "slime", traits: ["small"] } },
-  slimeBig: { blob: { baseline: "slime", traits: ["big"] } },
-  bat: { blob: { baseline: "bat" } },
-  batBig: { blob: { baseline: "bat", traits: ["big"] } },
-} as const satisfies Record<string, EncounterBlobAsset>;
+  encounter_enemy: blob({ enemyController: {} }),
+  slime: blob({ baselineName: "slime" }),
+  slimeSmall: blob({ baselineName: "slime", traitNames: ["small"] }),
+  slimeBig: blob({ baselineName: "slime", traitNames: ["big"] }),
+  bat: blob({ baselineName: "bat" }),
+  batBig: blob({ baselineName: "bat", traitNames: ["big"] }),
+} satisfies Record<string, EntityBlobAsset>;
 
 export type EncounterBlobName = keyof typeof ENCOUNTER_BLOBS;
-
-export type EncounterAsset = {
-  categoricBlobName: EncounterBlobName;
-  blobNames: EncounterBlobName[];
-};
 
 export const ENCOUNTERS = {
   slime1: {
@@ -45,20 +38,6 @@ export const ENCOUNTERS = {
     categoricBlobName: "encounter_enemy",
     blobNames: ["batBig"],
   },
-} as const satisfies Record<string, EncounterAsset>;
+} satisfies Record<string, EncounterAsset>;
 
 export type EncounterName = keyof typeof ENCOUNTERS;
-
-export const toEncounterBlobAuthor = (
-  asset: EncounterBlobAsset,
-): EntityBlobAuthor => getEntityBlobAuthor(asset.blob);
-
-export type EncountersSamplerAsset = {
-  weight: number;
-  name: EncounterName;
-}[];
-
-export const toEncounterAuthor = (asset: EncounterAsset): EncounterAuthor => ({
-  categoricBlobName: asset.categoricBlobName,
-  blobNames: [...asset.blobNames],
-});

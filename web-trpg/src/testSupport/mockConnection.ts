@@ -2,11 +2,7 @@ import { createElement, type ReactNode } from "react";
 import type { Identity } from "spacetimedb";
 import type { DbConnection } from "../stdb";
 import { StdbContext } from "../Game/context/StdbContext/StdbContext";
-import {
-  ACTIONS,
-  ActionName,
-  ActionRoundAsset,
-} from "../Game/assets/actions";
+import { ACTIONS, ActionName } from "../Game/assets/actions";
 import {
   APPEARANCE_FEATURES,
   AppearanceFeatureName,
@@ -91,14 +87,12 @@ export const mockAssetTables = () => ({
   ),
   action_rounds: mockTable(
     Object.values(ACTIONS).flatMap((action, actionId) =>
-      (action.rounds as readonly ActionRoundAsset[]).map(
-        (round, sequenceIndex) => ({
-          actionId,
-          sequenceIndex,
-          effects: [...round.effects],
-          interruptible: round.interruptible ?? false,
-        }),
-      ),
+      action.rounds.map((round, sequenceIndex) => ({
+        actionId,
+        sequenceIndex,
+        effects: [...round.effects],
+        interruptible: round.interruptible,
+      })),
     ),
   ),
   appearance_features: mockTable(

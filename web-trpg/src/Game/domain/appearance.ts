@@ -1,4 +1,4 @@
-import { AppearanceFeatureAsset } from "../assets";
+import { AppearanceFeatureAsset } from "../../stdb/types";
 import { EntityId } from "../trpg";
 
 /**
@@ -30,11 +30,11 @@ export const describeAppearance = (
 
   const noun =
     features
-      .filter((feature) => feature.type === "noun")
+      .filter((feature) => feature.appearanceFeatureType.tag === "Noun")
       .sort(byPriorityDescending)[0]?.text ?? UNKNOWN_NOUN;
 
   const adjectives = features
-    .filter((feature) => feature.type === "adjective")
+    .filter((feature) => feature.appearanceFeatureType.tag === "Adjective")
     .sort(byPriorityDescending)
     .map((feature) => feature.text)
     .slice(0, MAX_ADJECTIVES)

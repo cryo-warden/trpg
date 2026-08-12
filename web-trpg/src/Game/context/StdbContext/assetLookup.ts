@@ -1,8 +1,13 @@
 import { useMemo } from "react";
-import { ACTIONS, ActionAsset, ActionName } from "../../assets/actions";
+import { ActionAsset, AppearanceFeatureAsset } from "../../../stdb/types";
+import {
+  ACTIONS,
+  ACTION_APPEARANCES,
+  ActionAppearance,
+  ActionName,
+} from "../../assets/actions";
 import {
   APPEARANCE_FEATURES,
-  AppearanceFeatureAsset,
   AppearanceFeatureName,
 } from "../../assets/appearance_features";
 import { ActionId } from "../../trpg";
@@ -58,6 +63,20 @@ export const useActionAssetOf = (): ((
       return name == null ? null : toNamedActionAsset(name);
     },
     [namesById],
+  );
+};
+
+/** Resolves a runtime action id to the client's display vocabulary. */
+export const useActionAppearanceOf = (): ((
+  actionId: ActionId,
+) => ActionAppearance | null) => {
+  const actionAssetOf = useActionAssetOf();
+  return useMemo(
+    () => (actionId: ActionId) => {
+      const asset = actionAssetOf(actionId);
+      return asset == null ? null : ACTION_APPEARANCES[asset.name];
+    },
+    [actionAssetOf],
   );
 };
 
