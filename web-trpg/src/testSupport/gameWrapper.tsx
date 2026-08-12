@@ -4,17 +4,14 @@ import {
   DynamicPanelContext,
   type DynamicPanelMode,
 } from "../Game/context/DynamicPanelContext";
-import {
-  TargetContext,
-  type Target,
-} from "../Game/context/TargetContext";
-import { TargetProvider } from "../Game/context/TargetProvider";
+import { FocusContext, type Focus } from "../Game/context/FocusContext";
+import { FocusProvider } from "../Game/context/FocusProvider";
 import { stdbWrapper } from "./mockConnection";
 
 /**
  * A render wrapper composing the full client provider stack around a mock
- * connection: StdbContext (mock tables) -> DynamicPanel mode -> TargetProvider.
- * Panels that read game data and selection/target state can render under this.
+ * connection: StdbContext (mock tables) -> DynamicPanel mode -> FocusProvider.
+ * Panels that read game data and the focus cursor can render under this.
  */
 export const gameWrapper = (
   tables: Record<string, unknown>,
@@ -23,10 +20,10 @@ export const gameWrapper = (
     mode?: DynamicPanelMode;
     setMode?: (mode: DynamicPanelMode) => void;
     reducers?: Record<string, unknown>;
-    // When provided, inject this fixed target instead of the co-location-aware
-    // TargetProvider (handy for exercising target-dependent branches).
-    target?: Target;
-    setTarget?: (target: Target) => void;
+    // When provided, inject this fixed focus instead of the co-location-aware
+    // FocusProvider (handy for exercising focus-dependent branches).
+    focus?: Focus;
+    setFocus?: (focus: Focus) => void;
   } = {},
 ) => {
   const Stdb = stdbWrapper(tables, options.identity, options.reducers);
@@ -34,24 +31,24 @@ export const gameWrapper = (
     mode: options.mode ?? "location",
     setMode: options.setMode ?? (() => {}),
   };
-  const hasFixedTarget = "target" in options;
+  const hasFixedFocus = "focus" in options;
   return function GameWrapper({ children }: { children: ReactNode }) {
-    const targeted = hasFixedTarget ? (
-      <TargetContext.Provider
+    const focused = hasFixedFocus ? (
+      <FocusContext.Provider
         value={{
-          target: options.target ?? null,
-          setTarget: options.setTarget ?? (() => {}),
+          focus: options.focus ?? null,
+          setFocus: options.setFocus ?? (() => {}),
         }}
       >
         {children}
-      </TargetContext.Provider>
+      </FocusContext.Provider>
     ) : (
-      <TargetProvider>{children}</TargetProvider>
+      <FocusProvider>{children}</FocusProvider>
     );
     return (
       <Stdb>
         <DynamicPanelContext.Provider value={value}>
-          {targeted}
+          {focused}
         </DynamicPanelContext.Provider>
       </Stdb>
     );

@@ -13,7 +13,7 @@ import { useSetDynamicPanelMode } from "./context/DynamicPanelContext";
 import { usePlayerEntity } from "./context/StdbContext/components";
 import "./index.css";
 import { useTableStream } from "./context/StdbContext/useTableStream";
-import { useSetTarget } from "./context/TargetContext";
+import { useSetFocus } from "./context/FocusContext";
 
 // const compareEvents = (a: EntityEvent, b: EntityEvent) =>
 // Number(a.time.microsSinceUnixEpoch - b.time.microsSinceUnixEpoch);
@@ -23,7 +23,7 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   // language (English plus room for diagnostic drift).
   const { renderEvent } = useLanguageRenderer(createDebug);
   const playerEntity = usePlayerEntity();
-  const setTarget = useSetTarget();
+  const setFocus = useSetFocus();
 
   const EventDisplay = useMemo(() => {
     if (playerEntity == null) {
@@ -40,8 +40,8 @@ export const EventsPanel = (props: ComponentPropsWithoutRef<typeof Panel>) => {
   const setMode = useSetDynamicPanelMode();
   const clearSelection = useCallback(() => {
     setMode("location");
-    setTarget(null);
-  }, [setMode, setTarget]);
+    setFocus(null);
+  }, [setMode, setFocus]);
 
   const ref = useHotkeyRef<HTMLDivElement>("Escape");
 

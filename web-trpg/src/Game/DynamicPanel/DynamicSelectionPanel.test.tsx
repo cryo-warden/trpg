@@ -6,10 +6,10 @@ import { DynamicSelectionPanel } from "./DynamicSelectionPanel";
 
 test("DynamicSelectionPanel switches the dynamic panel mode on click", () => {
   const modes: DynamicPanelMode[] = [];
-  // target: null bypasses TargetProvider (no player tables needed here).
+  // focus: null bypasses FocusProvider (no player tables needed here).
   const wrapper = gameWrapper(
     {},
-    { setMode: (m) => modes.push(m), target: null },
+    { setMode: (m) => modes.push(m), focus: null },
   );
   const { getByText } = render(<DynamicSelectionPanel />, { wrapper });
 

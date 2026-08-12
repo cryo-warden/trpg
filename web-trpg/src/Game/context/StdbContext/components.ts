@@ -7,11 +7,12 @@ import { RowType } from "./RowType";
 import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
 import { EntityPresentation } from "../../domain/prominence";
+import { selectHostiles } from "../../domain/threat";
 import {
   selectEntityPresentations,
   selectLocationEntities,
 } from "./tableSelectors";
-import { Target } from "../TargetContext";
+import { Focus } from "../FocusContext";
 
 const createUseComponent =
   <T extends keyof RemoteTables>(tableName: T) =>
@@ -82,15 +83,16 @@ export const useLocation = (entityId: EntityId | null) => {
   return component.locationEntityId;
 };
 
-export const useActionOptions = (target: Target): ActionId[] => {
+/** Actions valid with the focused entity as their would-be target. */
+export const useActionOptions = (focus: Focus): ActionId[] => {
   const playerEntity = usePlayerEntity();
   const actionsComponent = useActionsComponent(playerEntity);
   const actionAssetOf = useActionAssetOf();
 
-  const targetHp = useHpComponent(target);
+  const targetHp = useHpComponent(focus);
   const playerAllegiance = useAllegianceComponent(playerEntity);
-  const targetAllegiance = useAllegianceComponent(target);
-  const targetPath = usePathComponent(target);
+  const targetAllegiance = useAllegianceComponent(focus);
+  const targetPath = usePathComponent(focus);
 
   return useMemo(
     () =>
@@ -100,7 +102,7 @@ export const useActionOptions = (target: Target): ActionId[] => {
         targetHasHp: !!targetHp,
         targetHasPath: !!targetPath,
         playerEntity,
-        target,
+        target: focus,
         playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
         targetAllegianceId: targetAllegiance?.allegianceEntityId ?? null,
       }),
@@ -112,9 +114,38 @@ export const useActionOptions = (target: Target): ActionId[] => {
       playerAllegiance,
       targetAllegiance,
       targetPath,
-      target,
+      focus,
     ],
   );
+};
+
+/** The hostiles sharing the player's location; non-empty means threatened. */
+export const useHostiles = (): EntityId[] => {
+  const playerEntity = usePlayerEntity();
+  const location = useLocation(playerEntity);
+  const cohabitantIds = useLocationEntities(location);
+  const playerAllegiance = useAllegianceComponent(playerEntity);
+  const hpRows = useTableData("hp_components", (table) => [...table.iter()], []);
+  const allegianceRows = useTableData(
+    "allegiance_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  return useMemo(() => {
+    const hpIds = new Set(hpRows.map((row) => row.entityId));
+    const allegianceById = new Map(
+      allegianceRows.map((row) => [row.entityId, row.allegianceEntityId]),
+    );
+    return selectHostiles({
+      viewer: playerEntity,
+      viewerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
+      cohabitants: cohabitantIds.map((entityId) => ({
+        entityId,
+        hasHp: hpIds.has(entityId),
+        allegianceId: allegianceById.get(entityId) ?? null,
+      })),
+    });
+  }, [playerEntity, playerAllegiance, cohabitantIds, hpRows, allegianceRows]);
 };
 
 export const useActionHotkey = (actionId: ActionId) => {

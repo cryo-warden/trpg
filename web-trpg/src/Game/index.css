@@ -4,7 +4,7 @@
   display: grid;
   grid-template:
     "events dynamic" 10fr
-    "self target" 3fr
+    "self focus" 3fr
     "queue queue" 1fr
     / 1fr 1fr;
 
@@ -20,8 +20,8 @@
     grid-area: self;
   }
 
-  .target {
-    grid-area: target;
+  .focus {
+    grid-area: focus;
   }
 
   .queue {

@@ -10,20 +10,22 @@ import {
 import { useActionName } from "./context/StdbContext/rendering";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { ActionId, EntityId } from "./trpg";
-import { useTarget } from "./context/TargetContext";
+import { useFocus } from "./context/FocusContext";
 
 export const ActionButton = ({
   target,
   actionId,
   ...props
 }: {
+  /** The action's explicit target; a single-target action with no explicit
+   * target binds the current focus. */
   target?: EntityId;
   actionId: ActionId;
 } & ComponentPropsWithoutRef<typeof Button>) => {
   const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
-  const contextualTarget = useTarget();
-  const finalTarget = target ?? contextualTarget;
+  const focus = useFocus();
+  const finalTarget = target ?? focus;
   const hotkey = useActionHotkey(actionId);
   const queueAction = useCallback(() => {
     if (playerEntity == null || finalTarget == null) {

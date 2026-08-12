@@ -12,7 +12,7 @@ import { EntityId } from "../trpg";
 import { EPBar } from "./EPBar";
 import { HPBar } from "./HPBar";
 import "./index.css";
-import { useSetTarget, useTarget } from "../context/TargetContext";
+import { useFocus, useSetFocus } from "../context/FocusContext";
 
 export const EntityPanel = ({
   entity,
@@ -26,11 +26,11 @@ export const EntityPanel = ({
 } & ComponentPropsWithoutRef<typeof Panel>) => {
   const playerEntity = usePlayerEntity();
   const getClassName = useGetClassName(playerEntity);
-  const target = useTarget();
-  const setTarget = useSetTarget();
-  const targetThis = useCallback(() => {
-    setTarget(entity);
-  }, [entity, setTarget]);
+  const focus = useFocus();
+  const setFocus = useSetFocus();
+  const focusThis = useCallback(() => {
+    setFocus(entity);
+  }, [entity, setFocus]);
 
   const panelRef = useHotkeyRef<HTMLDivElement>(hotkey);
 
@@ -54,9 +54,9 @@ export const EntityPanel = ({
         props.className ?? "",
         "EntityPanel",
         getClassName(entity),
-        entity === target ? "targeted" : "",
+        entity === focus ? "focused" : "",
       ].join(" ")}
-      onClick={targetThis}
+      onClick={focusThis}
     >
       <div>
         <EntityName entityId={entity} />

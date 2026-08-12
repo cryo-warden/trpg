@@ -11,8 +11,8 @@ import "./index.css";
 import { LoginRequestsPrompt } from "./LoginRequestsPrompt";
 import { RotatePasswordPanel } from "./RotatePasswordPanel";
 import { SelfPanel } from "./SelfPanel";
-import { TargetPanel } from "./TargetPanel";
-import { TargetProvider } from "./context/TargetProvider";
+import { FocusPanel } from "./FocusPanel";
+import { FocusProvider } from "./context/FocusProvider";
 
 /** No implicit accounts: an unattached connection sees only the account
  * screen; a provisional password blocks everything until rotated; an
@@ -38,15 +38,15 @@ export const Game = () => (
   <WithStdb>
     <AccountGate>
       <WithDynamicPanel>
-        <TargetProvider>
+        <FocusProvider>
           <div className="Game">
             <EventsPanel className="events" />
             <DynamicPanel className="dynamic" />
             <SelfPanel className="self" />
-            <TargetPanel className="target" />
+            <FocusPanel className="focus" />
             <Panel className="queue">Queue</Panel>
           </div>
-        </TargetProvider>
+        </FocusProvider>
       </WithDynamicPanel>
     </AccountGate>
   </WithStdb>
