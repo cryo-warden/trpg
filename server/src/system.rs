@@ -37,7 +37,19 @@ pub fn ep_system(ecs: Ecs) {
 
 pub fn shift_queued_action_system(ecs: Ecs) {
     for e in ecs.iter_queued_action_state() {
-        if e.action_state().is_none() {
+        // A queued action normally waits the active one out — but while the
+        // active action's CURRENT round is interruptible, queuing cancels it
+        // immediately.
+        let can_replace = match e.action_state() {
+            None => true,
+            Some(active) => ActionHandle::from_id(&ecs, active.action_id)
+                .round(active.sequence_index)
+                .is_some_and(|round| round.interruptible),
+        };
+        if can_replace {
+            if e.action_state().is_some() {
+                e.delete_action_state();
+            }
             let e = e.into_handle().shift_queued_action_state();
             if let Some(a) = e.action_state() {
                 if e.can_target_other(a.target_entity_id, a.action_id) {
@@ -66,7 +78,7 @@ pub fn action_system(ecs: Ecs) {
         let action_state = e.action_state();
         let entity_id = action_state.entity_id;
         let action_handle = ActionHandle::from_id(&ecs, action_state.action_id);
-        let effects = match action_handle.round_effects(action_state.sequence_index) {
+        let effects = match action_handle.round(action_state.sequence_index).map(|r| r.effects) {
             Some(effects) => effects,
             None => {
                 // A state pointing past the action's rounds should be
@@ -128,7 +140,7 @@ pub fn action_system(ecs: Ecs) {
 
         // Rounds without effects are waits; the action finishes only when
         // there is NO next round.
-        if action_handle.round_effects(new_sequence_index).is_none() {
+        if action_handle.round(new_sequence_index).is_none() {
             // TODO Emit event for finished action.
             with_action_state.delete_action_state();
         }

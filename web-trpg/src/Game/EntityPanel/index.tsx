@@ -5,6 +5,7 @@ import { useHotkeyRef } from "../../structural/useHotkeyRef";
 import { ActionButton } from "../ActionButton";
 import {
   useActionOptions,
+  useActionPhase,
   usePlayerEntity,
 } from "../context/StdbContext/components";
 import { EntityName } from "../EntityName";
@@ -28,6 +29,7 @@ export const EntityPanel = ({
   const getClassName = useGetClassName(playerEntity);
   const focus = useFocus();
   const setFocus = useSetFocus();
+  const actionPhase = useActionPhase(entity);
   const focusThis = useCallback(() => {
     setFocus(entity);
   }, [entity, setFocus]);
@@ -60,6 +62,12 @@ export const EntityPanel = ({
     >
       <div>
         <EntityName entityId={entity} />
+        {actionPhase === "preparing" && (
+          <span className="actionPhase"> — preparing…</span>
+        )}
+        {actionPhase === "recovering" && (
+          <span className="actionPhase"> — recovering…</span>
+        )}
       </div>
       <HPBar entity={entity} />
       <EPBar entity={entity} />

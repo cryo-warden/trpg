@@ -6,6 +6,7 @@ import { useActionAsset, useActionAssetOf } from "./assetLookup";
 import { RowType } from "./RowType";
 import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
+import { ActionPhase, actionPhaseOf } from "../../domain/actionPhase";
 import { EntityPresentation } from "../../domain/prominence";
 import { selectHostiles } from "../../domain/threat";
 import {
@@ -154,6 +155,31 @@ export const usePinnedActions = (): ActionId[] => {
   const playerEntity = usePlayerEntity();
   const pinnedActionsComponent = usePinnedActionsComponent(playerEntity);
   return pinnedActionsComponent?.actionIds ?? [];
+};
+
+/** The entity's current action phase, or null when it is not acting. Empty
+ * rounds are rendered visibly as preparation or recovery. */
+export const useActionPhase = (entityId: EntityId | null): ActionPhase | null => {
+  const actionState = useActionStateComponent(entityId);
+  const roundRows = useTableData(
+    "action_rounds",
+    (table) => [...table.iter()],
+    [],
+  );
+  return useMemo(() => {
+    if (actionState == null) {
+      return null;
+    }
+    return actionPhaseOf({
+      sequenceIndex: actionState.sequenceIndex,
+      rounds: roundRows
+        .filter((round) => round.actionId === actionState.actionId)
+        .map((round) => ({
+          sequenceIndex: round.sequenceIndex,
+          hasEffects: round.effects.length > 0,
+        })),
+    });
+  }, [actionState, roundRows]);
 };
 
 /** Presentation flags per entity, derived from component presence — the

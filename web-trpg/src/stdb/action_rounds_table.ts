@@ -21,4 +21,5 @@ export default __t.row({
   get effects() {
     return __t.array(ActionEffect);
   },
+  interruptible: __t.bool(),
 });

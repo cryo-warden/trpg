@@ -300,6 +300,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 action_id,
                 sequence_index: sequence_index as i32,
                 effects: round.effects,
+                interruptible: round.interruptible,
             });
             next_action_round_id += 1;
         }

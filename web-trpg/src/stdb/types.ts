@@ -81,6 +81,7 @@ export const ActionRound = __t.object("ActionRound", {
   get effects() {
     return __t.array(ActionEffect);
   },
+  interruptible: __t.bool(),
 });
 export type ActionRound = __Infer<typeof ActionRound>;
 
@@ -88,6 +89,7 @@ export const ActionRoundAuthor = __t.object("ActionRoundAuthor", {
   get effects() {
     return __t.array(ActionEffect);
   },
+  interruptible: __t.bool(),
 });
 export type ActionRoundAuthor = __Infer<typeof ActionRoundAuthor>;
 

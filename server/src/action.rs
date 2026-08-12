@@ -54,6 +54,9 @@ pub struct ActionRound {
     pub action_id: ActionId,
     pub sequence_index: i32,
     pub effects: Vec<ActionEffect>,
+    /// While an entity's CURRENT round is interruptible, queuing a new action
+    /// cancels the active one immediately instead of waiting it out.
+    pub interruptible: bool,
 }
 
 pub struct ActionHandle<'a> {
@@ -66,14 +69,13 @@ impl<'a> ActionHandle<'a> {
         Self { ctx, action_id }
     }
 
-    /// The given round's effects, or None when the action has no such round.
-    pub fn round_effects(&self, sequence_index: i32) -> Option<Vec<ActionEffect>> {
+    /// The given round, or None when the action has no such round.
+    pub fn round(&self, sequence_index: i32) -> Option<ActionRound> {
         self.ctx
             .db
             .action_rounds()
             .action_sequence()
             .filter((self.action_id, sequence_index))
             .next()
-            .map(|round| round.effects)
     }
 }

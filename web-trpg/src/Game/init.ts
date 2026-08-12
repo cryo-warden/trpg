@@ -44,7 +44,10 @@ const toStatBlockAuthor = (asset: StatBlockAsset): StatBlockAuthor => ({
 
 const toActionAuthor = (asset: ActionAsset): ActionAuthor => ({
   actionType: { tag: asset.type },
-  rounds: asset.rounds.map((round) => ({ effects: [...round] })),
+  rounds: asset.rounds.map((round) => ({
+    effects: [...round.effects],
+    interruptible: round.interruptible ?? false,
+  })),
 });
 
 const appearanceFeatureTypeMap = {

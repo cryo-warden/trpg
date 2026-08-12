@@ -25,11 +25,15 @@ use crate::{
 };
 
 /// One round of an action: every effect here resolves in the same system
-/// tick. (A named struct rather than a bare Vec<Vec<..>> because the TS
-/// codegen cannot lazily reference an enum inside a nested array.)
+/// tick, and an empty list is a wait round. (A named struct rather than a
+/// bare Vec<Vec<..>> because the TS codegen cannot lazily reference an enum
+/// inside a nested array.)
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ActionRoundAuthor {
     pub effects: Vec<ActionEffect>,
+    /// While this round is the active one, queuing a new action cancels the
+    /// action immediately instead of waiting it out.
+    pub interruptible: bool,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

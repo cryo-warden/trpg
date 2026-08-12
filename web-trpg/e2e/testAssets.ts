@@ -172,7 +172,12 @@ export const combatPack = ({
       name: "test_attack",
       value: {
         actionType: { tag: "Attack" },
-        rounds: [{ effects: [{ tag: "Attack", value: attackDamage }] }],
+        rounds: [
+          {
+            effects: [{ tag: "Attack", value: attackDamage }],
+            interruptible: false,
+          },
+        ],
       },
     },
   ],

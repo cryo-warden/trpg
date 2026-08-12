@@ -15,6 +15,7 @@ import { useTableData } from "./useTableData";
 // Records. The client never assigns, computes, or assumes an asset id.
 export const assetQueries = [
   "select * from actions",
+  "select * from action_rounds",
   "select * from appearance_features",
 ];
 
