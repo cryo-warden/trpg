@@ -29,8 +29,8 @@ pub enum Buff {
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ActionEffect {
     Buff(Buff),
-    Attack(i32),
-    Heal(i32),
+    Attack(i16),
+    Heal(i16),
     Move,
     Take,
     Drop,

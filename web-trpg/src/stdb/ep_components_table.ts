@@ -12,6 +12,6 @@ import {
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  ep: __t.i32(),
-  mep: __t.i32(),
+  ep: __t.i16(),
+  mep: __t.i16(),
 });

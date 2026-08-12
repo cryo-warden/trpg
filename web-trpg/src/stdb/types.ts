@@ -64,8 +64,8 @@ export const ActionEffect = __t.enum("ActionEffect", {
   get Buff() {
     return Buff;
   },
-  Attack: __t.i32(),
-  Heal: __t.i32(),
+  Attack: __t.i16(),
+  Heal: __t.i16(),
   Move: __t.unit(),
   Take: __t.unit(),
   Drop: __t.unit(),
@@ -221,12 +221,12 @@ export type AssetPack = __Infer<typeof AssetPack>;
 
 export const AttackComponent = __t.object("AttackComponent", {
   entityId: __t.u64(),
-  attack: __t.i32(),
+  attack: __t.i8(),
 });
 export type AttackComponent = __Infer<typeof AttackComponent>;
 
 export const AttackComponentBlob = __t.object("AttackComponentBlob", {
-  attack: __t.i32(),
+  attack: __t.i8(),
 });
 export type AttackComponentBlob = __Infer<typeof AttackComponentBlob>;
 
@@ -468,14 +468,14 @@ export type EntityIdSelector = __Infer<typeof EntityIdSelector>;
 
 export const EpComponent = __t.object("EpComponent", {
   entityId: __t.u64(),
-  ep: __t.i32(),
-  mep: __t.i32(),
+  ep: __t.i16(),
+  mep: __t.i16(),
 });
 export type EpComponent = __Infer<typeof EpComponent>;
 
 export const EpComponentBlob = __t.object("EpComponentBlob", {
-  ep: __t.i32(),
-  mep: __t.i32(),
+  ep: __t.i16(),
+  mep: __t.i16(),
 });
 export type EpComponentBlob = __Infer<typeof EpComponentBlob>;
 
@@ -498,20 +498,20 @@ export type FlagComponentBlob = __Infer<typeof FlagComponentBlob>;
 
 export const HpComponent = __t.object("HpComponent", {
   entityId: __t.u64(),
-  hp: __t.i32(),
-  mhp: __t.i32(),
-  defense: __t.i32(),
-  accumulatedDamage: __t.i32(),
-  accumulatedHealing: __t.i32(),
+  hp: __t.i16(),
+  mhp: __t.i16(),
+  defense: __t.i8(),
+  accumulatedDamage: __t.i16(),
+  accumulatedHealing: __t.i16(),
 });
 export type HpComponent = __Infer<typeof HpComponent>;
 
 export const HpComponentBlob = __t.object("HpComponentBlob", {
-  hp: __t.i32(),
-  mhp: __t.i32(),
-  defense: __t.i32(),
-  accumulatedDamage: __t.i32(),
-  accumulatedHealing: __t.i32(),
+  hp: __t.i16(),
+  mhp: __t.i16(),
+  defense: __t.i8(),
+  accumulatedDamage: __t.i16(),
+  accumulatedHealing: __t.i16(),
 });
 export type HpComponentBlob = __Infer<typeof HpComponentBlob>;
 
@@ -805,20 +805,20 @@ export const SpecialEntityBlobKey = __t.enum("SpecialEntityBlobKey", {
 export type SpecialEntityBlobKey = __Infer<typeof SpecialEntityBlobKey>;
 
 export const StatBlock = __t.object("StatBlock", {
-  attack: __t.i32(),
-  mhp: __t.i32(),
-  defense: __t.i32(),
-  mep: __t.i32(),
+  attack: __t.i8(),
+  defense: __t.i8(),
+  mhp: __t.i16(),
+  mep: __t.i16(),
   actionIds: __t.array(__t.u32()),
   appearanceFeatureIds: __t.array(__t.u32()),
 });
 export type StatBlock = __Infer<typeof StatBlock>;
 
 export const StatBlockAsset = __t.object("StatBlockAsset", {
-  attack: __t.i32(),
-  mhp: __t.i32(),
-  defense: __t.i32(),
-  mep: __t.i32(),
+  attack: __t.i8(),
+  mhp: __t.i16(),
+  defense: __t.i8(),
+  mep: __t.i16(),
   actionNames: __t.array(__t.string()),
   appearanceFeatureNames: __t.array(__t.string()),
 });

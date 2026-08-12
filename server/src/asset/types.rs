@@ -54,10 +54,10 @@ pub struct AppearanceFeatureAsset {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct StatBlockAsset {
-    pub attack: i32,
-    pub mhp: i32,
-    pub defense: i32,
-    pub mep: i32,
+    pub attack: i8,
+    pub mhp: i16,
+    pub defense: i8,
+    pub mep: i16,
     pub action_names: Vec<String>,
     pub appearance_feature_names: Vec<String>,
 }

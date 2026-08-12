@@ -70,7 +70,8 @@ secador::secador!(
                             match target_hp {
                                 None => {}
                                 Some(mut target_hp) => {
-                                    target_hp.accumulated_damage += damage;
+                                    target_hp.accumulated_damage =
+                                        target_hp.accumulated_damage.saturating_add(*damage);
                                     ecs.db.hp_components().entity_id().update(target_hp);
                                 }
                             }
@@ -82,7 +83,8 @@ secador::secador!(
                             match target_hp {
                                 None => {}
                                 Some(mut target_hp) => {
-                                    target_hp.accumulated_healing += heal;
+                                    target_hp.accumulated_healing =
+                                        target_hp.accumulated_healing.saturating_add(*heal);
                                     ecs.db.hp_components().entity_id().update(target_hp);
                                 }
                             }

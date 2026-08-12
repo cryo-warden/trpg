@@ -14,13 +14,11 @@ use std::cmp::{max, min};
 pub fn hp_system(ecs: Ecs) {
     for mut e in ecs.iter_hp() {
         let hp = e.hp_mut();
-        hp.hp = max(
-            0,
-            min(
-                hp.mhp,
-                hp.hp + hp.accumulated_healing - hp.accumulated_damage,
-            ),
-        );
+        // Settle in i32: the i16 fields can't overflow a widened sum, and the
+        // clamp guarantees the result narrows back losslessly.
+        let settled = i32::from(hp.hp) + i32::from(hp.accumulated_healing)
+            - i32::from(hp.accumulated_damage);
+        hp.hp = max(0, min(i32::from(hp.mhp), settled)) as i16;
         hp.accumulated_healing = 0;
         hp.accumulated_damage = 0;
         e.update_hp();
@@ -103,15 +101,16 @@ pub fn action_system(ecs: Ecs) {
                     ));
                 }
                 ActionEffect::Attack(damage) => {
-                    let attack = e.attack().map(|c| c.attack).unwrap_or(0);
+                    let attack = i32::from(e.attack().map(|c| c.attack).unwrap_or(0));
                     let t = ecs.find(action_state.target_entity_id);
-                    let target_defense = t.hp().map(|c| c.defense).unwrap_or(0);
+                    let target_defense = i32::from(t.hp().map(|c| c.defense).unwrap_or(0));
+                    // Computed in i32 and clamped to the i16 damage range so
+                    // the narrowing below is lossless.
+                    let dealt = max(0, i32::from(*damage) + attack - target_defense)
+                        .min(i32::from(i16::MAX)) as i16;
                     queue.emit_middle(ecs.new_event(
                         entity_id,
-                        EventType::ActionEffect(ActionEffect::Attack(max(
-                            0,
-                            damage + attack - target_defense,
-                        ))),
+                        EventType::ActionEffect(ActionEffect::Attack(dealt)),
                         action_state.target_entity_id,
                     ));
                 }

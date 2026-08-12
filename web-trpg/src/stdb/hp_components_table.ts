@@ -12,9 +12,9 @@ import {
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  hp: __t.i32(),
-  mhp: __t.i32(),
-  defense: __t.i32(),
-  accumulatedDamage: __t.i32().name("accumulated_damage"),
-  accumulatedHealing: __t.i32().name("accumulated_healing"),
+  hp: __t.i16(),
+  mhp: __t.i16(),
+  defense: __t.i8(),
+  accumulatedDamage: __t.i16().name("accumulated_damage"),
+  accumulatedHealing: __t.i16().name("accumulated_healing"),
 });

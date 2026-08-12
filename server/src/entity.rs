@@ -1,6 +1,6 @@
 use crate::{action::ActionId, asset::stat_block::StatBlock};
 use ecs::entity;
-use spacetimedb::{SpacetimeType, Timestamp};
+use spacetimedb::Timestamp;
 
 entity!(
     #[struct_attrs]
@@ -73,22 +73,22 @@ entity!(
 
     #[component(attack in attack_components)]
     struct AttackComponent {
-        pub attack: i32,
+        pub attack: i8,
     }
 
     #[component(hp in hp_components)]
     struct HpComponent {
-        pub hp: i32,
-        pub mhp: i32,
-        pub defense: i32,
-        pub accumulated_damage: i32,
-        pub accumulated_healing: i32,
+        pub hp: i16,
+        pub mhp: i16,
+        pub defense: i8,
+        pub accumulated_damage: i16,
+        pub accumulated_healing: i16,
     }
 
     #[component(ep in ep_components)]
     struct EpComponent {
-        pub ep: i32,
-        pub mep: i32,
+        pub ep: i16,
+        pub mep: i16,
     }
 
     #[component(player_controller in player_controller_components)]

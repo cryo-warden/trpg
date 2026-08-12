@@ -6,9 +6,9 @@ use crate::{
 
 pub trait EntityHandleExtension {
     fn apply_stat_block(self, stat_block: StatBlock) -> Self;
-    fn set_mhp(self, mhp: i32) -> Self;
-    fn set_defense(self, defense: i32) -> Self;
-    fn set_mep(self, mep: i32) -> Self;
+    fn set_mhp(self, mhp: i16) -> Self;
+    fn set_defense(self, defense: i8) -> Self;
+    fn set_mep(self, mep: i16) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
     fn allegiance_id(&self) -> Option<u64>;
@@ -31,7 +31,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
-    fn set_mhp(self, mhp: i32) -> Self {
+    fn set_mhp(self, mhp: i16) -> Self {
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {
             hp.mhp = mhp;
@@ -42,7 +42,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
-    fn set_defense(self, defense: i32) -> Self {
+    fn set_defense(self, defense: i8) -> Self {
         let e = self.to_handle();
         if let Some(mut hp_component) = e.hp() {
             hp_component.defense = defense;
@@ -53,7 +53,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
-    fn set_mep(self, mep: i32) -> Self {
+    fn set_mep(self, mep: i16) -> Self {
         let e = self.to_handle();
         if let Some(mut ep_component) = e.ep() {
             ep_component.mep = mep;
