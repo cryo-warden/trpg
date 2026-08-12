@@ -1,0 +1,29 @@
+/* Two internally vertically-aligned sections. Wide: create | login.
+ * Narrow: login above create (order swaps via flex order). */
+.account .account-sections {
+  display: flex;
+  flex-direction: row;
+  gap: 1em;
+}
+
+.account .account-sections section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5em;
+  flex: 1;
+}
+
+@media (max-width: 40em) {
+  .account .account-sections {
+    flex-direction: column;
+  }
+
+  .account .account-sections .login {
+    order: 0;
+  }
+
+  .account .account-sections .create {
+    order: 1;
+  }
+}

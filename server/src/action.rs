@@ -46,6 +46,21 @@ pub enum ActionEffect {
     Drop,
     Equip,
     Unequip,
+    /// AUTHORED extra intimidation (heavies put it on their telegraph
+    /// rounds; a roar is nothing but this). Every round also carries an
+    /// implicit size-delta intimidation against all enemies present; the
+    /// action system sums both and broadcasts one early-phase event per
+    /// enemy — this effect is never emitted per-target like Attack.
+    Intimidate(i16),
+    /// Spend effort to recover nerve: the cower stance's counterplay.
+    /// (A named struct because SATS enums take only unit/newtype variants.)
+    Rally(RallyEffect),
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct RallyEffect {
+    pub ep_cost: i16,
+    pub morale: i16,
 }
 
 /// One round of an action, with its effects denormalized into the row: every

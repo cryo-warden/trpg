@@ -77,6 +77,10 @@ export const ActionEffect = __t.enum("ActionEffect", {
   Drop: __t.unit(),
   Equip: __t.unit(),
   Unequip: __t.unit(),
+  Intimidate: __t.i16(),
+  get Rally() {
+    return RallyEffect;
+  },
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
 
@@ -253,6 +257,7 @@ export const AssetPack = __t.object("AssetPack", {
   get stances() {
     return __t.array(NamedStanceAsset);
   },
+  coweringStanceName: __t.option(__t.string()),
   get encounterBlobs() {
     return __t.array(NamedEntityBlobAsset);
   },
@@ -418,6 +423,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
+  get cowered() {
+    return __t.option(FlagComponentBlob);
+  },
   get attack() {
     return __t.option(AttackComponentBlob);
   },
@@ -426,6 +434,12 @@ export const EntityBlob = __t.object("EntityBlob", {
   },
   get ep() {
     return __t.option(EpComponentBlob);
+  },
+  get size() {
+    return __t.option(SizeComponentBlob);
+  },
+  get morale() {
+    return __t.option(MoraleComponentBlob);
   },
   get playerController() {
     return __t.option(PlayerControllerComponentBlob);
@@ -816,6 +830,19 @@ export const LoginResponse = __t.object("LoginResponse", {
 });
 export type LoginResponse = __Infer<typeof LoginResponse>;
 
+export const MoraleComponent = __t.object("MoraleComponent", {
+  entityId: __t.u64(),
+  morale: __t.i16(),
+  maxMorale: __t.i16(),
+});
+export type MoraleComponent = __Infer<typeof MoraleComponent>;
+
+export const MoraleComponentBlob = __t.object("MoraleComponentBlob", {
+  morale: __t.i16(),
+  maxMorale: __t.i16(),
+});
+export type MoraleComponentBlob = __Infer<typeof MoraleComponentBlob>;
+
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),
   name: __t.string(),
@@ -932,6 +959,12 @@ export const PlayerControllerComponentBlob = __t.object("PlayerControllerCompone
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
 
+export const RallyEffect = __t.object("RallyEffect", {
+  epCost: __t.i16(),
+  morale: __t.i16(),
+});
+export type RallyEffect = __Infer<typeof RallyEffect>;
+
 export const Relic = __t.object("Relic", {
   id: __t.u32(),
   name: __t.string(),
@@ -958,6 +991,17 @@ export const Role = __t.object("Role", {
 });
 export type Role = __Infer<typeof Role>;
 
+export const SizeComponent = __t.object("SizeComponent", {
+  entityId: __t.u64(),
+  size: __t.i8(),
+});
+export type SizeComponent = __Infer<typeof SizeComponent>;
+
+export const SizeComponentBlob = __t.object("SizeComponentBlob", {
+  size: __t.i8(),
+});
+export type SizeComponentBlob = __Infer<typeof SizeComponentBlob>;
+
 export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
   get key() {
     return SpecialEntityBlobKey;
@@ -973,6 +1017,20 @@ export const SpecialEntityBlobKey = __t.enum("SpecialEntityBlobKey", {
   NewPlayer: __t.unit(),
 });
 export type SpecialEntityBlobKey = __Infer<typeof SpecialEntityBlobKey>;
+
+export const SpecialStance = __t.object("SpecialStance", {
+  get key() {
+    return SpecialStanceKey;
+  },
+  stanceId: __t.u32(),
+});
+export type SpecialStance = __Infer<typeof SpecialStance>;
+
+// The tagged union or sum type for the algebraic type `SpecialStanceKey`.
+export const SpecialStanceKey = __t.enum("SpecialStanceKey", {
+  Cowering: __t.unit(),
+});
+export type SpecialStanceKey = __Infer<typeof SpecialStanceKey>;
 
 export const Stance = __t.object("Stance", {
   id: __t.u32(),
@@ -1029,6 +1087,8 @@ export const StatBlock = __t.object("StatBlock", {
   ward: __t.i8(),
   focus: __t.i8(),
   wing: __t.i8(),
+  size: __t.i8(),
+  morale: __t.i8(),
   mhp: __t.i16(),
   mep: __t.i16(),
   actionIds: __t.array(__t.u32()),
@@ -1051,6 +1111,8 @@ export const StatBlockAsset = __t.object("StatBlockAsset", {
   ward: __t.i8(),
   focus: __t.i8(),
   wing: __t.i8(),
+  size: __t.i8(),
+  morale: __t.i8(),
   actionNames: __t.array(__t.string()),
   appearanceFeatureNames: __t.array(__t.string()),
   stanceNames: __t.array(__t.string()),
@@ -1084,6 +1146,8 @@ export const StatRequirements = __t.object("StatRequirements", {
   ward: __t.option(__t.i8()),
   focus: __t.option(__t.i8()),
   wing: __t.option(__t.i8()),
+  size: __t.option(__t.i8()),
+  morale: __t.option(__t.i8()),
   mhp: __t.option(__t.i16()),
   mep: __t.option(__t.i16()),
 });

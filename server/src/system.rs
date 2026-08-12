@@ -92,8 +92,65 @@ pub fn action_system(ecs: Ecs) {
             }
         };
 
+        // Every round of every action — even a wait — intimidates all
+        // enemies present: the implicit size-delta baseline plus whatever
+        // extra this round authors (heavies put Intimidate on their
+        // telegraphs). One early-phase event per enemy; early so that fear
+        // lands BEFORE this tick's blows.
+        {
+            let actor = ecs.find(entity_id);
+            let actor_size = actor.size().map_or(0, |c| i32::from(c.size));
+            let authored: i32 = effects
+                .iter()
+                .map(|effect| match effect {
+                    ActionEffect::Intimidate(magnitude) => i32::from(*magnitude),
+                    _ => 0,
+                })
+                .sum();
+            if let Some(location) = actor.location() {
+                let cohabitants: Vec<_> = ecs
+                    .db
+                    .location_components()
+                    .location_entity_id()
+                    .filter(location.location_entity_id)
+                    .collect();
+                for cohabitant in cohabitants {
+                    if cohabitant.entity_id == entity_id
+                        || actor.is_ally(cohabitant.entity_id)
+                    {
+                        continue;
+                    }
+                    let victim = ecs.find(cohabitant.entity_id);
+                    if victim.morale().is_none() {
+                        continue;
+                    }
+                    let victim_size = victim.size().map_or(0, |c| i32::from(c.size));
+                    let magnitude = max(0, actor_size - victim_size) + authored;
+                    if magnitude > 0 {
+                        queue.emit_early(ecs.new_event(
+                            entity_id,
+                            EventType::ActionEffect(ActionEffect::Intimidate(
+                                magnitude.min(i32::from(i16::MAX)) as i16,
+                            )),
+                            cohabitant.entity_id,
+                        ));
+                    }
+                }
+            }
+        }
+
         for effect in &effects {
             match effect {
+                // Absorbed into the broadcast above; never emitted at the
+                // action's own target.
+                ActionEffect::Intimidate(_) => {}
+                ActionEffect::Rally(_) => {
+                    queue.emit_middle(ecs.new_event(
+                        entity_id,
+                        EventType::ActionEffect(effect.to_owned()),
+                        action_state.target_entity_id,
+                    ));
+                }
                 ActionEffect::Buff(_) => {
                     queue.emit_early(ecs.new_event(
                         entity_id,

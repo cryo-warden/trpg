@@ -27,6 +27,8 @@ import {
   AttackComponentBlob,
   HpComponentBlob,
   EpComponentBlob,
+  SizeComponentBlob,
+  MoraleComponentBlob,
   PlayerControllerComponentBlob,
   EnemyControllerComponentBlob,
   ActionStateComponentBlob,
@@ -94,6 +96,9 @@ export default __t.row({
   get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("total_stat_block_dirty_flag");
   },
+  get cowered() {
+    return __t.option(FlagComponentBlob);
+  },
   get attack() {
     return __t.option(AttackComponentBlob);
   },
@@ -102,6 +107,12 @@ export default __t.row({
   },
   get ep() {
     return __t.option(EpComponentBlob);
+  },
+  get size() {
+    return __t.option(SizeComponentBlob);
+  },
+  get morale() {
+    return __t.option(MoraleComponentBlob);
   },
   get playerController() {
     return __t.option(PlayerControllerComponentBlob).name("player_controller");

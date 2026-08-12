@@ -11,7 +11,9 @@ secador::secador!(
 
         use crate::{
             action::{ActionEffect, ActionId},
-            entity::{hp_components, item_components, location_components, path_components},
+            asset::stance::{special_stances, SpecialStanceKey},
+            entity::*,
+            entity_handle_extension::EntityHandleExtension,
         };
 
         #[derive(Debug, Clone, SpacetimeType)]
@@ -158,6 +160,80 @@ secador::secador!(
                         }
                         ActionEffect::Equip => true,   // WIP
                         ActionEffect::Unequip => true, // WIP
+                        // Fear, resolved in the early phase so it lands
+                        // before this tick's blows. A magnitude beyond the
+                        // best nerve among the victim's co-located faction
+                        // BREAKS the victim: action canceled (flinching is
+                        // not a choice, interruptible or not), forced into
+                        // the cowering stance, morale drained. An already
+                        // cowered victim just stays down — no re-breaking,
+                        // so it can still rally and crawl away.
+                        ActionEffect::Intimidate(magnitude) => {
+                            let victim = ecs.find(target_entity_id);
+                            match victim.morale() {
+                                None => false,
+                                Some(mut morale_component) => {
+                                    let breaks = victim.cowered().is_none()
+                                        && i32::from(*magnitude) > victim.effective_morale();
+                                    if breaks {
+                                        match ecs
+                                            .db
+                                            .special_stances()
+                                            .key()
+                                            .find(SpecialStanceKey::Cowering)
+                                        {
+                                            None => {
+                                                log::error!(
+                                                    "Intimidation broke entity {} but no cowering stance is registered.",
+                                                    target_entity_id
+                                                );
+                                            }
+                                            Some(cowering) => {
+                                                if victim.action_state().is_some() {
+                                                    victim.delete_action_state();
+                                                }
+                                                if victim.queued_action_state().is_some() {
+                                                    victim.delete_queued_action_state();
+                                                }
+                                                victim
+                                                    .clone()
+                                                    .upsert_new_active_stance(cowering.stance_id)
+                                                    .into_handle()
+                                                    .upsert_new_cowered();
+                                                morale_component.morale = std::cmp::max(
+                                                    0,
+                                                    morale_component
+                                                        .morale
+                                                        .saturating_sub(*magnitude),
+                                                );
+                                                victim.update_morale_row(morale_component);
+                                            }
+                                        }
+                                    }
+                                    breaks
+                                }
+                            }
+                        }
+                        // Spending effort to recover nerve; leaving the
+                        // cower still goes through set_stance's pressure
+                        // gate.
+                        ActionEffect::Rally(rally) => {
+                            let target = ecs.find(target_entity_id);
+                            match (target.ep(), target.morale()) {
+                                (Some(mut ep_component), Some(mut morale_component))
+                                    if ep_component.ep >= rally.ep_cost =>
+                                {
+                                    ep_component.ep -= rally.ep_cost;
+                                    target.update_ep_row(ep_component);
+                                    morale_component.morale = morale_component.max_morale.min(
+                                        morale_component.morale.saturating_add(rally.morale),
+                                    );
+                                    target.update_morale_row(morale_component);
+                                    true
+                                }
+                                _ => false,
+                            }
+                        }
                     },
                 };
 

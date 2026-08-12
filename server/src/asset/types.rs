@@ -72,6 +72,12 @@ pub struct StatBlockAsset {
     pub ward: i8,
     pub focus: i8,
     pub wing: i8,
+    /// Granular size: contests, intimidation, and (later) pickup and gear
+    /// gating all compare DELTAS, so nothing is inherently gargantuan — a
+    /// kaiju battle and a fairy battle are the same mechanics.
+    pub size: i8,
+    /// Base (maximum) morale; current morale lives in MoraleComponent.
+    pub morale: i8,
     pub action_names: Vec<String>,
     pub appearance_feature_names: Vec<String>,
     /// Stances GRANTED by this block: bodies grant their postures, traits

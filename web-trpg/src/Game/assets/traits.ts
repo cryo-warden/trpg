@@ -10,10 +10,10 @@ export const TRAITS = {
   }),
   mobile: statBlock({ actionNames: ["move"] }),
   bopper: statBlock({ actionNames: ["bop", "boppity_bop"] }),
-  tiny: statBlock({ attack: -1, mhp: -2 }),
-  small: statBlock({ mhp: -1 }),
-  big: statBlock({ mhp: 2 }),
-  huge: statBlock({ attack: 1, mhp: 5 }),
+  tiny: statBlock({ attack: -1, mhp: -2, size: -4 }),
+  small: statBlock({ mhp: -1, size: -1 }),
+  big: statBlock({ mhp: 2, size: 1 }),
+  huge: statBlock({ attack: 1, mhp: 5, size: 3, morale: 2 }),
   // NATURE traits: a nature rides a body (skeletal human, fiery imp — any
   // element on any body). Appearance-only for now, on purpose: a damage
   // ATTRIBUTE system — not quite the usual damage types — is planned to

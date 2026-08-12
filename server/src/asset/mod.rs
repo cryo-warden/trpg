@@ -26,7 +26,7 @@ use crate::{
         armor::{armors, Armor},
         r#trait::{traits, Trait},
         relic::{relics, Relic},
-        stance::{stances, Stance},
+        stance::{special_stances, stances, SpecialStance, SpecialStanceKey, Stance},
         stat_block::StatBlock,
     },
     ecs_extension::EcsExtension,
@@ -78,6 +78,9 @@ pub struct AssetPack {
     armors: Vec<NamedStatBlockAsset>,
     relics: Vec<NamedStatBlockAsset>,
     stances: Vec<NamedStanceAsset>,
+    /// Which stance intimidation forces entities into; a pack without
+    /// morale-relevant content may omit it (forcing then fails loudly).
+    cowering_stance_name: Option<String>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
@@ -220,6 +223,9 @@ fn resolve_entity_blob(
             .transpose()?,
         stance_loadouts: None,
         known_stances: None,
+        size: None,
+        morale: None,
+        cowered: None,
         traits: author
             .trait_names
             .map(|names| {
@@ -316,6 +322,8 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         ward,
         focus,
         wing,
+        size,
+        morale,
         action_names,
         appearance_feature_names,
         stance_names,
@@ -334,6 +342,8 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         ward,
         focus,
         wing,
+        size,
+        morale,
         action_ids: action_names
             .iter()
             .map(|n| resolve_name(&maps.actions, "action", n))
@@ -554,6 +564,24 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.stances().id().update(row);
         } else {
             ctx.db.stances().insert(row);
+        }
+    }
+
+    if let Some(cowering_name) = asset_pack.cowering_stance_name {
+        let row = SpecialStance {
+            key: SpecialStanceKey::Cowering,
+            stance_id: resolve_name(&maps.stances, "stance", &cowering_name)?,
+        };
+        if ctx
+            .db
+            .special_stances()
+            .key()
+            .find(SpecialStanceKey::Cowering)
+            .is_some()
+        {
+            ctx.db.special_stances().key().update(row);
+        } else {
+            ctx.db.special_stances().insert(row);
         }
     }
 

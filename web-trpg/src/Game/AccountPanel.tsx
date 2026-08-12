@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Panel } from "../structural/Panel";
+import "./AccountPanel.css";
 import { useMyLoginRequest } from "./context/StdbContext/account";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 
@@ -41,11 +42,15 @@ export const AccountPanel = () => {
     );
   };
 
+  // Two internally vertically-aligned sections: side by side on a wide
+  // viewport (create left, login right); stacked on narrow (login on top).
+  // The ordering swap is pure CSS — see AccountPanel.css.
   return (
     <Panel className="account">
       <h2>Account</h2>
       {error != null && <div className="error">{error}</div>}
-      <section>
+      <div className="account-sections">
+      <section className="create">
         <h3>New account</h3>
         <input
           aria-label="new account name"
@@ -60,7 +65,7 @@ export const AccountPanel = () => {
           Create account
         </button>
       </section>
-      <section>
+      <section className="login">
         <h3>Log in</h3>
         <input
           aria-label="login account name"
@@ -102,6 +107,7 @@ export const AccountPanel = () => {
           </div>
         )}
       </section>
+      </div>
     </Panel>
   );
 };

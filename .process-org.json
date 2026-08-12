@@ -119,6 +119,14 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-morale": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/10-morale.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -199,7 +207,8 @@
         "test-e2e-login",
         "test-e2e-stances",
         "test-e2e-production",
-        "test-e2e-loadout"
+        "test-e2e-loadout",
+        "test-e2e-morale"
       ]
     }
   }

@@ -42,6 +42,7 @@ export const componentQueries = [
   "select * from actions_components",
   "select * from active_stance_components",
   "select * from known_stances_components",
+  "select * from morale_components",
   "select * from item_components",
   "select * from armor_components",
   "select * from relics_components",
@@ -66,6 +67,7 @@ export const useActionStateComponent = createUseComponent(
 );
 export const useActionsComponent = createUseComponent("actions_components");
 export const useAttackComponent = createUseComponent("attack_components");
+export const useMoraleComponent = createUseComponent("morale_components");
 export const useEpComponent = createUseComponent("ep_components");
 export const useHpComponent = createUseComponent("hp_components");
 const useLocationComponent = createUseComponent("location_components");

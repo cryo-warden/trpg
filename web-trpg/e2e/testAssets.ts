@@ -30,6 +30,7 @@ const emptyPack = (): AssetPack => ({
   armors: [],
   relics: [],
   stances: [],
+  coweringStanceName: undefined,
   encounterBlobs: [],
   encounters: [],
   locationMapThemes: [],
@@ -311,6 +312,111 @@ export const loadoutPack = (): AssetPack => ({
     }),
     blob({
       item: { tag: "Relic", value: "test_charm" },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+  ],
+});
+
+/**
+ * A morale world: a small player (the mouse) shares a room with a huge
+ * attacking enemy (the giant). Every round of the giant's attack carries the
+ * implicit size-delta intimidation plus an authored bonus — enough to break
+ * the mouse into the registered cowering stance. The cower grants rally
+ * (EP -> morale), a path leads to safety, and standing back up is gated on
+ * nerve beating the looming pressure.
+ */
+export const moralePack = (): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    {
+      name: "test_smash",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [
+              { tag: "Attack", value: 1 },
+              { tag: "Intimidate", value: 3 },
+            ],
+            interruptible: false,
+          },
+        ],
+      },
+    },
+    {
+      name: "test_rally",
+      value: {
+        actionType: { tag: "Buff" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [{ tag: "Rally", value: { epCost: 1, morale: 2 } }],
+            interruptible: false,
+          },
+        ],
+      },
+    },
+    {
+      name: "test_move",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: requirements({ gait: 1 }),
+        rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
+      },
+    },
+  ],
+  stances: [
+    {
+      name: "test_standing",
+      value: { requirements: NO_REQUIREMENTS, statBlock: statBlock({}) },
+    },
+    {
+      name: "test_cowering",
+      value: {
+        requirements: NO_REQUIREMENTS,
+        statBlock: statBlock({ actionNames: ["test_rally"] }),
+      },
+    },
+  ],
+  coweringStanceName: "test_cowering",
+  baselines: [
+    {
+      name: "test_mouse",
+      value: statBlock({
+        mhp: 12,
+        mep: 5,
+        gait: 2,
+        size: 2,
+        morale: 5,
+        actionNames: ["test_move"],
+        stanceNames: ["test_standing"],
+      }),
+    },
+    {
+      name: "test_giant",
+      value: statBlock({
+        mhp: 20,
+        size: 6,
+        actionNames: ["test_smash"],
+      }),
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_mouse",
+    stanceName: "test_standing",
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+  }),
+  instantiateEntityBlobs: [
+    blob({
+      enemyController: {},
+      baselineName: "test_giant",
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+    }),
+    blob({
+      path: { destinationEntityId: { tag: "Literal", value: 1000n } },
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
     }),
   ],

@@ -119,6 +119,7 @@ entity!(
       traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
       equipment_stat_block_dirty_flag in equipment_stat_block_dirty_flag_components,
       total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
+      cowered in cowered_components,
     )]
     struct FlagComponent {}
 
@@ -140,6 +141,23 @@ entity!(
     struct EpComponent {
         pub ep: i16,
         pub mep: i16,
+    }
+
+    // Granular size, applied from the total stat block; every size rule
+    // (intimidation now; contests, pickup, and gear gating later) compares
+    // DELTAS between two entities' sizes.
+    #[component(size in size_components)]
+    struct SizeComponent {
+        pub size: i8,
+    }
+
+    // Nerve. max_morale comes from the total stat block; the current value
+    // is drained by being broken (a successful intimidation force) and
+    // restored by Rally.
+    #[component(morale in morale_components)]
+    struct MoraleComponent {
+        pub morale: i16,
+        pub max_morale: i16,
     }
 
     #[component(player_controller in player_controller_components)]

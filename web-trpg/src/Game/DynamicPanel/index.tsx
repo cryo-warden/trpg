@@ -9,6 +9,7 @@ import {
   useHpComponent,
   useLocation,
   useLocationEntities,
+  useMoraleComponent,
   usePlayerEntity,
 } from "../context/StdbContext/components";
 import { EntityName } from "../EntityName";
@@ -26,6 +27,7 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const playerContents = useLocationEntities(playerEntity);
   const hpComponent = useHpComponent(playerEntity);
   const attackComponent = useAttackComponent(playerEntity);
+  const moraleComponent = useMoraleComponent(playerEntity);
   const entities: EntityId[] =
     mode === "location"
       ? locationEntities
@@ -63,6 +65,10 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
         <EPBar entity={playerEntity} />
         <div>Attack: {attackComponent?.attack ?? 0}</div>
         <div>Defense: {hpComponent?.defense ?? 0}</div>
+        <div>
+          Morale: {moraleComponent?.morale ?? 0} /{" "}
+          {moraleComponent?.maxMorale ?? 0}
+        </div>
       </Panel>
     );
   }

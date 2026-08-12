@@ -17,6 +17,13 @@ const Guard = (value: number) =>
   }) as const satisfies ActionEffect;
 const Take = { tag: "Take" } as const satisfies ActionEffect;
 const Drop = { tag: "Drop" } as const satisfies ActionEffect;
+const Intimidate = (value: number) =>
+  ({ tag: "Intimidate", value }) as const satisfies ActionEffect;
+const Rally = (epCost: number, morale: number) =>
+  ({
+    tag: "Rally",
+    value: { epCost, morale },
+  }) as const satisfies ActionEffect;
 
 const round = (...effects: ActionEffect[]) => ({
   effects,
@@ -51,8 +58,10 @@ export const ACTIONS = {
   boppity_bop: {
     actionType: { tag: "Attack" },
     requirements: requirements({ hand: 1 }),
-    // A heavy: interruptible preparation, then the double hit.
-    rounds: [interruptibleRound(), round(Attack(1), Attack(1))],
+    // A heavy: interruptible preparation, then the double hit. The wind-up
+    // IS the scary part: heavies author their extra intimidation onto the
+    // telegraph round.
+    rounds: [interruptibleRound(Intimidate(1)), round(Attack(1), Attack(1))],
   },
   divine_heal: {
     actionType: { tag: "Buff" },
@@ -63,7 +72,7 @@ export const ACTIONS = {
     actionType: { tag: "Attack" },
     requirements: NO_REQUIREMENTS,
     // A heavy with a committed (uninterruptible) telegraph, then recovery.
-    rounds: [round(), round(Attack(1)), round()],
+    rounds: [round(Intimidate(1)), round(Attack(1)), round()],
   },
   scratch: {
     actionType: { tag: "Attack" },
@@ -85,7 +94,7 @@ export const ACTIONS = {
   smash: {
     actionType: { tag: "Attack" },
     requirements: requirements({ blunt: 1 }),
-    rounds: [interruptibleRound(), round(Attack(2))],
+    rounds: [interruptibleRound(Intimidate(1)), round(Attack(2))],
   },
   slash: {
     actionType: { tag: "Attack" },
@@ -101,7 +110,7 @@ export const ACTIONS = {
     actionType: { tag: "Attack" },
     requirements: requirements({ bladed: 1 }),
     // A heavy: interruptible wind-up, then the blow.
-    rounds: [interruptibleRound(), round(Attack(3))],
+    rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
   thrust: {
     actionType: { tag: "Attack" },
@@ -117,12 +126,12 @@ export const ACTIONS = {
     actionType: { tag: "Attack" },
     requirements: requirements({ bladed: 1 }),
     // Committed footwork first, then the strike.
-    rounds: [interruptibleRound(), round(Attack(3))],
+    rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
   fire_bolt: {
     actionType: { tag: "Attack" },
     requirements: requirements({ focus: 1 }),
-    rounds: [interruptibleRound(), round(Attack(3))],
+    rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
   ice_shard: {
     actionType: { tag: "Attack" },
@@ -146,6 +155,12 @@ export const ACTIONS = {
     actionType: { tag: "Inventory" },
     requirements: NO_REQUIREMENTS,
     rounds: [round(Drop)],
+  },
+  // The cower stance's counterplay: spend effort, recover nerve.
+  rally: {
+    actionType: { tag: "Buff" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(Rally(1, 2))],
   },
 } satisfies Record<string, ActionAsset>;
 
@@ -240,5 +255,9 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   drop: {
     displayName: "Drop",
     beginTemplate: "{0:sentence:subject} set down {1:object}.",
+  },
+  rally: {
+    displayName: "Rally",
+    beginTemplate: "{0:sentence:subject} steadied their nerve.",
   },
 };

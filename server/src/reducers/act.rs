@@ -34,6 +34,19 @@ pub fn set_stance(ctx: &ReducerContext, stance_id: u32) -> Result<(), String> {
         .id()
         .find(stance_id)
         .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
+    // A forced cower holds until the entity's nerve beats the standing
+    // pressure: out-nerve what looms over you, or crawl somewhere it
+    // doesn't.
+    if p.cowered().is_some() {
+        let nerve = p.effective_morale();
+        let pressure = p.looming_pressure();
+        if nerve <= pressure {
+            return Err(format!(
+                "Too shaken to change stance: morale {} does not beat the looming pressure {}.",
+                nerve, pressure
+            ));
+        }
+    }
     // Only KNOWN stances may be adopted: the total stat block grants them
     // (bodies now, quest rewards later), and the menu lists exactly these.
     if !{ p.known_stances() }.is_some_and(|known| known.stance_ids.contains(&stance_id)) {
@@ -50,7 +63,11 @@ pub fn set_stance(ctx: &ReducerContext, stance_id: u32) -> Result<(), String> {
             stance.name
         ));
     }
-    let handle = p.into_handle().upsert_new_active_stance(stance_id).into_handle();
+    let handle = p.into_handle();
+    if handle.cowered().is_some() {
+        handle.delete_cowered();
+    }
+    let handle = handle.upsert_new_active_stance(stance_id).into_handle();
 
     // A player with stance loadouts re-arms on swap: the new stance's
     // assigned armaments (or none, when unassigned) become the wielded set.

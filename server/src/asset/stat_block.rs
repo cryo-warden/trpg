@@ -10,7 +10,10 @@
 secador::secador_multi!(
     seca_small_int!(
         stat,
-        [attack, defense, hand, gait, reach, blunt, bladed, pole, ward, focus, wing]
+        [
+            attack, defense, hand, gait, reach, blunt, bladed, pole, ward, focus, wing,
+            size, morale
+        ]
     ),
     seca_wide_int!(stat, [mhp, mep]),
     seca_id_vec!(
