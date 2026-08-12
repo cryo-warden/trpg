@@ -68,7 +68,9 @@ import EntitiesRow from "./entities_table";
 import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
 import EpComponentsRow from "./ep_components_table";
+import EquipmentComponentsRow from "./equipment_components_table";
 import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_components_table";
+import EquipmentStatBlockDirtyFlagComponentsRow from "./equipment_stat_block_dirty_flag_components_table";
 import HpComponentsRow from "./hp_components_table";
 import LocationComponentsRow from "./location_components_table";
 import LocationMapComponentsRow from "./location_map_components_table";
@@ -314,6 +316,17 @@ const tablesSchema = __schema({
       { name: 'ep_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EpComponentsRow),
+  equipment_components: __table({
+    name: 'equipment_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equipment_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equipment_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquipmentComponentsRow),
   equipment_stat_block_cache_components: __table({
     name: 'equipment_stat_block_cache_components',
     indexes: [
@@ -325,6 +338,17 @@ const tablesSchema = __schema({
       { name: 'equipment_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EquipmentStatBlockCacheComponentsRow),
+  equipment_stat_block_dirty_flag_components: __table({
+    name: 'equipment_stat_block_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equipment_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equipment_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquipmentStatBlockDirtyFlagComponentsRow),
   hp_components: __table({
     name: 'hp_components',
     indexes: [

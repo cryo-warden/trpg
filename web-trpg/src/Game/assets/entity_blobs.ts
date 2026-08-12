@@ -15,10 +15,13 @@ export const NAMED_ENTITY_BLOBS = {
 
 export const NEW_PLAYER_BLOB = blob({
   baselineName: "human",
-  stanceName: "brawler",
+  // Standing is the improvising default; the sword makes the dueling stance
+  // reachable and grants slash. One hand stays free, so bop survives.
+  stanceName: "standing",
+  armamentNames: ["sword"],
   traitNames: ["admin", "mobile", "bopper"],
   // Ordered: bar position auto-assigns the numeric hotkey (1..9, then 0).
-  pinnedActionNames: ["boppity_bop", "quick_move", "divine_heal"],
+  pinnedActionNames: ["slash", "boppity_bop", "quick_move", "divine_heal"],
   allegiance: {
     allegianceEntityId: { tag: "Named", value: "allegiance1" },
   },

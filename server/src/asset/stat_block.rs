@@ -8,7 +8,10 @@
 // positive contributions, circumstances consume them as negative ones, and
 // action/stance requirements check thresholds against the merged total.
 secador::secador_multi!(
-    seca_small_int!(stat, [attack, defense, hand, gait, reach]),
+    seca_small_int!(
+        stat,
+        [attack, defense, hand, gait, reach, blunt, bladed, pole, ward, focus, wing]
+    ),
     seca_wide_int!(stat, [mhp, mep]),
     seca_id_vec!(
         (stat, StatType),

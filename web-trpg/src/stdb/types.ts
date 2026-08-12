@@ -199,6 +199,15 @@ export const AppearanceFeaturesComponentBlob = __t.object("AppearanceFeaturesCom
 });
 export type AppearanceFeaturesComponentBlob = __Infer<typeof AppearanceFeaturesComponentBlob>;
 
+export const Armament = __t.object("Armament", {
+  id: __t.u32(),
+  name: __t.string(),
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type Armament = __Infer<typeof Armament>;
+
 export const AssetPack = __t.object("AssetPack", {
   get actions() {
     return __t.array(NamedActionAsset);
@@ -210,6 +219,9 @@ export const AssetPack = __t.object("AssetPack", {
     return __t.array(NamedStatBlockAsset);
   },
   get traits() {
+    return __t.array(NamedStatBlockAsset);
+  },
+  get armaments() {
     return __t.array(NamedStatBlockAsset);
   },
   get stances() {
@@ -347,6 +359,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get activeStance() {
     return __t.option(ActiveStanceComponentBlob);
   },
+  get equipment() {
+    return __t.option(EquipmentComponentBlob);
+  },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob);
   },
@@ -357,6 +372,9 @@ export const EntityBlob = __t.object("EntityBlob", {
     return __t.option(StatBlockCacheComponentBlob);
   },
   get traitsStatBlockDirtyFlag() {
+    return __t.option(FlagComponentBlob);
+  },
+  get equipmentStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
   get totalStatBlockDirtyFlag() {
@@ -420,6 +438,7 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   baselineName: __t.option(__t.string()),
   stanceName: __t.option(__t.string()),
   traitNames: __t.option(__t.array(__t.string())),
+  armamentNames: __t.option(__t.array(__t.string())),
   actionNames: __t.option(__t.array(__t.string())),
   pinnedActionNames: __t.option(__t.array(__t.string())),
   appearanceFeatureNames: __t.option(__t.array(__t.string())),
@@ -502,6 +521,17 @@ export const EpComponentBlob = __t.object("EpComponentBlob", {
   mep: __t.i16(),
 });
 export type EpComponentBlob = __Infer<typeof EpComponentBlob>;
+
+export const EquipmentComponent = __t.object("EquipmentComponent", {
+  entityId: __t.u64(),
+  armamentIds: __t.array(__t.u32()),
+});
+export type EquipmentComponent = __Infer<typeof EquipmentComponent>;
+
+export const EquipmentComponentBlob = __t.object("EquipmentComponentBlob", {
+  armamentIds: __t.array(__t.u32()),
+});
+export type EquipmentComponentBlob = __Infer<typeof EquipmentComponentBlob>;
 
 // The tagged union or sum type for the algebraic type `EventType`.
 export const EventType = __t.enum("EventType", {
@@ -864,6 +894,12 @@ export const StatBlock = __t.object("StatBlock", {
   hand: __t.i8(),
   gait: __t.i8(),
   reach: __t.i8(),
+  blunt: __t.i8(),
+  bladed: __t.i8(),
+  pole: __t.i8(),
+  ward: __t.i8(),
+  focus: __t.i8(),
+  wing: __t.i8(),
   mhp: __t.i16(),
   mep: __t.i16(),
   actionIds: __t.array(__t.u32()),
@@ -879,6 +915,12 @@ export const StatBlockAsset = __t.object("StatBlockAsset", {
   hand: __t.i8(),
   gait: __t.i8(),
   reach: __t.i8(),
+  blunt: __t.i8(),
+  bladed: __t.i8(),
+  pole: __t.i8(),
+  ward: __t.i8(),
+  focus: __t.i8(),
+  wing: __t.i8(),
   actionNames: __t.array(__t.string()),
   appearanceFeatureNames: __t.array(__t.string()),
 });
@@ -905,6 +947,12 @@ export const StatRequirements = __t.object("StatRequirements", {
   hand: __t.option(__t.i8()),
   gait: __t.option(__t.i8()),
   reach: __t.option(__t.i8()),
+  blunt: __t.option(__t.i8()),
+  bladed: __t.option(__t.i8()),
+  pole: __t.option(__t.i8()),
+  ward: __t.option(__t.i8()),
+  focus: __t.option(__t.i8()),
+  wing: __t.option(__t.i8()),
   mhp: __t.option(__t.i16()),
   mep: __t.option(__t.i16()),
 });

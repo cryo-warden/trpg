@@ -1,7 +1,8 @@
 use crate::{
     action::{actions, ActionEffect, ActionHandle},
     asset::{
-        location_map::location_maps, r#trait::traits, stance::stances, stat_block::StatBlock,
+        armament::armaments, location_map::location_maps, r#trait::traits, stance::stances,
+        stat_block::StatBlock,
     },
     entity::*,
     entity_handle_extension::EntityHandleExtension,
@@ -179,6 +180,23 @@ pub fn entity_stats_system(ecs: Ecs) {
             // declared dirty flag) — no manual flag here.
             f.upsert_new_traits_stat_block_cache(stat_block)
                 .delete_traits_stat_block_dirty_flag()
+                .into_handle();
+        }
+    }
+
+    for f in ecs.iter_equipment_stat_block_dirty_flag() {
+        if let Some(c) = ecs.find(f.entity_id()).with_equipment() {
+            let mut stat_block = StatBlock::default();
+            for id in &c.equipment().armament_ids {
+                if let Some(a) = ecs.db.armaments().id().find(id) {
+                    stat_block += &a.stat_block;
+                }
+            }
+
+            // Upserting the cache auto-dirties the total stat block (its
+            // declared dirty flag) — no manual flag here.
+            f.upsert_new_equipment_stat_block_cache(stat_block)
+                .delete_equipment_stat_block_dirty_flag()
                 .into_handle();
         }
     }

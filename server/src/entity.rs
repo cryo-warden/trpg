@@ -62,6 +62,13 @@ entity!(
         pub stance_id: u32,
     }
 
+    // Wielded armaments; their stat blocks merge through the equipment cache
+    // exactly as traits merge through theirs.
+    #[component(equipment in equipment_components, dirties(equipment_stat_block_dirty_flag))]
+    struct EquipmentComponent {
+        pub armament_ids: Vec<u32>,
+    }
+
     #[component(
       equipment_stat_block_cache in equipment_stat_block_cache_components,
       status_stat_block_cache in status_stat_block_cache_components,
@@ -75,6 +82,7 @@ entity!(
     // TODO Equipment and Status Effects
     #[component(
       traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
+      equipment_stat_block_dirty_flag in equipment_stat_block_dirty_flag_components,
       total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
     )]
     struct FlagComponent {}

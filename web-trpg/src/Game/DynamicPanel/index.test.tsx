@@ -1,7 +1,10 @@
 import { test, expect } from "bun:test";
 import { render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
-import { mockTable } from "../../testSupport/mockConnection";
+import {
+  appearanceFeatureIndexOf,
+  mockTable,
+} from "../../testSupport/mockConnection";
 import { gameWrapper } from "../../testSupport/gameWrapper";
 import { DynamicPanel } from "./index";
 
@@ -13,8 +16,8 @@ const tables = () => ({
     { entityId: 2n, locationEntityId: 10n },
   ]),
   appearance_features_components: mockTable([
-    { entityId: 1n, appearanceFeatureIndexes: [0] }, // "human"
-    { entityId: 2n, appearanceFeatureIndexes: [3] }, // "path"
+    { entityId: 1n, appearanceFeatureIndexes: [appearanceFeatureIndexOf("human")] },
+    { entityId: 2n, appearanceFeatureIndexes: [appearanceFeatureIndexOf("path")] },
   ]),
   hp_components: mockTable([
     { entityId: 1n, hp: 5, mhp: 5, defense: 2 },

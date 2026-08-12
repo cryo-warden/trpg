@@ -9,6 +9,12 @@ export const NO_REQUIREMENTS: StatRequirements = {
   hand: undefined,
   gait: undefined,
   reach: undefined,
+  blunt: undefined,
+  bladed: undefined,
+  pole: undefined,
+  ward: undefined,
+  focus: undefined,
+  wing: undefined,
   mhp: undefined,
   mep: undefined,
 };

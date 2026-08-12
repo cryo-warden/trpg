@@ -26,6 +26,7 @@ const emptyPack = (): AssetPack => ({
   appearanceFeatures: [],
   baselines: [],
   traits: [],
+  armaments: [],
   stances: [],
   encounterBlobs: [],
   encounters: [],

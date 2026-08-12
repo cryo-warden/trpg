@@ -22,6 +22,7 @@ use crate::{
         location_map_theme::{
             location_map_themes, EntityBlobSample, EntityBlobsSampler, LocationMapTheme,
         },
+        armament::{armaments, Armament},
         r#trait::{traits, Trait},
         stance::{stances, Stance},
         stat_block::StatBlock,
@@ -29,12 +30,14 @@ use crate::{
     ecs_extension::EcsExtension,
     entity::{
         named_entities, ActionsComponentBlob, ActiveStanceComponentBlob,
-        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob, FindEntityHandle,
-        InstantiateEntityBlob, NewEntityHandle, PinnedActionsComponentBlob, TraitsComponentBlob,
+        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob,
+        EquipmentComponentBlob, FindEntityHandle, InstantiateEntityBlob, NewEntityHandle,
+        PinnedActionsComponentBlob, TraitsComponentBlob,
     },
 };
 
 pub mod types;
+pub mod armament;
 pub mod baseline;
 pub mod encounter;
 pub mod location_map;
@@ -66,6 +69,7 @@ pub struct AssetPack {
     appearance_features: Vec<NamedAppearanceFeatureAsset>,
     baselines: Vec<NamedStatBlockAsset>,
     traits: Vec<NamedStatBlockAsset>,
+    armaments: Vec<NamedStatBlockAsset>,
     stances: Vec<NamedStanceAsset>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
@@ -125,6 +129,7 @@ struct AssetNameMaps {
     appearance_features: HashMap<String, u32>,
     baselines: HashMap<String, u32>,
     traits: HashMap<String, u32>,
+    armaments: HashMap<String, u32>,
     stances: HashMap<String, u32>,
 }
 
@@ -153,6 +158,17 @@ fn resolve_entity_blob(
             .map(|n| {
                 Ok::<_, String>(ActiveStanceComponentBlob {
                     stance_id: resolve_name(&maps.stances, "stance", &n)?,
+                })
+            })
+            .transpose()?,
+        equipment: author
+            .armament_names
+            .map(|names| {
+                Ok::<_, String>(EquipmentComponentBlob {
+                    armament_ids: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.armaments, "armament", n))
+                        .collect::<Result<_, _>>()?,
                 })
             })
             .transpose()?,
@@ -209,6 +225,7 @@ fn resolve_entity_blob(
         status_stat_block_cache: None,
         traits_stat_block_cache: None,
         traits_stat_block_dirty_flag: None,
+        equipment_stat_block_dirty_flag: None,
         total_stat_block_dirty_flag: None,
         action_state: None,
         queued_action_state: None,
@@ -245,6 +262,12 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         hand,
         gait,
         reach,
+        blunt,
+        bladed,
+        pole,
+        ward,
+        focus,
+        wing,
         action_names,
         appearance_feature_names,
     } = author;
@@ -256,6 +279,12 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         hand,
         gait,
         reach,
+        blunt,
+        bladed,
+        pole,
+        ward,
+        focus,
+        wing,
         action_ids: action_names
             .iter()
             .map(|n| resolve_name(&maps.actions, "action", n))
@@ -343,6 +372,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.traits().iter().map(|t| (t.name, t.id)),
             asset_pack.traits.iter().map(|t| &t.name),
         )?,
+        armaments: match_names(
+            "armament",
+            ctx.db.armaments().iter().map(|a| (a.name, a.id)),
+            asset_pack.armaments.iter().map(|a| &a.name),
+        )?,
         stances: match_names(
             "stance",
             ctx.db.stances().iter().map(|s| (s.name, s.id)),
@@ -390,6 +424,20 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.traits().id().update(row);
         } else {
             ctx.db.traits().insert(row);
+        }
+    }
+
+    for a in asset_pack.armaments {
+        let id = maps.armaments[&a.name];
+        let row = Armament {
+            id,
+            name: a.name,
+            stat_block: resolve_stat_block(a.value, &maps)?,
+        };
+        if ctx.db.armaments().id().find(id).is_some() {
+            ctx.db.armaments().id().update(row);
+        } else {
+            ctx.db.armaments().insert(row);
         }
     }
 

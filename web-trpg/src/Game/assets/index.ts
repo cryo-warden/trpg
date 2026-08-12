@@ -1,5 +1,6 @@
 import { ACTIONS } from "./actions";
 import { APPEARANCE_FEATURES } from "./appearance_features";
+import { ARMAMENTS } from "./armaments";
 import { BASELINES } from "./baselines";
 import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./encounters";
 import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./entity_blobs";
@@ -29,6 +30,7 @@ export const assets = {
   appearanceFeatures: APPEARANCE_FEATURES,
   baselines: BASELINES,
   traits: TRAITS,
+  armaments: ARMAMENTS,
   stances: STANCES,
   encounterBlobs: ENCOUNTER_BLOBS,
   encounters: ENCOUNTERS,

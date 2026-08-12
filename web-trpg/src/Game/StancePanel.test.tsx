@@ -5,6 +5,8 @@ import { mockTable, stanceIdOf } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { StancePanel } from "./StancePanel";
 
+import { STANCES } from "./assets/stances";
+
 const worldTables = () => ({
   player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
   active_stance_components: mockTable([
@@ -17,11 +19,9 @@ test("StancePanel lists every stance and highlights the active one", () => {
 
   const { container } = render(<StancePanel />, { wrapper });
   const buttons = [...container.querySelectorAll(".StanceButton")];
-  expect(buttons.map((button) => button.textContent)).toEqual([
-    "brawler",
-    "amorphous",
-    "prone",
-  ]);
+  expect(buttons.map((button) => button.textContent)).toEqual(
+    Object.keys(STANCES),
+  );
   expect(
     container.querySelector(".StanceButton.active")?.textContent,
   ).toBe("brawler");

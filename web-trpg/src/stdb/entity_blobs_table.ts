@@ -17,6 +17,7 @@ import {
   BaselineComponentBlob,
   TraitsComponentBlob,
   ActiveStanceComponentBlob,
+  EquipmentComponentBlob,
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
   AttackComponentBlob,
@@ -55,6 +56,9 @@ export default __t.row({
   get activeStance() {
     return __t.option(ActiveStanceComponentBlob).name("active_stance");
   },
+  get equipment() {
+    return __t.option(EquipmentComponentBlob);
+  },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob).name("equipment_stat_block_cache");
   },
@@ -66,6 +70,9 @@ export default __t.row({
   },
   get traitsStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("traits_stat_block_dirty_flag");
+  },
+  get equipmentStatBlockDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("equipment_stat_block_dirty_flag");
   },
   get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("total_stat_block_dirty_flag");

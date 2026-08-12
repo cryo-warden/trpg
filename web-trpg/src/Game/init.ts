@@ -2,6 +2,7 @@ import { DbConnection } from "../stdb";
 import { namedPairs } from "./assets";
 import { ACTIONS } from "./assets/actions";
 import { APPEARANCE_FEATURES } from "./assets/appearance_features";
+import { ARMAMENTS } from "./assets/armaments";
 import { BASELINES } from "./assets/baselines";
 import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./assets/encounters";
 import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./assets/entity_blobs";
@@ -24,6 +25,7 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       appearanceFeatures: namedPairs(APPEARANCE_FEATURES),
       baselines: namedPairs(BASELINES),
       traits: namedPairs(TRAITS),
+      armaments: namedPairs(ARMAMENTS),
       stances: namedPairs(STANCES),
       encounterBlobs: namedPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),

@@ -10,6 +10,11 @@ const Attack = (value: number) =>
   ({ tag: "Attack", value }) as const satisfies ActionEffect;
 const Heal = (value: number) =>
   ({ tag: "Heal", value }) as const satisfies ActionEffect;
+const Guard = (value: number) =>
+  ({
+    tag: "Buff",
+    value: { tag: "Guard", value },
+  }) as const satisfies ActionEffect;
 
 const round = (...effects: ActionEffect[]) => ({
   effects,
@@ -63,6 +68,71 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [round(Attack(1))],
   },
+  guard: {
+    actionType: { tag: "Buff" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(Guard(1))],
+  },
+  bite: {
+    actionType: { tag: "Attack" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(Attack(1))],
+  },
+  // Armament basics: each armament grants its own attack, and the
+  // requirement re-checks the property the armament provides.
+  smash: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ blunt: 1 }),
+    rounds: [interruptibleRound(), round(Attack(2))],
+  },
+  slash: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ bladed: 1 }),
+    rounds: [round(Attack(2))],
+  },
+  stab: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ bladed: 1 }),
+    rounds: [round(Attack(1))],
+  },
+  cleave: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ bladed: 1 }),
+    // A heavy: interruptible wind-up, then the blow.
+    rounds: [interruptibleRound(), round(Attack(3))],
+  },
+  thrust: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ pole: 1, reach: 1 }),
+    rounds: [round(Attack(2))],
+  },
+  shield_bash: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ ward: 1 }),
+    rounds: [round(Attack(1))],
+  },
+  lunge: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ bladed: 1 }),
+    // Committed footwork first, then the strike.
+    rounds: [interruptibleRound(), round(Attack(3))],
+  },
+  fire_bolt: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ focus: 1 }),
+    rounds: [interruptibleRound(), round(Attack(3))],
+  },
+  ice_shard: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ focus: 1 }),
+    rounds: [round(Attack(2))],
+  },
+  lightning_arc: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ focus: 1 }),
+    // Two strikes on the same tick.
+    rounds: [round(Attack(1), Attack(1))],
+  },
 } satisfies Record<string, ActionAsset>;
 
 export type ActionName = keyof typeof ACTIONS;
@@ -100,5 +170,53 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   scratch: {
     displayName: "Scratch",
     beginTemplate: "{0:sentence:subject} brandished its claws at {1:object}.",
+  },
+  guard: {
+    displayName: "Guard",
+    beginTemplate: "{0:sentence:subject} took a guarded footing.",
+  },
+  bite: {
+    displayName: "Bite",
+    beginTemplate: "{0:sentence:subject} snapped its jaws at {1:object}.",
+  },
+  smash: {
+    displayName: "Smash",
+    beginTemplate: "{0:sentence:subject} hefted a bludgeon toward {1:object}.",
+  },
+  slash: {
+    displayName: "Slash",
+    beginTemplate: "{0:sentence:subject} slashed at {1:object}.",
+  },
+  stab: {
+    displayName: "Stab",
+    beginTemplate: "{0:sentence:subject} stabbed at {1:object}.",
+  },
+  cleave: {
+    displayName: "Cleave",
+    beginTemplate: "{0:sentence:subject} raised an axe over {1:object}.",
+  },
+  thrust: {
+    displayName: "Thrust",
+    beginTemplate: "{0:sentence:subject} thrust at {1:object}.",
+  },
+  shield_bash: {
+    displayName: "Shield Bash",
+    beginTemplate: "{0:sentence:subject} drove a shield into {1:object}.",
+  },
+  lunge: {
+    displayName: "Lunge",
+    beginTemplate: "{0:sentence:subject} lunged toward {1:object}.",
+  },
+  fire_bolt: {
+    displayName: "Fire Bolt",
+    beginTemplate: "{0:sentence:subject} kindled a bolt of fire at {1:object}.",
+  },
+  ice_shard: {
+    displayName: "Ice Shard",
+    beginTemplate: "{0:sentence:subject} loosed a shard of ice at {1:object}.",
+  },
+  lightning_arc: {
+    displayName: "Lightning Arc",
+    beginTemplate: "{0:sentence:subject} arced lightning toward {1:object}.",
   },
 };
