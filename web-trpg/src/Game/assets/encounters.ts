@@ -45,19 +45,53 @@ export const ENCOUNTER_BLOBS = {
     armamentNames: ["club", "shield"],
     stanceName: "ready",
   }),
+  // Natures ride bodies: a skeleton is a human body with the skeletal
+  // nature, and any element can ride any body. The natures are
+  // appearance-only until the damage attribute system lands.
   skeletonGuard: blob({
-    baselineName: "skeleton",
+    baselineName: "human",
+    traitNames: ["skeletal"],
     armamentNames: ["spear"],
     stanceName: "ready",
   }),
   skeletonDuelist: blob({
-    baselineName: "skeleton",
+    baselineName: "human",
+    traitNames: ["skeletal"],
     armamentNames: ["sword"],
     stanceName: "dueling",
   }),
-  fireImp: blob({ baselineName: "imp", stanceName: "fire_casting" }),
-  iceSprite: blob({ baselineName: "sprite", stanceName: "ice_casting" }),
-  stormWisp: blob({ baselineName: "wisp", stanceName: "lightning_casting" }),
+  zombieShambler: blob({
+    baselineName: "human",
+    traitNames: ["zombie"],
+    armamentNames: ["club"],
+    stanceName: "standing",
+  }),
+  vampireStalker: blob({
+    baselineName: "human",
+    traitNames: ["vampire"],
+    armamentNames: ["dagger"],
+    stanceName: "dueling",
+  }),
+  fireImp: blob({
+    baselineName: "imp",
+    traitNames: ["fire_nature"],
+    stanceName: "fire_casting",
+  }),
+  iceSprite: blob({
+    baselineName: "sprite",
+    traitNames: ["ice_nature"],
+    stanceName: "ice_casting",
+  }),
+  stormWisp: blob({
+    baselineName: "wisp",
+    traitNames: ["lightning_nature"],
+    stanceName: "lightning_casting",
+  }),
+  ghostWisp: blob({
+    baselineName: "wisp",
+    traitNames: ["ghost"],
+    stanceName: "lightning_casting",
+  }),
 } satisfies Record<string, EntityBlobAsset>;
 
 export type EncounterBlobName = keyof typeof ENCOUNTER_BLOBS;
@@ -122,6 +156,14 @@ export const ENCOUNTERS = {
   skeleton_pair: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["skeletonGuard", "skeletonDuelist"],
+  },
+  crypt_risen: {
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["zombieShambler", "zombieShambler", "skeletonGuard"],
+  },
+  crypt_stalker: {
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["vampireStalker", "ghostWisp"],
   },
   fire_imp1: {
     categoricBlobName: "encounter_enemy",

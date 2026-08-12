@@ -243,6 +243,8 @@ export const LOCATION_MAPS = {
       { weight: 3, name: "bandit_camp" },
       { weight: 4, name: "skeleton_watch" },
       { weight: 3, name: "skeleton_pair" },
+      { weight: 2, name: "crypt_risen" },
+      { weight: 1, name: "crypt_stalker" },
     ],
     minEncounterCount: 6,
     maxEncounterCount: 9,

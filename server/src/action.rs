@@ -31,6 +31,11 @@ pub enum Buff {
     Guard(i32),
 }
 
+// PLANNED: a damage ATTRIBUTE system — not quite the usual damage types —
+// so that nature traits (skeletal, zombie, vampire, ghost, the elemental
+// natures) carry mechanical flavor beyond appearance. Attributes would ride
+// these effects and interact with the target's natures. See the
+// player-damage-attributes user story.
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ActionEffect {
     Buff(Buff),

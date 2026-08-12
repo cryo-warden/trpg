@@ -53,15 +53,9 @@ export const BASELINES = {
     actionNames: ["bite"],
     appearanceFeatureNames: ["wolf"],
   }),
-  skeleton: statBlock({
-    mhp: 4,
-    defense: 1,
-    hand: 2,
-    gait: 2,
-    reach: 1,
-    appearanceFeatureNames: ["skeleton"],
-  }),
-  // The elemental bodies channel innately: focus without any staff.
+  // The elemental bodies channel innately: focus without any staff. Their
+  // ELEMENT is not the body: fire/ice/lightning natures are traits, so any
+  // element can ride any body.
   imp: statBlock({
     attack: 1,
     mhp: 3,
