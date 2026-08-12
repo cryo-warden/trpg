@@ -162,6 +162,7 @@ export const stdbWrapper = (
       path_components: mockTable([]),
       actions_components: mockTable([]),
       active_stance_components: mockTable([]),
+      known_stances_components: mockTable([]),
       action_state_components: mockTable([]),
       item_components: mockTable([]),
       armor_components: mockTable([]),

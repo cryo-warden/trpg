@@ -15,7 +15,11 @@ html,
 body {
   margin: 0;
   width: 100vw;
+  /* Mobile browsers include their chrome in 100vh, pushing the bottom rows
+   * off-screen with no way to scroll; dvh tracks the VISIBLE viewport. The
+   * vh line stays as the fallback for browsers without dvh. */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
 }

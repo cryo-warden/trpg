@@ -172,6 +172,14 @@ entity!(
         pub action_ids: Vec<ActionId>,
     }
 
+    // The stances this entity KNOWS: derived from the total stat block's
+    // granted stance_ids, exactly as ActionsComponent derives from granted
+    // actions. Adoption (set_stance) is gated on membership here.
+    #[component(known_stances in known_stances_components)]
+    struct KnownStancesComponent {
+        pub stance_ids: Vec<u32>,
+    }
+
     #[component(pinned_actions in pinned_actions_components)]
     struct PinnedActionsComponent {
         // Ordered: the position in the bar is the automatically assigned

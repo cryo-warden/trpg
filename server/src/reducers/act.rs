@@ -34,6 +34,14 @@ pub fn set_stance(ctx: &ReducerContext, stance_id: u32) -> Result<(), String> {
         .id()
         .find(stance_id)
         .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
+    // Only KNOWN stances may be adopted: the total stat block grants them
+    // (bodies now, quest rewards later), and the menu lists exactly these.
+    if !{ p.known_stances() }.is_some_and(|known| known.stance_ids.contains(&stance_id)) {
+        return Err(format!(
+            "The stance \"{}\" is not among this entity's known stances.",
+            stance.name
+        ));
+    }
     // Checked against the stance-free base: a stance never provides the
     // properties needed to enter itself.
     if !p.base_stat_block().meets(&stance.requirements) {

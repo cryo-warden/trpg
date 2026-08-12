@@ -15,7 +15,11 @@ secador::secador_multi!(
     seca_wide_int!(stat, [mhp, mep]),
     seca_id_vec!(
         (stat, StatType),
-        [(action_ids, ActionId), (appearance_feature_ids, u32)]
+        [
+            (action_ids, ActionId),
+            (appearance_feature_ids, u32),
+            (stance_ids, u32)
+        ]
     ),
     {
         use std::ops::AddAssign;

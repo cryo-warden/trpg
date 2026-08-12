@@ -1,6 +1,14 @@
 import { StatBlockAsset } from "../../stdb/types";
 import { statBlock } from "./stat_block";
 
+const CASTING_STANCES = [
+  "standing",
+  "casting",
+  "fire_casting",
+  "ice_casting",
+  "lightning_casting",
+];
+
 // Bodies are the primary providers of the counted property stats: hands to
 // hold and swing with, gait to move on, reach to threaten at range. Stances
 // and (later) equipment and circumstances add to or consume these.
@@ -15,6 +23,15 @@ export const BASELINES = {
     reach: 1,
     actionNames: ["take", "drop"],
     appearanceFeatureNames: ["human"],
+    stanceNames: [
+      "standing",
+      "prone",
+      "sitting",
+      "ready",
+      "brawler",
+      "dueling",
+      "striding",
+    ],
   }),
   slime: statBlock({
     attack: -1,
@@ -24,6 +41,7 @@ export const BASELINES = {
     gait: 1,
     actionNames: ["slime_spray"],
     appearanceFeatureNames: ["slime"],
+    stanceNames: ["amorphous"],
   }),
   bat: statBlock({
     attack: 0,
@@ -34,6 +52,7 @@ export const BASELINES = {
     wing: 2,
     actionNames: ["scratch"],
     appearanceFeatureNames: ["bat"],
+    stanceNames: ["perched", "flapping"],
   }),
   // A human body wearing a different life: same slots, different look.
   bandit: statBlock({
@@ -46,6 +65,15 @@ export const BASELINES = {
     reach: 1,
     actionNames: ["take", "drop"],
     appearanceFeatureNames: ["bandit"],
+    stanceNames: [
+      "standing",
+      "prone",
+      "sitting",
+      "ready",
+      "brawler",
+      "dueling",
+      "striding",
+    ],
   }),
   wolf: statBlock({
     attack: 1,
@@ -54,10 +82,11 @@ export const BASELINES = {
     gait: 2,
     actionNames: ["bite"],
     appearanceFeatureNames: ["wolf"],
+    stanceNames: ["standing", "prone", "striding"],
   }),
-  // The elemental bodies channel innately: focus without any staff. Their
-  // ELEMENT is not the body: fire/ice/lightning natures are traits, so any
-  // element can ride any body.
+  // The elemental bodies channel innately: focus without any staff, and
+  // every casting stance known from birth. Their ELEMENT is not the body:
+  // fire/ice/lightning natures are traits, so any element can ride any body.
   imp: statBlock({
     attack: 1,
     mhp: 3,
@@ -66,6 +95,7 @@ export const BASELINES = {
     gait: 1,
     focus: 1,
     appearanceFeatureNames: ["imp"],
+    stanceNames: CASTING_STANCES,
   }),
   sprite: statBlock({
     mhp: 4,
@@ -74,6 +104,7 @@ export const BASELINES = {
     gait: 1,
     focus: 1,
     appearanceFeatureNames: ["sprite"],
+    stanceNames: CASTING_STANCES,
   }),
   wisp: statBlock({
     mhp: 2,
@@ -81,6 +112,7 @@ export const BASELINES = {
     gait: 3,
     focus: 1,
     appearanceFeatureNames: ["wisp"],
+    stanceNames: CASTING_STANCES,
   }),
 } satisfies Record<string, StatBlockAsset>;
 

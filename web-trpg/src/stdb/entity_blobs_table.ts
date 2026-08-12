@@ -31,6 +31,7 @@ import {
   EnemyControllerComponentBlob,
   ActionStateComponentBlob,
   ActionsComponentBlob,
+  KnownStancesComponentBlob,
   PinnedActionsComponentBlob,
   TimerComponentBlob,
   LocationMapComponentBlob,
@@ -116,6 +117,9 @@ export default __t.row({
   },
   get actions() {
     return __t.option(ActionsComponentBlob);
+  },
+  get knownStances() {
+    return __t.option(KnownStancesComponentBlob).name("known_stances");
   },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob).name("pinned_actions");

@@ -5,23 +5,35 @@ import { mockTable, stanceIdOf } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { StancePanel } from "./StancePanel";
 
-import { STANCES } from "./assets/stances";
-
 const worldTables = () => ({
   player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
   active_stance_components: mockTable([
     { entityId: 1n, stanceId: stanceIdOf("brawler") },
   ]),
+  // The menu lists KNOWN stances only — the player knows three of the many
+  // stances in the asset table.
+  known_stances_components: mockTable([
+    {
+      entityId: 1n,
+      stanceIds: [
+        stanceIdOf("standing"),
+        stanceIdOf("brawler"),
+        stanceIdOf("prone"),
+      ],
+    },
+  ]),
 });
 
-test("StancePanel lists every stance and highlights the active one", () => {
+test("StancePanel lists only the player's known stances, active highlighted", () => {
   const wrapper = gameWrapper(worldTables(), { identity: {} as Identity });
 
   const { container } = render(<StancePanel />, { wrapper });
   const buttons = [...container.querySelectorAll(".StanceButton")];
-  expect(buttons.map((button) => button.textContent)).toEqual(
-    Object.keys(STANCES),
-  );
+  expect(buttons.map((button) => button.textContent)).toEqual([
+    "standing",
+    "prone",
+    "brawler",
+  ]);
   expect(
     container.querySelector(".StanceButton.active")?.textContent,
   ).toBe("brawler");

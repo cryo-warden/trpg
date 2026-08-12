@@ -15,6 +15,7 @@ pub trait EntityHandleExtension {
     fn set_defense(self, defense: i8) -> Self;
     fn set_mep(self, mep: i16) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
+    fn set_known_stances(self, stance_ids: Vec<u32>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
     fn allegiance_id(&self) -> Option<u64>;
     fn is_ally(&self, other_entity_id: u64) -> bool;
@@ -50,6 +51,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
             .set_actions(stat_block.action_ids)
+            .set_known_stances(stat_block.stance_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids);
         self
     }
@@ -94,6 +96,17 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             e.update_actions_row(c);
         } else {
             e.insert_new_actions(action_ids);
+        }
+        self
+    }
+
+    fn set_known_stances(self, stance_ids: Vec<u32>) -> Self {
+        let e = self.to_handle();
+        if let Some(mut c) = e.known_stances() {
+            c.stance_ids = stance_ids;
+            e.update_known_stances_row(c);
+        } else {
+            e.insert_new_known_stances(stance_ids);
         }
         self
     }

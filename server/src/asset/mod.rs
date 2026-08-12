@@ -219,6 +219,7 @@ fn resolve_entity_blob(
             })
             .transpose()?,
         stance_loadouts: None,
+        known_stances: None,
         traits: author
             .trait_names
             .map(|names| {
@@ -317,6 +318,7 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         wing,
         action_names,
         appearance_feature_names,
+        stance_names,
     } = author;
     Ok(StatBlock {
         attack,
@@ -339,6 +341,10 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         appearance_feature_ids: appearance_feature_names
             .iter()
             .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
+            .collect::<Result<_, _>>()?,
+        stance_ids: stance_names
+            .iter()
+            .map(|n| resolve_name(&maps.stances, "stance", n))
             .collect::<Result<_, _>>()?,
     })
 }
