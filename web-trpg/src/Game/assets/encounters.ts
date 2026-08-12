@@ -22,6 +22,12 @@ export const ENCOUNTER_BLOBS = {
     traitNames: ["big"],
   }),
   batPerched: blob({ baselineName: "bat", stanceName: "perched" }),
+  ogreWanderer: blob({
+    baselineName: "ogre",
+    armamentNames: ["club"],
+    stanceName: "striding",
+  }),
+  rat: blob({ baselineName: "rat", stanceName: "standing" }),
   wolf: blob({ baselineName: "wolf", stanceName: "striding" }),
   wolfBig: blob({
     baselineName: "wolf",
@@ -120,6 +126,18 @@ export const ENCOUNTERS = {
   batBig1: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["batBig"],
+  },
+  rat_pair: {
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["rat", "rat"],
+  },
+  rat_swarm: {
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["rat", "rat", "rat"],
+  },
+  ogre1: {
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["ogreWanderer"],
   },
   wolf1: {
     categoricBlobName: "encounter_enemy",

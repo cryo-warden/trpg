@@ -7,14 +7,100 @@ import { blob } from "./entity_blobs";
 
 export const LOCATION_MAP_THEMES = {
   encampment: {
+    // The training ground: dummies to hit (hp makes scenery attackable) and
+    // an armory's worth of REAL practice gear to take and assign in the
+    // loadout menu.
     decorationsSelector: {
       selections: [
         { weight: 5, blob: blob({ appearanceFeatureNames: ["rock"] }) },
         { weight: 4, blob: blob({ appearanceFeatureNames: ["stone"] }) },
+        {
+          weight: 4,
+          blob: blob({
+            appearanceFeatureNames: ["training", "dummy"],
+            hp: {
+              hp: 10,
+              mhp: 10,
+              defense: 0,
+              accumulatedDamage: 0,
+              accumulatedHealing: 0,
+            },
+          }),
+        },
+        {
+          weight: 2,
+          blob: blob({
+            appearanceFeatureNames: ["club"],
+            item: { tag: "Armament", value: "club" },
+          }),
+        },
+        {
+          weight: 2,
+          blob: blob({
+            appearanceFeatureNames: ["sword"],
+            item: { tag: "Armament", value: "sword" },
+          }),
+        },
+        {
+          weight: 2,
+          blob: blob({
+            appearanceFeatureNames: ["dagger"],
+            item: { tag: "Armament", value: "dagger" },
+          }),
+        },
+        {
+          weight: 2,
+          blob: blob({
+            appearanceFeatureNames: ["shield"],
+            item: { tag: "Armament", value: "shield" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["spear"],
+            item: { tag: "Armament", value: "spear" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["axe"],
+            item: { tag: "Armament", value: "axe" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["staff"],
+            item: { tag: "Armament", value: "staff" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["leather", "jerkin"],
+            item: { tag: "Armor", value: "leather_jerkin" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["smoldering", "charm"],
+            item: { tag: "Relic", value: "ember_charm" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["crackling", "bead"],
+            item: { tag: "Relic", value: "storm_bead" },
+          }),
+        },
       ],
     },
-    minDecorationCount: 2,
-    maxDecorationCount: 4,
+    minDecorationCount: 4,
+    maxDecorationCount: 7,
     pathsSelector: {
       selections: [
         { weight: 5, blob: blob({ appearanceFeatureNames: ["trail"] }) },
@@ -273,9 +359,16 @@ export const LOCATION_MAPS = {
     mainRoomCount: 10,
     extraRoomCount: 0,
     loopCount: 5,
-    encounterNamesSampler: [],
-    minEncounterCount: 0,
-    maxEncounterCount: 0,
+    // The tutorial bestiary: rats break when the player so much as moves
+    // near them (intimidation from the strong side); the wandering ogre
+    // breaks the PLAYER (the rally-or-flee lesson, survivably).
+    encounterNamesSampler: [
+      { weight: 5, name: "rat_pair" },
+      { weight: 3, name: "rat_swarm" },
+      { weight: 2, name: "ogre1" },
+    ],
+    minEncounterCount: 2,
+    maxEncounterCount: 4,
     connectionNames: ["beginner_cave", "verdant_meadow"],
   },
   beginner_cave: {

@@ -83,6 +83,33 @@ export const BASELINES = {
       "striding",
     ],
   }),
+  // Starting-area teachers. The ogre looms: size delta plus its smash
+  // telegraph overwhelms a fresh human's nerve — the intended first lesson
+  // in breaking, rallying, and crawling away. The rat is the same lesson
+  // from the strong side: a human just ACTING near one breaks it.
+  ogre: statBlock({
+    attack: 1,
+    mhp: 15,
+    mep: 2,
+    hand: 2,
+    gait: 1,
+    reach: 1,
+    size: 5,
+    morale: 6,
+    appearanceFeatureNames: ["ogre"],
+    stanceNames: ["standing", "striding"],
+  }),
+  rat: statBlock({
+    attack: -1,
+    mhp: 2,
+    mep: 1,
+    gait: 2,
+    size: -6,
+    morale: 2,
+    actionNames: ["bite"],
+    appearanceFeatureNames: ["rat"],
+    stanceNames: ["standing"],
+  }),
   wolf: statBlock({
     attack: 1,
     mhp: 6,
