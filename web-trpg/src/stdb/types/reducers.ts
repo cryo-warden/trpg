@@ -8,7 +8,9 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import AcceptLoginRequestReducer from "../accept_login_request_reducer";
 import ActReducer from "../act_reducer";
+import AssignStanceArmamentsReducer from "../assign_stance_armaments_reducer";
 import BootstrapAdminReducer from "../bootstrap_admin_reducer";
+import ClearArmorReducer from "../clear_armor_reducer";
 import CreateAccountReducer from "../create_account_reducer";
 import GrantRoleReducer from "../grant_role_reducer";
 import LoginWithPasswordReducer from "../login_with_password_reducer";
@@ -16,12 +18,16 @@ import ProvisionAccountReducer from "../provision_account_reducer";
 import PushAssetsReducer from "../push_assets_reducer";
 import RefuseLoginRequestReducer from "../refuse_login_request_reducer";
 import RequestLoginReducer from "../request_login_reducer";
+import SetArmorReducer from "../set_armor_reducer";
 import SetPasswordReducer from "../set_password_reducer";
+import SetRelicsReducer from "../set_relics_reducer";
 import SetStanceReducer from "../set_stance_reducer";
 
 export type AcceptLoginRequestParams = __Infer<typeof AcceptLoginRequestReducer>;
 export type ActParams = __Infer<typeof ActReducer>;
+export type AssignStanceArmamentsParams = __Infer<typeof AssignStanceArmamentsReducer>;
 export type BootstrapAdminParams = __Infer<typeof BootstrapAdminReducer>;
+export type ClearArmorParams = __Infer<typeof ClearArmorReducer>;
 export type CreateAccountParams = __Infer<typeof CreateAccountReducer>;
 export type GrantRoleParams = __Infer<typeof GrantRoleReducer>;
 export type LoginWithPasswordParams = __Infer<typeof LoginWithPasswordReducer>;
@@ -29,6 +35,8 @@ export type ProvisionAccountParams = __Infer<typeof ProvisionAccountReducer>;
 export type PushAssetsParams = __Infer<typeof PushAssetsReducer>;
 export type RefuseLoginRequestParams = __Infer<typeof RefuseLoginRequestReducer>;
 export type RequestLoginParams = __Infer<typeof RequestLoginReducer>;
+export type SetArmorParams = __Infer<typeof SetArmorReducer>;
 export type SetPasswordParams = __Infer<typeof SetPasswordReducer>;
+export type SetRelicsParams = __Infer<typeof SetRelicsReducer>;
 export type SetStanceParams = __Infer<typeof SetStanceReducer>;
 

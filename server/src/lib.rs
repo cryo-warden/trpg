@@ -18,6 +18,7 @@ mod ecs_extension;
 mod entity;
 mod entity_handle_extension;
 mod event;
+mod item;
 mod reducers;
 mod role;
 mod system;

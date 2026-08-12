@@ -14,6 +14,7 @@ import {
 import { EntityName } from "../EntityName";
 import { EPBar } from "../EntityPanel/EPBar";
 import { HPBar } from "../EntityPanel/HPBar";
+import { LoadoutPanel } from "../LoadoutPanel";
 import { EntityId } from "../trpg";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 
@@ -30,8 +31,6 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
       ? locationEntities
       : mode === "inventory"
       ? playerContents
-      : mode === "equipment"
-      ? [] // WIP Add equipment
       : [];
   const entityPresentations = useEntityPresentations(entities);
   const sortedEntities = sortByProminenceDescending({
@@ -39,6 +38,16 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
     exclude: playerEntity,
   });
   const hostiles = useHostiles();
+
+  // The stance-customization menu lives in the equipment slot of the
+  // dynamic panel.
+  if (mode === "equipment") {
+    return (
+      <Panel {...props}>
+        <LoadoutPanel />
+      </Panel>
+    );
+  }
 
   if (mode === "stats") {
     if (playerEntity == null) {

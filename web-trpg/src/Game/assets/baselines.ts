@@ -13,6 +13,7 @@ export const BASELINES = {
     hand: 2,
     gait: 2,
     reach: 1,
+    actionNames: ["take", "drop"],
     appearanceFeatureNames: ["human"],
   }),
   slime: statBlock({
@@ -43,6 +44,7 @@ export const BASELINES = {
     hand: 2,
     gait: 2,
     reach: 1,
+    actionNames: ["take", "drop"],
     appearanceFeatureNames: ["bandit"],
   }),
   wolf: statBlock({

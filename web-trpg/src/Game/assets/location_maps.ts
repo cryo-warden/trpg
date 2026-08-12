@@ -104,19 +104,76 @@ export const LOCATION_MAP_THEMES = {
     },
   },
   keep: {
-    // The armory of a fallen garrison: the item decorations here are the
-    // armaments as scenery — pickup arrives with the inventory work.
+    // The armory of a fallen garrison: the gear here is REAL — every
+    // armament-shaped decoration is a takeable item entity.
     decorationsSelector: {
       selections: [
         { weight: 5, blob: blob({ appearanceFeatureNames: ["rubble"] }) },
         { weight: 3, blob: blob({ appearanceFeatureNames: ["bones"] }) },
         { weight: 2, blob: blob({ appearanceFeatureNames: ["brazier"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["rusty", "sword"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["rusty", "axe"] }) },
-        { weight: 1, blob: blob({ appearanceFeatureNames: ["ancient", "shield"] }) },
-        { weight: 1, blob: blob({ appearanceFeatureNames: ["club"] }) },
-        { weight: 1, blob: blob({ appearanceFeatureNames: ["spear"] }) },
-        { weight: 1, blob: blob({ appearanceFeatureNames: ["dagger"] }) },
+        {
+          weight: 2,
+          blob: blob({
+            appearanceFeatureNames: ["rusty", "sword"],
+            item: { tag: "Armament", value: "sword" },
+          }),
+        },
+        {
+          weight: 2,
+          blob: blob({
+            appearanceFeatureNames: ["rusty", "axe"],
+            item: { tag: "Armament", value: "axe" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["ancient", "shield"],
+            item: { tag: "Armament", value: "shield" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["club"],
+            item: { tag: "Armament", value: "club" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["spear"],
+            item: { tag: "Armament", value: "spear" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["dagger"],
+            item: { tag: "Armament", value: "dagger" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["leather", "jerkin"],
+            item: { tag: "Armor", value: "leather_jerkin" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["rusty", "hauberk"],
+            item: { tag: "Armor", value: "chain_hauberk" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["bone", "idol"],
+            item: { tag: "Relic", value: "bone_idol" },
+          }),
+        },
       ],
     },
     minDecorationCount: 3,
@@ -144,7 +201,48 @@ export const LOCATION_MAP_THEMES = {
         { weight: 3, blob: blob({ appearanceFeatureNames: ["smoldering", "brazier"] }) },
         { weight: 3, blob: blob({ appearanceFeatureNames: ["frozen", "altar"] }) },
         { weight: 2, blob: blob({ appearanceFeatureNames: ["crackling", "pillar"] }) },
-        { weight: 1, blob: blob({ appearanceFeatureNames: ["gleaming", "staff"] }) },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["gleaming", "staff"],
+            item: { tag: "Armament", value: "staff" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["smoldering", "charm"],
+            item: { tag: "Relic", value: "ember_charm" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["frozen", "talisman"],
+            item: { tag: "Relic", value: "frost_talisman" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["crackling", "bead"],
+            item: { tag: "Relic", value: "storm_bead" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["gleaming", "medallion"],
+            item: { tag: "Relic", value: "sun_medallion" },
+          }),
+        },
+        {
+          weight: 1,
+          blob: blob({
+            appearanceFeatureNames: ["ancient", "robe"],
+            item: { tag: "Armor", value: "traveler_robe" },
+          }),
+        },
       ],
     },
     minDecorationCount: 2,

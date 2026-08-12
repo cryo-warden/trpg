@@ -1,4 +1,8 @@
-use crate::{action::ActionId, asset::stat_block::StatBlock};
+use crate::{
+    action::ActionId,
+    asset::stat_block::StatBlock,
+    item::{ItemRef, StanceArmaments},
+};
 use ecs::entity;
 use spacetimedb::Timestamp;
 
@@ -63,10 +67,41 @@ entity!(
     }
 
     // Wielded armaments; their stat blocks merge through the equipment cache
-    // exactly as traits merge through theirs.
+    // exactly as traits merge through theirs. For a player with stance
+    // loadouts this is DERIVED (rewritten on stance swap or assignment);
+    // NPCs author it directly via blobs.
     #[component(equipment in equipment_components, dirties(equipment_stat_block_dirty_flag))]
     struct EquipmentComponent {
         pub armament_ids: Vec<u32>,
+    }
+
+    // The single global clothing/armor slot, applied across every stance.
+    #[component(armor in armor_components, dirties(equipment_stat_block_dirty_flag))]
+    struct ArmorComponent {
+        pub armor_id: u32,
+    }
+
+    // Up to four relics (enforced at the reducer), applied across every
+    // stance.
+    #[component(relics in relics_components, dirties(equipment_stat_block_dirty_flag))]
+    struct RelicsComponent {
+        pub relic_ids: Vec<u32>,
+    }
+
+    // The player's per-stance armament assignments (asset ids, validated by
+    // counting owned items at assignment time). Never authored by blobs; no
+    // dirty flag because assignments only take effect when a reducer
+    // rewrites EquipmentComponent (on assignment or stance swap).
+    #[component(stance_loadouts in stance_loadouts_components)]
+    struct StanceLoadoutsComponent {
+        pub assignments: Vec<StanceArmaments>,
+    }
+
+    // An entity that IS an item: takeable, droppable, and referenced by the
+    // loadout menu through its gear asset.
+    #[component(item in item_components)]
+    struct ItemComponent {
+        pub item_ref: ItemRef,
     }
 
     #[component(

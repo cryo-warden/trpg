@@ -1,8 +1,8 @@
 use crate::{
     action::{actions, ActionEffect, ActionHandle},
     asset::{
-        armament::armaments, location_map::location_maps, r#trait::traits, stance::stances,
-        stat_block::StatBlock,
+        armament::armaments, armor::armors, location_map::location_maps, r#trait::traits,
+        relic::relics, stance::stances, stat_block::StatBlock,
     },
     entity::*,
     entity_handle_extension::EntityHandleExtension,
@@ -152,6 +152,35 @@ pub fn action_system(ecs: Ecs) {
 pub fn entity_deletion_timer_system(ecs: Ecs) {
     for t in ecs.iter_entity_deletion_timer() {
         if t.entity_deletion_timer().timestamp <= ecs.timestamp {
+            // Anything an entity carries has that entity as its location;
+            // when the carrier is destroyed, the contents move out to the
+            // carrier's own location. A carrier with no location strands its
+            // contents — surface it rather than leave dangling references.
+            let carried: Vec<_> = ecs
+                .db
+                .location_components()
+                .location_entity_id()
+                .filter(t.entity_id())
+                .collect();
+            let destination = t.location().map(|l| l.location_entity_id);
+            for mut location_component in carried {
+                match destination {
+                    Some(destination) => {
+                        location_component.location_entity_id = destination;
+                        ecs.db
+                            .location_components()
+                            .entity_id()
+                            .update(location_component);
+                    }
+                    None => {
+                        log::error!(
+                            "Entity {} was destroyed with no location; its contents ({}) are stranded.",
+                            t.entity_id(),
+                            location_component.entity_id
+                        );
+                    }
+                }
+            }
             t.delete();
         }
     }
@@ -184,21 +213,38 @@ pub fn entity_stats_system(ecs: Ecs) {
         }
     }
 
+    // Gear merges three sources: wielded armaments (per-stance via loadouts,
+    // or blob-authored for NPCs), the one global armor slot, and the worn
+    // relics. Always processed — an entity stripped of its last gear
+    // component still needs its (now empty) cache recomputed.
     for f in ecs.iter_equipment_stat_block_dirty_flag() {
-        if let Some(c) = ecs.find(f.entity_id()).with_equipment() {
-            let mut stat_block = StatBlock::default();
-            for id in &c.equipment().armament_ids {
+        let e = ecs.find(f.entity_id());
+        let mut stat_block = StatBlock::default();
+        if let Some(c) = e.equipment() {
+            for id in &c.armament_ids {
                 if let Some(a) = ecs.db.armaments().id().find(id) {
                     stat_block += &a.stat_block;
                 }
             }
-
-            // Upserting the cache auto-dirties the total stat block (its
-            // declared dirty flag) — no manual flag here.
-            f.upsert_new_equipment_stat_block_cache(stat_block)
-                .delete_equipment_stat_block_dirty_flag()
-                .into_handle();
         }
+        if let Some(c) = e.armor() {
+            if let Some(a) = ecs.db.armors().id().find(c.armor_id) {
+                stat_block += &a.stat_block;
+            }
+        }
+        if let Some(c) = e.relics() {
+            for id in &c.relic_ids {
+                if let Some(r) = ecs.db.relics().id().find(id) {
+                    stat_block += &r.stat_block;
+                }
+            }
+        }
+
+        // Upserting the cache auto-dirties the total stat block (its
+        // declared dirty flag) — no manual flag here.
+        f.upsert_new_equipment_stat_block_cache(stat_block)
+            .delete_equipment_stat_block_dirty_flag()
+            .into_handle();
     }
 
     for f in ecs.iter_total_stat_block_dirty_flag() {

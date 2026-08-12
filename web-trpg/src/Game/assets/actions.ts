@@ -15,6 +15,8 @@ const Guard = (value: number) =>
     tag: "Buff",
     value: { tag: "Guard", value },
   }) as const satisfies ActionEffect;
+const Take = { tag: "Take" } as const satisfies ActionEffect;
+const Drop = { tag: "Drop" } as const satisfies ActionEffect;
 
 const round = (...effects: ActionEffect[]) => ({
   effects,
@@ -133,6 +135,18 @@ export const ACTIONS = {
     // Two strikes on the same tick.
     rounds: [round(Attack(1), Attack(1))],
   },
+  // Inventory verbs: carrying IS location, so taking pulls the item into
+  // the taker and dropping pushes it back out to the room.
+  take: {
+    actionType: { tag: "Inventory" },
+    requirements: requirements({ hand: 1 }),
+    rounds: [round(Take)],
+  },
+  drop: {
+    actionType: { tag: "Inventory" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(Drop)],
+  },
 } satisfies Record<string, ActionAsset>;
 
 export type ActionName = keyof typeof ACTIONS;
@@ -218,5 +232,13 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   lightning_arc: {
     displayName: "Lightning Arc",
     beginTemplate: "{0:sentence:subject} arced lightning toward {1:object}.",
+  },
+  take: {
+    displayName: "Take",
+    beginTemplate: "{0:sentence:subject} reached for {1:object}.",
+  },
+  drop: {
+    displayName: "Drop",
+    beginTemplate: "{0:sentence:subject} set down {1:object}.",
   },
 };

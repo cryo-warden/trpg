@@ -41,6 +41,10 @@ export const componentQueries = [
   "select * from pinned_actions_components",
   "select * from actions_components",
   "select * from active_stance_components",
+  "select * from item_components",
+  "select * from armor_components",
+  "select * from relics_components",
+  "select * from stance_loadouts_components",
   "select * from action_state_components",
   "select * from allegiance_components",
   "select * from appearance_features_components",
@@ -75,6 +79,7 @@ export const useAppearanceFeaturesComponents = createUseTable(
 
 const useAllegianceComponent = createUseComponent("allegiance_components");
 const usePathComponent = createUseComponent("path_components");
+const useItemComponent = createUseComponent("item_components");
 
 export const useLocation = (entityId: EntityId | null) => {
   const component = useLocationComponent(entityId);
@@ -95,6 +100,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   const playerAllegiance = useAllegianceComponent(playerEntity);
   const targetAllegiance = useAllegianceComponent(focus);
   const targetPath = usePathComponent(focus);
+  const targetItem = useItemComponent(focus);
 
   return useMemo(
     () =>
@@ -103,6 +109,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
         actionAssetOf,
         targetHasHp: !!targetHp,
         targetHasPath: !!targetPath,
+        targetHasItem: !!targetItem,
         playerEntity,
         target: focus,
         playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
@@ -116,6 +123,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
       playerAllegiance,
       targetAllegiance,
       targetPath,
+      targetItem,
       focus,
     ],
   );

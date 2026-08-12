@@ -11,7 +11,7 @@ secador::secador!(
 
         use crate::{
             action::{ActionEffect, ActionId},
-            entity::{hp_components, location_components, path_components},
+            entity::{hp_components, item_components, location_components, path_components},
         };
 
         #[derive(Debug, Clone, SpacetimeType)]
@@ -90,8 +90,72 @@ secador::secador!(
                             }
                             true
                         }
-                        ActionEffect::Take => true,    // WIP
-                        ActionEffect::Drop => true,    // WIP
+                        // Carrying IS location: a taken item's location
+                        // becomes the taker; a dropped item's location
+                        // becomes the dropper's own location.
+                        ActionEffect::Take => {
+                            let item = ecs
+                                .db
+                                .item_components()
+                                .entity_id()
+                                .find(target_entity_id);
+                            let owner_location = ecs
+                                .db
+                                .location_components()
+                                .entity_id()
+                                .find(self.owner_entity_id);
+                            let target_location = ecs
+                                .db
+                                .location_components()
+                                .entity_id()
+                                .find(target_entity_id);
+                            match (item, owner_location, target_location) {
+                                (Some(_), Some(owner_location), Some(mut target_location))
+                                    if target_location.location_entity_id
+                                        == owner_location.location_entity_id =>
+                                {
+                                    target_location.location_entity_id = self.owner_entity_id;
+                                    ecs.db
+                                        .location_components()
+                                        .entity_id()
+                                        .update(target_location);
+                                    true
+                                }
+                                _ => false,
+                            }
+                        }
+                        ActionEffect::Drop => {
+                            let item = ecs
+                                .db
+                                .item_components()
+                                .entity_id()
+                                .find(target_entity_id);
+                            let owner_location = ecs
+                                .db
+                                .location_components()
+                                .entity_id()
+                                .find(self.owner_entity_id);
+                            let target_location = ecs
+                                .db
+                                .location_components()
+                                .entity_id()
+                                .find(target_entity_id);
+                            match (item, owner_location, target_location) {
+                                (Some(_), Some(owner_location), Some(mut target_location))
+                                    if target_location.location_entity_id
+                                        == self.owner_entity_id =>
+                                {
+                                    target_location.location_entity_id =
+                                        owner_location.location_entity_id;
+                                    ecs.db
+                                        .location_components()
+                                        .entity_id()
+                                        .update(target_location);
+                                    true
+                                }
+                                _ => false,
+                            }
+                        }
                         ActionEffect::Equip => true,   // WIP
                         ActionEffect::Unequip => true, // WIP
                     },

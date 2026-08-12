@@ -7,7 +7,9 @@ use crate::asset::stat_block::StatBlock;
 /// blunt, pole, ward, focus, ...), CONSUME grip (negative hand), and grant
 /// their own basic attack actions — whose requirements then re-check the
 /// merged total like any other action.
-#[table(accessor = armaments)]
+// Public so the client can resolve armament ids back to names for the
+// loadout menu.
+#[table(accessor = armaments, public)]
 #[derive(Debug, Clone)]
 pub struct Armament {
     #[primary_key]

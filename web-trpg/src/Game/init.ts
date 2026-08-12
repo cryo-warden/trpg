@@ -3,7 +3,9 @@ import { namedPairs } from "./assets";
 import { ACTIONS } from "./assets/actions";
 import { APPEARANCE_FEATURES } from "./assets/appearance_features";
 import { ARMAMENTS } from "./assets/armaments";
+import { ARMORS } from "./assets/armors";
 import { BASELINES } from "./assets/baselines";
+import { RELICS } from "./assets/relics";
 import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./assets/encounters";
 import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./assets/entity_blobs";
 import {
@@ -26,6 +28,8 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       baselines: namedPairs(BASELINES),
       traits: namedPairs(TRAITS),
       armaments: namedPairs(ARMAMENTS),
+      armors: namedPairs(ARMORS),
+      relics: namedPairs(RELICS),
       stances: namedPairs(STANCES),
       encounterBlobs: namedPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),

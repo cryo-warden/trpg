@@ -8,7 +8,7 @@ use crate::{
     appearance::{appearance_features, AppearanceFeature},
     asset::{
         types::{
-            EntityBlobAsset, EntityBlobsSamplerAsset, NamedActionAsset,
+            EntityBlobAsset, EntityBlobsSamplerAsset, ItemRefAsset, NamedActionAsset,
             NamedAppearanceFeatureAsset, NamedEncounterAsset, NamedEntityBlobAsset,
             NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedStanceAsset,
             NamedStatBlockAsset, StatBlockAsset,
@@ -23,22 +23,27 @@ use crate::{
             location_map_themes, EntityBlobSample, EntityBlobsSampler, LocationMapTheme,
         },
         armament::{armaments, Armament},
+        armor::{armors, Armor},
         r#trait::{traits, Trait},
+        relic::{relics, Relic},
         stance::{stances, Stance},
         stat_block::StatBlock,
     },
     ecs_extension::EcsExtension,
     entity::{
         named_entities, ActionsComponentBlob, ActiveStanceComponentBlob,
-        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob,
-        EquipmentComponentBlob, FindEntityHandle, InstantiateEntityBlob, NewEntityHandle,
-        PinnedActionsComponentBlob, TraitsComponentBlob,
+        AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob, EntityBlob,
+        EquipmentComponentBlob, FindEntityHandle, InstantiateEntityBlob, ItemComponentBlob,
+        NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob, TraitsComponentBlob,
     },
+    item::ItemRef,
 };
 
 pub mod types;
 pub mod armament;
+pub mod armor;
 pub mod baseline;
+pub mod relic;
 pub mod encounter;
 pub mod location_map;
 pub mod location_map_theme;
@@ -70,6 +75,8 @@ pub struct AssetPack {
     baselines: Vec<NamedStatBlockAsset>,
     traits: Vec<NamedStatBlockAsset>,
     armaments: Vec<NamedStatBlockAsset>,
+    armors: Vec<NamedStatBlockAsset>,
+    relics: Vec<NamedStatBlockAsset>,
     stances: Vec<NamedStanceAsset>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
@@ -130,6 +137,8 @@ struct AssetNameMaps {
     baselines: HashMap<String, u32>,
     traits: HashMap<String, u32>,
     armaments: HashMap<String, u32>,
+    armors: HashMap<String, u32>,
+    relics: HashMap<String, u32>,
     stances: HashMap<String, u32>,
 }
 
@@ -172,6 +181,44 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
+        armor: author
+            .armor_name
+            .map(|n| {
+                Ok::<_, String>(ArmorComponentBlob {
+                    armor_id: resolve_name(&maps.armors, "armor", &n)?,
+                })
+            })
+            .transpose()?,
+        relics: author
+            .relic_names
+            .map(|names| {
+                Ok::<_, String>(RelicsComponentBlob {
+                    relic_ids: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.relics, "relic", n))
+                        .collect::<Result<_, _>>()?,
+                })
+            })
+            .transpose()?,
+        item: author
+            .item
+            .map(|item| {
+                Ok::<_, String>(ItemComponentBlob {
+                    item_ref: match item {
+                        ItemRefAsset::Armament(n) => {
+                            ItemRef::Armament(resolve_name(&maps.armaments, "armament", &n)?)
+                        }
+                        ItemRefAsset::Armor(n) => {
+                            ItemRef::Armor(resolve_name(&maps.armors, "armor", &n)?)
+                        }
+                        ItemRefAsset::Relic(n) => {
+                            ItemRef::Relic(resolve_name(&maps.relics, "relic", &n)?)
+                        }
+                    },
+                })
+            })
+            .transpose()?,
+        stance_loadouts: None,
         traits: author
             .trait_names
             .map(|names| {
@@ -377,6 +424,16 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.armaments().iter().map(|a| (a.name, a.id)),
             asset_pack.armaments.iter().map(|a| &a.name),
         )?,
+        armors: match_names(
+            "armor",
+            ctx.db.armors().iter().map(|a| (a.name, a.id)),
+            asset_pack.armors.iter().map(|a| &a.name),
+        )?,
+        relics: match_names(
+            "relic",
+            ctx.db.relics().iter().map(|r| (r.name, r.id)),
+            asset_pack.relics.iter().map(|r| &r.name),
+        )?,
         stances: match_names(
             "stance",
             ctx.db.stances().iter().map(|s| (s.name, s.id)),
@@ -438,6 +495,34 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.armaments().id().update(row);
         } else {
             ctx.db.armaments().insert(row);
+        }
+    }
+
+    for a in asset_pack.armors {
+        let id = maps.armors[&a.name];
+        let row = Armor {
+            id,
+            name: a.name,
+            stat_block: resolve_stat_block(a.value, &maps)?,
+        };
+        if ctx.db.armors().id().find(id).is_some() {
+            ctx.db.armors().id().update(row);
+        } else {
+            ctx.db.armors().insert(row);
+        }
+    }
+
+    for r in asset_pack.relics {
+        let id = maps.relics[&r.name];
+        let row = Relic {
+            id,
+            name: r.name,
+            stat_block: resolve_stat_block(r.value, &maps)?,
+        };
+        if ctx.db.relics().id().find(id).is_some() {
+            ctx.db.relics().id().update(row);
+        } else {
+            ctx.db.relics().insert(row);
         }
     }
 

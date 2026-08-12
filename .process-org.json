@@ -111,6 +111,14 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-loadout": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/9-loadout.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -190,7 +198,8 @@
         "test-e2e-mapgen",
         "test-e2e-login",
         "test-e2e-stances",
-        "test-e2e-production"
+        "test-e2e-production",
+        "test-e2e-loadout"
       ]
     }
   }

@@ -1,7 +1,9 @@
 import { ACTIONS } from "./actions";
 import { APPEARANCE_FEATURES } from "./appearance_features";
 import { ARMAMENTS } from "./armaments";
+import { ARMORS } from "./armors";
 import { BASELINES } from "./baselines";
+import { RELICS } from "./relics";
 import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./encounters";
 import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./entity_blobs";
 import { LOCATION_MAPS, LOCATION_MAP_THEMES } from "./location_maps";
@@ -31,6 +33,8 @@ export const assets = {
   baselines: BASELINES,
   traits: TRAITS,
   armaments: ARMAMENTS,
+  armors: ARMORS,
+  relics: RELICS,
   stances: STANCES,
   encounterBlobs: ENCOUNTER_BLOBS,
   encounters: ENCOUNTERS,

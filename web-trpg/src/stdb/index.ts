@@ -36,7 +36,9 @@ import {
 // Import all reducer arg schemas
 import AcceptLoginRequestReducer from "./accept_login_request_reducer";
 import ActReducer from "./act_reducer";
+import AssignStanceArmamentsReducer from "./assign_stance_armaments_reducer";
 import BootstrapAdminReducer from "./bootstrap_admin_reducer";
+import ClearArmorReducer from "./clear_armor_reducer";
 import CreateAccountReducer from "./create_account_reducer";
 import GrantRoleReducer from "./grant_role_reducer";
 import LoginWithPasswordReducer from "./login_with_password_reducer";
@@ -44,7 +46,9 @@ import ProvisionAccountReducer from "./provision_account_reducer";
 import PushAssetsReducer from "./push_assets_reducer";
 import RefuseLoginRequestReducer from "./refuse_login_request_reducer";
 import RequestLoginReducer from "./request_login_reducer";
+import SetArmorReducer from "./set_armor_reducer";
 import SetPasswordReducer from "./set_password_reducer";
+import SetRelicsReducer from "./set_relics_reducer";
 import SetStanceReducer from "./set_stance_reducer";
 
 // Import all procedure arg schemas
@@ -61,6 +65,9 @@ import ActiveStanceComponentsRow from "./active_stance_components_table";
 import AllegianceComponentsRow from "./allegiance_components_table";
 import AppearanceFeaturesRow from "./appearance_features_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
+import ArmamentsRow from "./armaments_table";
+import ArmorComponentsRow from "./armor_components_table";
+import ArmorsRow from "./armors_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
@@ -72,6 +79,7 @@ import EquipmentComponentsRow from "./equipment_components_table";
 import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_components_table";
 import EquipmentStatBlockDirtyFlagComponentsRow from "./equipment_stat_block_dirty_flag_components_table";
 import HpComponentsRow from "./hp_components_table";
+import ItemComponentsRow from "./item_components_table";
 import LocationComponentsRow from "./location_components_table";
 import LocationMapComponentsRow from "./location_map_components_table";
 import LoginRequestVotersRow from "./login_request_voters_table";
@@ -85,7 +93,10 @@ import PinnedActionsComponentsRow from "./pinned_actions_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
+import RelicsRow from "./relics_table";
+import RelicsComponentsRow from "./relics_components_table";
 import RolesRow from "./roles_table";
+import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
@@ -243,6 +254,47 @@ const tablesSchema = __schema({
       { name: 'appearance_features_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, AppearanceFeaturesComponentsRow),
+  armaments: __table({
+    name: 'armaments',
+    indexes: [
+      { accessor: 'id', name: 'armaments_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'name', name: 'armaments_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'armaments_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'armaments_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, ArmamentsRow),
+  armor_components: __table({
+    name: 'armor_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'armor_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'armor_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ArmorComponentsRow),
+  armors: __table({
+    name: 'armors',
+    indexes: [
+      { accessor: 'id', name: 'armors_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'name', name: 'armors_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'armors_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'armors_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, ArmorsRow),
   attack_components: __table({
     name: 'attack_components',
     indexes: [
@@ -360,6 +412,17 @@ const tablesSchema = __schema({
       { name: 'hp_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, HpComponentsRow),
+  item_components: __table({
+    name: 'item_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'item_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'item_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ItemComponentsRow),
   location_components: __table({
     name: 'location_components',
     indexes: [
@@ -527,6 +590,32 @@ const tablesSchema = __schema({
       { name: 'queued_action_state_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, QueuedActionStateComponentsRow),
+  relics: __table({
+    name: 'relics',
+    indexes: [
+      { accessor: 'id', name: 'relics_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'name', name: 'relics_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'relics_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'relics_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, RelicsRow),
+  relics_components: __table({
+    name: 'relics_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'relics_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'relics_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, RelicsComponentsRow),
   roles: __table({
     name: 'roles',
     indexes: [
@@ -542,6 +631,17 @@ const tablesSchema = __schema({
       { name: 'roles_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, RolesRow),
+  stance_loadouts_components: __table({
+    name: 'stance_loadouts_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'stance_loadouts_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'stance_loadouts_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, StanceLoadoutsComponentsRow),
   stances: __table({
     name: 'stances',
     indexes: [
@@ -618,7 +718,9 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_login_request", AcceptLoginRequestReducer),
   __reducerSchema("act", ActReducer),
+  __reducerSchema("assign_stance_armaments", AssignStanceArmamentsReducer),
   __reducerSchema("bootstrap_admin", BootstrapAdminReducer),
+  __reducerSchema("clear_armor", ClearArmorReducer),
   __reducerSchema("create_account", CreateAccountReducer),
   __reducerSchema("grant_role", GrantRoleReducer),
   __reducerSchema("login_with_password", LoginWithPasswordReducer),
@@ -626,7 +728,9 @@ const reducersSchema = __reducers(
   __reducerSchema("push_assets", PushAssetsReducer),
   __reducerSchema("refuse_login_request", RefuseLoginRequestReducer),
   __reducerSchema("request_login", RequestLoginReducer),
+  __reducerSchema("set_armor", SetArmorReducer),
   __reducerSchema("set_password", SetPasswordReducer),
+  __reducerSchema("set_relics", SetRelicsReducer),
   __reducerSchema("set_stance", SetStanceReducer),
 );
 

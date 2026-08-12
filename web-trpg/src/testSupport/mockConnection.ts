@@ -7,6 +7,9 @@ import {
   APPEARANCE_FEATURES,
   AppearanceFeatureName,
 } from "../Game/assets/appearance_features";
+import { ARMAMENTS, ArmamentName } from "../Game/assets/armaments";
+import { ARMORS, ArmorName } from "../Game/assets/armors";
+import { RELICS, RelicName } from "../Game/assets/relics";
 import { STANCES, StanceName } from "../Game/assets/stances";
 
 /**
@@ -100,6 +103,11 @@ export const mockAssetTables = () => ({
     Object.keys(APPEARANCE_FEATURES).map((name, index) => ({ index, name })),
   ),
   stances: mockTable(Object.keys(STANCES).map((name, id) => ({ id, name }))),
+  armaments: mockTable(
+    Object.keys(ARMAMENTS).map((name, id) => ({ id, name })),
+  ),
+  armors: mockTable(Object.keys(ARMORS).map((name, id) => ({ id, name }))),
+  relics: mockTable(Object.keys(RELICS).map((name, id) => ({ id, name }))),
 });
 
 export const actionIdOf = (name: ActionName): number =>
@@ -107,6 +115,15 @@ export const actionIdOf = (name: ActionName): number =>
 
 export const stanceIdOf = (name: StanceName): number =>
   Object.keys(STANCES).indexOf(name);
+
+export const armamentIdOf = (name: ArmamentName): number =>
+  Object.keys(ARMAMENTS).indexOf(name);
+
+export const armorIdOf = (name: ArmorName): number =>
+  Object.keys(ARMORS).indexOf(name);
+
+export const relicIdOf = (name: RelicName): number =>
+  Object.keys(RELICS).indexOf(name);
 
 /** The account every mocked identity belongs to unless a test overrides the
  * account_identities table. */
@@ -146,6 +163,10 @@ export const stdbWrapper = (
       actions_components: mockTable([]),
       active_stance_components: mockTable([]),
       action_state_components: mockTable([]),
+      item_components: mockTable([]),
+      armor_components: mockTable([]),
+      relics_components: mockTable([]),
+      stance_loadouts_components: mockTable([]),
       queued_action_state_components: mockTable([]),
       action_hotkeys_components: mockTable([]),
       appearance_features_components: mockTable([]),

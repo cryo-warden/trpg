@@ -34,6 +34,8 @@ export type ActionOptionInputs = AllegianceInputs & {
   actionAssetOf: (actionId: ActionId) => ActionAsset | null;
   targetHasHp: boolean;
   targetHasPath: boolean;
+  /** The target is an item entity (takeable/droppable gear). */
+  targetHasItem: boolean;
 };
 
 /** The subset of the player's actions that are valid against the target. */
@@ -42,6 +44,7 @@ export const getActionOptions = ({
   actionAssetOf,
   targetHasHp,
   targetHasPath,
+  targetHasItem,
   ...allegiance
 }: ActionOptionInputs): ActionId[] => {
   const ally = isAlly(allegiance);
@@ -57,6 +60,10 @@ export const getActionOptions = ({
         return targetHasHp && ally;
       case "Move":
         return targetHasPath;
+      // Focus candidates are already within reach (co-located or carried);
+      // the server enforces which of take/drop actually applies.
+      case "Inventory":
+        return targetHasItem;
       default:
         return false;
     }

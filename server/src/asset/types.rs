@@ -86,6 +86,15 @@ pub struct StanceAsset {
     pub stat_block: StatBlockAsset,
 }
 
+/// What an authored item entity IS, referencing its gear asset by NAME;
+/// push_assets resolves it to the stored ItemRef's integer id.
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum ItemRefAsset {
+    Armament(String),
+    Armor(String),
+    Relic(String),
+}
+
 /// The authored form of an entity blob: components whose fields reference
 /// other assets are authored by NAME, and only push_assets resolves them to
 /// the integer ids stored in the real EntityBlob. Runtime-state components
@@ -101,6 +110,9 @@ pub struct EntityBlobAsset {
     pub stance_name: Option<String>,
     pub trait_names: Option<Vec<String>>,
     pub armament_names: Option<Vec<String>>,
+    pub armor_name: Option<String>,
+    pub relic_names: Option<Vec<String>>,
+    pub item: Option<ItemRefAsset>,
     pub action_names: Option<Vec<String>>,
     pub pinned_action_names: Option<Vec<String>>,
     pub appearance_feature_names: Option<Vec<String>>,

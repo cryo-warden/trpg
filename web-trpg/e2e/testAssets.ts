@@ -27,6 +27,8 @@ const emptyPack = (): AssetPack => ({
   baselines: [],
   traits: [],
   armaments: [],
+  armors: [],
+  relics: [],
   stances: [],
   encounterBlobs: [],
   encounters: [],
@@ -232,6 +234,84 @@ export const stancePack = (): AssetPack => ({
     stanceName: "test_brawler",
     location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
   }),
+});
+
+/**
+ * A loadout world: a body with hands, take/drop plus a sword attack, a
+ * dueling-like stance requiring a blade, and REAL item entities lying in the
+ * shared room — a sword to take and assign, armor and a relic to wear.
+ */
+export const loadoutPack = (): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    {
+      name: "test_take",
+      value: {
+        actionType: { tag: "Inventory" },
+        requirements: requirements({ hand: 1 }),
+        rounds: [{ effects: [{ tag: "Take" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_slash",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: requirements({ bladed: 1 }),
+        rounds: [{ effects: [{ tag: "Attack", value: 2 }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_human",
+      value: statBlock({
+        mhp: 5,
+        hand: 2,
+        gait: 2,
+        actionNames: ["test_take", "test_slash"],
+      }),
+    },
+  ],
+  armaments: [
+    {
+      name: "test_sword",
+      value: statBlock({ bladed: 1, hand: -1 }),
+    },
+  ],
+  armors: [{ name: "test_jerkin", value: statBlock({ defense: 1 }) }],
+  relics: [{ name: "test_charm", value: statBlock({ attack: 1 }) }],
+  stances: [
+    {
+      name: "test_standing",
+      value: { requirements: NO_REQUIREMENTS, statBlock: statBlock({}) },
+    },
+    {
+      name: "test_dueling",
+      value: {
+        requirements: requirements({ bladed: 1 }),
+        statBlock: statBlock({ attack: 1 }),
+      },
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_human",
+    stanceName: "test_standing",
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+  }),
+  instantiateEntityBlobs: [
+    blob({
+      item: { tag: "Armament", value: "test_sword" },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    blob({
+      item: { tag: "Armor", value: "test_jerkin" },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    blob({
+      item: { tag: "Relic", value: "test_charm" },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+  ],
 });
 
 /**

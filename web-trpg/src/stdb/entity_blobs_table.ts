@@ -18,6 +18,10 @@ import {
   TraitsComponentBlob,
   ActiveStanceComponentBlob,
   EquipmentComponentBlob,
+  ArmorComponentBlob,
+  RelicsComponentBlob,
+  StanceLoadoutsComponentBlob,
+  ItemComponentBlob,
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
   AttackComponentBlob,
@@ -58,6 +62,18 @@ export default __t.row({
   },
   get equipment() {
     return __t.option(EquipmentComponentBlob);
+  },
+  get armor() {
+    return __t.option(ArmorComponentBlob);
+  },
+  get relics() {
+    return __t.option(RelicsComponentBlob);
+  },
+  get stanceLoadouts() {
+    return __t.option(StanceLoadoutsComponentBlob).name("stance_loadouts");
+  },
+  get item() {
+    return __t.option(ItemComponentBlob);
   },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob).name("equipment_stat_block_cache");

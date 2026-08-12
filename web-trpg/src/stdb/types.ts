@@ -208,6 +208,26 @@ export const Armament = __t.object("Armament", {
 });
 export type Armament = __Infer<typeof Armament>;
 
+export const Armor = __t.object("Armor", {
+  id: __t.u32(),
+  name: __t.string(),
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type Armor = __Infer<typeof Armor>;
+
+export const ArmorComponent = __t.object("ArmorComponent", {
+  entityId: __t.u64(),
+  armorId: __t.u32(),
+});
+export type ArmorComponent = __Infer<typeof ArmorComponent>;
+
+export const ArmorComponentBlob = __t.object("ArmorComponentBlob", {
+  armorId: __t.u32(),
+});
+export type ArmorComponentBlob = __Infer<typeof ArmorComponentBlob>;
+
 export const AssetPack = __t.object("AssetPack", {
   get actions() {
     return __t.array(NamedActionAsset);
@@ -222,6 +242,12 @@ export const AssetPack = __t.object("AssetPack", {
     return __t.array(NamedStatBlockAsset);
   },
   get armaments() {
+    return __t.array(NamedStatBlockAsset);
+  },
+  get armors() {
+    return __t.array(NamedStatBlockAsset);
+  },
+  get relics() {
     return __t.array(NamedStatBlockAsset);
   },
   get stances() {
@@ -362,6 +388,18 @@ export const EntityBlob = __t.object("EntityBlob", {
   get equipment() {
     return __t.option(EquipmentComponentBlob);
   },
+  get armor() {
+    return __t.option(ArmorComponentBlob);
+  },
+  get relics() {
+    return __t.option(RelicsComponentBlob);
+  },
+  get stanceLoadouts() {
+    return __t.option(StanceLoadoutsComponentBlob);
+  },
+  get item() {
+    return __t.option(ItemComponentBlob);
+  },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob);
   },
@@ -439,6 +477,11 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   stanceName: __t.option(__t.string()),
   traitNames: __t.option(__t.array(__t.string())),
   armamentNames: __t.option(__t.array(__t.string())),
+  armorName: __t.option(__t.string()),
+  relicNames: __t.option(__t.array(__t.string())),
+  get item() {
+    return __t.option(ItemRefAsset);
+  },
   actionNames: __t.option(__t.array(__t.string())),
   pinnedActionNames: __t.option(__t.array(__t.string())),
   appearanceFeatureNames: __t.option(__t.array(__t.string())),
@@ -568,6 +611,37 @@ export const HpComponentBlob = __t.object("HpComponentBlob", {
   accumulatedHealing: __t.i16(),
 });
 export type HpComponentBlob = __Infer<typeof HpComponentBlob>;
+
+export const ItemComponent = __t.object("ItemComponent", {
+  entityId: __t.u64(),
+  get itemRef() {
+    return ItemRef;
+  },
+});
+export type ItemComponent = __Infer<typeof ItemComponent>;
+
+export const ItemComponentBlob = __t.object("ItemComponentBlob", {
+  get itemRef() {
+    return ItemRef;
+  },
+});
+export type ItemComponentBlob = __Infer<typeof ItemComponentBlob>;
+
+// The tagged union or sum type for the algebraic type `ItemRef`.
+export const ItemRef = __t.enum("ItemRef", {
+  Armament: __t.u32(),
+  Armor: __t.u32(),
+  Relic: __t.u32(),
+});
+export type ItemRef = __Infer<typeof ItemRef>;
+
+// The tagged union or sum type for the algebraic type `ItemRefAsset`.
+export const ItemRefAsset = __t.enum("ItemRefAsset", {
+  Armament: __t.string(),
+  Armor: __t.string(),
+  Relic: __t.string(),
+});
+export type ItemRefAsset = __Infer<typeof ItemRefAsset>;
 
 // The tagged union or sum type for the algebraic type `Layout`.
 export const Layout = __t.enum("Layout", {
@@ -844,6 +918,26 @@ export const PlayerControllerComponentBlob = __t.object("PlayerControllerCompone
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
 
+export const Relic = __t.object("Relic", {
+  id: __t.u32(),
+  name: __t.string(),
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type Relic = __Infer<typeof Relic>;
+
+export const RelicsComponent = __t.object("RelicsComponent", {
+  entityId: __t.u64(),
+  relicIds: __t.array(__t.u32()),
+});
+export type RelicsComponent = __Infer<typeof RelicsComponent>;
+
+export const RelicsComponentBlob = __t.object("RelicsComponentBlob", {
+  relicIds: __t.array(__t.u32()),
+});
+export type RelicsComponentBlob = __Infer<typeof RelicsComponentBlob>;
+
 export const Role = __t.object("Role", {
   id: __t.u32(),
   name: __t.string(),
@@ -878,6 +972,12 @@ export const Stance = __t.object("Stance", {
 });
 export type Stance = __Infer<typeof Stance>;
 
+export const StanceArmaments = __t.object("StanceArmaments", {
+  stanceId: __t.u32(),
+  armamentIds: __t.array(__t.u32()),
+});
+export type StanceArmaments = __Infer<typeof StanceArmaments>;
+
 export const StanceAsset = __t.object("StanceAsset", {
   get requirements() {
     return StatRequirements;
@@ -887,6 +987,21 @@ export const StanceAsset = __t.object("StanceAsset", {
   },
 });
 export type StanceAsset = __Infer<typeof StanceAsset>;
+
+export const StanceLoadoutsComponent = __t.object("StanceLoadoutsComponent", {
+  entityId: __t.u64(),
+  get assignments() {
+    return __t.array(StanceArmaments);
+  },
+});
+export type StanceLoadoutsComponent = __Infer<typeof StanceLoadoutsComponent>;
+
+export const StanceLoadoutsComponentBlob = __t.object("StanceLoadoutsComponentBlob", {
+  get assignments() {
+    return __t.array(StanceArmaments);
+  },
+});
+export type StanceLoadoutsComponentBlob = __Infer<typeof StanceLoadoutsComponentBlob>;
 
 export const StatBlock = __t.object("StatBlock", {
   attack: __t.i8(),

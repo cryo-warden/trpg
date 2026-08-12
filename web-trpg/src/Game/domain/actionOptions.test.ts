@@ -79,6 +79,7 @@ test("getActionOptions offers attacks and moves against a hostile, reachable tar
       actionAssetOf,
       targetHasHp: true,
       targetHasPath: true,
+      targetHasItem: false,
     }),
   ).toEqual([attackId, moveId]);
 });
@@ -91,6 +92,7 @@ test("getActionOptions offers buffs against an ally with hp", () => {
       actionAssetOf,
       targetHasHp: true,
       targetHasPath: false,
+      targetHasItem: false,
     }),
   ).toEqual([buffId]);
 });
@@ -103,8 +105,24 @@ test("getActionOptions offers nothing when the target has no hp and no path", ()
       actionAssetOf,
       targetHasHp: false,
       targetHasPath: false,
+      targetHasItem: false,
     }),
   ).toEqual([]);
+});
+
+test("getActionOptions offers inventory actions against an item target", () => {
+  const takeId = actionIdOf("take");
+  const dropId = actionIdOf("drop");
+  expect(
+    getActionOptions({
+      ...enemy,
+      actionIds: [...allIds, takeId, dropId],
+      actionAssetOf,
+      targetHasHp: false,
+      targetHasPath: false,
+      targetHasItem: true,
+    }),
+  ).toEqual([takeId, dropId]);
 });
 
 test("getActionOptions drops unknown action ids", () => {
@@ -115,6 +133,7 @@ test("getActionOptions drops unknown action ids", () => {
       actionAssetOf,
       targetHasHp: true,
       targetHasPath: true,
+      targetHasItem: false,
     }),
   ).toEqual([]);
 });
