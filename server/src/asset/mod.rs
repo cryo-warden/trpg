@@ -81,6 +81,8 @@ pub struct AssetPack {
     /// Which stance intimidation forces entities into; a pack without
     /// morale-relevant content may omit it (forcing then fails loudly).
     cowering_stance_name: Option<String>,
+    /// Which stance a dive lands in; same omission semantics.
+    prone_stance_name: Option<String>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
@@ -225,7 +227,10 @@ fn resolve_entity_blob(
         known_stances: None,
         size: None,
         morale: None,
-        cowered: None,
+        fear_status: None,
+        courage_status: None,
+        braced_status: None,
+        status_stat_block_dirty_flag: None,
         traits: author
             .trait_names
             .map(|names| {
@@ -567,21 +572,21 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    if let Some(cowering_name) = asset_pack.cowering_stance_name {
-        let row = SpecialStance {
-            key: SpecialStanceKey::Cowering,
-            stance_id: resolve_name(&maps.stances, "stance", &cowering_name)?,
-        };
-        if ctx
-            .db
-            .special_stances()
-            .key()
-            .find(SpecialStanceKey::Cowering)
-            .is_some()
-        {
-            ctx.db.special_stances().key().update(row);
-        } else {
-            ctx.db.special_stances().insert(row);
+    let special_stance_entries = [
+        (SpecialStanceKey::Cowering, asset_pack.cowering_stance_name),
+        (SpecialStanceKey::Prone, asset_pack.prone_stance_name),
+    ];
+    for (key, name) in special_stance_entries {
+        if let Some(name) = name {
+            let row = SpecialStance {
+                key: key.clone(),
+                stance_id: resolve_name(&maps.stances, "stance", &name)?,
+            };
+            if ctx.db.special_stances().key().find(key).is_some() {
+                ctx.db.special_stances().key().update(row);
+            } else {
+                ctx.db.special_stances().insert(row);
+            }
         }
     }
 

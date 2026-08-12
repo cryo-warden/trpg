@@ -78,9 +78,8 @@ export const ActionEffect = __t.enum("ActionEffect", {
   Equip: __t.unit(),
   Unequip: __t.unit(),
   Intimidate: __t.i16(),
-  get Rally() {
-    return RallyEffect;
-  },
+  Rally: __t.unit(),
+  Dive: __t.i16(),
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
 
@@ -127,6 +126,7 @@ export const ActionType = __t.enum("ActionType", {
   Move: __t.unit(),
   Inventory: __t.unit(),
   Equip: __t.unit(),
+  Dive: __t.unit(),
 });
 export type ActionType = __Infer<typeof ActionType>;
 
@@ -258,6 +258,7 @@ export const AssetPack = __t.object("AssetPack", {
     return __t.array(NamedStanceAsset);
   },
   coweringStanceName: __t.option(__t.string()),
+  proneStanceName: __t.option(__t.string()),
   get encounterBlobs() {
     return __t.array(NamedEntityBlobAsset);
   },
@@ -313,11 +314,33 @@ export const BaselineComponentBlob = __t.object("BaselineComponentBlob", {
 });
 export type BaselineComponentBlob = __Infer<typeof BaselineComponentBlob>;
 
+export const BracedStatusComponent = __t.object("BracedStatusComponent", {
+  entityId: __t.u64(),
+  defense: __t.i16(),
+});
+export type BracedStatusComponent = __Infer<typeof BracedStatusComponent>;
+
+export const BracedStatusComponentBlob = __t.object("BracedStatusComponentBlob", {
+  defense: __t.i16(),
+});
+export type BracedStatusComponentBlob = __Infer<typeof BracedStatusComponentBlob>;
+
 // The tagged union or sum type for the algebraic type `Buff`.
 export const Buff = __t.enum("Buff", {
   Guard: __t.i32(),
 });
 export type Buff = __Infer<typeof Buff>;
+
+export const CourageStatusComponent = __t.object("CourageStatusComponent", {
+  entityId: __t.u64(),
+  morale: __t.i16(),
+});
+export type CourageStatusComponent = __Infer<typeof CourageStatusComponent>;
+
+export const CourageStatusComponentBlob = __t.object("CourageStatusComponentBlob", {
+  morale: __t.i16(),
+});
+export type CourageStatusComponentBlob = __Infer<typeof CourageStatusComponentBlob>;
 
 export const Encounter = __t.object("Encounter", {
   id: __t.u32(),
@@ -420,10 +443,10 @@ export const EntityBlob = __t.object("EntityBlob", {
   get equipmentStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
-  get totalStatBlockDirtyFlag() {
+  get statusStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
-  get cowered() {
+  get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
   get attack() {
@@ -440,6 +463,15 @@ export const EntityBlob = __t.object("EntityBlob", {
   },
   get morale() {
     return __t.option(MoraleComponentBlob);
+  },
+  get fearStatus() {
+    return __t.option(FearStatusComponentBlob);
+  },
+  get courageStatus() {
+    return __t.option(CourageStatusComponentBlob);
+  },
+  get bracedStatus() {
+    return __t.option(BracedStatusComponentBlob);
   },
   get playerController() {
     return __t.option(PlayerControllerComponentBlob);
@@ -601,6 +633,17 @@ export const EventType = __t.enum("EventType", {
   },
 });
 export type EventType = __Infer<typeof EventType>;
+
+export const FearStatusComponent = __t.object("FearStatusComponent", {
+  entityId: __t.u64(),
+  intimidation: __t.i16(),
+});
+export type FearStatusComponent = __Infer<typeof FearStatusComponent>;
+
+export const FearStatusComponentBlob = __t.object("FearStatusComponentBlob", {
+  intimidation: __t.i16(),
+});
+export type FearStatusComponentBlob = __Infer<typeof FearStatusComponentBlob>;
 
 export const FlagComponent = __t.object("FlagComponent", {
   entityId: __t.u64(),
@@ -833,13 +876,11 @@ export type LoginResponse = __Infer<typeof LoginResponse>;
 export const MoraleComponent = __t.object("MoraleComponent", {
   entityId: __t.u64(),
   morale: __t.i16(),
-  maxMorale: __t.i16(),
 });
 export type MoraleComponent = __Infer<typeof MoraleComponent>;
 
 export const MoraleComponentBlob = __t.object("MoraleComponentBlob", {
   morale: __t.i16(),
-  maxMorale: __t.i16(),
 });
 export type MoraleComponentBlob = __Infer<typeof MoraleComponentBlob>;
 
@@ -959,12 +1000,6 @@ export const PlayerControllerComponentBlob = __t.object("PlayerControllerCompone
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
 
-export const RallyEffect = __t.object("RallyEffect", {
-  epCost: __t.i16(),
-  morale: __t.i16(),
-});
-export type RallyEffect = __Infer<typeof RallyEffect>;
-
 export const Relic = __t.object("Relic", {
   id: __t.u32(),
   name: __t.string(),
@@ -1029,6 +1064,7 @@ export type SpecialStance = __Infer<typeof SpecialStance>;
 // The tagged union or sum type for the algebraic type `SpecialStanceKey`.
 export const SpecialStanceKey = __t.enum("SpecialStanceKey", {
   Cowering: __t.unit(),
+  Prone: __t.unit(),
 });
 export type SpecialStanceKey = __Infer<typeof SpecialStanceKey>;
 

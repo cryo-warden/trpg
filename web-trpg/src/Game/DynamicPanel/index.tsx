@@ -4,7 +4,9 @@ import { useDynamicPanelMode } from "../context/DynamicPanelContext";
 import { sortByProminenceDescending } from "../domain/prominence";
 import {
   useAttackComponent,
+  useCourageStatusComponent,
   useEntityPresentations,
+  useFearStatusComponent,
   useHostiles,
   useHpComponent,
   useLocation,
@@ -28,6 +30,8 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const hpComponent = useHpComponent(playerEntity);
   const attackComponent = useAttackComponent(playerEntity);
   const moraleComponent = useMoraleComponent(playerEntity);
+  const fearStatus = useFearStatusComponent(playerEntity);
+  const courageStatus = useCourageStatusComponent(playerEntity);
   const entities: EntityId[] =
     mode === "location"
       ? locationEntities
@@ -66,8 +70,9 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
         <div>Attack: {attackComponent?.attack ?? 0}</div>
         <div>Defense: {hpComponent?.defense ?? 0}</div>
         <div>
-          Morale: {moraleComponent?.morale ?? 0} /{" "}
-          {moraleComponent?.maxMorale ?? 0}
+          Morale: {moraleComponent?.morale ?? 0}
+          {courageStatus != null && ` (+${courageStatus.morale} courage)`}
+          {fearStatus != null && ` — fear ${fearStatus.intimidation}`}
         </div>
       </Panel>
     );

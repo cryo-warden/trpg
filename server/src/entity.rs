@@ -118,8 +118,8 @@ entity!(
     #[component(
       traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
       equipment_stat_block_dirty_flag in equipment_stat_block_dirty_flag_components,
+      status_stat_block_dirty_flag in status_stat_block_dirty_flag_components,
       total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
-      cowered in cowered_components,
     )]
     struct FlagComponent {}
 
@@ -151,13 +151,35 @@ entity!(
         pub size: i8,
     }
 
-    // Nerve. max_morale comes from the total stat block; the current value
-    // is drained by being broken (a successful intimidation force) and
-    // restored by Rally.
+    // Nerve, RIGID like attack/defense: applied straight from the total
+    // stat block. The fluid layer is the status effects below.
     #[component(morale in morale_components)]
     struct MoraleComponent {
         pub morale: i16,
-        pub max_morale: i16,
+    }
+
+    // FEAR: the first real status effect. Holds the HIGHEST intimidation
+    // received; its presence is what forces (and holds) the cower stance.
+    // Overcome by raising effective morale above it, then standing up.
+    #[component(fear_status in fear_status_components)]
+    struct FearStatusComponent {
+        pub intimidation: i16,
+    }
+
+    // COURAGE: rally's status effect, sized dynamically (EP spent 1:1) to
+    // lift effective morale just past the fear. Folds into the total stat
+    // block through the status cache, so rigid morale absorbs it. Cleared,
+    // with the fear, on standing up.
+    #[component(courage_status in courage_status_components, dirties(status_stat_block_dirty_flag))]
+    struct CourageStatusComponent {
+        pub morale: i16,
+    }
+
+    // BRACED: dive's status effect — bonus defense, folded through the
+    // status cache exactly like courage. Cleared on the next stance change.
+    #[component(braced_status in braced_status_components, dirties(status_stat_block_dirty_flag))]
+    struct BracedStatusComponent {
+        pub defense: i16,
     }
 
     #[component(player_controller in player_controller_components)]

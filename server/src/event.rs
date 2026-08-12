@@ -161,75 +161,159 @@ secador::secador!(
                         ActionEffect::Equip => true,   // WIP
                         ActionEffect::Unequip => true, // WIP
                         // Fear, resolved in the early phase so it lands
-                        // before this tick's blows. A magnitude beyond the
-                        // best nerve among the victim's co-located faction
+                        // before this tick's blows. Morale is RIGID; the
+                        // fluid layer is the FEAR STATUS, which records the
+                        // highest intimidation received and whose presence
+                        // holds the cower. A magnitude beyond the best
+                        // nerve among the victim's co-located faction
                         // BREAKS the victim: action canceled (flinching is
-                        // not a choice, interruptible or not), forced into
-                        // the cowering stance, morale drained. An already
-                        // cowered victim just stays down — no re-breaking,
-                        // so it can still rally and crawl away.
+                        // not a choice, interruptible or not) and the cower
+                        // stance forced. An already-broken victim only has
+                        // its fear raised — no re-flinching, so it can
+                        // still rally and crawl.
                         ActionEffect::Intimidate(magnitude) => {
                             let victim = ecs.find(target_entity_id);
-                            match victim.morale() {
-                                None => false,
-                                Some(mut morale_component) => {
-                                    let breaks = victim.cowered().is_none()
-                                        && i32::from(*magnitude) > victim.effective_morale();
-                                    if breaks {
-                                        match ecs
-                                            .db
-                                            .special_stances()
-                                            .key()
-                                            .find(SpecialStanceKey::Cowering)
+                            if victim.morale().is_none() {
+                                false
+                            } else if let Some(mut fear) = victim.fear_status() {
+                                if *magnitude > fear.intimidation {
+                                    fear.intimidation = *magnitude;
+                                    victim.update_fear_status_row(fear);
+                                }
+                                false
+                            } else if i32::from(*magnitude) > victim.effective_morale() {
+                                match ecs
+                                    .db
+                                    .special_stances()
+                                    .key()
+                                    .find(SpecialStanceKey::Cowering)
+                                {
+                                    None => {
+                                        log::error!(
+                                            "Intimidation broke entity {} but no cowering stance is registered.",
+                                            target_entity_id
+                                        );
+                                        false
+                                    }
+                                    Some(cowering) => {
+                                        if victim.action_state().is_some() {
+                                            victim.delete_action_state();
+                                        }
+                                        if victim.queued_action_state().is_some() {
+                                            victim.delete_queued_action_state();
+                                        }
+                                        victim
+                                            .clone()
+                                            .upsert_new_active_stance(cowering.stance_id)
+                                            .into_handle()
+                                            .insert_new_fear_status(*magnitude);
+                                        true
+                                    }
+                                }
+                            } else {
+                                false
+                            }
+                        }
+                        // Hit the deck: force the actor's OWN stance to the
+                        // registered prone stance (fear, if any, stays —
+                        // stances remain limited), brace for bonus defense,
+                        // and grab a targeted item in the same motion —
+                        // wielding an armament immediately, whose morale
+                        // contribution may itself overcome a fear.
+                        ActionEffect::Dive(defense) => {
+                            match ecs
+                                .db
+                                .special_stances()
+                                .key()
+                                .find(SpecialStanceKey::Prone)
+                            {
+                                None => {
+                                    log::error!(
+                                        "Entity {} dove but no prone stance is registered.",
+                                        self.owner_entity_id
+                                    );
+                                    false
+                                }
+                                Some(prone) => {
+                                    let owner = ecs.find(self.owner_entity_id);
+                                    owner
+                                        .clone()
+                                        .upsert_new_active_stance(prone.stance_id)
+                                        .into_handle()
+                                        .upsert_new_braced_status(*defense);
+                                    let item = ecs
+                                        .db
+                                        .item_components()
+                                        .entity_id()
+                                        .find(target_entity_id);
+                                    let owner_location = ecs
+                                        .db
+                                        .location_components()
+                                        .entity_id()
+                                        .find(self.owner_entity_id);
+                                    let target_location = ecs
+                                        .db
+                                        .location_components()
+                                        .entity_id()
+                                        .find(target_entity_id);
+                                    if let (
+                                        Some(item),
+                                        Some(owner_location),
+                                        Some(mut target_location),
+                                    ) = (item, owner_location, target_location)
+                                    {
+                                        if target_location.location_entity_id
+                                            == owner_location.location_entity_id
                                         {
-                                            None => {
-                                                log::error!(
-                                                    "Intimidation broke entity {} but no cowering stance is registered.",
-                                                    target_entity_id
-                                                );
-                                            }
-                                            Some(cowering) => {
-                                                if victim.action_state().is_some() {
-                                                    victim.delete_action_state();
-                                                }
-                                                if victim.queued_action_state().is_some() {
-                                                    victim.delete_queued_action_state();
-                                                }
-                                                victim
-                                                    .clone()
-                                                    .upsert_new_active_stance(cowering.stance_id)
-                                                    .into_handle()
-                                                    .upsert_new_cowered();
-                                                morale_component.morale = std::cmp::max(
-                                                    0,
-                                                    morale_component
-                                                        .morale
-                                                        .saturating_sub(*magnitude),
-                                                );
-                                                victim.update_morale_row(morale_component);
+                                            target_location.location_entity_id =
+                                                self.owner_entity_id;
+                                            ecs.db
+                                                .location_components()
+                                                .entity_id()
+                                                .update(target_location);
+                                            if let crate::item::ItemRef::Armament(armament_id) =
+                                                item.item_ref
+                                            {
+                                                let mut armament_ids = owner
+                                                    .equipment()
+                                                    .map(|c| c.armament_ids)
+                                                    .unwrap_or_default();
+                                                armament_ids.push(armament_id);
+                                                owner.clone().upsert_new_equipment(armament_ids);
                                             }
                                         }
                                     }
-                                    breaks
+                                    true
                                 }
                             }
                         }
-                        // Spending effort to recover nerve; leaving the
-                        // cower still goes through set_stance's pressure
-                        // gate.
-                        ActionEffect::Rally(rally) => {
+                        // Rally spends EP DYNAMICALLY: exactly the deficit
+                        // (1:1) between the fear's intimidation and current
+                        // effective morale, granting a courage status just
+                        // big enough to overcome the fear. No fear, or not
+                        // enough effort left: nothing happens.
+                        ActionEffect::Rally => {
                             let target = ecs.find(target_entity_id);
-                            match (target.ep(), target.morale()) {
-                                (Some(mut ep_component), Some(mut morale_component))
-                                    if ep_component.ep >= rally.ep_cost =>
-                                {
-                                    ep_component.ep -= rally.ep_cost;
-                                    target.update_ep_row(ep_component);
-                                    morale_component.morale = morale_component.max_morale.min(
-                                        morale_component.morale.saturating_add(rally.morale),
-                                    );
-                                    target.update_morale_row(morale_component);
-                                    true
+                            match (target.fear_status(), target.ep()) {
+                                (Some(fear), Some(mut ep_component)) => {
+                                    let deficit = i32::from(fear.intimidation) + 1
+                                        - target.effective_morale();
+                                    if deficit <= 0 {
+                                        // Already braced; the fear just
+                                        // has not been shaken off yet.
+                                        false
+                                    } else if i32::from(ep_component.ep) < deficit {
+                                        false
+                                    } else {
+                                        ep_component.ep -= deficit as i16;
+                                        target.update_ep_row(ep_component);
+                                        let courage = target
+                                            .courage_status()
+                                            .map_or(0, |c| c.morale)
+                                            .saturating_add(deficit as i16);
+                                        target.clone().upsert_new_courage_status(courage);
+                                        true
+                                    }
                                 }
                                 _ => false,
                             }

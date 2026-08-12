@@ -19,11 +19,9 @@ const Take = { tag: "Take" } as const satisfies ActionEffect;
 const Drop = { tag: "Drop" } as const satisfies ActionEffect;
 const Intimidate = (value: number) =>
   ({ tag: "Intimidate", value }) as const satisfies ActionEffect;
-const Rally = (epCost: number, morale: number) =>
-  ({
-    tag: "Rally",
-    value: { epCost, morale },
-  }) as const satisfies ActionEffect;
+const Rally = { tag: "Rally" } as const satisfies ActionEffect;
+const Dive = (defense: number) =>
+  ({ tag: "Dive", value: defense }) as const satisfies ActionEffect;
 
 const round = (...effects: ActionEffect[]) => ({
   effects,
@@ -156,11 +154,20 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [round(Drop)],
   },
-  // The cower stance's counterplay: spend effort, recover nerve.
+  // The cower stance's counterplay: spends EP dynamically — exactly the
+  // deficit against the fear — for a courage status that overcomes it.
   rally: {
     actionType: { tag: "Buff" },
     requirements: NO_REQUIREMENTS,
-    rounds: [round(Rally(1, 2))],
+    rounds: [round(Rally)],
+  },
+  // Hit the deck: lands prone (fear stays if present), braced for +2
+  // defense, and grabs a targeted item mid-dive — a wielded weapon's morale
+  // can itself overcome a fear.
+  dive: {
+    actionType: { tag: "Dive" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(Dive(2))],
   },
 } satisfies Record<string, ActionAsset>;
 
@@ -259,5 +266,9 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   rally: {
     displayName: "Rally",
     beginTemplate: "{0:sentence:subject} steadied their nerve.",
+  },
+  dive: {
+    displayName: "Dive",
+    beginTemplate: "{0:sentence:subject} dove for {1:object}.",
   },
 };

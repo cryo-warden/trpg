@@ -34,16 +34,15 @@ pub fn set_stance(ctx: &ReducerContext, stance_id: u32) -> Result<(), String> {
         .id()
         .find(stance_id)
         .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
-    // A forced cower holds until the entity's nerve beats the standing
-    // pressure: out-nerve what looms over you, or crawl somewhere it
-    // doesn't.
-    if p.cowered().is_some() {
+    // A fear status holds the cower until effective morale (rigid morale
+    // plus rallied courage, best in the present faction) overcomes the
+    // highest intimidation received.
+    if let Some(fear) = p.fear_status() {
         let nerve = p.effective_morale();
-        let pressure = p.looming_pressure();
-        if nerve <= pressure {
+        if nerve <= i32::from(fear.intimidation) {
             return Err(format!(
-                "Too shaken to change stance: morale {} does not beat the looming pressure {}.",
-                nerve, pressure
+                "Too shaken to change stance: morale {} does not overcome the fear {}.",
+                nerve, fear.intimidation
             ));
         }
     }
@@ -63,9 +62,17 @@ pub fn set_stance(ctx: &ReducerContext, stance_id: u32) -> Result<(), String> {
             stance.name
         ));
     }
+    // A deliberate stance change sheds the momentary statuses: the fear is
+    // overcome, the surge of courage spent, the brace abandoned.
     let handle = p.into_handle();
-    if handle.cowered().is_some() {
-        handle.delete_cowered();
+    if handle.fear_status().is_some() {
+        handle.delete_fear_status();
+    }
+    if handle.courage_status().is_some() {
+        handle.delete_courage_status();
+    }
+    if handle.braced_status().is_some() {
+        handle.delete_braced_status();
     }
     let handle = handle.upsert_new_active_stance(stance_id).into_handle();
 

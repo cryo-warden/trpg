@@ -64,6 +64,9 @@ export const getActionOptions = ({
       // the server enforces which of take/drop actually applies.
       case "Inventory":
         return targetHasItem;
+      // Hit the deck where you stand, or dive at an item to grab it.
+      case "Dive":
+        return targetHasItem || allegiance.target === allegiance.playerEntity;
       default:
         return false;
     }

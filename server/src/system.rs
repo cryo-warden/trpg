@@ -144,8 +144,17 @@ pub fn action_system(ecs: Ecs) {
                 // Absorbed into the broadcast above; never emitted at the
                 // action's own target.
                 ActionEffect::Intimidate(_) => {}
-                ActionEffect::Rally(_) => {
+                ActionEffect::Rally => {
                     queue.emit_middle(ecs.new_event(
+                        entity_id,
+                        EventType::ActionEffect(effect.to_owned()),
+                        action_state.target_entity_id,
+                    ));
+                }
+                // A defensive reaction: early, so the braced defense stands
+                // before this tick's blows.
+                ActionEffect::Dive(_) => {
+                    queue.emit_early(ecs.new_event(
                         entity_id,
                         EventType::ActionEffect(effect.to_owned()),
                         action_state.target_entity_id,
@@ -301,6 +310,23 @@ pub fn entity_stats_system(ecs: Ecs) {
         // declared dirty flag) — no manual flag here.
         f.upsert_new_equipment_stat_block_cache(stat_block)
             .delete_equipment_stat_block_dirty_flag()
+            .into_handle();
+    }
+
+    // Status effects contribute stat blocks like everything else: courage
+    // folds into rigid morale, braced into defense. The cache upsert
+    // auto-dirties the total.
+    for f in ecs.iter_status_stat_block_dirty_flag() {
+        let e = ecs.find(f.entity_id());
+        let mut stat_block = StatBlock::default();
+        if let Some(c) = e.courage_status() {
+            stat_block.morale = c.morale.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8;
+        }
+        if let Some(c) = e.braced_status() {
+            stat_block.defense = c.defense.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8;
+        }
+        f.upsert_new_status_stat_block_cache(stat_block)
+            .delete_status_stat_block_dirty_flag()
             .into_handle();
     }
 

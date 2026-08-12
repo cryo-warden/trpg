@@ -31,6 +31,7 @@ const emptyPack = (): AssetPack => ({
   relics: [],
   stances: [],
   coweringStanceName: undefined,
+  proneStanceName: undefined,
   encounterBlobs: [],
   encounters: [],
   locationMapThemes: [],
@@ -350,10 +351,7 @@ export const moralePack = (): AssetPack => ({
         actionType: { tag: "Buff" },
         requirements: NO_REQUIREMENTS,
         rounds: [
-          {
-            effects: [{ tag: "Rally", value: { epCost: 1, morale: 2 } }],
-            interruptible: false,
-          },
+          { effects: [{ tag: "Rally" }], interruptible: false },
         ],
       },
     },
@@ -417,6 +415,72 @@ export const moralePack = (): AssetPack => ({
     }),
     blob({
       path: { destinationEntityId: { tag: "Literal", value: 1000n } },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+  ],
+});
+
+/**
+ * A dive world: a standing player, a brave sword (morale +3) lying in the
+ * room, and the prone stance registered as the dive landing. Diving at the
+ * sword lands prone + braced, grabs AND wields it in one motion — and the
+ * wielded morale flows through the stat pipeline.
+ */
+export const divePack = (): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    {
+      name: "test_dive",
+      value: {
+        actionType: { tag: "Dive" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Dive", value: 2 }], interruptible: false }],
+      },
+    },
+  ],
+  armaments: [
+    {
+      name: "test_brave_sword",
+      value: statBlock({ bladed: 1, hand: -1, morale: 3 }),
+    },
+  ],
+  stances: [
+    {
+      name: "test_standing",
+      value: {
+        requirements: NO_REQUIREMENTS,
+        statBlock: statBlock({ actionNames: ["test_dive"] }),
+      },
+    },
+    {
+      name: "test_prone",
+      value: {
+        requirements: NO_REQUIREMENTS,
+        statBlock: statBlock({ gait: -2 }),
+      },
+    },
+  ],
+  proneStanceName: "test_prone",
+  baselines: [
+    {
+      name: "test_human",
+      value: statBlock({
+        mhp: 8,
+        hand: 2,
+        gait: 2,
+        morale: 5,
+        stanceNames: ["test_standing", "test_prone"],
+      }),
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_human",
+    stanceName: "test_standing",
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+  }),
+  instantiateEntityBlobs: [
+    blob({
+      item: { tag: "Armament", value: "test_brave_sword" },
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
     }),
   ],

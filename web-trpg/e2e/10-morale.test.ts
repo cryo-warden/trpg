@@ -31,6 +31,11 @@ const myMorale = () =>
     (row) => row.entityId === playerEntityId,
   );
 
+const myFear = () =>
+  [...player.db.fear_status_components.iter()].find(
+    (row) => row.entityId === playerEntityId,
+  );
+
 const myEp = () =>
   [...player.db.ep_components.iter()].find(
     (row) => row.entityId === playerEntityId,
@@ -58,6 +63,8 @@ beforeAll(async () => {
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
       "SELECT * FROM morale_components",
+      "SELECT * FROM fear_status_components",
+      "SELECT * FROM courage_status_components",
       "SELECT * FROM ep_components",
       "SELECT * FROM hp_components",
       "SELECT * FROM location_components",
@@ -76,12 +83,15 @@ afterAll(() => {
   player?.disconnect();
 });
 
-test("the giant's attack breaks the mouse into cowering and drains morale", async () => {
+test("the giant's attack breaks the mouse: fear status, forced cower, morale RIGID", async () => {
   const coweringId = idByName(player.db.stances, "test_cowering");
   await waitFor(() => myStanceId() === coweringId, 30000);
   expect(myStanceId()).toBe(coweringId);
-  await waitFor(() => myMorale()?.morale === 0, 30000);
-  expect(myMorale()?.morale).toBe(0);
+  // The fear records the highest intimidation received (size delta 4 +
+  // authored 3); rigid morale is untouched.
+  await waitFor(() => myFear() != null, 30000);
+  expect(myFear()?.intimidation).toBe(7);
+  expect(myMorale()?.morale).toBe(5);
 }, 60000);
 
 test("standing up under the giant's looming pressure is refused", async () => {
@@ -92,16 +102,17 @@ test("standing up under the giant's looming pressure is refused", async () => {
   ).rejects.toThrow(/Too shaken/);
 }, 60000);
 
-test("rally spends effort to recover nerve", async () => {
+test("rally spends EP dynamically: exactly the deficit against the fear", async () => {
   const rallyId = idByName(player.db.actions, "test_rally");
   const epBefore = myEp()!.ep;
   await player.reducers.act({
     actionId: rallyId,
     targetEntityId: playerEntityId,
   });
-  await waitFor(() => (myMorale()?.morale ?? 0) >= 2, 30000);
-  expect(myMorale()?.morale).toBe(2);
-  expect(myEp()!.ep).toBe(epBefore - 1);
+  // Deficit = fear 7 + 1 - morale 5 = 3: EP drops by 3, and the courage
+  // status folds through the status cache into rigid morale (5 + 3 = 8).
+  await waitFor(() => (myMorale()?.morale ?? 0) === 8, 30000);
+  expect(myEp()!.ep).toBe(epBefore - 3);
 }, 60000);
 
 test("crawling away from the pressure lets the mouse stand back up", async () => {
@@ -117,4 +128,8 @@ test("crawling away from the pressure lets the mouse stand back up", async () =>
   await player.reducers.setStance({ stanceId: standingId });
   await waitFor(() => myStanceId() === standingId, 30000);
   expect(myStanceId()).toBe(standingId);
+  // Standing up shed the statuses: fear gone, courage spent, morale back
+  // to its rigid 5.
+  await waitFor(() => myFear() == null, 30000);
+  await waitFor(() => myMorale()?.morale === 5, 30000);
 }, 60000);

@@ -15,20 +15,17 @@ pub trait EntityHandleExtension {
     fn set_defense(self, defense: i8) -> Self;
     fn set_mep(self, mep: i16) -> Self;
     fn set_size(self, size: i8) -> Self;
-    fn set_max_morale(self, max_morale: i8) -> Self;
+    fn set_morale(self, morale: i8) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
     fn set_known_stances(self, stance_ids: Vec<u32>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
     fn allegiance_id(&self) -> Option<u64>;
     fn is_ally(&self, other_entity_id: u64) -> bool;
-    /// The morale that counts against intimidation: the best nerve among
-    /// co-located faction members, self included — your buddies keep you
-    /// brave.
+    /// The morale that counts against intimidation: the best rigid morale
+    /// among co-located faction members, self included (courage and gear
+    /// contributions are already folded in through the stat caches). Your
+    /// buddies keep you brave.
     fn effective_morale(&self) -> i32;
-    /// The standing intimidation pressure: the largest positive size delta
-    /// any co-located non-ally looms over this entity with. Gates leaving a
-    /// forced cower — flee or out-nerve what broke you.
-    fn looming_pressure(&self) -> i32;
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
     fn shift_queued_action_state(self) -> Self;
     fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool;
@@ -61,7 +58,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
             .set_size(stat_block.size)
-            .set_max_morale(stat_block.morale)
+            .set_morale(stat_block.morale)
             .set_actions(stat_block.action_ids)
             .set_known_stances(stat_block.stance_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids);
@@ -123,17 +120,15 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
-    // Mirrors set_mhp: the stat total is the MAXIMUM; a fresh component
-    // starts full, and recomputes only move the ceiling.
-    fn set_max_morale(self, max_morale: i8) -> Self {
+    // Rigid, like attack: the stat total IS the value.
+    fn set_morale(self, morale: i8) -> Self {
         let e = self.to_handle();
-        let max_morale = i16::from(max_morale);
+        let morale = i16::from(morale);
         if let Some(mut c) = e.morale() {
-            c.max_morale = max_morale;
-            c.morale = c.morale.min(max_morale);
+            c.morale = morale;
             e.update_morale_row(c);
         } else {
-            e.insert_new_morale(max_morale, max_morale);
+            e.insert_new_morale(morale);
         }
         self
     }
@@ -200,24 +195,6 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .fold(own, i32::max)
     }
 
-    fn looming_pressure(&self) -> i32 {
-        let e = self.to_handle();
-        let own_size = e.size().map_or(0, |c| i32::from(c.size));
-        let location = match e.location() {
-            None => return 0,
-            Some(location) => location.location_entity_id,
-        };
-        e.ecs()
-            .db
-            .location_components()
-            .location_entity_id()
-            .filter(location)
-            .filter(|c| c.entity_id != e.entity_id() && !e.is_ally(c.entity_id))
-            .filter_map(|c| e.ecs().find(c.entity_id).size())
-            .map(|c| i32::from(c.size) - own_size)
-            .fold(0, i32::max)
-    }
-
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
         let e = self.to_handle();
         e.delete_queued_action_state();
@@ -265,6 +242,19 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                     }
                 }
                 ActionType::Move => o.path().is_some(),
+                // Self (just hit the deck) or an item within reach to grab
+                // mid-dive.
+                ActionType::Dive => {
+                    other_entity_id == e.entity_id()
+                        || (o.item().is_some() && {
+                            match (e.location(), o.location()) {
+                                (Some(mine), Some(theirs)) => {
+                                    mine.location_entity_id == theirs.location_entity_id
+                                }
+                                _ => false,
+                            }
+                        })
+                }
             }
         } else {
             false

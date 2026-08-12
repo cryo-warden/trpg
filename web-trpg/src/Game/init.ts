@@ -32,6 +32,7 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       relics: namedPairs(RELICS),
       stances: namedPairs(STANCES),
       coweringStanceName: "cowering",
+      proneStanceName: "prone",
       encounterBlobs: namedPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),
       locationMapThemes: namedPairs(LOCATION_MAP_THEMES),

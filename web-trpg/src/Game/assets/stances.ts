@@ -12,7 +12,7 @@ export const STANCES = {
   // armaments provide.
   standing: {
     requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({}),
+    statBlock: statBlock({ actionNames: ["dive"] }),
   },
   // Knocked down: harder to fight from, and gait sinks below what movement
   // actions require, so they drop out of the derived available actions.
@@ -22,7 +22,7 @@ export const STANCES = {
   },
   sitting: {
     requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ defense: -1, gait: -2 }),
+    statBlock: statBlock({ defense: -1, gait: -2, actionNames: ["dive"] }),
   },
   // Defensive footing. Later this stance also carries the actions whose
   // added benefit is a favorable transition into another stance.
@@ -83,7 +83,7 @@ export const STANCES = {
       defense: -1,
       hand: -2,
       gait: -1,
-      actionNames: ["rally"],
+      actionNames: ["rally", "dive"],
     }),
   },
 } satisfies Record<string, StanceAsset>;

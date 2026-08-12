@@ -8,7 +8,9 @@ import { statBlock } from "./stat_block";
 // actions (like bop) simply drop out of the derived set.
 export const ARMAMENTS = {
   club: statBlock({ blunt: 1, hand: -1, actionNames: ["smash"] }),
-  sword: statBlock({ bladed: 1, hand: -1, actionNames: ["slash"] }),
+  // A blade or an axe in hand steadies the nerves: morale is a stat, so a
+  // wielded weapon's contribution can itself overcome a fear.
+  sword: statBlock({ bladed: 1, hand: -1, morale: 1, actionNames: ["slash"] }),
   staff: statBlock({
     pole: 1,
     focus: 1,
@@ -23,7 +25,13 @@ export const ARMAMENTS = {
     actionNames: ["shield_bash"],
   }),
   spear: statBlock({ pole: 1, reach: 1, hand: -2, actionNames: ["thrust"] }),
-  axe: statBlock({ bladed: 1, attack: 1, hand: -1, actionNames: ["cleave"] }),
+  axe: statBlock({
+    bladed: 1,
+    attack: 1,
+    hand: -1,
+    morale: 1,
+    actionNames: ["cleave"],
+  }),
   dagger: statBlock({ bladed: 1, hand: -1, actionNames: ["stab"] }),
 } satisfies Record<string, StatBlockAsset>;
 

@@ -11,6 +11,8 @@ pub enum ActionType {
     Move,
     Inventory,
     Equip,
+    /// Targets self, or an item within reach to grab mid-dive.
+    Dive,
 }
 
 #[table(accessor = actions, public)]
@@ -52,15 +54,17 @@ pub enum ActionEffect {
     /// action system sums both and broadcasts one early-phase event per
     /// enemy — this effect is never emitted per-target like Attack.
     Intimidate(i16),
-    /// Spend effort to recover nerve: the cower stance's counterplay.
-    /// (A named struct because SATS enums take only unit/newtype variants.)
-    Rally(RallyEffect),
-}
-
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct RallyEffect {
-    pub ep_cost: i16,
-    pub morale: i16,
+    /// The cower stance's counterplay: spends EP DYNAMICALLY — exactly the
+    /// deficit between the fear's intimidation and effective morale, 1:1 —
+    /// to grant a courage status big enough to overcome the fear.
+    Rally,
+    /// Hit the deck: forces the actor's own stance to the registered PRONE
+    /// stance (fear, if any, stays — stances remain limited), grants a
+    /// braced status with this much bonus defense, and — targeting an item
+    /// within reach — grabs it in the same motion, wielding armaments
+    /// immediately. A grabbed weapon's morale contribution can itself
+    /// overcome a fear.
+    Dive(i16),
 }
 
 /// One round of an action, with its effects denormalized into the row: every

@@ -12,5 +12,5 @@ import {
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  morale: __t.i16(),
+  defense: __t.i16(),
 });

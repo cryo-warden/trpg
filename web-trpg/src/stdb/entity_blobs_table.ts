@@ -29,6 +29,9 @@ import {
   EpComponentBlob,
   SizeComponentBlob,
   MoraleComponentBlob,
+  FearStatusComponentBlob,
+  CourageStatusComponentBlob,
+  BracedStatusComponentBlob,
   PlayerControllerComponentBlob,
   EnemyControllerComponentBlob,
   ActionStateComponentBlob,
@@ -93,11 +96,11 @@ export default __t.row({
   get equipmentStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("equipment_stat_block_dirty_flag");
   },
+  get statusStatBlockDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("status_stat_block_dirty_flag");
+  },
   get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("total_stat_block_dirty_flag");
-  },
-  get cowered() {
-    return __t.option(FlagComponentBlob);
   },
   get attack() {
     return __t.option(AttackComponentBlob);
@@ -113,6 +116,15 @@ export default __t.row({
   },
   get morale() {
     return __t.option(MoraleComponentBlob);
+  },
+  get fearStatus() {
+    return __t.option(FearStatusComponentBlob).name("fear_status");
+  },
+  get courageStatus() {
+    return __t.option(CourageStatusComponentBlob).name("courage_status");
+  },
+  get bracedStatus() {
+    return __t.option(BracedStatusComponentBlob).name("braced_status");
   },
   get playerController() {
     return __t.option(PlayerControllerComponentBlob).name("player_controller");

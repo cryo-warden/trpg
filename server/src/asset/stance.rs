@@ -9,6 +9,8 @@ use crate::asset::stat_block::{StatBlock, StatRequirements};
 pub enum SpecialStanceKey {
     /// The stance intimidation forces entities into.
     Cowering,
+    /// The stance a dive lands in.
+    Prone,
 }
 
 #[table(accessor = special_stances)]

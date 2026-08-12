@@ -70,7 +70,8 @@ import ArmorComponentsRow from "./armor_components_table";
 import ArmorsRow from "./armors_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
-import CoweredComponentsRow from "./cowered_components_table";
+import BracedStatusComponentsRow from "./braced_status_components_table";
+import CourageStatusComponentsRow from "./courage_status_components_table";
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
 import EntityBlobsRow from "./entity_blobs_table";
@@ -79,6 +80,7 @@ import EpComponentsRow from "./ep_components_table";
 import EquipmentComponentsRow from "./equipment_components_table";
 import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_components_table";
 import EquipmentStatBlockDirtyFlagComponentsRow from "./equipment_stat_block_dirty_flag_components_table";
+import FearStatusComponentsRow from "./fear_status_components_table";
 import HpComponentsRow from "./hp_components_table";
 import ItemComponentsRow from "./item_components_table";
 import KnownStancesComponentsRow from "./known_stances_components_table";
@@ -103,6 +105,7 @@ import SizeComponentsRow from "./size_components_table";
 import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
+import StatusStatBlockDirtyFlagComponentsRow from "./status_stat_block_dirty_flag_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
 import TraitsComponentsRow from "./traits_components_table";
 import TraitsStatBlockCacheComponentsRow from "./traits_stat_block_cache_components_table";
@@ -321,17 +324,28 @@ const tablesSchema = __schema({
       { name: 'baseline_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, BaselineComponentsRow),
-  cowered_components: __table({
-    name: 'cowered_components',
+  braced_status_components: __table({
+    name: 'braced_status_components',
     indexes: [
-      { accessor: 'entity_id', name: 'cowered_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'braced_status_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'cowered_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'braced_status_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, CoweredComponentsRow),
+  }, BracedStatusComponentsRow),
+  courage_status_components: __table({
+    name: 'courage_status_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'courage_status_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'courage_status_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, CourageStatusComponentsRow),
   enemy_controller_components: __table({
     name: 'enemy_controller_components',
     indexes: [
@@ -416,6 +430,17 @@ const tablesSchema = __schema({
       { name: 'equipment_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EquipmentStatBlockDirtyFlagComponentsRow),
+  fear_status_components: __table({
+    name: 'fear_status_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'fear_status_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'fear_status_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, FearStatusComponentsRow),
   hp_components: __table({
     name: 'hp_components',
     indexes: [
@@ -716,6 +741,17 @@ const tablesSchema = __schema({
       { name: 'status_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, StatusStatBlockCacheComponentsRow),
+  status_stat_block_dirty_flag_components: __table({
+    name: 'status_stat_block_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'status_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'status_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, StatusStatBlockDirtyFlagComponentsRow),
   total_stat_block_dirty_flag_components: __table({
     name: 'total_stat_block_dirty_flag_components',
     indexes: [
