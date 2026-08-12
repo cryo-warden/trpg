@@ -8,7 +8,6 @@ export type ActionAsset = {
   rounds: ActionEffect[][];
 };
 
-const Rest = { tag: "Rest" } as const satisfies ActionEffect;
 const Move = { tag: "Move" } as const satisfies ActionEffect;
 const Attack = (value: number) =>
   ({ tag: "Attack", value }) as const satisfies ActionEffect;
@@ -16,8 +15,8 @@ const Heal = (value: number) =>
   ({ tag: "Heal", value }) as const satisfies ActionEffect;
 
 // Most battle actions resolve in a single round; only deliberate wind-ups
-// (like move) span several. Multiple effects in one round land on the same
-// tick — boppity_bop's double hit is the canonical example.
+// (like move) span several, and an EMPTY round is a wait. Multiple effects in
+// one round land on the same tick — boppity_bop's double hit is the example.
 export const ACTIONS = {
   move: {
     type: "Move",
@@ -25,7 +24,7 @@ export const ACTIONS = {
       displayName: "Move",
       beginTemplate: "{0:sentence:subject} moved toward {1:object}.",
     },
-    rounds: [[Rest], [Rest], [Move]],
+    rounds: [[], [], [Move]],
   },
   quick_move: {
     type: "Move",
@@ -67,7 +66,7 @@ export const ACTIONS = {
       beginTemplate:
         "{0:sentence:subject} sprayed a glob of slime at {1:object}.",
     },
-    rounds: [[Rest], [Attack(1)]],
+    rounds: [[], [Attack(1)]],
   },
   scratch: {
     type: "Attack",

@@ -81,7 +81,7 @@ export const createEnUs: CreateLanguage<NarrationContext> = ({
             values: [owner, target],
           };
         default:
-          // Rest, Buff, and any future effect kinds are not narrated yet.
+          // Buff and any future effect kinds are not narrated yet.
           return null;
       }
     }

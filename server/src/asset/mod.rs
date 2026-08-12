@@ -4,7 +4,7 @@ use ecs::WithEcs;
 use spacetimedb::{reducer, table, ReducerContext, SpacetimeType, Table};
 
 use crate::{
-    action::{action_steps, actions, Action, ActionStep},
+    action::{action_rounds, actions, Action, ActionRound},
     appearance::{appearance_features, AppearanceFeature},
     asset::{
         author::{
@@ -273,13 +273,15 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.actions().iter().map(|a| (a.name, a.id)),
         asset_pack.actions.iter().map(|a| &a.name),
     )?;
-    // Action steps are derived rows and nothing references their ids, so each
-    // push rebuilds them wholesale.
-    let stale_step_ids: Vec<u64> = ctx.db.action_steps().iter().map(|s| s.id).collect();
-    for id in stale_step_ids {
-        ctx.db.action_steps().id().delete(id);
+    // Action rounds are derived rows and nothing references their ids, so
+    // each push rebuilds them wholesale. Every authored round gets a row —
+    // including empty (wait) rounds, because round-row existence is what
+    // keeps an action alive.
+    let stale_round_ids: Vec<u64> = ctx.db.action_rounds().iter().map(|r| r.id).collect();
+    for id in stale_round_ids {
+        ctx.db.action_rounds().id().delete(id);
     }
-    let mut next_action_step_id: u64 = 1;
+    let mut next_action_round_id: u64 = 1;
     for a in asset_pack.actions {
         let action_id = action_ids[&a.name];
         let row = Action {
@@ -293,15 +295,13 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.actions().insert(row);
         }
         for (sequence_index, round) in a.value.rounds.into_iter().enumerate() {
-            for action_effect in round.effects {
-                ctx.db.action_steps().insert(ActionStep {
-                    id: next_action_step_id,
-                    action_id,
-                    sequence_index: sequence_index as i32,
-                    action_effect,
-                });
-                next_action_step_id += 1;
-            }
+            ctx.db.action_rounds().insert(ActionRound {
+                id: next_action_round_id,
+                action_id,
+                sequence_index: sequence_index as i32,
+                effects: round.effects,
+            });
+            next_action_round_id += 1;
         }
     }
 

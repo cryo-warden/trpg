@@ -86,8 +86,7 @@ for (const [label, language] of [
     );
   });
 
-  test(`${label}: does not narrate rest, buff, or unknown events`, () => {
-    expect(render(actionEffect({ tag: "Rest" }))).toBeNull();
+  test(`${label}: does not narrate buff or unknown events`, () => {
     expect(render(actionEffect({ tag: "Buff" }))).toBeNull();
     expect(render(unknownEvent())).toBeNull();
   });

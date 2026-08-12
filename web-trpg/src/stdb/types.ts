@@ -66,7 +66,6 @@ export const ActionEffect = __t.enum("ActionEffect", {
   },
   Attack: __t.i32(),
   Heal: __t.i32(),
-  Rest: __t.unit(),
   Move: __t.unit(),
   Take: __t.unit(),
   Drop: __t.unit(),
@@ -74,6 +73,16 @@ export const ActionEffect = __t.enum("ActionEffect", {
   Unequip: __t.unit(),
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
+
+export const ActionRound = __t.object("ActionRound", {
+  id: __t.u64(),
+  actionId: __t.u32(),
+  sequenceIndex: __t.i32(),
+  get effects() {
+    return __t.array(ActionEffect);
+  },
+});
+export type ActionRound = __Infer<typeof ActionRound>;
 
 export const ActionRoundAuthor = __t.object("ActionRoundAuthor", {
   get effects() {
@@ -98,16 +107,6 @@ export const ActionStateComponentBlob = __t.object("ActionStateComponentBlob", {
   sequenceIndex: __t.i32(),
 });
 export type ActionStateComponentBlob = __Infer<typeof ActionStateComponentBlob>;
-
-export const ActionStep = __t.object("ActionStep", {
-  id: __t.u64(),
-  actionId: __t.u32(),
-  sequenceIndex: __t.i32(),
-  get actionEffect() {
-    return ActionEffect;
-  },
-});
-export type ActionStep = __Infer<typeof ActionStep>;
 
 // The tagged union or sum type for the algebraic type `ActionType`.
 export const ActionType = __t.enum("ActionType", {

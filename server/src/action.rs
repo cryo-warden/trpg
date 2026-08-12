@@ -31,7 +31,6 @@ pub enum ActionEffect {
     Buff(Buff),
     Attack(i32),
     Heal(i32),
-    Rest,
     Move,
     Take,
     Drop,
@@ -39,18 +38,22 @@ pub enum ActionEffect {
     Unequip,
 }
 
+/// One round of an action, with its effects denormalized into the row: every
+/// effect resolves in the same system tick, and an empty list is a wait
+/// round. An action lives exactly as long as it has round rows — finishing
+/// means there is no next round.
 #[table(
-  accessor = action_steps,
+  accessor = action_rounds,
   index(accessor = action_sequence, btree(columns = [action_id, sequence_index])),
   public
 )]
 #[derive(Debug, Clone)]
-pub struct ActionStep {
+pub struct ActionRound {
     #[primary_key]
     pub id: u64,
     pub action_id: ActionId,
     pub sequence_index: i32,
-    pub action_effect: ActionEffect,
+    pub effects: Vec<ActionEffect>,
 }
 
 pub struct ActionHandle<'a> {
@@ -63,15 +66,14 @@ impl<'a> ActionHandle<'a> {
         Self { ctx, action_id }
     }
 
-    /// Every effect in the given round: multiple effects may share one
-    /// system tick, and an empty round list means the action is finished.
-    pub fn effects(&self, sequence_index: i32) -> Vec<ActionEffect> {
+    /// The given round's effects, or None when the action has no such round.
+    pub fn round_effects(&self, sequence_index: i32) -> Option<Vec<ActionEffect>> {
         self.ctx
             .db
-            .action_steps()
+            .action_rounds()
             .action_sequence()
             .filter((self.action_id, sequence_index))
-            .map(|a| a.action_effect)
-            .collect()
+            .next()
+            .map(|round| round.effects)
     }
 }

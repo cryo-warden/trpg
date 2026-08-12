@@ -18,7 +18,7 @@ export default __t.row({
   id: __t.u64().primaryKey(),
   actionId: __t.u32().name("action_id"),
   sequenceIndex: __t.i32().name("sequence_index"),
-  get actionEffect() {
-    return ActionEffect.name("action_effect");
+  get effects() {
+    return __t.array(ActionEffect);
   },
 });

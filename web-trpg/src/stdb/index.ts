@@ -52,8 +52,8 @@ import SetPasswordReducer from "./set_password_reducer";
 import AccountIdentitiesRow from "./account_identities_table";
 import AccountRolesRow from "./account_roles_table";
 import AccountsRow from "./accounts_table";
+import ActionRoundsRow from "./action_rounds_table";
 import ActionStateComponentsRow from "./action_state_components_table";
-import ActionStepsRow from "./action_steps_table";
 import ActionsRow from "./actions_table";
 import ActionsComponentsRow from "./actions_components_table";
 import AllegianceComponentsRow from "./allegiance_components_table";
@@ -135,6 +135,21 @@ const tablesSchema = __schema({
       { name: 'accounts_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, AccountsRow),
+  action_rounds: __table({
+    name: 'action_rounds',
+    indexes: [
+      { accessor: 'action_sequence', name: 'action_rounds_action_id_sequence_index_idx_btree', algorithm: 'btree', columns: [
+        'actionId',
+        'sequenceIndex',
+      ] },
+      { accessor: 'id', name: 'action_rounds_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'action_rounds_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, ActionRoundsRow),
   action_state_components: __table({
     name: 'action_state_components',
     indexes: [
@@ -146,21 +161,6 @@ const tablesSchema = __schema({
       { name: 'action_state_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, ActionStateComponentsRow),
-  action_steps: __table({
-    name: 'action_steps',
-    indexes: [
-      { accessor: 'action_sequence', name: 'action_steps_action_id_sequence_index_idx_btree', algorithm: 'btree', columns: [
-        'actionId',
-        'sequenceIndex',
-      ] },
-      { accessor: 'id', name: 'action_steps_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-    ],
-    constraints: [
-      { name: 'action_steps_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, ActionStepsRow),
   actions: __table({
     name: 'actions',
     indexes: [

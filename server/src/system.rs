@@ -66,8 +66,22 @@ pub fn action_system(ecs: Ecs) {
         let action_state = e.action_state();
         let entity_id = action_state.entity_id;
         let action_handle = ActionHandle::from_id(&ecs, action_state.action_id);
+        let effects = match action_handle.round_effects(action_state.sequence_index) {
+            Some(effects) => effects,
+            None => {
+                // A state pointing past the action's rounds should be
+                // impossible; surface it and drop the state rather than
+                // ticking forever.
+                log::error!(
+                    "Entity {} has action state past the rounds of action {}.",
+                    entity_id,
+                    action_state.action_id
+                );
+                Vec::new()
+            }
+        };
 
-        for effect in &action_handle.effects(action_state.sequence_index) {
+        for effect in &effects {
             match effect {
                 ActionEffect::Buff(_) => {
                     queue.emit_early(ecs.new_event(
@@ -112,7 +126,9 @@ pub fn action_system(ecs: Ecs) {
 
         let with_action_state = e.update_action_state();
 
-        if action_handle.effects(new_sequence_index).is_empty() {
+        // Rounds without effects are waits; the action finishes only when
+        // there is NO next round.
+        if action_handle.round_effects(new_sequence_index).is_none() {
             // TODO Emit event for finished action.
             with_action_state.delete_action_state();
         }

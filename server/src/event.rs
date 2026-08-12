@@ -40,7 +40,6 @@ secador::secador!(
                     EventType::StartAction(_) => true,
                     EventType::ActionEffect(ref action_effect) => match action_effect {
                         ActionEffect::Buff(_) => true,
-                        ActionEffect::Rest => false,
                         ActionEffect::Move => {
                             match ecs.db.path_components().entity_id().find(target_entity_id) {
                                 None => {}
