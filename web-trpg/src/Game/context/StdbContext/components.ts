@@ -6,8 +6,9 @@ import { useActionAsset, useActionAssetOf } from "./assetLookup";
 import { RowType } from "./RowType";
 import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
+import { EntityPresentation } from "../../domain/prominence";
 import {
-  selectEntityProminences,
+  selectEntityPresentations,
   selectLocationEntities,
 } from "./tableSelectors";
 import { Target } from "../TargetContext";
@@ -41,7 +42,6 @@ export const componentQueries = [
   "select * from allegiance_components",
   "select * from appearance_features_components",
   "select * from attack_components",
-  "select * from entity_prominence_components",
   "select * from ep_components",
   "select * from hp_components",
   "select * from location_components",
@@ -134,11 +134,33 @@ export const useActionHotkey = (actionId: ActionId) => {
   return String.fromCharCode(actionHotkey.characterCode);
 };
 
-export const useEntityProminences = (entityIds: EntityId[]) => {
-  return useTableData(
-    "entity_prominence_components",
-    (table) => selectEntityProminences(table, entityIds),
-    [entityIds],
+/** Presentation flags per entity, derived from component presence — the
+ * server stores no ranking; prominence is pure client presentation. */
+export const useEntityPresentations = (
+  entityIds: EntityId[],
+): EntityPresentation[] => {
+  const pathRows = useTableData(
+    "path_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  const playerControllerRows = useTableData(
+    "player_controller_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  const hpRows = useTableData("hp_components", (table) => [...table.iter()], []);
+  return useMemo(
+    () =>
+      selectEntityPresentations(
+        {
+          paths: { iter: () => pathRows },
+          playerControllers: { iter: () => playerControllerRows },
+          hps: { iter: () => hpRows },
+        },
+        entityIds,
+      ),
+    [entityIds, pathRows, playerControllerRows, hpRows],
   );
 };
 

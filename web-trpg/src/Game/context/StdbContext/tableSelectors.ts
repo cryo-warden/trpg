@@ -1,5 +1,5 @@
 import { EntityId } from "../../trpg";
-import { EntityProminence } from "../../domain/prominence";
+import { EntityPresentation } from "../../domain/prominence";
 
 /**
  * The minimal read surface the client needs from a database table: iterate its
@@ -31,17 +31,27 @@ export const selectLocationEntities = (
     .map((component) => component.entityId);
 
 /**
- * Prominences for the requested entities, in the requested order. Entities with
- * no prominence row fall back to `-Infinity` so they sort last.
+ * Presentation flags for the requested entities, in the requested order,
+ * derived from which component tables carry a row for each entity. The
+ * server stores no ranking — prominence is computed entirely here.
  */
-export const selectEntityProminences = (
-  table: ReadableTable<EntityProminence>,
+export const selectEntityPresentations = (
+  tables: {
+    paths: ReadableTable<{ entityId: EntityId }>;
+    playerControllers: ReadableTable<{ entityId: EntityId }>;
+    hps: ReadableTable<{ entityId: EntityId }>;
+  },
   entityIds: EntityId[],
-): EntityProminence[] => {
-  const byId = new Map(
-    [...table.iter()].map((prominence) => [prominence.entityId, prominence]),
-  );
-  return entityIds.map(
-    (entityId) => byId.get(entityId) ?? { entityId, prominence: -Infinity },
-  );
+): EntityPresentation[] => {
+  const idsOf = (table: ReadableTable<{ entityId: EntityId }>) =>
+    new Set([...table.iter()].map((row) => row.entityId));
+  const pathIds = idsOf(tables.paths);
+  const playerControllerIds = idsOf(tables.playerControllers);
+  const hpIds = idsOf(tables.hps);
+  return entityIds.map((entityId) => ({
+    entityId,
+    hasPath: pathIds.has(entityId),
+    isPlayerControlled: playerControllerIds.has(entityId),
+    hasHp: hpIds.has(entityId),
+  }));
 };

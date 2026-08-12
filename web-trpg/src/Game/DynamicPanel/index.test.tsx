@@ -26,7 +26,7 @@ const tables = () => ({
   ]),
   attack_components: mockTable([{ entityId: 1n, attack: 4 }]),
   allegiance_components: mockTable([]),
-  entity_prominence_components: mockTable([{ entityId: 2n, prominence: 1 }]),
+  path_components: mockTable([]),
 });
 
 test("DynamicPanel stats mode shows the player's vitals, attack, and defense", () => {

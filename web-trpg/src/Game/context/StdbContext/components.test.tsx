@@ -12,7 +12,7 @@ import {
   useActionHotkey,
   useActionOptions,
   useAllegianceComponents,
-  useEntityProminences,
+  useEntityPresentations,
   useHpComponent,
   useLocation,
   useLocationEntities,
@@ -37,18 +37,21 @@ test("useLocationEntities returns entities in the location and updates on insert
   expect(result.current).toEqual([1n, 3n]);
 });
 
-test("useEntityProminences preserves order and fills missing entities", () => {
-  const table = mockTable([{ entityId: 1n, prominence: 5 }]);
+test("useEntityPresentations derives flags from component presence", () => {
   // Stable array reference: a fresh array each render would re-fire the
   // subscription effect and loop (the app passes a memoized array).
   const entityIds = [1n, 2n];
-  const { result } = renderHook(() => useEntityProminences(entityIds), {
-    wrapper: stdbWrapper({ entity_prominence_components: table }),
+  const { result } = renderHook(() => useEntityPresentations(entityIds), {
+    wrapper: stdbWrapper({
+      path_components: mockTable([{ entityId: 1n }]),
+      player_controller_components: mockTable([]),
+      hp_components: mockTable([{ entityId: 2n, hp: 1, mhp: 1 }]),
+    }),
   });
 
   expect(result.current).toEqual([
-    { entityId: 1n, prominence: 5 },
-    { entityId: 2n, prominence: -Infinity },
+    { entityId: 1n, hasPath: true, isPlayerControlled: false, hasHp: false },
+    { entityId: 2n, hasPath: false, isPlayerControlled: false, hasHp: true },
   ]);
 });
 

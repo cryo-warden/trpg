@@ -26,7 +26,6 @@ import {
   ActionStateComponentBlob,
   ActionsComponentBlob,
   ActionHotkeysComponentBlob,
-  EntityProminenceComponentBlob,
   TimerComponentBlob,
   LocationMapComponentBlob,
   AppearanceFeaturesComponentBlob,
@@ -93,9 +92,6 @@ export default __t.row({
   },
   get actionHotkeys() {
     return __t.option(ActionHotkeysComponentBlob).name("action_hotkeys");
-  },
-  get entityProminence() {
-    return __t.option(EntityProminenceComponentBlob).name("entity_prominence");
   },
   get entityDeletionTimer() {
     return __t.option(TimerComponentBlob).name("entity_deletion_timer");

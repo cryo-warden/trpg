@@ -131,11 +131,6 @@ entity!(
         pub action_hotkeys: Vec<ActionHotkey>,
     }
 
-    #[component(entity_prominence in entity_prominence_components)]
-    struct EntityProminenceComponent {
-        pub prominence: i32,
-    }
-
     #[component(
       entity_deletion_timer in entity_deletion_timer_components,
       player_deactivation_timer in player_deactivation_timer_components,

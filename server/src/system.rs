@@ -123,15 +123,6 @@ pub fn action_system(ecs: Ecs) {
     queue.resolve(ecs);
 }
 
-pub fn entity_prominence_system(ecs: Ecs) {
-    for p in ecs.iter_entity_prominence() {
-        p.delete_entity_prominence();
-    }
-    for entity in ecs.db.entities().iter() {
-        ecs.find(entity.id).generate_prominence();
-    }
-}
-
 pub fn entity_deletion_timer_system(ecs: Ecs) {
     for t in ecs.iter_entity_deletion_timer() {
         if t.entity_deletion_timer().timestamp <= ecs.timestamp {
@@ -246,7 +237,6 @@ pub fn execute_all_systems(ecs: Ecs) {
     hp_system(ecs);
     ep_system(ecs);
     shift_queued_action_system(ecs);
-    entity_prominence_system(ecs);
     entity_deletion_timer_system(ecs);
     player_deactivation_timer_system(ecs);
     entity_stats_system(ecs);

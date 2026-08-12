@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import {
-  selectEntityProminences,
+  selectEntityPresentations,
   selectLocationEntities,
   type ReadableTable,
 } from "./tableSelectors";
@@ -21,21 +21,16 @@ test("selectLocationEntities returns only the entities in the given location", (
   expect(selectLocationEntities(table, 99n)).toEqual([]);
 });
 
-test("selectEntityProminences preserves request order", () => {
-  const table = mockTable([
-    { entityId: 1n, prominence: 3 },
-    { entityId: 2n, prominence: 7 },
-  ]);
-  expect(selectEntityProminences(table, [2n, 1n])).toEqual([
-    { entityId: 2n, prominence: 7 },
-    { entityId: 1n, prominence: 3 },
-  ]);
-});
-
-test("selectEntityProminences falls back to -Infinity for entities with no prominence row", () => {
-  const table = mockTable([{ entityId: 1n, prominence: 3 }]);
-  expect(selectEntityProminences(table, [1n, 9n])).toEqual([
-    { entityId: 1n, prominence: 3 },
-    { entityId: 9n, prominence: -Infinity },
+test("selectEntityPresentations derives flags from component presence in request order", () => {
+  const tables = {
+    paths: mockTable([{ entityId: 1n }]),
+    playerControllers: mockTable([{ entityId: 2n }]),
+    hps: mockTable([{ entityId: 2n }, { entityId: 3n }]),
+  };
+  expect(selectEntityPresentations(tables, [3n, 2n, 1n, 9n])).toEqual([
+    { entityId: 3n, hasPath: false, isPlayerControlled: false, hasHp: true },
+    { entityId: 2n, hasPath: false, isPlayerControlled: true, hasHp: true },
+    { entityId: 1n, hasPath: true, isPlayerControlled: false, hasHp: false },
+    { entityId: 9n, hasPath: false, isPlayerControlled: false, hasHp: false },
   ]);
 });

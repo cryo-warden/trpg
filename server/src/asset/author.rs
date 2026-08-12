@@ -58,8 +58,8 @@ pub struct ActionHotkeyAuthor {
 /// The author form of an entity blob: components whose fields reference other
 /// assets are authored by NAME, and only push_assets resolves them to the
 /// integer ids stored in the real EntityBlob. Runtime-state components (stat
-/// caches, dirty flags, action state, timers, prominence, location_map) are
-/// deliberately absent — a prefab never authors those.
+/// caches, dirty flags, action state, timers, location_map) are deliberately
+/// absent — a prefab never authors those.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EntityBlobAuthor {
     pub name: Option<NameComponentBlob>,

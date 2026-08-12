@@ -205,7 +205,6 @@ fn resolve_entity_blob(
         total_stat_block_dirty_flag: None,
         action_state: None,
         queued_action_state: None,
-        entity_prominence: None,
         entity_deletion_timer: None,
         player_deactivation_timer: None,
         location_map: None,

@@ -385,9 +385,6 @@ export const EntityBlob = __t.object("EntityBlob", {
   get actionHotkeys() {
     return __t.option(ActionHotkeysComponentBlob);
   },
-  get entityProminence() {
-    return __t.option(EntityProminenceComponentBlob);
-  },
   get entityDeletionTimer() {
     return __t.option(TimerComponentBlob);
   },
@@ -487,17 +484,6 @@ export const EntityIdSelector = __t.enum("EntityIdSelector", {
   Named: __t.string(),
 });
 export type EntityIdSelector = __Infer<typeof EntityIdSelector>;
-
-export const EntityProminenceComponent = __t.object("EntityProminenceComponent", {
-  entityId: __t.u64(),
-  prominence: __t.i32(),
-});
-export type EntityProminenceComponent = __Infer<typeof EntityProminenceComponent>;
-
-export const EntityProminenceComponentBlob = __t.object("EntityProminenceComponentBlob", {
-  prominence: __t.i32(),
-});
-export type EntityProminenceComponentBlob = __Infer<typeof EntityProminenceComponentBlob>;
 
 export const EpComponent = __t.object("EpComponent", {
   entityId: __t.u64(),

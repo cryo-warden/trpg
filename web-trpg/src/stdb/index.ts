@@ -66,7 +66,6 @@ import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
 import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
-import EntityProminenceComponentsRow from "./entity_prominence_components_table";
 import EpComponentsRow from "./ep_components_table";
 import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_components_table";
 import HpComponentsRow from "./hp_components_table";
@@ -301,17 +300,6 @@ const tablesSchema = __schema({
       { name: 'entity_deletion_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EntityDeletionTimerComponentsRow),
-  entity_prominence_components: __table({
-    name: 'entity_prominence_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'entity_prominence_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'entity_prominence_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, EntityProminenceComponentsRow),
   ep_components: __table({
     name: 'ep_components',
     indexes: [

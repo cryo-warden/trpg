@@ -4,7 +4,7 @@ import { useDynamicPanelMode } from "../context/DynamicPanelContext";
 import { sortByProminenceDescending } from "../domain/prominence";
 import {
   useAttackComponent,
-  useEntityProminences,
+  useEntityPresentations,
   useHpComponent,
   useLocation,
   useLocationEntities,
@@ -32,9 +32,9 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
       : mode === "equipment"
       ? [] // WIP Add equipment
       : [];
-  const entityProminences = useEntityProminences(entities);
+  const entityPresentations = useEntityPresentations(entities);
   const sortedEntities = sortByProminenceDescending({
-    prominences: entityProminences,
+    presentations: entityPresentations,
     exclude: playerEntity,
   });
 

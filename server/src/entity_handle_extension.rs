@@ -11,7 +11,6 @@ pub trait EntityHandleExtension {
     fn set_mep(self, mep: i32) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
-    fn generate_prominence(self) -> Self;
     fn allegiance_id(&self) -> Option<u64>;
     fn is_ally(&self, other_entity_id: u64) -> bool;
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
@@ -85,23 +84,6 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self.to_handle()
             .clone()
             .upsert_new_appearance_features(appearance_feature_ids);
-        self
-    }
-
-    fn generate_prominence(self) -> Self {
-        let e = self.to_handle();
-        let mut prominence = 0;
-        if e.path().is_some() {
-            prominence |= 1 << 8;
-        }
-        // TODO Add other controller types.
-        if e.player_controller().is_some() {
-            prominence |= 1 << 7;
-        }
-        if e.hp().is_some() {
-            prominence |= 1 << 6;
-        }
-        e.insert_new_entity_prominence(prominence);
         self
     }
 
