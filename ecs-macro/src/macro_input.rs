@@ -13,6 +13,7 @@ use syn::{
 mod kw {
     use syn::custom_keyword;
     custom_keyword!(table);
+    custom_keyword!(dirties);
 }
 
 fn try_extract_attr(
@@ -77,7 +78,33 @@ impl Parse for ComponentTablePair {
 pub struct ComponentDeclaration {
     pub component_ty: Ident,
     pub component_table_pairs: Vec<ComponentTablePair>,
+    /// Component names (flags) that every mutation of this component's
+    /// tables auto-inserts, so a dirty flag can never be forgotten.
+    pub dirties: Vec<Ident>,
     pub fields: fundamental::Fields,
+}
+
+/// One argument inside #[component(...)]: either a `name in table` pair or a
+/// `dirties(a, b)` list.
+enum ComponentAttrArg {
+    Pair(ComponentTablePair),
+    Dirties(Vec<Ident>),
+}
+
+impl Parse for ComponentAttrArg {
+    fn parse(input: ParseStream) -> Result<Self> {
+        if input.peek(kw::dirties) {
+            input.parse::<kw::dirties>()?;
+            let content;
+            syn::parenthesized!(content in input);
+            let names = content
+                .parse_terminated(Ident::parse, Token![,])?
+                .into_iter()
+                .collect();
+            return Ok(Self::Dirties(names));
+        }
+        Ok(Self::Pair(input.parse()?))
+    }
 }
 
 impl fundamental::AddAttrs for ComponentDeclaration {}
@@ -87,18 +114,27 @@ impl TryFrom<ItemStruct> for fundamental::WithAttrs<ComponentDeclaration> {
     fn try_from(value: ItemStruct) -> syn::Result<Self> {
         let (component_attr, attrs) = try_extract_attr("component", value.attrs.clone(), &value)?;
 
-        let component_table_pairs = component_attr.parse_args_with(|input: ParseStream| {
+        let args: Vec<ComponentAttrArg> = component_attr.parse_args_with(|input: ParseStream| {
             Ok(input
-                .parse_terminated(ComponentTablePair::parse, Token![,])?
+                .parse_terminated(ComponentAttrArg::parse, Token![,])?
                 .into_iter()
                 .collect())
         })?;
+        let mut component_table_pairs = Vec::new();
+        let mut dirties = Vec::new();
+        for arg in args {
+            match arg {
+                ComponentAttrArg::Pair(pair) => component_table_pairs.push(pair),
+                ComponentAttrArg::Dirties(names) => dirties.extend(names),
+            }
+        }
         let component_ty = value.ident.clone();
         let fields = fundamental::Fields(value.fields.clone().into_iter().collect());
         Ok(ComponentDeclaration {
             component_ty,
             fields,
             component_table_pairs,
+            dirties,
         }
         .add_attrs(attrs))
     }

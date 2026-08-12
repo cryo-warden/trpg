@@ -147,25 +147,3 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     }
 }
 
-pub trait InstantiateEntityBlobExtension: Sized {
-    fn instantiate_blob_dirty(
-        self,
-        blob: EntityBlob,
-        scope: &InstantiationScope<'_>,
-    ) -> Result<Self, String>;
-}
-
-impl<'a, T: WithEntityHandle<'a> + EntityHandleExtension + InstantiateEntityBlob>
-    InstantiateEntityBlobExtension for T
-{
-    fn instantiate_blob_dirty(
-        self,
-        blob: EntityBlob,
-        scope: &InstantiationScope<'_>,
-    ) -> Result<Self, String> {
-        let e = self.to_handle();
-        e.insert_new_traits_stat_block_dirty_flag();
-        e.insert_new_total_stat_block_dirty_flag();
-        self.instantiate_blob(blob, scope)
-    }
-}

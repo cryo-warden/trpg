@@ -176,8 +176,9 @@ pub fn entity_stats_system(ecs: Ecs) {
                 }
             }
 
-            f.upsert_new_total_stat_block_dirty_flag()
-                .upsert_new_traits_stat_block_cache(stat_block)
+            // Upserting the cache auto-dirties the total stat block (its
+            // declared dirty flag) — no manual flag here.
+            f.upsert_new_traits_stat_block_cache(stat_block)
                 .delete_traits_stat_block_dirty_flag()
                 .into_handle();
         }

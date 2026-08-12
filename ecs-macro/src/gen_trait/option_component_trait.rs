@@ -3,6 +3,14 @@ use proc_macro2::TokenStream;
 use quote::{ToTokens, format_ident, quote};
 use syn::{Error, Ident, Result};
 
+/// A flag component auto-inserted by every mutation of the declaring
+/// component: the table to insert into and the flag's component type.
+#[derive(Clone)]
+pub struct DirtyFlagTarget {
+    pub table: Ident,
+    pub component_ty: Ident,
+}
+
 #[derive(Clone)]
 pub struct OptionComponentTrait {
     pub option_component_trait: Ident,
@@ -24,6 +32,7 @@ pub struct OptionComponentTrait {
     pub update_new_fn: Ident,
     pub insert_row_fn: Ident,
     pub update_row_fn: Ident,
+    pub dirty_flag_targets: Vec<DirtyFlagTarget>,
 }
 
 impl OptionComponentTrait {
@@ -53,6 +62,7 @@ impl OptionComponentTrait {
             update_new_fn: format_ident!("update_new_{}", ctp.component),
             insert_row_fn: format_ident!("insert_{}_row", ctp.component),
             update_row_fn: format_ident!("update_{}_row", ctp.component),
+            dirty_flag_targets: Vec::new(),
         }
     }
 
@@ -79,7 +89,29 @@ impl OptionComponentTrait {
                             ctp.component.span(),
                             "Cannot find the corresponding option-get-component trait.",
                         ))?;
-                    Ok(Self::new(ctp, cdwa, ogct, wcs))
+                    let mut oct = Self::new(ctp, cdwa, ogct, wcs);
+                    oct.dirty_flag_targets = cdwa
+                        .dirties
+                        .iter()
+                        .map(|flag| {
+                            component_declarations
+                                .iter()
+                                .find_map(|d| {
+                                    d.component_table_pairs
+                                        .iter()
+                                        .find(|p| p.component == *flag)
+                                        .map(|p| DirtyFlagTarget {
+                                            table: p.table.to_owned(),
+                                            component_ty: d.component_ty.to_owned(),
+                                        })
+                                })
+                                .ok_or(Error::new(
+                                    flag.span(),
+                                    "dirties() must name a declared component.",
+                                ))
+                        })
+                        .collect::<Result<Vec<_>>>()?;
+                    Ok(oct)
                 })
             })
             .collect()
@@ -108,6 +140,7 @@ impl ToTokens for OptionComponentTrait {
             update_new_fn,
             insert_row_fn,
             update_row_fn,
+            dirty_flag_targets: _,
         } = self;
         let scope = gen_struct::scope_ident();
         tokens.extend(quote! {

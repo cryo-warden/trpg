@@ -44,12 +44,12 @@ entity!(
         pub allegiance_entity_id: EntityId,
     }
 
-    #[component(baseline in baseline_components)]
+    #[component(baseline in baseline_components, dirties(total_stat_block_dirty_flag))]
     struct BaselineComponent {
         pub baseline_id: u32,
     }
 
-    #[component(traits in traits_components)]
+    #[component(traits in traits_components, dirties(traits_stat_block_dirty_flag))]
     struct TraitsComponent {
         pub trait_ids: Vec<u32>,
     }
@@ -58,6 +58,7 @@ entity!(
       equipment_stat_block_cache in equipment_stat_block_cache_components,
       status_stat_block_cache in status_stat_block_cache_components,
       traits_stat_block_cache in traits_stat_block_cache_components,
+      dirties(total_stat_block_dirty_flag),
     )]
     struct StatBlockCacheComponent {
         pub stat_block: StatBlock,

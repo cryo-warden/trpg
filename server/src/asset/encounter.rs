@@ -7,7 +7,6 @@ use crate::{
         EntityBlob, EntityHandle, InstantiateEntityBlob, NewEntityHandle, WithEntityHandle,
         __location__Option,
     },
-    entity_handle_extension::InstantiateEntityBlobExtension,
 };
 
 #[table(accessor = encounter_blobs)]
@@ -49,7 +48,7 @@ impl Encounter {
             if let Some(e) = ecs.db.encounter_blobs().id().find(id) {
                 ecs.new()
                     .instantiate_blob(categoric_blob.clone(), &scope)?
-                    .instantiate_blob_dirty(e.blob, &scope)?
+                    .instantiate_blob(e.blob, &scope)?
                     .upsert_new_location(room.entity_id());
             }
         }

@@ -2,7 +2,6 @@ use crate::{
     account::{account_of, AccountId},
     asset::ReducerContextExtension,
     entity::*,
-    entity_handle_extension::InstantiateEntityBlobExtension,
 };
 use ecs::Ecs;
 use spacetimedb::Identity;
@@ -91,10 +90,11 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
     ) -> Result<player_controller_component::WithComponent<EntityHandle<'a>>, String> {
         // The new-player blob carries its own references (e.g. the starting
         // allegiance as a Named selector), so instantiation needs nothing
-        // beyond an empty scope.
+        // beyond an empty scope. Dirty flags follow automatically from the
+        // blob's component mutations.
         Ok(self
             .new()
-            .instantiate_blob_dirty(
+            .instantiate_blob(
                 self.get_new_player_blob()
                     .ok_or("Failed to obtain the new player entity blob.")?,
                 &self.instantiation_scope(),

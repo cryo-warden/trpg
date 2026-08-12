@@ -143,10 +143,29 @@ impl ToTokens for EntityHandleStruct {
             update_new_fn,
             insert_row_fn,
             update_row_fn,
+            dirty_flag_targets,
             table,
             ..
         } = &self.option_component_trait;
         let scope = gen_struct::scope_ident();
+        // Every mutation of this component auto-inserts its declared dirty
+        // flags — the flag follows from the mutation, never from call-site
+        // discipline.
+        let dirty_flags = dirty_flag_targets
+            .iter()
+            .map(|gen_trait::DirtyFlagTarget { table: flag_table, component_ty: flag_ty }| {
+                quote! {
+                  if ::core::option::Option::is_none(
+                    &self.ecs.db.#flag_table().#id().find(self.#id),
+                  ) {
+                    ::spacetimedb::Table::insert(
+                      self.ecs.db.#flag_table(),
+                      #flag_ty { #id: self.#id },
+                    );
+                  }
+                }
+            })
+            .collect::<Vec<_>>();
         tokens.extend(quote! {
           impl<'a> #option_component_trait for #entity_handle_struct<'a> {
             fn #insert_fn(
@@ -154,43 +173,58 @@ impl ToTokens for EntityHandleStruct {
               #component: #component_blob_ty,
               scope: &#scope<'_>,
             ) -> ::core::result::Result<#component_ty, ::std::string::String> {
-              ::core::result::Result::Ok(::spacetimedb::Table::insert(
+              let inserted = ::spacetimedb::Table::insert(
                 self.ecs.db.#table(),
                 #component.into_component(self.#id, scope)?,
-              ))
+              );
+              #(#dirty_flags)*
+              ::core::result::Result::Ok(inserted)
             }
             fn #update_fn(
               &self,
               #component: #component_blob_ty,
               scope: &#scope<'_>,
             ) -> ::core::result::Result<#component_ty, ::std::string::String> {
-              ::core::result::Result::Ok(::spacetimedb::UniqueColumn::update(
+              let updated = ::spacetimedb::UniqueColumn::update(
                 &self.ecs.db.#table().#id(),
                 #component.into_component(self.#id, scope)?,
-              ))
+              );
+              #(#dirty_flags)*
+              ::core::result::Result::Ok(updated)
             }
             fn #insert_row_fn(&self, mut #component: #component_ty) -> #component_ty {
               #component.#id = self.#id;
-              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component)
+              let inserted = ::spacetimedb::Table::insert(self.ecs.db.#table(), #component);
+              #(#dirty_flags)*
+              inserted
             }
             fn #update_row_fn(&self, mut #component: #component_ty) -> #component_ty {
               #component.#id = self.#id;
-              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component)
+              let updated =
+                ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component);
+              #(#dirty_flags)*
+              updated
             }
             fn #delete_fn(&self) {
               ::spacetimedb::UniqueColumn::delete(&self.ecs.db.#table().#id(), self.#id);
+              #(#dirty_flags)*
             }
             fn #insert_new_fn(&self, #component_field_args) -> #component_ty {
-              ::spacetimedb::Table::insert(self.ecs.db.#table(), #component_ty {
+              let inserted = ::spacetimedb::Table::insert(self.ecs.db.#table(), #component_ty {
                 #id: self.#id,
                 #component_field_names
-              })
+              });
+              #(#dirty_flags)*
+              inserted
             }
             fn #update_new_fn(&self, #component_field_args) -> #component_ty {
-              ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component_ty {
-                #id: self.#id,
-                #component_field_names
-              })
+              let updated =
+                ::spacetimedb::UniqueColumn::update(&self.ecs.db.#table().#id(), #component_ty {
+                  #id: self.#id,
+                  #component_field_names
+                });
+              #(#dirty_flags)*
+              updated
             }
           }
         });

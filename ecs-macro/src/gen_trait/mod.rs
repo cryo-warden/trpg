@@ -115,6 +115,8 @@ secador::secador!(
     {
         use crate::{gen_struct, macro_input, rc_slice::RcSlice};
 
+        pub use option_component_trait::DirtyFlagTarget;
+
         seca!(2);
         pub use __module::__Type;
         mod __module;
