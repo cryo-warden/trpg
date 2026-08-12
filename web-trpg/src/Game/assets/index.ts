@@ -8,7 +8,6 @@ import {
 import {
   NAMED_ENTITY_BLOBS,
   EntityBlobAsset,
-  ActionHotkeyAsset,
   NEW_PLAYER_BLOB,
 } from "./entity_blobs";
 import { TRAITS } from "./traits";
@@ -21,7 +20,6 @@ import {
 
 export type {
   ActionAsset,
-  ActionHotkeyAsset,
   AppearanceFeatureAsset,
   EntityBlobAsset,
   StatBlockAsset,

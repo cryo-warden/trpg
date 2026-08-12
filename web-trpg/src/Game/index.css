@@ -5,7 +5,7 @@
   grid-template:
     "events dynamic" 10fr
     "self focus" 3fr
-    "queue queue" 1fr
+    "pinned pinned" 1fr
     / 1fr 1fr;
 
   .events {
@@ -24,7 +24,7 @@
     grid-area: focus;
   }
 
-  .queue {
-    grid-area: queue;
+  .pinned {
+    grid-area: pinned;
   }
 }

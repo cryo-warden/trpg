@@ -9,10 +9,10 @@ import {
 } from "../../../testSupport/mockConnection";
 import {
   useAction,
-  useActionHotkey,
   useActionOptions,
   useAllegianceComponents,
   useEntityPresentations,
+  usePinnedActions,
   useHpComponent,
   useLocation,
   useLocationEntities,
@@ -95,25 +95,21 @@ test("usePlayerEntity resolves the player's entity via the connected identity", 
   ).toBeNull();
 });
 
-test("useActionHotkey maps the player's bound character code to a key", () => {
+test("usePinnedActions returns the player's ordered pinned action ids", () => {
   const identity = {} as Identity;
   const wrapper = stdbWrapper(
     {
       player_controller_components: mockTable([{ entityId: 5n, accountId: 1n }]),
-      action_hotkeys_components: mockTable([
-        { entityId: 5n, actionHotkeys: [{ actionId: attackId, characterCode: 65 }] },
+      pinned_actions_components: mockTable([
+        { entityId: 5n, actionIds: [attackId, moveId] },
       ]),
     },
     identity,
   );
 
   expect(
-    renderHook(() => useActionHotkey(attackId), { wrapper }).result.current,
-  ).toBe("A");
-  // No binding for this action id.
-  expect(
-    renderHook(() => useActionHotkey(moveId), { wrapper }).result.current,
-  ).toBeUndefined();
+    renderHook(() => usePinnedActions(), { wrapper }).result.current,
+  ).toEqual([attackId, moveId]);
 });
 
 test("useAction looks up an action asset by id through the actions table", () => {

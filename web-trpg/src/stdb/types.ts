@@ -53,8 +53,8 @@ export const ActionAuthor = __t.object("ActionAuthor", {
   get actionType() {
     return ActionType;
   },
-  get steps() {
-    return __t.array(ActionEffect);
+  get rounds() {
+    return __t.array(ActionRoundAuthor);
   },
 });
 export type ActionAuthor = __Infer<typeof ActionAuthor>;
@@ -75,32 +75,12 @@ export const ActionEffect = __t.enum("ActionEffect", {
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
 
-export const ActionHotkey = __t.object("ActionHotkey", {
-  actionId: __t.u32(),
-  characterCode: __t.u32(),
-});
-export type ActionHotkey = __Infer<typeof ActionHotkey>;
-
-export const ActionHotkeyAuthor = __t.object("ActionHotkeyAuthor", {
-  actionName: __t.string(),
-  characterCode: __t.u32(),
-});
-export type ActionHotkeyAuthor = __Infer<typeof ActionHotkeyAuthor>;
-
-export const ActionHotkeysComponent = __t.object("ActionHotkeysComponent", {
-  entityId: __t.u64(),
-  get actionHotkeys() {
-    return __t.array(ActionHotkey);
+export const ActionRoundAuthor = __t.object("ActionRoundAuthor", {
+  get effects() {
+    return __t.array(ActionEffect);
   },
 });
-export type ActionHotkeysComponent = __Infer<typeof ActionHotkeysComponent>;
-
-export const ActionHotkeysComponentBlob = __t.object("ActionHotkeysComponentBlob", {
-  get actionHotkeys() {
-    return __t.array(ActionHotkey);
-  },
-});
-export type ActionHotkeysComponentBlob = __Infer<typeof ActionHotkeysComponentBlob>;
+export type ActionRoundAuthor = __Infer<typeof ActionRoundAuthor>;
 
 export const ActionStateComponent = __t.object("ActionStateComponent", {
   entityId: __t.u64(),
@@ -382,8 +362,8 @@ export const EntityBlob = __t.object("EntityBlob", {
   get actions() {
     return __t.option(ActionsComponentBlob);
   },
-  get actionHotkeys() {
-    return __t.option(ActionHotkeysComponentBlob);
+  get pinnedActions() {
+    return __t.option(PinnedActionsComponentBlob);
   },
   get entityDeletionTimer() {
     return __t.option(TimerComponentBlob);
@@ -416,7 +396,7 @@ export const EntityBlobAuthor = __t.object("EntityBlobAuthor", {
   baselineName: __t.option(__t.string()),
   traitNames: __t.option(__t.array(__t.string())),
   actionNames: __t.option(__t.array(__t.string())),
-  actionHotkeys: __t.option(__t.array(ActionHotkeyAuthor)),
+  pinnedActionNames: __t.option(__t.array(__t.string())),
   appearanceFeatureNames: __t.option(__t.array(__t.string())),
   get hp() {
     return __t.option(HpComponentBlob);
@@ -778,6 +758,17 @@ export const PathComponentBlob = __t.object("PathComponentBlob", {
   },
 });
 export type PathComponentBlob = __Infer<typeof PathComponentBlob>;
+
+export const PinnedActionsComponent = __t.object("PinnedActionsComponent", {
+  entityId: __t.u64(),
+  actionIds: __t.array(__t.u32()),
+});
+export type PinnedActionsComponent = __Infer<typeof PinnedActionsComponent>;
+
+export const PinnedActionsComponentBlob = __t.object("PinnedActionsComponentBlob", {
+  actionIds: __t.array(__t.u32()),
+});
+export type PinnedActionsComponentBlob = __Infer<typeof PinnedActionsComponentBlob>;
 
 export const PlayerControllerComponent = __t.object("PlayerControllerComponent", {
   entityId: __t.u64(),

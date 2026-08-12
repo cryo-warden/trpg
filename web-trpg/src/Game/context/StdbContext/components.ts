@@ -37,7 +37,7 @@ const createUseComponent =
     );
 
 export const componentQueries = [
-  "select * from action_hotkeys_components",
+  "select * from pinned_actions_components",
   "select * from actions_components",
   "select * from action_state_components",
   "select * from allegiance_components",
@@ -51,8 +51,8 @@ export const componentQueries = [
   "select * from queued_action_state_components",
 ];
 
-const useActionHotkeysComponent = createUseComponent(
-  "action_hotkeys_components",
+const usePinnedActionsComponent = createUseComponent(
+  "pinned_actions_components",
 );
 export const useActionStateComponent = createUseComponent(
   "action_state_components",
@@ -148,21 +148,12 @@ export const useHostiles = (): EntityId[] => {
   }, [playerEntity, playerAllegiance, cohabitantIds, hpRows, allegianceRows]);
 };
 
-export const useActionHotkey = (actionId: ActionId) => {
+/** The player's ordered pinned actions; bar position auto-assigns the
+ * numeric hotkey (1..9, then 0). */
+export const usePinnedActions = (): ActionId[] => {
   const playerEntity = usePlayerEntity();
-  const actionHotkeysComponent = useActionHotkeysComponent(playerEntity);
-  if (actionHotkeysComponent == null) {
-    return void 0;
-  }
-
-  const actionHotkey = actionHotkeysComponent.actionHotkeys.find(
-    (actionHotkey) => actionHotkey.actionId === actionId,
-  );
-  if (actionHotkey == null) {
-    return void 0;
-  }
-
-  return String.fromCharCode(actionHotkey.characterCode);
+  const pinnedActionsComponent = usePinnedActionsComponent(playerEntity);
+  return pinnedActionsComponent?.actionIds ?? [];
 };
 
 /** Presentation flags per entity, derived from component presence — the

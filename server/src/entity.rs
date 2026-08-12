@@ -120,15 +120,11 @@ entity!(
         pub action_ids: Vec<ActionId>,
     }
 
-    #[derive(Debug, Clone, SpacetimeType)]
-    pub struct ActionHotkey {
-        pub action_id: ActionId,
-        pub character_code: u32,
-    }
-
-    #[component(action_hotkeys in action_hotkeys_components)]
-    struct ActionHotkeysComponent {
-        pub action_hotkeys: Vec<ActionHotkey>,
+    #[component(pinned_actions in pinned_actions_components)]
+    struct PinnedActionsComponent {
+        // Ordered: the position in the bar is the automatically assigned
+        // numeric hotkey (1..9, then 0).
+        pub action_ids: Vec<ActionId>,
     }
 
     #[component(

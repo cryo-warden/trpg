@@ -24,12 +24,21 @@ use crate::{
     },
 };
 
+/// One round of an action: every effect here resolves in the same system
+/// tick. (A named struct rather than a bare Vec<Vec<..>> because the TS
+/// codegen cannot lazily reference an enum inside a nested array.)
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct ActionRoundAuthor {
+    pub effects: Vec<ActionEffect>,
+}
+
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ActionAuthor {
     pub action_type: ActionType,
-    /// Ordered effects; push_assets derives the ActionStep rows (and their
-    /// ids) from this sequence.
-    pub steps: Vec<ActionEffect>,
+    /// Ordered rounds; push_assets derives the ActionStep rows (and their
+    /// ids) from this. An action lives exactly as many ticks as it has
+    /// rounds.
+    pub rounds: Vec<ActionRoundAuthor>,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -49,12 +58,6 @@ pub struct StatBlockAuthor {
     pub appearance_feature_names: Vec<String>,
 }
 
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct ActionHotkeyAuthor {
-    pub action_name: String,
-    pub character_code: u32,
-}
-
 /// The author form of an entity blob: components whose fields reference other
 /// assets are authored by NAME, and only push_assets resolves them to the
 /// integer ids stored in the real EntityBlob. Runtime-state components (stat
@@ -69,7 +72,7 @@ pub struct EntityBlobAuthor {
     pub baseline_name: Option<String>,
     pub trait_names: Option<Vec<String>>,
     pub action_names: Option<Vec<String>>,
-    pub action_hotkeys: Option<Vec<ActionHotkeyAuthor>>,
+    pub pinned_action_names: Option<Vec<String>>,
     pub appearance_feature_names: Option<Vec<String>>,
     pub hp: Option<HpComponentBlob>,
     pub ep: Option<EpComponentBlob>,

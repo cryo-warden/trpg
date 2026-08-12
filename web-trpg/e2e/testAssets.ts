@@ -37,7 +37,10 @@ const emptyPack = (): AssetPack => ({
 export const minimalPack = (): AssetPack => ({
   ...emptyPack(),
   actions: [
-    { name: "test_action", value: { actionType: { tag: "Attack" }, steps: [] } },
+    {
+      name: "test_action",
+      value: { actionType: { tag: "Attack" }, rounds: [] },
+    },
   ],
 });
 
@@ -95,7 +98,7 @@ export const mapGenPack = (): AssetPack => ({
   ...emptyPack(),
   // A public action so tests can await "assets landed".
   actions: [
-    { name: "test_action", value: { actionType: { tag: "Move" }, steps: [] } },
+    { name: "test_action", value: { actionType: { tag: "Move" }, rounds: [] } },
   ],
   baselines: [
     {
@@ -169,7 +172,7 @@ export const combatPack = ({
       name: "test_attack",
       value: {
         actionType: { tag: "Attack" },
-        steps: [{ tag: "Attack", value: attackDamage }],
+        rounds: [{ effects: [{ tag: "Attack", value: attackDamage }] }],
       },
     },
   ],

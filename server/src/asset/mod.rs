@@ -27,9 +27,9 @@ use crate::{
     },
     ecs_extension::EcsExtension,
     entity::{
-        named_entities, ActionHotkey, ActionHotkeysComponentBlob, ActionsComponentBlob,
-        AppearanceFeaturesComponentBlob, BaselineComponentBlob, EntityBlob, FindEntityHandle,
-        InstantiateEntityBlob, NewEntityHandle, TraitsComponentBlob,
+        named_entities, ActionsComponentBlob, AppearanceFeaturesComponentBlob,
+        BaselineComponentBlob, EntityBlob, FindEntityHandle, InstantiateEntityBlob,
+        NewEntityHandle, PinnedActionsComponentBlob, TraitsComponentBlob,
     },
 };
 
@@ -166,18 +166,13 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        action_hotkeys: author
-            .action_hotkeys
-            .map(|hotkeys| {
-                Ok::<_, String>(ActionHotkeysComponentBlob {
-                    action_hotkeys: hotkeys
-                        .into_iter()
-                        .map(|h| {
-                            Ok::<_, String>(ActionHotkey {
-                                action_id: resolve_name(&maps.actions, "action", &h.action_name)?,
-                                character_code: h.character_code,
-                            })
-                        })
+        pinned_actions: author
+            .pinned_action_names
+            .map(|names| {
+                Ok::<_, String>(PinnedActionsComponentBlob {
+                    action_ids: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.actions, "action", n))
                         .collect::<Result<_, _>>()?,
                 })
             })
@@ -297,14 +292,16 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         } else {
             ctx.db.actions().insert(row);
         }
-        for (sequence_index, action_effect) in a.value.steps.into_iter().enumerate() {
-            ctx.db.action_steps().insert(ActionStep {
-                id: next_action_step_id,
-                action_id,
-                sequence_index: sequence_index as i32,
-                action_effect,
-            });
-            next_action_step_id += 1;
+        for (sequence_index, round) in a.value.rounds.into_iter().enumerate() {
+            for action_effect in round.effects {
+                ctx.db.action_steps().insert(ActionStep {
+                    id: next_action_step_id,
+                    action_id,
+                    sequence_index: sequence_index as i32,
+                    action_effect,
+                });
+                next_action_step_id += 1;
+            }
         }
     }
 

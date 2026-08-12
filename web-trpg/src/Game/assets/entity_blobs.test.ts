@@ -5,14 +5,16 @@ test("getEntityBlobAuthor passes asset names through for server-side resolution"
   const blob = getEntityBlobAuthor({
     ...NEW_PLAYER_BLOB,
     traits: [...NEW_PLAYER_BLOB.traits],
-    actionHotkeys: [...NEW_PLAYER_BLOB.actionHotkeys],
+    pinnedActionNames: [...NEW_PLAYER_BLOB.pinnedActionNames],
   });
 
   expect(blob.baselineName).toBe("human");
   expect(blob.traitNames).toEqual([...NEW_PLAYER_BLOB.traits]);
-  const hotkeys = blob.actionHotkeys ?? [];
-  expect(hotkeys[0].actionName).toBe("boppity_bop");
-  expect(hotkeys[0].characterCode).toBe("v".charCodeAt(0));
+  expect(blob.pinnedActionNames).toEqual([
+    "boppity_bop",
+    "quick_move",
+    "divine_heal",
+  ]);
   expect(blob.allegiance?.allegianceEntityId).toEqual({
     tag: "Named",
     value: "allegiance1",
@@ -28,5 +30,5 @@ test("getEntityBlobAuthor builds a name component and omits absent fields", () =
   expect(blob.name?.name).toBe("thing");
   expect(blob.appearanceFeatureNames).toEqual(["rock"]);
   expect(blob.baselineName).toBeUndefined();
-  expect(blob.actionHotkeys).toBeUndefined();
+  expect(blob.pinnedActionNames).toBeUndefined();
 });

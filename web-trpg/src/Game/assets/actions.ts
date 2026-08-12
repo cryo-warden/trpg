@@ -1,9 +1,11 @@
 import { ActionEffect, ActionType } from "../../stdb/types";
 
 export type ActionAsset = {
-  type: ActionType["tag"]; // WIP Remove actionType, and derive it from steps.
+  type: ActionType["tag"]; // WIP Remove actionType, and derive it from rounds.
   appearance: { displayName: string; beginTemplate: string };
-  steps: ActionEffect[];
+  /** Ordered rounds; every effect in a round resolves in the same system
+   * tick. Most battle actions are a single round. */
+  rounds: ActionEffect[][];
 };
 
 const Rest = { tag: "Rest" } as const satisfies ActionEffect;
@@ -13,6 +15,9 @@ const Attack = (value: number) =>
 const Heal = (value: number) =>
   ({ tag: "Heal", value }) as const satisfies ActionEffect;
 
+// Most battle actions resolve in a single round; only deliberate wind-ups
+// (like move) span several. Multiple effects in one round land on the same
+// tick — boppity_bop's double hit is the canonical example.
 export const ACTIONS = {
   move: {
     type: "Move",
@@ -20,7 +25,7 @@ export const ACTIONS = {
       displayName: "Move",
       beginTemplate: "{0:sentence:subject} moved toward {1:object}.",
     },
-    steps: [Rest, Rest, Move, Rest],
+    rounds: [[Rest], [Rest], [Move]],
   },
   quick_move: {
     type: "Move",
@@ -28,7 +33,7 @@ export const ACTIONS = {
       displayName: "Quick Move",
       beginTemplate: "{0:sentence:subject} moved quickly toward {1:object}.",
     },
-    steps: [Move],
+    rounds: [[Move]],
   },
   bop: {
     type: "Attack",
@@ -36,7 +41,7 @@ export const ACTIONS = {
       displayName: "Bop",
       beginTemplate: "{0:sentence:subject} wound up to bop {1:object}.",
     },
-    steps: [Rest, Rest, Attack(1), Rest],
+    rounds: [[Attack(1)]],
   },
   boppity_bop: {
     type: "Attack",
@@ -44,7 +49,7 @@ export const ACTIONS = {
       displayName: "Boppity Bop",
       beginTemplate: "{0:sentence:subject} wound up to boppity-bop {1:object}.",
     },
-    steps: [Rest, Rest, Attack(1), Rest, Attack(1), Rest, Rest],
+    rounds: [[Attack(1), Attack(1)]],
   },
   divine_heal: {
     type: "Buff",
@@ -53,7 +58,7 @@ export const ACTIONS = {
       beginTemplate:
         "{0:sentence:subject} began to focus a beam of pure lifeforce onto {1:object}.",
     },
-    steps: [Heal(500)],
+    rounds: [[Heal(500)]],
   },
   slime_spray: {
     type: "Attack",
@@ -62,7 +67,7 @@ export const ACTIONS = {
       beginTemplate:
         "{0:sentence:subject} sprayed a glob of slime at {1:object}.",
     },
-    steps: [Rest, Rest, Rest, Attack(1), Rest, Rest],
+    rounds: [[Rest], [Attack(1)]],
   },
   scratch: {
     type: "Attack",
@@ -70,7 +75,7 @@ export const ACTIONS = {
       displayName: "Scratch",
       beginTemplate: "{0:sentence:subject} brandished its claws at {1:object}.",
     },
-    steps: [Rest, Rest, Attack(1), Rest, Rest, Rest, Rest],
+    rounds: [[Attack(1)]],
   },
 } as const satisfies Record<string, ActionAsset>;
 

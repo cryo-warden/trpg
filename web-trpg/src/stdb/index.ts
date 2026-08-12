@@ -52,7 +52,6 @@ import SetPasswordReducer from "./set_password_reducer";
 import AccountIdentitiesRow from "./account_identities_table";
 import AccountRolesRow from "./account_roles_table";
 import AccountsRow from "./accounts_table";
-import ActionHotkeysComponentsRow from "./action_hotkeys_components_table";
 import ActionStateComponentsRow from "./action_state_components_table";
 import ActionStepsRow from "./action_steps_table";
 import ActionsRow from "./actions_table";
@@ -78,6 +77,7 @@ import NameComponentsRow from "./name_components_table";
 import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
 import PathComponentsRow from "./path_components_table";
+import PinnedActionsComponentsRow from "./pinned_actions_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
@@ -135,17 +135,6 @@ const tablesSchema = __schema({
       { name: 'accounts_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, AccountsRow),
-  action_hotkeys_components: __table({
-    name: 'action_hotkeys_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'action_hotkeys_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'action_hotkeys_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, ActionHotkeysComponentsRow),
   action_state_components: __table({
     name: 'action_state_components',
     indexes: [
@@ -452,6 +441,17 @@ const tablesSchema = __schema({
       { name: 'path_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, PathComponentsRow),
+  pinned_actions_components: __table({
+    name: 'pinned_actions_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'pinned_actions_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'pinned_actions_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, PinnedActionsComponentsRow),
   player_controller_components: __table({
     name: 'player_controller_components',
     indexes: [

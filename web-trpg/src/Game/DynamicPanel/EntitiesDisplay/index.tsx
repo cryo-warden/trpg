@@ -3,28 +3,15 @@ import { EntityPanel } from "../../EntityPanel";
 import "./index.css";
 import { EntityId } from "../../trpg";
 
-/** Temporary workaround to re-tokenize entity references taken from another entity. */
-const WrapEntityPanel = ({
-  index,
-  entity,
-}: {
-  index: number;
-  entity: EntityId;
-}) => {
-  return (
-    <EntityPanel
-      hotkey={index < 10 ? `${(index + 1) % 10}` : undefined}
-      className="entityPanel"
-      entity={entity}
-    />
-  );
-};
-
+// The numeric hotkeys belong to the pinned-actions bar; entities are focused
+// by click (or by the lone-hostile auto-focus).
 export const EntitiesDisplay = ({ entityIds }: { entityIds: EntityId[] }) => {
   return (
     <Scroller className="EntitiesDisplay">
-      {entityIds.map((entity, index) => {
-        return <WrapEntityPanel key={entity} index={index} entity={entity} />;
+      {entityIds.map((entity) => {
+        return (
+          <EntityPanel key={entity} className="entityPanel" entity={entity} />
+        );
       })}
     </Scroller>
   );

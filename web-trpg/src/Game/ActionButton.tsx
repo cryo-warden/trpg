@@ -2,7 +2,6 @@ import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Button } from "../structural/Button";
 import "./ActionButton.css";
 import {
-  useActionHotkey,
   useActionStateComponent,
   usePlayerEntity,
   useQueuedActionStateComponent,
@@ -15,6 +14,7 @@ import { useFocus } from "./context/FocusContext";
 export const ActionButton = ({
   target,
   actionId,
+  hotkey,
   ...props
 }: {
   /** The action's explicit target; a single-target action with no explicit
@@ -26,7 +26,6 @@ export const ActionButton = ({
   const playerEntity = usePlayerEntity();
   const focus = useFocus();
   const finalTarget = target ?? focus;
-  const hotkey = useActionHotkey(actionId);
   const queueAction = useCallback(() => {
     if (playerEntity == null || finalTarget == null) {
       return;

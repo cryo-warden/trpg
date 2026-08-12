@@ -63,13 +63,15 @@ impl<'a> ActionHandle<'a> {
         Self { ctx, action_id }
     }
 
-    pub fn effect(&self, sequence_index: i32) -> Option<ActionEffect> {
+    /// Every effect in the given round: multiple effects may share one
+    /// system tick, and an empty round list means the action is finished.
+    pub fn effects(&self, sequence_index: i32) -> Vec<ActionEffect> {
         self.ctx
             .db
             .action_steps()
             .action_sequence()
             .filter((self.action_id, sequence_index))
-            .next()
             .map(|a| a.action_effect)
+            .collect()
     }
 }

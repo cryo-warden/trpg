@@ -1,0 +1,18 @@
+.PinnedActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5em;
+  height: 100%;
+
+  .pinnedAction {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25em;
+
+    .hotkey {
+      opacity: 0.6;
+      font-size: 0.8em;
+    }
+  }
+}

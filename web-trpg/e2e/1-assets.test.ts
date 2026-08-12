@@ -79,11 +79,11 @@ test("re-pushing matches by name: ids kept, bodies updated, new assets added", a
     actions: [
       {
         name: "another_action",
-        value: { actionType: { tag: "Move" } as const, steps: [] },
+        value: { actionType: { tag: "Move" } as const, rounds: [] },
       },
       {
         name: "test_action",
-        value: { actionType: { tag: "Buff" } as const, steps: [] },
+        value: { actionType: { tag: "Buff" } as const, rounds: [] },
       },
     ],
   };
@@ -104,7 +104,7 @@ test("a push omitting an existing asset fails fast and changes nothing", async (
     actions: [
       {
         name: "another_action",
-        value: { actionType: { tag: "Move" } as const, steps: [] },
+        value: { actionType: { tag: "Move" } as const, rounds: [] },
       },
     ],
   };

@@ -4,11 +4,6 @@ import { AppearanceFeatureName } from "./appearance_features";
 import { BaselineName } from "./baselines";
 import { TraitName } from "./traits";
 
-export type ActionHotkeyAsset = {
-  actionName: ActionName;
-  hotkey: string;
-};
-
 // All asset and entity references in a blob asset are NAMES. The client never
 // resolves any of them: the pushed EntityBlobAuthor carries the names, and
 // push_assets on the server converts them to ids (the forward half of the
@@ -20,7 +15,7 @@ export type EntityBlobAsset = Partial<
     | "baselineName"
     | "traitNames"
     | "actionNames"
-    | "actionHotkeys"
+    | "pinnedActionNames"
     | "appearanceFeatureNames"
     | "allegiance"
   >
@@ -29,7 +24,8 @@ export type EntityBlobAsset = Partial<
   baseline?: BaselineName;
   traits?: TraitName[];
   actionNames?: ActionName[];
-  actionHotkeys?: ActionHotkeyAsset[];
+  /** Ordered: bar position auto-assigns the numeric hotkey (1..9, then 0). */
+  pinnedActionNames?: ActionName[];
   appearanceFeatureNames?: AppearanceFeatureName[];
   /** The registered name of the allegiance entity, resolved server-side at
    * instantiation via the Named selector. */
@@ -44,11 +40,7 @@ export const NAMED_ENTITY_BLOBS = {
 } as const satisfies Record<string, EntityBlobAsset>;
 
 export const NEW_PLAYER_BLOB = {
-  actionHotkeys: [
-    { actionName: "boppity_bop", hotkey: "v" },
-    { actionName: "quick_move", hotkey: "m" },
-    { actionName: "divine_heal", hotkey: "h" },
-  ],
+  pinnedActionNames: ["boppity_bop", "quick_move", "divine_heal"],
   baseline: "human",
   traits: ["admin", "mobile", "bopper"],
   allegiance: "allegiance1",
@@ -73,10 +65,9 @@ export const getEntityBlobAuthor = (
   actionNames: entityBlobAsset.actionNames
     ? [...entityBlobAsset.actionNames]
     : undefined,
-  actionHotkeys: entityBlobAsset.actionHotkeys?.map((hotkeyAsset) => ({
-    actionName: hotkeyAsset.actionName,
-    characterCode: hotkeyAsset.hotkey.charCodeAt(0),
-  })),
+  pinnedActionNames: entityBlobAsset.pinnedActionNames
+    ? [...entityBlobAsset.pinnedActionNames]
+    : undefined,
   appearanceFeatureNames: entityBlobAsset.appearanceFeatureNames
     ? [...entityBlobAsset.appearanceFeatureNames]
     : undefined,

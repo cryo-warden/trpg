@@ -25,7 +25,7 @@ import {
   EnemyControllerComponentBlob,
   ActionStateComponentBlob,
   ActionsComponentBlob,
-  ActionHotkeysComponentBlob,
+  PinnedActionsComponentBlob,
   TimerComponentBlob,
   LocationMapComponentBlob,
   AppearanceFeaturesComponentBlob,
@@ -90,8 +90,8 @@ export default __t.row({
   get actions() {
     return __t.option(ActionsComponentBlob);
   },
-  get actionHotkeys() {
-    return __t.option(ActionHotkeysComponentBlob).name("action_hotkeys");
+  get pinnedActions() {
+    return __t.option(PinnedActionsComponentBlob).name("pinned_actions");
   },
   get entityDeletionTimer() {
     return __t.option(TimerComponentBlob).name("entity_deletion_timer");

@@ -1,5 +1,4 @@
 import { ReactNode } from "react";
-import { Panel } from "../structural/Panel";
 import { AccountPanel } from "./AccountPanel";
 import { AdminControls } from "./AdminControls";
 import { WithDynamicPanel } from "./context/WithDynamicPanel";
@@ -9,6 +8,7 @@ import { DynamicPanel } from "./DynamicPanel";
 import { EventsPanel } from "./EventsPanel";
 import "./index.css";
 import { LoginRequestsPrompt } from "./LoginRequestsPrompt";
+import { PinnedActionsPanel } from "./PinnedActionsPanel";
 import { RotatePasswordPanel } from "./RotatePasswordPanel";
 import { SelfPanel } from "./SelfPanel";
 import { FocusPanel } from "./FocusPanel";
@@ -44,7 +44,7 @@ export const Game = () => (
             <DynamicPanel className="dynamic" />
             <SelfPanel className="self" />
             <FocusPanel className="focus" />
-            <Panel className="queue">Queue</Panel>
+            <PinnedActionsPanel className="pinned" />
           </div>
         </FocusProvider>
       </WithDynamicPanel>

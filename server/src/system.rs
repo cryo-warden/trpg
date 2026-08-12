@@ -67,8 +67,7 @@ pub fn action_system(ecs: Ecs) {
         let entity_id = action_state.entity_id;
         let action_handle = ActionHandle::from_id(&ecs, action_state.action_id);
 
-        let effect = action_handle.effect(action_state.sequence_index);
-        if let Some(ref effect) = effect {
+        for effect in &action_handle.effects(action_state.sequence_index) {
             match effect {
                 ActionEffect::Buff(_) => {
                     queue.emit_early(ecs.new_event(
@@ -113,8 +112,7 @@ pub fn action_system(ecs: Ecs) {
 
         let with_action_state = e.update_action_state();
 
-        let effect = action_handle.effect(new_sequence_index);
-        if effect.is_none() {
+        if action_handle.effects(new_sequence_index).is_empty() {
             // TODO Emit event for finished action.
             with_action_state.delete_action_state();
         }

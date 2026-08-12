@@ -9,14 +9,8 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  ActionHotkey,
-} from "./types";
-
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  get actionHotkeys() {
-    return __t.array(ActionHotkey).name("action_hotkeys");
-  },
+  actionIds: __t.array(__t.u32()).name("action_ids"),
 });
