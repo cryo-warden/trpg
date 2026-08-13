@@ -7,6 +7,7 @@ import { componentQueries } from "./components";
 import { gearQueries } from "./loadout";
 import { renderingQueries } from "./rendering";
 import { StdbContext } from "./StdbContext";
+import { ConnectionScreen } from "../../ConnectionScreen";
 import { pushProductionAssets } from "../../init";
 
 const queries = [
@@ -26,9 +27,9 @@ type ConnectionStatus = "connecting" | "connected" | "error";
 // declares (vite.config's envPrefix exposes it), not a parallel VITE_*
 // name. Deliberately NO default port: every build states which SpacetimeDB
 // instance it dials (dev scripts pass 3000 explicitly; cw injects the prod
-// value), and a build that forgot fails loudly right here instead of
-// silently talking to the wrong database.
-const STDB_URI: string = (() => {
+// value), and a build that forgot fails loudly — as a rendered error, not
+// a blank page — instead of silently talking to the wrong database.
+const resolveStdbUri = (): string => {
   const port: string | undefined = import.meta.env.TRPG_STDB_PORT;
   if (port == null || port === "") {
     throw new Error(
@@ -37,18 +38,31 @@ const STDB_URI: string = (() => {
   }
   const scheme = window.location.protocol === "https:" ? "wss" : "ws";
   return `${scheme}://${window.location.hostname}:${port}`;
-})();
+};
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [connection, setConnection] = useState<DbConnection | null>(null);
   const [identity, setIdentity] = useState<Identity | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
+  // Resolved once, synchronously: a build that cannot name its database
+  // renders as a configuration error rather than a blank page.
+  const [resolved] = useState(() => {
+    try {
+      return { uri: resolveStdbUri(), configurationError: null };
+    } catch (reason) {
+      return { uri: null, configurationError: String(reason) };
+    }
+  });
 
   useEffect(() => {
+    if (resolved.uri == null) {
+      return;
+    }
     DbConnection.builder()
       .withDatabaseName("trpg")
       .withToken(localStorage.getItem("auth_token") || "")
-      .withUri(STDB_URI)
+      .withUri(resolved.uri)
       .onConnect((connection, identity, token) => {
         localStorage.setItem("auth_token", token);
 
@@ -79,10 +93,17 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
         setConnection(null);
         setIdentity(null);
         setStatus("error");
+        setDetail(String(error));
         console.error(error);
       })
+      .onDisconnect(() => {
+        setConnection(null);
+        setIdentity(null);
+        setStatus("error");
+        setDetail("The connection to the server was lost.");
+      })
       .build();
-  }, []);
+  }, [resolved.uri]);
 
   if (status === "connected" && connection != null && identity != null) {
     return (
@@ -92,6 +113,17 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
     );
   }
 
-  // TODO Render connectingChildren and connectionErrorChildren.
-  return null;
+  // Reaching here, status is never "connected" with a null connection for
+  // long; the visible states are connecting and error.
+  return (
+    <ConnectionScreen
+      status={
+        resolved.configurationError != null || status === "error"
+          ? "error"
+          : "connecting"
+      }
+      uri={resolved.uri}
+      detail={resolved.configurationError ?? detail}
+    />
+  );
 };

@@ -1,0 +1,31 @@
+.ConnectionScreen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+
+  .connection {
+    max-width: 36em;
+    padding: 1.5em;
+    text-align: center;
+
+    .uri {
+      opacity: 0.8;
+      margin: 0.5em 0;
+      overflow-wrap: anywhere;
+    }
+
+    .detail {
+      color: #f66;
+      margin: 0.5em 0;
+      overflow-wrap: anywhere;
+    }
+
+    .hint {
+      opacity: 0.7;
+      margin: 0.5em 0;
+    }
+  }
+}
