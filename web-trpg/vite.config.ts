@@ -10,4 +10,8 @@ export default defineConfig({
   // production web port; prod (vite preview) gets its port explicitly from
   // TRPG_WEB_PORT via scripts/prod-web.sh.
   server: { host: true, port: 5180 },
+  // Production (vite preview behind the cw proxy) is reached through
+  // corywatson.dev hostnames; the leading dot allows every subdomain, so a
+  // future dedicated host needs no config change.
+  preview: { allowedHosts: [".corywatson.dev"] },
 });
