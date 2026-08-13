@@ -14,7 +14,7 @@
 use spacetimedb::SpacetimeType;
 
 use crate::{
-    action::{ActionEffect, ActionType},
+    action::ActionType,
     appearance::AppearanceFeatureType,
     asset::location_map::{ConnectionAnchor, Layout},
     asset::stat_block::StatRequirements,

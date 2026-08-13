@@ -133,9 +133,10 @@ pub fn resolve_anchor_room(
     }
 }
 
+// (Extra rooms are recorded on the instance's MapRoomsComponent; callers of
+// generation itself only ever need the main chain and the checkpoints.)
 pub struct MapGenerationResult {
     pub main_room_ids: Vec<u64>,
-    pub extra_room_ids: Vec<u64>,
     pub checkpoint_room_entity_ids: Vec<u64>,
 }
 impl LocationMap {
@@ -155,7 +156,6 @@ impl LocationMap {
         } else {
             return Ok(MapGenerationResult {
                 main_room_ids: vec![],
-                extra_room_ids: vec![],
                 checkpoint_room_entity_ids: vec![],
             });
         };
@@ -312,14 +312,7 @@ impl LocationMap {
         }
 
         Ok(MapGenerationResult {
-            main_room_ids: room_handles[..main_room_count]
-                .iter()
-                .map(|h| h.entity_id())
-                .collect(),
-            extra_room_ids: room_handles[main_room_count..]
-                .iter()
-                .map(|h| h.entity_id())
-                .collect(),
+            main_room_ids: main_room_entity_ids,
             checkpoint_room_entity_ids,
         })
     }
