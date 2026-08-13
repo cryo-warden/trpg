@@ -148,21 +148,6 @@ export const StancesMenu = () => {
 
   return (
     <div className="StancesMenu">
-      <div className="dots">
-        {shown.map((stance, index) => (
-          <button
-            key={stance.id}
-            type="button"
-            aria-label={stance.name}
-            title={stance.name}
-            className={[
-              index === currentIndex ? "current" : "",
-              stance.id === activeStanceId ? "activeStance" : "",
-            ].join(" ")}
-            onClick={() => scrollToIndex(index)}
-          />
-        ))}
-      </div>
       <div className="cards" ref={cardsRef} onScroll={handleScroll}>
         {shown.map((stance) => {
         const assigned =
@@ -225,6 +210,21 @@ export const StancesMenu = () => {
           </section>
         );
         })}
+      </div>
+      <div className="dots">
+        {shown.map((stance, index) => (
+          <button
+            key={stance.id}
+            type="button"
+            aria-label={stance.name}
+            title={stance.name}
+            className={[
+              index === currentIndex ? "current" : "",
+              stance.id === activeStanceId ? "activeStance" : "",
+            ].join(" ")}
+            onClick={() => scrollToIndex(index)}
+          />
+        ))}
       </div>
     </div>
   );

@@ -8,16 +8,23 @@
   flex-direction: column;
   height: 100%;
 
+  /* Below the cards, tiny, and wrapping: the whole row must ALWAYS fit on
+   * screen no matter how many stances exist. The global button touch-target
+   * minimums (11mm) are deliberately overridden — these are indicators
+   * first, swipe is the primary navigation. */
   .dots {
     flex: 0 0 auto;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 0.45em;
-    padding: 0.3em 0;
+    gap: 0.3rem;
+    padding: 0.25rem 0;
 
     button {
-      width: 0.65em;
-      height: 0.65em;
+      width: 0.5rem;
+      height: 0.5rem;
+      min-width: 0;
+      min-height: 0;
       padding: 0;
       border: 1px solid currentColor;
       border-radius: 50%;
