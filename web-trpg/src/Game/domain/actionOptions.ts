@@ -36,6 +36,8 @@ export type ActionOptionInputs = AllegianceInputs & {
   targetHasPath: boolean;
   /** The target is an item entity (takeable/droppable gear). */
   targetHasItem: boolean;
+  /** The target is attunable fortune-telling scenery (a checkpoint). */
+  targetHasCheckpointObject: boolean;
 };
 
 /** The subset of the player's actions that are valid against the target. */
@@ -45,6 +47,7 @@ export const getActionOptions = ({
   targetHasHp,
   targetHasPath,
   targetHasItem,
+  targetHasCheckpointObject,
   ...allegiance
 }: ActionOptionInputs): ActionId[] => {
   const ally = isAlly(allegiance);
@@ -67,6 +70,8 @@ export const getActionOptions = ({
       // Hit the deck where you stand, or dive at an item to grab it.
       case "Dive":
         return targetHasItem || allegiance.target === allegiance.playerEntity;
+      case "Attune":
+        return targetHasCheckpointObject;
       default:
         return false;
     }

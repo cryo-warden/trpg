@@ -48,6 +48,9 @@ pub struct LocationMapTheme {
     pub max_decoration_count: u8,
     pub paths_selector: EntityBlobsSampler,
     pub rooms_selector: EntityBlobsSampler,
+    /// The themed fortune-telling scenery (bone dice, scrying bowls, fate
+    /// decks) placed in each map's guaranteed checkpoint room.
+    pub checkpoints_selector: EntityBlobsSampler,
 }
 
 impl LocationMapTheme {

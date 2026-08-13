@@ -120,8 +120,17 @@ entity!(
       equipment_stat_block_dirty_flag in equipment_stat_block_dirty_flag_components,
       status_stat_block_dirty_flag in status_stat_block_dirty_flag_components,
       total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
+      checkpoint_object in checkpoint_object_components,
     )]
     struct FlagComponent {}
+
+    // Where this entity wakes from the death-trance: a room entity id, set
+    // automatically at first placement and re-set by attuning to a
+    // checkpoint object (bone dice, a scrying bowl, a deck of fate cards).
+    #[component(checkpoint in checkpoint_components)]
+    struct CheckpointComponent {
+        pub checkpoint_room_entity_id: EntityId,
+    }
 
     #[component(attack in attack_components)]
     struct AttackComponent {

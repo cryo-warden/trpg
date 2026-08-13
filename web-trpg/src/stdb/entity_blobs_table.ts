@@ -24,6 +24,7 @@ import {
   ItemComponentBlob,
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
+  CheckpointComponentBlob,
   AttackComponentBlob,
   HpComponentBlob,
   EpComponentBlob,
@@ -100,6 +101,12 @@ export default __t.row({
   },
   get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("total_stat_block_dirty_flag");
+  },
+  get checkpointObject() {
+    return __t.option(FlagComponentBlob).name("checkpoint_object");
+  },
+  get checkpoint() {
+    return __t.option(CheckpointComponentBlob);
   },
   get attack() {
     return __t.option(AttackComponentBlob);

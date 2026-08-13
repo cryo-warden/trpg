@@ -20,6 +20,7 @@ const Drop = { tag: "Drop" } as const satisfies ActionEffect;
 const Intimidate = (value: number) =>
   ({ tag: "Intimidate", value }) as const satisfies ActionEffect;
 const Rally = { tag: "Rally" } as const satisfies ActionEffect;
+const Attune = { tag: "Attune" } as const satisfies ActionEffect;
 const Dive = (defense: number) =>
   ({ tag: "Dive", value: defense }) as const satisfies ActionEffect;
 
@@ -161,6 +162,14 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [round(Rally)],
   },
+  // Seal the trance: bind your checkpoint to a fortune-telling object's
+  // room. Death wakes you there. A small ritual: one interruptible round of
+  // gazing, then the binding.
+  attune: {
+    actionType: { tag: "Attune" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [interruptibleRound(), round(Attune)],
+  },
   // Hit the deck: lands prone (fear stays if present), braced for +2
   // defense, and grabs a targeted item mid-dive — a wielded weapon's morale
   // can itself overcome a fear.
@@ -272,5 +281,9 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   dive: {
     displayName: "Dive",
     beginTemplate: "{0:sentence:subject} dove for {1:object}.",
+  },
+  attune: {
+    displayName: "Attune",
+    beginTemplate: "{0:sentence:subject} gazed into {1:object}, entranced.",
   },
 };

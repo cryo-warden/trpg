@@ -20,8 +20,8 @@ use crate::{
     asset::stat_block::StatRequirements,
     entity::{
         AllegianceComponentBlob, AttackComponentBlob, EnemyControllerComponentBlob,
-        EpComponentBlob, HpComponentBlob, LocationComponentBlob, NameComponentBlob,
-        PathComponentBlob, PlayerControllerComponentBlob,
+        EpComponentBlob, FlagComponentBlob, HpComponentBlob, LocationComponentBlob,
+        NameComponentBlob, PathComponentBlob, PlayerControllerComponentBlob,
     },
 };
 
@@ -131,6 +131,8 @@ pub struct EntityBlobAsset {
     pub attack: Option<AttackComponentBlob>,
     pub player_controller: Option<PlayerControllerComponentBlob>,
     pub enemy_controller: Option<EnemyControllerComponentBlob>,
+    /// Marks the entity as attunable fortune-telling scenery.
+    pub checkpoint_object: Option<FlagComponentBlob>,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -164,6 +166,9 @@ pub struct LocationMapThemeAsset {
     pub max_decoration_count: u8,
     pub paths_selector: EntityBlobsSamplerAsset,
     pub rooms_selector: EntityBlobsSamplerAsset,
+    /// The themed fortune-telling scenery placed in each map's guaranteed
+    /// checkpoint room (the entrance).
+    pub checkpoints_selector: EntityBlobsSamplerAsset,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

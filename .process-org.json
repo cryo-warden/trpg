@@ -135,6 +135,14 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-death": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/12-death.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -217,7 +225,8 @@
         "test-e2e-production",
         "test-e2e-loadout",
         "test-e2e-morale",
-        "test-e2e-dive"
+        "test-e2e-dive",
+        "test-e2e-death"
       ]
     }
   }

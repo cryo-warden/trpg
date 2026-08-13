@@ -13,6 +13,9 @@ pub enum ActionType {
     Equip,
     /// Targets self, or an item within reach to grab mid-dive.
     Dive,
+    /// Targets a co-located checkpoint object (fortune-telling scenery) to
+    /// bind where the actor wakes from the death-trance.
+    Attune,
 }
 
 #[table(accessor = actions, public)]
@@ -65,6 +68,9 @@ pub enum ActionEffect {
     /// immediately. A grabbed weapon's morale contribution can itself
     /// overcome a fear.
     Dive(i16),
+    /// Bind the actor's checkpoint to the targeted checkpoint object's
+    /// room: a trance sealed now, woken from at death.
+    Attune,
 }
 
 /// One round of an action, with its effects denormalized into the row: every

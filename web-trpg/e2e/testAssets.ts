@@ -139,6 +139,9 @@ export const mapGenPack = (): AssetPack => ({
         maxDecorationCount: 1,
         pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        checkpointsSelector: {
+          selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
+        },
       },
     },
   ],
@@ -416,6 +419,98 @@ export const moralePack = (): AssetPack => ({
     blob({
       path: { destinationEntityId: { tag: "Literal", value: 1000n } },
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+  ],
+});
+
+/**
+ * A death world: a hero, bone dice to attune to in the safe room, a lethal
+ * brute one room over, and a fragile vermin to corpse-test. Death wakes the
+ * hero at the attuned checkpoint, fully restored; a dead NPC is deleted
+ * outright (its carried items would spill).
+ */
+export const deathPack = (): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    {
+      name: "test_attune",
+      value: {
+        actionType: { tag: "Attune" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Attune" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_move",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: requirements({ gait: 1 }),
+        rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_jab",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Attack", value: 5 }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_crush",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          { effects: [{ tag: "Attack", value: 99 }], interruptible: false },
+        ],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_hero",
+      value: statBlock({
+        mhp: 10,
+        mep: 4,
+        gait: 2,
+        actionNames: ["test_attune", "test_move", "test_jab"],
+      }),
+    },
+    {
+      name: "test_brute",
+      value: statBlock({ mhp: 30, actionNames: ["test_crush"] }),
+    },
+    {
+      name: "test_vermin",
+      value: statBlock({ mhp: 2 }),
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_hero",
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+  }),
+  instantiateEntityBlobs: [
+    blob({
+      checkpointObject: {},
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    blob({
+      path: { destinationEntityId: { tag: "Literal", value: 1000n } },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    blob({
+      enemyController: {},
+      baselineName: "test_brute",
+      location: { locationEntityId: { tag: "Literal", value: 1000n } },
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+    }),
+    blob({
+      enemyController: {},
+      baselineName: "test_vermin",
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
   ],
 });

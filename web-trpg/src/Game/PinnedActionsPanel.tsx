@@ -19,12 +19,10 @@ export const PinnedActionsPanel = (
     <Panel {...props}>
       <div className="PinnedActions">
         {pinnedActions.slice(0, 10).map((actionId, index) => {
+          // The Button already renders its hotkey; no separate label.
           const hotkey = `${(index + 1) % 10}`;
           return (
-            <span key={actionId} className="pinnedAction">
-              <span className="hotkey">{hotkey}</span>
-              <ActionButton actionId={actionId} hotkey={hotkey} />
-            </span>
+            <ActionButton key={actionId} actionId={actionId} hotkey={hotkey} />
           );
         })}
       </div>

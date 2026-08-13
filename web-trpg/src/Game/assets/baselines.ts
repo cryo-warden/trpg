@@ -23,7 +23,7 @@ export const BASELINES = {
     reach: 1,
     size: 0,
     morale: 5,
-    actionNames: ["take", "drop"],
+    actionNames: ["take", "drop", "attune"],
     appearanceFeatureNames: ["human"],
     stanceNames: [
       "standing",
@@ -71,7 +71,7 @@ export const BASELINES = {
     reach: 1,
     size: 0,
     morale: 4,
-    actionNames: ["take", "drop"],
+    actionNames: ["take", "drop", "attune"],
     appearanceFeatureNames: ["bandit"],
     stanceNames: [
       "standing",

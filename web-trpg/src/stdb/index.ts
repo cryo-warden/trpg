@@ -71,6 +71,8 @@ import ArmorsRow from "./armors_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
 import BracedStatusComponentsRow from "./braced_status_components_table";
+import CheckpointComponentsRow from "./checkpoint_components_table";
+import CheckpointObjectComponentsRow from "./checkpoint_object_components_table";
 import CourageStatusComponentsRow from "./courage_status_components_table";
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
@@ -334,6 +336,28 @@ const tablesSchema = __schema({
       { name: 'braced_status_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, BracedStatusComponentsRow),
+  checkpoint_components: __table({
+    name: 'checkpoint_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'checkpoint_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'checkpoint_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, CheckpointComponentsRow),
+  checkpoint_object_components: __table({
+    name: 'checkpoint_object_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'checkpoint_object_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'checkpoint_object_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, CheckpointObjectComponentsRow),
   courage_status_components: __table({
     name: 'courage_status_components',
     indexes: [

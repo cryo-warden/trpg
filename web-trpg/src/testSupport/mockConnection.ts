@@ -169,6 +169,8 @@ export const stdbWrapper = (
       courage_status_components: mockTable([]),
       action_state_components: mockTable([]),
       item_components: mockTable([]),
+      checkpoint_object_components: mockTable([]),
+      checkpoint_components: mockTable([]),
       armor_components: mockTable([]),
       relics_components: mockTable([]),
       stance_loadouts_components: mockTable([]),

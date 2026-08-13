@@ -80,6 +80,7 @@ export const ActionEffect = __t.enum("ActionEffect", {
   Intimidate: __t.i16(),
   Rally: __t.unit(),
   Dive: __t.i16(),
+  Attune: __t.unit(),
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
 
@@ -127,6 +128,7 @@ export const ActionType = __t.enum("ActionType", {
   Inventory: __t.unit(),
   Equip: __t.unit(),
   Dive: __t.unit(),
+  Attune: __t.unit(),
 });
 export type ActionType = __Infer<typeof ActionType>;
 
@@ -331,6 +333,19 @@ export const Buff = __t.enum("Buff", {
 });
 export type Buff = __Infer<typeof Buff>;
 
+export const CheckpointComponent = __t.object("CheckpointComponent", {
+  entityId: __t.u64(),
+  checkpointRoomEntityId: __t.u64(),
+});
+export type CheckpointComponent = __Infer<typeof CheckpointComponent>;
+
+export const CheckpointComponentBlob = __t.object("CheckpointComponentBlob", {
+  get checkpointRoomEntityId() {
+    return EntityIdSelector;
+  },
+});
+export type CheckpointComponentBlob = __Infer<typeof CheckpointComponentBlob>;
+
 export const CourageStatusComponent = __t.object("CourageStatusComponent", {
   entityId: __t.u64(),
   morale: __t.i16(),
@@ -449,6 +464,12 @@ export const EntityBlob = __t.object("EntityBlob", {
   get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
+  get checkpointObject() {
+    return __t.option(FlagComponentBlob);
+  },
+  get checkpoint() {
+    return __t.option(CheckpointComponentBlob);
+  },
   get attack() {
     return __t.option(AttackComponentBlob);
   },
@@ -545,6 +566,9 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   },
   get enemyController() {
     return __t.option(EnemyControllerComponentBlob);
+  },
+  get checkpointObject() {
+    return __t.option(FlagComponentBlob);
   },
 });
 export type EntityBlobAsset = __Infer<typeof EntityBlobAsset>;
@@ -802,6 +826,9 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
   get roomsSelector() {
     return EntityBlobsSampler;
   },
+  get checkpointsSelector() {
+    return EntityBlobsSampler;
+  },
 });
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 
@@ -815,6 +842,9 @@ export const LocationMapThemeAsset = __t.object("LocationMapThemeAsset", {
     return EntityBlobsSamplerAsset;
   },
   get roomsSelector() {
+    return EntityBlobsSamplerAsset;
+  },
+  get checkpointsSelector() {
     return EntityBlobsSamplerAsset;
   },
 });

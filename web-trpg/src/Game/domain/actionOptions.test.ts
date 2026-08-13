@@ -80,6 +80,7 @@ test("getActionOptions offers attacks and moves against a hostile, reachable tar
       targetHasHp: true,
       targetHasPath: true,
       targetHasItem: false,
+      targetHasCheckpointObject: false,
     }),
   ).toEqual([attackId, moveId]);
 });
@@ -93,6 +94,7 @@ test("getActionOptions offers buffs against an ally with hp", () => {
       targetHasHp: true,
       targetHasPath: false,
       targetHasItem: false,
+      targetHasCheckpointObject: false,
     }),
   ).toEqual([buffId]);
 });
@@ -106,6 +108,7 @@ test("getActionOptions offers nothing when the target has no hp and no path", ()
       targetHasHp: false,
       targetHasPath: false,
       targetHasItem: false,
+      targetHasCheckpointObject: false,
     }),
   ).toEqual([]);
 });
@@ -121,8 +124,24 @@ test("getActionOptions offers inventory actions against an item target", () => {
       targetHasHp: false,
       targetHasPath: false,
       targetHasItem: true,
+      targetHasCheckpointObject: false,
     }),
   ).toEqual([takeId, dropId]);
+});
+
+test("getActionOptions offers attune against a checkpoint object", () => {
+  const attuneId = actionIdOf("attune");
+  expect(
+    getActionOptions({
+      ...enemy,
+      actionIds: [...allIds, attuneId],
+      actionAssetOf,
+      targetHasHp: false,
+      targetHasPath: false,
+      targetHasItem: false,
+      targetHasCheckpointObject: true,
+    }),
+  ).toEqual([attuneId]);
 });
 
 test("getActionOptions drops unknown action ids", () => {
@@ -134,6 +153,7 @@ test("getActionOptions drops unknown action ids", () => {
       targetHasHp: true,
       targetHasPath: true,
       targetHasItem: false,
+      targetHasCheckpointObject: false,
     }),
   ).toEqual([]);
 });

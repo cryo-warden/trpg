@@ -225,6 +225,8 @@ fn resolve_entity_blob(
             .transpose()?,
         stance_loadouts: None,
         known_stances: None,
+        checkpoint_object: author.checkpoint_object,
+        checkpoint: None,
         total_stat_block: None,
         fear_status: None,
         courage_status: None,
@@ -655,6 +657,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             max_decoration_count: t.value.max_decoration_count,
             paths_selector: resolve_entity_blobs_sampler(t.value.paths_selector, &maps)?,
             rooms_selector: resolve_entity_blobs_sampler(t.value.rooms_selector, &maps)?,
+            checkpoints_selector: resolve_entity_blobs_sampler(
+                t.value.checkpoints_selector,
+                &maps,
+            )?,
         };
         if ctx.db.location_map_themes().id().find(id).is_some() {
             ctx.db.location_map_themes().id().update(row);

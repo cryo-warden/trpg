@@ -34,6 +34,65 @@ pub fn ep_system(ecs: Ecs) {
     }
 }
 
+/// Zero HP resolves here, right after damage settles. NPCs die: they stop
+/// acting immediately and are handed to the deletion timer (which spills
+/// their carried items into the room). A player instead wakes from a trance
+/// at their checkpoint room: fully restored, shed of statuses and actions —
+/// death is the fiction's scene change, not an account event.
+pub fn death_system(ecs: Ecs) {
+    for e in ecs.iter_hp() {
+        if e.hp().hp > 0 {
+            continue;
+        }
+        let handle = e.into_handle();
+        if handle.action_state().is_some() {
+            handle.delete_action_state();
+        }
+        if handle.queued_action_state().is_some() {
+            handle.delete_queued_action_state();
+        }
+        if handle.player_controller().is_some() {
+            match handle.checkpoint() {
+                None => {
+                    log::error!(
+                        "Player entity {} died with no checkpoint; leaving it where it fell.",
+                        handle.entity_id()
+                    );
+                }
+                Some(checkpoint) => {
+                    handle
+                        .clone()
+                        .upsert_new_location(checkpoint.checkpoint_room_entity_id);
+                }
+            }
+            if let Some(mut hp) = handle.hp() {
+                hp.hp = hp.mhp;
+                hp.accumulated_damage = 0;
+                hp.accumulated_healing = 0;
+                handle.update_hp_row(hp);
+            }
+            if let Some(mut ep) = handle.ep() {
+                ep.ep = ep.mep;
+                handle.update_ep_row(ep);
+            }
+            if handle.fear_status().is_some() {
+                handle.delete_fear_status();
+            }
+            if handle.courage_status().is_some() {
+                handle.delete_courage_status();
+            }
+            if handle.braced_status().is_some() {
+                handle.delete_braced_status();
+            }
+        } else {
+            if handle.enemy_controller().is_some() {
+                handle.delete_enemy_controller();
+            }
+            handle.upsert_new_entity_deletion_timer(ecs.timestamp);
+        }
+    }
+}
+
 pub fn shift_queued_action_system(ecs: Ecs) {
     for e in ecs.iter_queued_action_state() {
         // A queued action normally waits the active one out — but while the
@@ -381,6 +440,9 @@ pub fn player_activation_system(ecs: Ecs) {
                             map_generation_result.main_room_ids.first()
                         {
                             p.insert_new_location(*location_entity_id);
+                            // A new player's checkpoint is the starting
+                            // room, automatically.
+                            p.upsert_new_checkpoint(*location_entity_id);
                         }
                     }
                     Err(e) => {
@@ -429,6 +491,7 @@ pub fn enemy_control_system(ecs: Ecs) {
 pub fn execute_all_systems(ecs: Ecs) {
     action_system(ecs);
     hp_system(ecs);
+    death_system(ecs);
     ep_system(ecs);
     shift_queued_action_system(ecs);
     entity_deletion_timer_system(ecs);

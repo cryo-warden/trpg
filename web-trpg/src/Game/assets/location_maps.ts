@@ -5,6 +5,24 @@ import {
 } from "../../stdb/types";
 import { blob } from "./entity_blobs";
 
+// The visible checkpoints: fortune-telling scenery placed in every map's
+// guaranteed-safe entrance room. Attuning to one binds where you wake from
+// the death-trance.
+const CHECKPOINT_BLOBS = {
+  boneDice: blob({
+    checkpointObject: {},
+    appearanceFeatureNames: ["bone", "dice"],
+  }),
+  scryingBowl: blob({
+    checkpointObject: {},
+    appearanceFeatureNames: ["scrying", "bowl"],
+  }),
+  fateDeck: blob({
+    checkpointObject: {},
+    appearanceFeatureNames: ["fate", "deck"],
+  }),
+};
+
 export const LOCATION_MAP_THEMES = {
   encampment: {
     // The training ground: dummies to hit (hp makes scenery attackable) and
@@ -113,6 +131,9 @@ export const LOCATION_MAP_THEMES = {
         { weight: 4, blob: blob({ appearanceFeatureNames: ["tent"] }) },
       ],
     },
+    checkpointsSelector: {
+      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.boneDice }],
+    },
   },
   cave: {
     decorationsSelector: {
@@ -139,6 +160,9 @@ export const LOCATION_MAP_THEMES = {
         { weight: 2, blob: blob({ appearanceFeatureNames: ["cavern"] }) },
       ],
     },
+    checkpointsSelector: {
+      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.boneDice }],
+    },
   },
   meadow: {
     decorationsSelector: {
@@ -162,6 +186,9 @@ export const LOCATION_MAP_THEMES = {
         { weight: 5, blob: blob({ appearanceFeatureNames: ["clearing"] }) },
         { weight: 3, blob: blob({ appearanceFeatureNames: ["grove"] }) },
       ],
+    },
+    checkpointsSelector: {
+      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.scryingBowl }],
     },
   },
   forest: {
@@ -187,6 +214,9 @@ export const LOCATION_MAP_THEMES = {
         { weight: 4, blob: blob({ appearanceFeatureNames: ["thicket"] }) },
         { weight: 2, blob: blob({ appearanceFeatureNames: ["clearing"] }) },
       ],
+    },
+    checkpointsSelector: {
+      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.fateDeck }],
     },
   },
   keep: {
@@ -279,6 +309,9 @@ export const LOCATION_MAP_THEMES = {
         { weight: 2, blob: blob({ appearanceFeatureNames: ["crypt"] }) },
       ],
     },
+    checkpointsSelector: {
+      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.fateDeck }],
+    },
   },
   sanctum: {
     decorationsSelector: {
@@ -345,6 +378,9 @@ export const LOCATION_MAP_THEMES = {
         { weight: 3, blob: blob({ appearanceFeatureNames: ["sanctum"] }) },
         { weight: 2, blob: blob({ appearanceFeatureNames: ["vault"] }) },
       ],
+    },
+    checkpointsSelector: {
+      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.scryingBowl }],
     },
   },
 } satisfies Record<string, LocationMapThemeAsset>;

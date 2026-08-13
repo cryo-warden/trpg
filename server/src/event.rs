@@ -289,6 +289,31 @@ secador::secador!(
                                 }
                             }
                         }
+                        // Seal the trance: the actor's checkpoint becomes
+                        // the targeted checkpoint object's room. Death
+                        // later wakes them here.
+                        ActionEffect::Attune => {
+                            let owner = ecs.find(self.owner_entity_id);
+                            let target = ecs.find(target_entity_id);
+                            match (target.checkpoint_object(), target.location()) {
+                                (Some(_), Some(object_location)) => {
+                                    let co_located =
+                                        { owner.location() }.is_some_and(|mine| {
+                                            mine.location_entity_id
+                                                == object_location.location_entity_id
+                                        });
+                                    if co_located {
+                                        owner.upsert_new_checkpoint(
+                                            object_location.location_entity_id,
+                                        );
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                }
+                                _ => false,
+                            }
+                        }
                         // Rally spends EP DYNAMICALLY: exactly the deficit
                         // (1:1) between the fear's intimidation and current
                         // effective morale, granting a courage status just

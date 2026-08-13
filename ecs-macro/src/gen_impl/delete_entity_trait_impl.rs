@@ -39,7 +39,21 @@ impl ToTokens for WithEntityHandleTrait {
             id_fn,
             ..
         } = &self.with_entity_handle_trait;
-        let delete_calls = self.option_component_traits.iter().map(|oct| {
+        // Deleting a dirties() component upserts its flag, so flag
+        // components must be deleted LAST: otherwise a full entity delete
+        // leaves a dangling dirty flag behind, and the stats systems
+        // resurrect zombie components for the dead entity.
+        let flag_tables: std::collections::HashSet<String> = self
+            .option_component_traits
+            .iter()
+            .flat_map(|oct| oct.dirty_flag_targets.iter())
+            .map(|target| target.table.to_string())
+            .collect();
+        let (flag_octs, plain_octs): (Vec<_>, Vec<_>) = self
+            .option_component_traits
+            .iter()
+            .partition(|oct| flag_tables.contains(&oct.table.to_string()));
+        let delete_calls = plain_octs.into_iter().chain(flag_octs).map(|oct| {
             let gen_trait::OptionComponentTrait { delete_fn, .. } = &oct;
             quote! { handle.#delete_fn(); }
         });

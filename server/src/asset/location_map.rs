@@ -160,10 +160,16 @@ impl LocationMap {
         }
 
         // TODO Move encounter spawning to a system responding to player movement.
+        // The entrance (room 0) is the map's guaranteed checkpoint room:
+        // encounters never spawn there, so waking from the death-trance is
+        // always safe.
         let encounter_count: usize =
             rng.get_range(self.min_encounter_count, self.max_encounter_count);
-        let mut encounter_room_handles: Vec<_> =
-            room_handles.iter().take(encounter_count).collect();
+        let mut encounter_room_handles: Vec<_> = room_handles
+            .iter()
+            .skip(1)
+            .take(encounter_count)
+            .collect();
         encounter_room_handles.shuffle(&mut rng);
         for r in encounter_room_handles {
             if let Some(encounter_id) = self.encounter_ids_sampler.sample(&mut rng) {
@@ -176,6 +182,20 @@ impl LocationMap {
         // Decorate after other steps so that decoration changes do not impact rng.
         for r in &room_handles {
             theme.decorate(r, &mut rng)?;
+        }
+
+        // The entrance's visible checkpoint: one themed fortune-telling
+        // object to attune to. Placed last for the same rng-stability
+        // reason as decorations.
+        if let Some(entrance) = room_handles.first() {
+            if let Some(checkpoint_blob) = theme.checkpoints_selector.sample(&mut rng) {
+                ecs.new()
+                    .instantiate_blob(
+                        checkpoint_blob.to_owned(),
+                        &ecs.instantiation_scope(),
+                    )?
+                    .insert_new_location(entrance.entity_id());
+            }
         }
 
         Ok(MapGenerationResult {

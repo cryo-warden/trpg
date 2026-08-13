@@ -221,6 +221,16 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                     }
                 }
                 ActionType::Move => o.path().is_some(),
+                // A co-located checkpoint object (fortune-telling scenery).
+                ActionType::Attune => {
+                    o.checkpoint_object().is_some()
+                        && match (e.location(), o.location()) {
+                            (Some(mine), Some(theirs)) => {
+                                mine.location_entity_id == theirs.location_entity_id
+                            }
+                            _ => false,
+                        }
+                }
                 // Self (just hit the deck) or an item within reach to grab
                 // mid-dive.
                 ActionType::Dive => {
