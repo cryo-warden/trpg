@@ -11,6 +11,7 @@
     "lint": "bun run eslint .",
     "check": "bun run stdb-generate && bun run lint && bun run ts-check",
     "dev": "bun run check && vite",
+    "serve": "vite",
     "build": "bun run check -b && vite build",
     "preview": "vite preview",
     "predeploy": "bun run build",

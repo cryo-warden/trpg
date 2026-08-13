@@ -151,6 +151,14 @@
       ],
       "dir": "."
     },
+    "web": {
+      "command": [
+        "bun",
+        "run",
+        "serve"
+      ],
+      "dir": "web-trpg"
+    },
     "spacetime": {
       "command": [
         "spacetime",
