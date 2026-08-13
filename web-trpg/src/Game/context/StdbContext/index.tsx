@@ -1,5 +1,5 @@
 import { Identity } from "spacetimedb";
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { DbConnection } from "../../../stdb";
 import { accountQueries } from "./account";
 import { assetQueries } from "./assetLookup";
@@ -40,11 +40,19 @@ const resolveStdbUri = (): string => {
   return `${scheme}://${window.location.hostname}:${port}`;
 };
 
+// A connection that dies this quickly after opening never really worked:
+// its disconnect is a FAILED fresh attempt (and retrying it would hammer
+// the server in a loop), so it reports as an error instead of reconnecting.
+const IMMEDIATE_DEATH_MS = 5000;
+
 export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [connection, setConnection] = useState<DbConnection | null>(null);
   const [identity, setIdentity] = useState<Identity | null>(null);
   const [detail, setDetail] = useState<string | null>(null);
+  // Bumping this re-runs the connect effect: a fresh attempt.
+  const [attempt, setAttempt] = useState(0);
+  const connectedAtRef = useRef<number | null>(null);
   // Resolved once, synchronously: a build that cannot name its database
   // renders as a configuration error rather than a blank page.
   const [resolved] = useState(() => {
@@ -65,6 +73,7 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
       .withUri(resolved.uri)
       .onConnect((connection, identity, token) => {
         localStorage.setItem("auth_token", token);
+        connectedAtRef.current = Date.now();
 
         connection.subscriptionBuilder().subscribe(queries);
 
@@ -99,11 +108,26 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
       .onDisconnect(() => {
         setConnection(null);
         setIdentity(null);
-        setStatus("error");
-        setDetail("The connection to the server was lost.");
+        // An ESTABLISHED connection dropping — the tab idled, the network
+        // blinked — is not a failure to report. Reconnect quietly; the
+        // error view is reserved for a FRESH attempt failing
+        // (onConnectError, or a connection that dies immediately).
+        const lived =
+          connectedAtRef.current == null
+            ? 0
+            : Date.now() - connectedAtRef.current;
+        connectedAtRef.current = null;
+        if (lived >= IMMEDIATE_DEATH_MS) {
+          setStatus("connecting");
+          setDetail(null);
+          setAttempt((n) => n + 1);
+        } else {
+          setStatus("error");
+          setDetail("The connection to the server was lost.");
+        }
       })
       .build();
-  }, [resolved.uri]);
+  }, [resolved.uri, attempt]);
 
   if (status === "connected" && connection != null && identity != null) {
     return (
