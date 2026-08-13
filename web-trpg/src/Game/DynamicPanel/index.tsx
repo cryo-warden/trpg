@@ -22,6 +22,7 @@ import { EntityName } from "../EntityName";
 import { EPBar } from "../EntityPanel/EPBar";
 import { HPBar } from "../EntityPanel/HPBar";
 import { LoadoutPanel } from "../LoadoutPanel";
+import { StancesMenu } from "../StancesMenu";
 import { EntityId } from "../trpg";
 import { EntitiesDisplay } from "./EntitiesDisplay";
 
@@ -52,7 +53,17 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   });
   const hostiles = useHostiles();
 
-  // The stance-customization menu lives in the equipment slot of the
+  // The stances menu owns its own scrolling: snap-locked horizontally
+  // between stance cards, free vertically within each.
+  if (mode === "stances") {
+    return (
+      <Panel {...props}>
+        <StancesMenu />
+      </Panel>
+    );
+  }
+
+  // The worn-gear menu (armor + relics) lives in the equipment slot of the
   // dynamic panel.
   if (mode === "equipment") {
     return (

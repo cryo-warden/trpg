@@ -6,7 +6,6 @@ import {
   armorIdOf,
   mockTable,
   relicIdOf,
-  stanceIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { LoadoutPanel } from "./LoadoutPanel";
@@ -41,30 +40,8 @@ test("LoadoutPanel lists owned gear by kind with resolved names", () => {
   expect(container.querySelector(".relics")?.textContent).toContain(
     "ember_charm",
   );
-  expect(container.querySelector(".stanceArmaments")?.textContent).toContain(
-    "sword",
-  );
-});
-
-test("clicking an armament under a stance assigns it", () => {
-  const assignStanceArmaments = mock(() => {});
-  const wrapper = gameWrapper(tables(), {
-    identity: {} as Identity,
-    reducers: { assignStanceArmaments },
-  });
-  const { container } = render(<LoadoutPanel />, { wrapper });
-
-  const dueling = [
-    ...container.querySelectorAll(".stanceArmaments h4"),
-  ].find((heading) => heading.textContent === "dueling")!;
-  // The armament buttons for a stance directly follow its heading.
-  const swordButton = dueling.nextElementSibling!;
-  expect(swordButton.textContent).toBe("sword");
-  fireEvent.click(swordButton);
-  expect(assignStanceArmaments).toHaveBeenCalledWith({
-    stanceId: stanceIdOf("dueling"),
-    armamentIds: [armamentIdOf("sword")],
-  });
+  // Armaments moved to the stances menu; this menu is worn gear only.
+  expect(container.querySelector(".stanceArmaments")).toBeNull();
 });
 
 test("toggling a relic on proposes the extended relic set", () => {

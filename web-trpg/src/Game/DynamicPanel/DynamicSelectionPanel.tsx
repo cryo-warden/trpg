@@ -17,6 +17,9 @@ export const DynamicSelectionPanel = (
   const setEquipmentMode = useCallback(() => {
     setMode("equipment");
   }, [setMode]);
+  const setStancesMode = useCallback(() => {
+    setMode("stances");
+  }, [setMode]);
   const setStatsMode = useCallback(() => {
     setMode("stats");
   }, [setMode]);
@@ -33,6 +36,9 @@ export const DynamicSelectionPanel = (
         </Button>
         <Button hotkey="e" onClick={setEquipmentMode}>
           Equipment
+        </Button>
+        <Button hotkey="t" onClick={setStancesMode}>
+          Stances
         </Button>
         <Button hotkey="s" onClick={setStatsMode}>
           Stats

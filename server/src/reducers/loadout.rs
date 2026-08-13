@@ -192,15 +192,13 @@ pub fn assign_stance_armaments(
     assignments.retain(|a| a.stance_id != stance_id);
     assignments.push(StanceArmaments {
         stance_id,
-        armament_ids: armament_ids.clone(),
+        armament_ids,
     });
-    let handle = handle
-        .upsert_new_stance_loadouts(assignments)
-        .into_handle();
+    handle.upsert_new_stance_loadouts(assignments);
 
-    // Assigning to the ACTIVE stance re-arms immediately.
-    if { handle.active_stance() }.is_some_and(|active| active.stance_id == stance_id) {
-        handle.upsert_new_equipment(armament_ids);
-    }
+    // CONFIGURATION ONLY: the loadout applies immediately as data, but the
+    // ACTUAL equipment changes solely through a stance change — which costs
+    // a round (the posture actions). Even re-entering the current stance
+    // pays that round to re-arm.
     Ok(())
 }

@@ -1,6 +1,7 @@
 import { createElement, type ReactNode } from "react";
 import type { Identity } from "spacetimedb";
 import type { DbConnection } from "../stdb";
+import type { StatBlockAsset } from "../stdb/types";
 import { StdbContext } from "../Game/context/StdbContext/StdbContext";
 import { ACTIONS, ActionName } from "../Game/assets/actions";
 import {
@@ -84,7 +85,20 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
 
 // Mock asset-table rows mirroring a push of the local Records: ids follow the
 // Records' enumeration order, exactly as push_assets interns them. Tests act
-// as the server here; app code never computes an asset id this way.
+// as the server here; app code never computes an asset id this way —
+// including the name -> id resolution inside stat blocks, mirrored below.
+const resolveMockStatBlock = (asset: StatBlockAsset) => {
+  const { actionNames, appearanceFeatureNames, stanceNames, ...ints } = asset;
+  return {
+    ...ints,
+    actionIds: actionNames.map((name) => actionIdOf(name as ActionName)),
+    appearanceFeatureIds: appearanceFeatureNames.map((name) =>
+      appearanceFeatureIndexOf(name as AppearanceFeatureName),
+    ),
+    stanceIds: stanceNames.map((name) => stanceIdOf(name as StanceName)),
+  };
+};
+
 export const mockAssetTables = () => ({
   actions: mockTable(
     Object.keys(ACTIONS).map((name, id) => ({ id, name })),
@@ -102,12 +116,35 @@ export const mockAssetTables = () => ({
   appearance_features: mockTable(
     Object.keys(APPEARANCE_FEATURES).map((name, index) => ({ index, name })),
   ),
-  stances: mockTable(Object.keys(STANCES).map((name, id) => ({ id, name }))),
-  armaments: mockTable(
-    Object.keys(ARMAMENTS).map((name, id) => ({ id, name })),
+  stances: mockTable(
+    Object.entries(STANCES).map(([name, stance], id) => ({
+      id,
+      name,
+      requirements: stance.requirements,
+      statBlock: resolveMockStatBlock(stance.statBlock),
+    })),
   ),
-  armors: mockTable(Object.keys(ARMORS).map((name, id) => ({ id, name }))),
-  relics: mockTable(Object.keys(RELICS).map((name, id) => ({ id, name }))),
+  armaments: mockTable(
+    Object.entries(ARMAMENTS).map(([name, statBlock], id) => ({
+      id,
+      name,
+      statBlock: resolveMockStatBlock(statBlock),
+    })),
+  ),
+  armors: mockTable(
+    Object.entries(ARMORS).map(([name, statBlock], id) => ({
+      id,
+      name,
+      statBlock: resolveMockStatBlock(statBlock),
+    })),
+  ),
+  relics: mockTable(
+    Object.entries(RELICS).map(([name, statBlock], id) => ({
+      id,
+      name,
+      statBlock: resolveMockStatBlock(statBlock),
+    })),
+  ),
 });
 
 export const actionIdOf = (name: ActionName): number =>
@@ -174,6 +211,7 @@ export const stdbWrapper = (
       armor_components: mockTable([]),
       relics_components: mockTable([]),
       stance_loadouts_components: mockTable([]),
+      equipment_components: mockTable([]),
       queued_action_state_components: mockTable([]),
       action_hotkeys_components: mockTable([]),
       appearance_features_components: mockTable([]),

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { StatBlock } from "../../../stdb/types";
 import { EntityId } from "../../trpg";
 import { usePlayerEntity } from "./components";
 import { useTableData } from "./useTableData";
@@ -97,6 +98,91 @@ export const useMyRelicIds = (): number[] => {
     },
     [playerEntity],
   );
+};
+
+/** The armaments ACTUALLY in hand right now (the equipment cache), as
+ * opposed to the configured loadout assignments. */
+export const useMyEquipmentArmamentIds = (): number[] => {
+  const playerEntity = usePlayerEntity();
+  return useTableData(
+    "equipment_components",
+    (t) => {
+      if (playerEntity == null) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (((t.entityId as any).find(playerEntity)?.armamentIds ??
+        []) as number[]).slice();
+    },
+    [playerEntity],
+  );
+};
+
+const useStatBlockMap = (table: "armaments" | "armors" | "relics") =>
+  useTableData(
+    table,
+    (t) =>
+      new Map<number, StatBlock>(
+        [...t.iter()].map((row) => [row.id, row.statBlock]),
+      ),
+    [],
+  );
+
+export const useArmamentStatBlocks = (): Map<number, StatBlock> =>
+  useStatBlockMap("armaments");
+
+/** Resolves any owned item to its gear asset's stat block. */
+export const useGearStatBlockOf = (): ((
+  item: OwnedItem,
+) => StatBlock | null) => {
+  const armamentStats = useStatBlockMap("armaments");
+  const armorStats = useStatBlockMap("armors");
+  const relicStats = useStatBlockMap("relics");
+  return useMemo(
+    () => (item: OwnedItem) =>
+      (item.kind === "Armament"
+        ? armamentStats
+        : item.kind === "Armor"
+          ? armorStats
+          : relicStats
+      ).get(item.assetId) ?? null,
+    [armamentStats, armorStats, relicStats],
+  );
+};
+
+// Instance-level toggling over counted asset ids: among the owned items of
+// one asset, the first `count` render as on. Shared by every menu that
+// proposes a counted-multiset of gear.
+export const instanceIndex = (items: OwnedItem[], item: OwnedItem): number =>
+  items
+    .filter((other) => other.assetId === item.assetId)
+    .findIndex((other) => other.entityId === item.entityId);
+
+export const assetInstanceIsOn = ({
+  ids,
+  item,
+  items,
+}: {
+  ids: number[];
+  item: OwnedItem;
+  items: OwnedItem[];
+}): boolean =>
+  instanceIndex(items, item) <
+  ids.filter((id) => id === item.assetId).length;
+
+export const toggledAssetIds = ({
+  ids,
+  item,
+  items,
+}: {
+  ids: number[];
+  item: OwnedItem;
+  items: OwnedItem[];
+}): number[] => {
+  if (assetInstanceIsOn({ ids, item, items })) {
+    const next = [...ids];
+    next.splice(next.indexOf(item.assetId), 1);
+    return next;
+  }
+  return [...ids, item.assetId];
 };
 
 export type StanceAssignment = { stanceId: number; armamentIds: number[] };

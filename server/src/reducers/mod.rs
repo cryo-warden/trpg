@@ -2,7 +2,7 @@ use ecs::WithEcs;
 use spacetimedb::{reducer, ReducerContext, ScheduleAt, Table, TimeDuration};
 
 use crate::{
-    account::{account_of, AccountId},
+    account::account_of,
     ecs_extension::EcsExtension,
     entity::*,
     reducers::system_timer::{system_timers, SystemTimer},

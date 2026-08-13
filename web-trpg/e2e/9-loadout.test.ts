@@ -155,12 +155,15 @@ test("loadout assignments re-arm on swap; a pocketed blade is not IN HAND", asyn
     player.reducers.setStance({ stanceId: duelingId }),
   ).rejects.toThrow(/requirements/);
 
-  // Assign the sword to the ACTIVE stance: re-arms immediately, the blade
-  // returns, and the stance opens again.
+  // Assigning to the ACTIVE stance is CONFIGURATION ONLY — nothing changes
+  // in hand until a stance change pays the round. Re-entering standing
+  // re-arms from the fresh assignment.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
     armamentIds: [swordId],
   });
+  expect(myActionNames()).not.toContain("test_slash");
+  await player.reducers.setStance({ stanceId: standingId });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
   await player.reducers.setStance({ stanceId: duelingId });
   await waitFor(

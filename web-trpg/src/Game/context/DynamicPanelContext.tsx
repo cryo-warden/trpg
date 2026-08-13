@@ -1,7 +1,12 @@
 import { createContext, useContext } from "react";
 
 // TODO Add "actions" to show own actions and set their hotkeys.
-export type DynamicPanelMode = "location" | "inventory" | "equipment" | "stats";
+export type DynamicPanelMode =
+  | "location"
+  | "inventory"
+  | "equipment"
+  | "stances"
+  | "stats";
 
 export const DynamicPanelContext = createContext<{
   mode: DynamicPanelMode;

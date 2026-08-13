@@ -50,6 +50,7 @@ export const componentQueries = [
   "select * from armor_components",
   "select * from relics_components",
   "select * from stance_loadouts_components",
+  "select * from equipment_components",
   "select * from action_state_components",
   "select * from allegiance_components",
   "select * from enemy_controller_components",

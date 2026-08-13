@@ -1,5 +1,10 @@
 import { useMemo } from "react";
-import { ActionAsset, AppearanceFeatureAsset } from "../../../stdb/types";
+import {
+  ActionAsset,
+  AppearanceFeatureAsset,
+  Stance,
+} from "../../../stdb/types";
+import { StanceReachabilityGraph } from "../../domain/stanceReachability";
 import {
   ACTIONS,
   ACTION_APPEARANCES,
@@ -35,6 +40,60 @@ export const useStanceRows = (): { id: number; name: string }[] =>
         .sort((a, b) => a.id - b.id),
     [],
   );
+
+/** The full subscribed stance rows (stat block and requirements included),
+ * ordered by id — the stances menu renders from these. */
+export const useStanceDetailRows = (): Stance[] =>
+  useTableData(
+    "stances",
+    (table) => [...table.iter()].sort((a, b) => a.id - b.id),
+    [],
+  );
+
+/** The graph the stances menu closes over: each stance's action and stance
+ * grants (from its subscribed stat block), and each action's SetStance
+ * targets (from the client's own asset Records — the server does not
+ * publish effects, but the client authored them). */
+export const useStanceReachabilityGraph = (): StanceReachabilityGraph => {
+  const stanceRows = useStanceDetailRows();
+  const actionRows = useTableData(
+    "actions",
+    (table) => [...table.iter()].map(({ id, name }) => ({ id, name })),
+    [],
+  );
+  return useMemo(() => {
+    const stanceIdsByName = new Map(
+      stanceRows.map((row) => [row.name, row.id]),
+    );
+    const stanceGrants = new Map(
+      stanceRows.map((row) => [
+        row.id,
+        {
+          actionIds: [...row.statBlock.actionIds],
+          stanceIds: [...row.statBlock.stanceIds],
+        },
+      ]),
+    );
+    const actionStanceTargets = new Map<number, number[]>();
+    for (const { id, name } of actionRows) {
+      const asset = toNamedActionAsset(name);
+      if (asset == null) {
+        continue;
+      }
+      const targets = asset.rounds
+        .flatMap((round) => round.effects)
+        .flatMap((effect) =>
+          effect.tag === "SetStance"
+            ? (stanceIdsByName.get(effect.value) ?? [])
+            : [],
+        );
+      if (targets.length > 0) {
+        actionStanceTargets.set(id, targets);
+      }
+    }
+    return { stanceGrants, actionStanceTargets };
+  }, [stanceRows, actionRows]);
+};
 
 export type NamedActionAsset = { name: ActionName } & ActionAsset;
 

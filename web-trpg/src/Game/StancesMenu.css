@@ -1,0 +1,25 @@
+/* One card per stance. Horizontal movement is LOCKED to whole stances
+ * (mandatory snap, no stopping between cards); vertical scrolling inside a
+ * card is free and independent per card. */
+.StancesMenu {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+
+  .stanceCard {
+    flex: 0 0 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    overflow-y: auto;
+    padding: 0 0.4em;
+
+    h3,
+    h4 {
+      margin: 0.2em 0;
+    }
+  }
+}
