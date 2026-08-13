@@ -19,14 +19,18 @@ const queries = [
 
 type ConnectionStatus = "connecting" | "connected" | "error";
 
-// The database URI: explicit override first, else SpacetimeDB on the same
-// host that served this client — localhost stays localhost, and a LAN
-// browser reaches the LAN host, with no per-device configuration. The PORT
-// alone is also overridable (VITE_STDB_PORT, baked at build): production
-// runs its own separate SpacetimeDB instance on a different port.
+// The database URI: explicit override first, else DERIVED from the page
+// itself — the scheme follows the page's scheme (an https page gets wss;
+// browsers refuse plain ws from a secure page as mixed content) and the
+// host is whatever served the client, so localhost, LAN, and the public
+// domain all work with no per-device configuration. The PORT alone is
+// overridable (VITE_STDB_PORT, baked at build): production runs its own
+// separate SpacetimeDB instance on a different port.
 const STDB_URI: string =
   import.meta.env.VITE_STDB_URI ??
-  `ws://${window.location.hostname}:${import.meta.env.VITE_STDB_PORT ?? "3000"}`;
+  `${window.location.protocol === "https:" ? "wss" : "ws"}://${
+    window.location.hostname
+  }:${import.meta.env.VITE_STDB_PORT ?? "3000"}`;
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
