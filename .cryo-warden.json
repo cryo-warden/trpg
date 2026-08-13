@@ -3,7 +3,7 @@
   "processes": [
     {
       "name": "spacetimedb",
-      "start_command": "bash -c 'exec spacetime start --listen-addr 0.0.0.0:$TRPG_STDB_PORT --data-dir \"$TRPG_STDB_DATA_DIR\"'",
+      "start_command": "bash scripts/prod-stdb.sh",
       "proxied_ports": ["TRPG_STDB_PORT"]
     },
     {
@@ -13,7 +13,7 @@
     },
     {
       "name": "web",
-      "start_command": "bash -c 'cd web-trpg && exec bunx vite preview --host 0.0.0.0 --port $TRPG_WEB_PORT'",
+      "start_command": "bash scripts/prod-web.sh",
       "proxied_ports": ["TRPG_WEB_PORT"]
     }
   ],
