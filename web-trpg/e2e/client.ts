@@ -30,6 +30,30 @@ export const connect = ({
       .build();
   });
 
+/** The player entity belonging to the named account — never "row [0]":
+ * EVERY account (including the e2e admin's) gets a player from
+ * player_provision_system, so tests must select by account. Requires the
+ * connection to subscribe accounts and player_controller_components. */
+export const playerEntityIdFor = async (
+  connection: DbConnection,
+  accountName: string,
+): Promise<bigint> => {
+  let found: bigint | undefined;
+  await waitFor(() => {
+    const account = [...connection.db.accounts.iter()].find(
+      (row) => row.name === accountName,
+    );
+    if (account == null) {
+      return false;
+    }
+    found = [...connection.db.player_controller_components.iter()].find(
+      (row) => row.accountId === account.id,
+    )?.entityId;
+    return found != null;
+  }, 30000);
+  return found!;
+};
+
 /** Poll until a predicate holds or the timeout elapses. */
 export const waitFor = async (
   predicate: () => boolean,

@@ -2,7 +2,7 @@ import { test, expect, beforeAll, afterAll } from "bun:test";
 import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
-import { connect, waitFor } from "./client";
+import { connect, playerEntityIdFor, waitFor } from "./client";
 import { claimAdmin } from "./admin";
 import { stancePack } from "./testAssets";
 
@@ -23,7 +23,9 @@ const actionIdByName = (name: string): number =>
   [...player.db.actions.iter()].find((row) => row.name === name)!.id;
 
 const myActionIds = (): number[] => {
-  const row = [...player.db.actions_components.iter()][0];
+  const row = [...player.db.actions_components.iter()].find(
+    (r) => r.entityId === playerEntityId,
+  );
   return row == null ? [] : [...row.actionIds];
 };
 
@@ -44,12 +46,11 @@ beforeAll(async () => {
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
       "SELECT * FROM player_controller_components",
+      "SELECT * FROM accounts",
     ]);
   await player.reducers.createAccount({ name: "stancer" });
 
-  await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
-  playerEntityId = [...player.db.player_controller_components.iter()][0]
-    .entityId;
+  playerEntityId = await playerEntityIdFor(player, "stancer");
   await waitFor(() => player.db.stances.count() === 3n, 30000);
   // The stats system has run once the derived actions arrive.
   await waitFor(() => myActionIds().length > 0, 30000);

@@ -2,7 +2,7 @@ import { test, expect, beforeAll, afterAll } from "bun:test";
 import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
-import { connect, waitFor } from "./client";
+import { connect, playerEntityIdFor, waitFor } from "./client";
 import { claimAdmin } from "./admin";
 import { divePack } from "./testAssets";
 
@@ -45,12 +45,11 @@ beforeAll(async () => {
       "SELECT * FROM item_components",
       "SELECT * FROM location_components",
       "SELECT * FROM player_controller_components",
+      "SELECT * FROM accounts",
     ]);
   await player.reducers.createAccount({ name: "diver" });
 
-  await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
-  playerEntityId = [...player.db.player_controller_components.iter()][0]
-    .entityId;
+  playerEntityId = await playerEntityIdFor(player, "diver");
   await waitFor(() => player.db.item_components.count() > 0, 30000);
 }, 60000);
 

@@ -242,19 +242,23 @@ pub fn insert_account(ctx: &ReducerContext, name: String) -> Result<Account, Str
         .map_err(|e| format!("{}", e))
 }
 
+// Account creation is ONLY account creation: the player entity is a
+// separate concern, provisioned by player_provision_system for any account
+// lacking one — a single path shared by every way an account comes to
+// exist (created, provisioned, bootstrapped).
 #[reducer]
 pub fn create_account(ctx: &ReducerContext, name: String) -> Result<(), String> {
     require_unattached(ctx, ctx.sender())?;
     let account = insert_account(ctx, name)?;
-    attach_identity(ctx, ctx.sender(), account.id)?;
-    crate::reducers::on_account_created(ctx, account.id)
+    attach_identity(ctx, ctx.sender(), account.id)
 }
 
-/// Admin provisioning: creates a CLAIMABLE account — password set, player
-/// created, no identity attached — so its first device attaches through the
-/// ordinary password login. This is how dev bundles seed playtest accounts
-/// and how a GM will hand out accounts; the same no-lurking rule applies the
-/// moment the first device claims it.
+/// Admin provisioning: creates a CLAIMABLE account — password set, no
+/// identity attached — so its first device attaches through the ordinary
+/// password login. This is how dev bundles seed playtest accounts and how a
+/// GM will hand out accounts; the same no-lurking rule applies the moment
+/// the first device claims it. (The player entity arrives separately, from
+/// player_provision_system, like every account's.)
 #[reducer]
 pub fn provision_account(
     ctx: &ReducerContext,
@@ -269,7 +273,7 @@ pub fn provision_account(
         account.requires_password_rotation = true;
         ctx.db.accounts().id().update(account.clone());
     }
-    crate::reducers::on_account_created(ctx, account.id)
+    Ok(())
 }
 
 /// Password login exists ONLY to bootstrap an account that no device holds

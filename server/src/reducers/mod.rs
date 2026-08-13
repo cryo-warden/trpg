@@ -25,14 +25,6 @@ pub fn init(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
-/// A player exists per ACCOUNT and is created exactly once, when the account
-/// is created — never implicitly at connect. Called from create_account.
-pub fn on_account_created(ctx: &ReducerContext, account_id: AccountId) -> Result<(), String> {
-    let p = ctx.ecs().new_player(account_id)?;
-    log::debug!("Created player {} for account {}.", p.entity_id(), account_id);
-    Ok(())
-}
-
 #[reducer(client_connected)]
 pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
     // An unattached identity may connect (it needs the connection to create an
@@ -42,28 +34,12 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
         return Ok(());
     };
     let Some(p) = ctx.ecs().from_player_account(account_id) else {
-        // A playerless account is legitimate: bootstrap_admin creates the
-        // account ALONE, necessarily before any assets exist (so no player
-        // blob could have been instantiated). Never reject the connection —
-        // that locks the operator out of the very connection they need to
-        // push assets. Heal late instead: once the new-player blob exists,
-        // the next connect creates the player.
-        match ctx.ecs().new_player(account_id) {
-            Ok(p) => {
-                log::info!(
-                    "Created player {} late for previously playerless account {}.",
-                    p.entity_id(),
-                    account_id
-                );
-            }
-            Err(reason) => {
-                log::info!(
-                    "Account {} connected playerless ({}); admin operations remain available.",
-                    account_id,
-                    reason
-                );
-            }
-        }
+        // A playerless account is fine at connect: player entities are the
+        // player_provision_system's job (one path for every account,
+        // whether created, provisioned, or bootstrapped), and it will act
+        // once the new-player blob exists. Connections are never rejected
+        // over it.
+        log::debug!("Connected account {} (no player yet).", account_id);
         return Ok(());
     };
     p.delete_player_deactivation_timer();

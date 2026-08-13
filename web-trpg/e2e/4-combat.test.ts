@@ -13,8 +13,16 @@ import { combatPack } from "./testAssets";
 let admin: DbConnection;
 let player: DbConnection;
 
+// The enemy is the entity WITH an enemy controller — never "hp row [0]":
+// every account (the e2e admin's included) gets an auto-provisioned player,
+// and players carry hp too.
+const enemyId = (): bigint | undefined =>
+  [...player.db.enemy_controller_components.iter()][0]?.entityId;
+
 const enemyHp = (): number | undefined =>
-  [...player.db.hp_components.iter()][0]?.hp;
+  [...player.db.hp_components.iter()].find(
+    (row) => row.entityId === enemyId(),
+  )?.hp;
 
 beforeAll(async () => {
   requirePrereqs();
@@ -29,13 +37,13 @@ beforeAll(async () => {
     .subscriptionBuilder()
     .subscribe([
       "SELECT * FROM hp_components",
+      "SELECT * FROM enemy_controller_components",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM actions",
     ]);
   await player.reducers.createAccount({ name: "fighter" });
 
-  // The only entity with hp is the seeded enemy; the player controller is ours.
-  await waitFor(() => player.db.hp_components.count() > 0, 30000);
+  await waitFor(() => enemyHp() != null, 30000);
   await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
 }, 60000);
 
@@ -45,7 +53,7 @@ afterAll(() => {
 });
 
 test("attacking a co-located enemy reduces its hp", async () => {
-  const enemyId = [...player.db.hp_components.iter()][0].entityId;
+  const targetId = enemyId()!;
   const before = enemyHp();
   expect(before).toBe(10);
 
@@ -55,7 +63,7 @@ test("attacking a co-located enemy reduces its hp", async () => {
   const attackActionId = [...player.db.actions.iter()].find(
     (row) => row.name === "test_attack",
   )!.id;
-  player.reducers.act({ actionId: attackActionId, targetEntityId: enemyId });
+  player.reducers.act({ actionId: attackActionId, targetEntityId: targetId });
 
   await waitFor(() => (enemyHp() ?? 10) < 10, 30000);
   expect(enemyHp()).toBeLessThan(10);

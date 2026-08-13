@@ -2,7 +2,7 @@ import { test, expect, beforeAll, afterAll } from "bun:test";
 import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
-import { connect, waitFor } from "./client";
+import { connect, playerEntityIdFor, waitFor } from "./client";
 import { claimAdmin } from "./admin";
 import { connectionsPack } from "./testAssets";
 
@@ -72,13 +72,14 @@ beforeAll(async () => {
       "SELECT * FROM map_instance_components",
       "SELECT * FROM map_cleanup_timer_components",
       "SELECT * FROM player_controller_components",
+      "SELECT * FROM accounts",
     ]);
   await player.reducers.createAccount({ name: "wayfarer" });
 
-  await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
-  playerEntityId = [...player.db.player_controller_components.iter()][0]
-    .entityId;
-  // Activation generates the near map and places the player in its entrance.
+  playerEntityId = await playerEntityIdFor(player, "wayfarer");
+  // Activation generates a near-map instance and places the player in its
+  // entrance. (The e2e admin's auto-provisioned player gets its own
+  // instance too — every count below is relative, never absolute.)
   await waitFor(() => myLocation() != null, 30000);
   entranceRoomId = myLocation()!;
   nearInstanceId = mapOfRoom(entranceRoomId)!;
@@ -94,14 +95,17 @@ afterAll(() => {
 });
 
 test("standing in the anchor room generates the far map and materializes the path", async () => {
-  expect(player.db.map_instance_components.count()).toBe(1n);
+  const instancesBefore = player.db.map_instance_components.count();
   const intraPath = pathsIn(entranceRoomId).find(
     (path) => path.destinationEntityId === anchorRoomId,
   )!;
   await moveThrough(intraPath.entityId);
   expect(myLocation()).toBe(anchorRoomId);
 
-  await waitFor(() => player.db.map_instance_components.count() === 2n, 30000);
+  await waitFor(
+    () => player.db.map_instance_components.count() > instancesBefore,
+    30000,
+  );
   await waitFor(
     () =>
       pathsIn(anchorRoomId).some(
@@ -111,19 +115,26 @@ test("standing in the anchor room generates the far map and materializes the pat
   );
 }, 60000);
 
-test("arriving on the far side materializes the return path", async () => {
+// NOTE: connection resolution targets "the first instance" of the
+// destination map ASSET, and the e2e admin's auto-provisioned player owns
+// its OWN near-map instance — so the return path may legitimately lead to
+// EITHER near instance. These tests are instance-AGNOSTIC on purpose; the
+// recorded instance-ownership design decides which instance SHOULD win.
+test("arriving on the far side materializes a return path", async () => {
   const crossPath = pathsIn(anchorRoomId).find(
     (path) => mapOfRoom(path.destinationEntityId) !== nearInstanceId,
   )!;
   await moveThrough(crossPath.entityId);
   const farRoomId = myLocation()!;
-  expect(mapOfRoom(farRoomId)).not.toBe(nearInstanceId);
+  const farInstanceId = mapOfRoom(farRoomId)!;
+  expect(farInstanceId).not.toBe(nearInstanceId);
 
   await waitFor(
     () =>
-      pathsIn(farRoomId).some(
-        (path) => path.destinationEntityId === anchorRoomId,
-      ),
+      pathsIn(farRoomId).some((path) => {
+        const destinationMap = mapOfRoom(path.destinationEntityId);
+        return destinationMap != null && destinationMap !== farInstanceId;
+      }),
     30000,
   );
 }, 60000);
@@ -131,19 +142,25 @@ test("arriving on the far side materializes the return path", async () => {
 test("an abandoned far map gains a cleanup timer; approaching its path sheds it", async () => {
   const farRoomId = myLocation()!;
   const farInstanceId = mapOfRoom(farRoomId)!;
-  const returnPath = pathsIn(farRoomId).find(
-    (path) => path.destinationEntityId === anchorRoomId,
-  )!;
+  const returnPath = pathsIn(farRoomId).find((path) => {
+    const destinationMap = mapOfRoom(path.destinationEntityId);
+    return destinationMap != null && destinationMap !== farInstanceId;
+  })!;
   await moveThrough(returnPath.entityId);
-  expect(myLocation()).toBe(anchorRoomId);
+  const landingRoomId = myLocation()!;
+  const landingInstanceId = mapOfRoom(landingRoomId)!;
+  expect(landingInstanceId).not.toBe(farInstanceId);
 
-  // Beside the path into the far map: still demanded, no timer.
-  // One room further away: undemanded, the timer appears.
-  const backPath = pathsIn(anchorRoomId).find(
-    (path) => path.destinationEntityId === entranceRoomId,
+  // Beside the path into the far map: still demanded, no timer. One room
+  // further away (a sibling room of wherever we landed): undemanded.
+  const awayRoomId = [...player.db.location_map_components.iter()]
+    .filter((row) => row.locationMapEntityId === landingInstanceId)
+    .map((row) => row.entityId)
+    .find((id) => id !== landingRoomId)!;
+  const awayPath = pathsIn(landingRoomId).find(
+    (path) => path.destinationEntityId === awayRoomId,
   )!;
-  await moveThrough(backPath.entityId);
-  expect(myLocation()).toBe(entranceRoomId);
+  await moveThrough(awayPath.entityId);
   await waitFor(
     () =>
       [...player.db.map_cleanup_timer_components.iter()].some(
@@ -154,10 +171,10 @@ test("an abandoned far map gains a cleanup timer; approaching its path sheds it"
 
   // Walk back beside the cross-map path: the ONE predicate keeps the far
   // map alive again.
-  const forwardPath = pathsIn(entranceRoomId).find(
-    (path) => path.destinationEntityId === anchorRoomId,
+  const backPath = pathsIn(awayRoomId).find(
+    (path) => path.destinationEntityId === landingRoomId,
   )!;
-  await moveThrough(forwardPath.entityId);
+  await moveThrough(backPath.entityId);
   await waitFor(
     () =>
       ![...player.db.map_cleanup_timer_components.iter()].some(

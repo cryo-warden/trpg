@@ -1,5 +1,7 @@
 use crate::{
+    account::accounts,
     action::{actions, ActionEffect, ActionHandle},
+    asset::ReducerContextExtension,
     asset::{
         armament::armaments,
         armor::armors,
@@ -74,10 +76,14 @@ pub fn death_system(ecs: Ecs) {
                     + spacetimedb::TimeDuration::from_micros(RESPAWN_DELAY_MICROS),
             );
         } else {
+            // A dead NPC becomes a CORPSE, never a deletion: the controller
+            // goes (it stops acting and stops reading as a threat), but the
+            // entity remains — its name stays in every message about what
+            // happened, and the body is there to see. Map-instance cleanup
+            // eventually sweeps it with the room.
             if handle.enemy_controller().is_some() {
                 handle.delete_enemy_controller();
             }
-            handle.upsert_new_entity_deletion_timer(ecs.timestamp);
         }
     }
 }
@@ -495,6 +501,39 @@ pub fn entity_stats_system(ecs: Ecs) {
     }
 }
 
+/// THE one path by which player entities come to exist: any account without
+/// one gets one, as soon as the new-player blob is available. No connect
+/// hook, no per-account-creation-flavor special case — created, provisioned,
+/// and bootstrapped accounts all converge here.
+pub fn player_provision_system(ecs: Ecs) {
+    if ecs.get_new_player_blob().is_none() {
+        // No assets yet (e.g. a freshly bootstrapped instance): nothing to
+        // instantiate players from. The trigger stays armed.
+        return;
+    }
+    let account_ids: Vec<_> = ecs.db.accounts().iter().map(|a| a.id).collect();
+    for account_id in account_ids {
+        if ecs.from_player_account(account_id).is_none() {
+            match ecs.new_player(account_id) {
+                Ok(p) => {
+                    log::info!(
+                        "Provisioned player {} for account {}.",
+                        p.entity_id(),
+                        account_id
+                    );
+                }
+                Err(reason) => {
+                    log::error!(
+                        "Failed to provision a player for account {}: {}",
+                        account_id,
+                        reason
+                    );
+                }
+            }
+        }
+    }
+}
+
 pub fn player_activation_system(ecs: Ecs) {
     for p in ecs.iter_player_controller() {
         // WIP Do NOT add a location if player is inactive. Consider adding a flag when deactivating.
@@ -788,6 +827,7 @@ pub fn execute_all_systems(ecs: Ecs) {
     entity_deletion_timer_system(ecs);
     player_deactivation_timer_system(ecs);
     entity_stats_system(ecs);
+    player_provision_system(ecs);
     player_activation_system(ecs);
     map_demand_system(ecs);
     enemy_control_system(ecs);

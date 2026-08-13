@@ -19,9 +19,11 @@ export const NEW_PLAYER_BLOB = blob({
   // reachable and grants slash. One hand stays free, so bop survives.
   stanceName: "standing",
   armamentNames: ["sword"],
-  traitNames: ["admin", "mobile", "bopper"],
+  // A REASONABLE DEFAULT HUMAN: no admin trait (its grant-everything set
+  // distorts testing); admin is a role on the account, not a body plan.
+  traitNames: ["mobile", "bopper"],
   // Ordered: bar position auto-assigns the numeric hotkey (1..9, then 0).
-  pinnedActionNames: ["slash", "boppity_bop", "quick_move", "divine_heal"],
+  pinnedActionNames: ["slash", "boppity_bop", "quick_move"],
   allegiance: {
     allegianceEntityId: { tag: "Named", value: "allegiance1" },
   },

@@ -2,7 +2,7 @@ import { test, expect, beforeAll, afterAll } from "bun:test";
 import type { DbConnection } from "../src/stdb";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
-import { connect, waitFor } from "./client";
+import { connect, playerEntityIdFor, waitFor } from "./client";
 import { claimAdmin } from "./admin";
 import { deathPack } from "./testAssets";
 
@@ -46,15 +46,14 @@ beforeAll(async () => {
       "SELECT * FROM location_components",
       "SELECT * FROM path_components",
       "SELECT * FROM checkpoint_components",
+      "SELECT * FROM accounts",
       "SELECT * FROM checkpoint_object_components",
       "SELECT * FROM enemy_controller_components",
       "SELECT * FROM player_controller_components",
     ]);
   await player.reducers.createAccount({ name: "phoenix" });
 
-  await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
-  playerEntityId = [...player.db.player_controller_components.iter()][0]
-    .entityId;
+  playerEntityId = await playerEntityIdFor(player, "phoenix");
   await waitFor(() => player.db.checkpoint_object_components.count() > 0, 30000);
 }, 60000);
 
@@ -77,7 +76,7 @@ test("attuning to the bone dice binds the ABSTRACT checkpoint (map + index)", as
   );
 }, 60000);
 
-test("a slain vermin is deleted outright: dead rats stop nipping", async () => {
+test("a slain vermin becomes a corpse: de-fanged but never deleted", async () => {
   const jabId = idByName(player.db.actions, "test_jab");
   const vermin = [...player.db.enemy_controller_components.iter()].find(
     (row) =>
@@ -89,18 +88,20 @@ test("a slain vermin is deleted outright: dead rats stop nipping", async () => {
     actionId: jabId,
     targetEntityId: vermin.entityId,
   });
+  // The controller goes (no more nipping, no longer a threat)...
   await waitFor(
     () =>
-      ![...player.db.hp_components.iter()].some(
+      ![...player.db.enemy_controller_components.iter()].some(
         (row) => row.entityId === vermin.entityId,
       ),
     30000,
   );
-  expect(
-    [...player.db.enemy_controller_components.iter()].some(
-      (row) => row.entityId === vermin.entityId,
-    ),
-  ).toBe(false);
+  // ...but the body remains, at zero hp, name intact for the narration.
+  const corpseHp = [...player.db.hp_components.iter()].find(
+    (row) => row.entityId === vermin.entityId,
+  );
+  expect(corpseHp).toBeDefined();
+  expect(corpseHp!.hp).toBe(0);
 }, 60000);
 
 test("death entrances (no acting), then wakes the player in the freshly generated haven", async () => {
