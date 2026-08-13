@@ -121,6 +121,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   const targetAllegiance = useAllegianceComponent(focus);
   const targetPath = usePathComponent(focus);
   const targetItem = useItemComponent(focus);
+  const targetLocation = useLocationComponent(focus);
   const targetCheckpointObject = useCheckpointObjectComponent(focus);
 
   return useMemo(
@@ -131,6 +132,9 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
         targetHasHp: !!targetHp,
         targetHasPath: !!targetPath,
         targetHasItem: !!targetItem,
+        targetCarriedByPlayer:
+          playerEntity != null &&
+          targetLocation?.locationEntityId === playerEntity,
         targetHasCheckpointObject: !!targetCheckpointObject,
         playerEntity,
         target: focus,
@@ -146,6 +150,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
       targetAllegiance,
       targetPath,
       targetItem,
+      targetLocation,
       targetCheckpointObject,
       focus,
     ],

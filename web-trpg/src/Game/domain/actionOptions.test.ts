@@ -80,6 +80,7 @@ test("getActionOptions offers attacks and moves against a hostile, reachable tar
       targetHasHp: true,
       targetHasPath: true,
       targetHasItem: false,
+      targetCarriedByPlayer: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([attackId, moveId]);
@@ -94,6 +95,7 @@ test("getActionOptions offers buffs against an ally with hp", () => {
       targetHasHp: true,
       targetHasPath: false,
       targetHasItem: false,
+      targetCarriedByPlayer: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([buffId]);
@@ -108,12 +110,13 @@ test("getActionOptions offers nothing when the target has no hp and no path", ()
       targetHasHp: false,
       targetHasPath: false,
       targetHasItem: false,
+      targetCarriedByPlayer: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([]);
 });
 
-test("getActionOptions offers inventory actions against an item target", () => {
+test("an item beside you offers take, never drop", () => {
   const takeId = actionIdOf("take");
   const dropId = actionIdOf("drop");
   expect(
@@ -124,9 +127,27 @@ test("getActionOptions offers inventory actions against an item target", () => {
       targetHasHp: false,
       targetHasPath: false,
       targetHasItem: true,
+      targetCarriedByPlayer: false,
       targetHasCheckpointObject: false,
     }),
-  ).toEqual([takeId, dropId]);
+  ).toEqual([takeId]);
+});
+
+test("a carried item offers drop, never take — decided by entity containment alone", () => {
+  const takeId = actionIdOf("take");
+  const dropId = actionIdOf("drop");
+  expect(
+    getActionOptions({
+      ...enemy,
+      actionIds: [...allIds, takeId, dropId],
+      actionAssetOf,
+      targetHasHp: false,
+      targetHasPath: false,
+      targetHasItem: true,
+      targetCarriedByPlayer: true,
+      targetHasCheckpointObject: false,
+    }),
+  ).toEqual([dropId]);
 });
 
 test("getActionOptions offers attune against a checkpoint object", () => {
@@ -139,6 +160,7 @@ test("getActionOptions offers attune against a checkpoint object", () => {
       targetHasHp: false,
       targetHasPath: false,
       targetHasItem: false,
+      targetCarriedByPlayer: false,
       targetHasCheckpointObject: true,
     }),
   ).toEqual([attuneId]);
@@ -153,6 +175,7 @@ test("getActionOptions drops unknown action ids", () => {
       targetHasHp: true,
       targetHasPath: true,
       targetHasItem: false,
+      targetCarriedByPlayer: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([]);

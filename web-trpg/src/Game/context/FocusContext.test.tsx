@@ -51,6 +51,44 @@ const providerWrapper = (extraTables: Record<string, unknown> = {}) => {
   );
 };
 
+test("FocusProvider keeps focus on carried items and their contents", () => {
+  const { result } = renderHook(
+    () => ({ focus: useFocus(), setFocus: useSetFocus() }),
+    {
+      wrapper: providerWrapper({
+        location_components: mockTable([
+          { entityId: 1n, locationEntityId: 10n }, // player in room 10
+          { entityId: 5n, locationEntityId: 1n }, // bag carried by player
+          { entityId: 6n, locationEntityId: 5n }, // coin inside the bag
+        ]),
+      }),
+    },
+  );
+
+  act(() => result.current.setFocus(5n));
+  expect(result.current.focus).toBe(5n); // carried -> stays focused
+  act(() => result.current.setFocus(6n));
+  expect(result.current.focus).toBe(6n); // nested under oneself -> stays
+  act(() => result.current.setFocus(10n));
+  expect(result.current.focus).toBe(10n); // the room itself
+});
+
+test("FocusProvider clears focus on unknown and on dead entities", () => {
+  const { result } = renderHook(
+    () => ({ focus: useFocus(), setFocus: useSetFocus() }),
+    {
+      wrapper: providerWrapper({
+        hp_components: mockTable([{ entityId: 3n, hp: 0, mhp: 5 }]),
+      }),
+    },
+  );
+
+  act(() => result.current.setFocus(99n)); // no location row at all
+  expect(result.current.focus).toBeNull();
+  act(() => result.current.setFocus(3n)); // co-located but dead
+  expect(result.current.focus).toBeNull();
+});
+
 test("FocusProvider clears a focus that is not co-located with the player", () => {
   const { result } = renderHook(
     () => ({ focus: useFocus(), setFocus: useSetFocus() }),

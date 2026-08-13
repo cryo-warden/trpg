@@ -36,6 +36,11 @@ export type ActionOptionInputs = AllegianceInputs & {
   targetHasPath: boolean;
   /** The target is an item entity (takeable/droppable gear). */
   targetHasItem: boolean;
+  /** The target ENTITY (by id, never by name or look) is currently carried
+   * by the player — its location is the player entity. Distinguishes drop
+   * (carried) from take (beside you); identically named items are separate
+   * entities and never confuse this. */
+  targetCarriedByPlayer: boolean;
   /** The target is attunable fortune-telling scenery (a checkpoint). */
   targetHasCheckpointObject: boolean;
 };
@@ -47,6 +52,7 @@ export const getActionOptions = ({
   targetHasHp,
   targetHasPath,
   targetHasItem,
+  targetCarriedByPlayer,
   targetHasCheckpointObject,
   ...allegiance
 }: ActionOptionInputs): ActionId[] => {
@@ -63,13 +69,27 @@ export const getActionOptions = ({
         return targetHasHp && ally;
       case "Move":
         return targetHasPath;
-      // Focus candidates are already within reach (co-located or carried);
-      // the server enforces which of take/drop actually applies.
-      case "Inventory":
-        return targetHasItem;
-      // Hit the deck where you stand, or dive at an item to grab it.
+      // Take applies to items BESIDE you, drop to items you CARRY — decided
+      // per entity id via containment, never by anything the item looks
+      // like. Which verb an Inventory action is comes from its effects.
+      case "Inventory": {
+        if (!targetHasItem) return false;
+        const effects = action.rounds.flatMap((round) => round.effects);
+        if (effects.some((effect) => effect.tag === "Take")) {
+          return !targetCarriedByPlayer;
+        }
+        if (effects.some((effect) => effect.tag === "Drop")) {
+          return targetCarriedByPlayer;
+        }
+        return false;
+      }
+      // Hit the deck where you stand, or dive at an item BESIDE you to
+      // grab it (never one already carried).
       case "Dive":
-        return targetHasItem || allegiance.target === allegiance.playerEntity;
+        return (
+          (targetHasItem && !targetCarriedByPlayer) ||
+          allegiance.target === allegiance.playerEntity
+        );
       case "Attune":
         return targetHasCheckpointObject;
       // Deliberate stance changes act on yourself alone.
