@@ -115,7 +115,7 @@ test("death entrances (no acting), then wakes the player in the freshly generate
   await waitFor(() => myHp()?.hp === 0, 30000);
   await expect(
     player.reducers.act({ actionId: jabId, targetEntityId: playerEntityId }),
-  ).rejects.toThrow(/trance/);
+  ).rejects.toThrow(/dead/);
 
   // The haven map did not exist; waking generates it on demand. The wake
   // room is brand new — neither seeded room.

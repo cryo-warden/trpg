@@ -306,11 +306,14 @@ secador::secador!(
                                         // The binding is ABSTRACT (map +
                                         // index): the destination room may
                                         // not even exist when death cashes
-                                        // it in.
-                                        owner.upsert_new_checkpoint(
+                                        // it in. Attuning also bestows the
+                                        // same full restoration as the
+                                        // revival it foreshadows.
+                                        owner.clone().upsert_new_checkpoint(
                                             binding.location_map_id,
                                             binding.checkpoint_index,
                                         );
+                                        owner.restore_fully();
                                         true
                                     } else {
                                         false

@@ -34,14 +34,16 @@ pub fn ep_system(ecs: Ecs) {
     }
 }
 
-/// How long the death-trance holds before waking at the checkpoint.
-const RESPAWN_TRANCE_MICROS: i64 = 3_000_000;
+/// How long a dead player's body stays in the scene before the respawn
+/// takes them away. Unrelated to the checkpoint trance fiction — this is
+/// simply being dead for a moment where you fell.
+const RESPAWN_DELAY_MICROS: i64 = 3_000_000;
 
 /// Zero HP resolves here, right after damage settles. NPCs die: they stop
 /// acting immediately and are handed to the deletion timer (which spills
-/// their carried items into the room). A player instead falls into the
-/// death-trance: unable to act until the respawn timer wakes them at their
-/// checkpoint.
+/// their carried items into the room). A dead player's body stays where it
+/// fell, unable to act, until the respawn delay elapses and the wake at
+/// the checkpoint takes them out of the situation.
 pub fn death_system(ecs: Ecs) {
     for e in ecs.iter_hp() {
         if e.hp().hp > 0 {
@@ -49,7 +51,7 @@ pub fn death_system(ecs: Ecs) {
         }
         let handle = e.into_handle();
         if handle.player_controller().is_some() && handle.respawn_timer().is_some() {
-            // Already entranced; the respawn system will wake them.
+            // Already dead and waiting; the respawn system handles the rest.
             continue;
         }
         if handle.action_state().is_some() {
@@ -61,7 +63,7 @@ pub fn death_system(ecs: Ecs) {
         if handle.player_controller().is_some() {
             handle.upsert_new_respawn_timer(
                 ecs.timestamp
-                    + spacetimedb::TimeDuration::from_micros(RESPAWN_TRANCE_MICROS),
+                    + spacetimedb::TimeDuration::from_micros(RESPAWN_DELAY_MICROS),
             );
         } else {
             if handle.enemy_controller().is_some() {
@@ -72,10 +74,12 @@ pub fn death_system(ecs: Ecs) {
     }
 }
 
-/// Waking from the death-trance: resolve the abstract checkpoint (map asset
-/// + checkpoint index) to a real room — generating the map on demand when
-/// no instance exists yet (the same resolution teleportation will use) —
-/// then restore and relocate.
+/// The respawn: once the delay elapses, resolve the abstract checkpoint
+/// (map asset + checkpoint index) to a real room — generating the map on
+/// demand when no instance exists yet (the same resolution teleportation
+/// will use) — then restore and relocate. THIS is where the checkpoint's
+/// trance fiction lives: the player wakes from the trance they sealed by
+/// attuning.
 pub fn respawn_system(ecs: Ecs) {
     for t in ecs.iter_respawn_timer() {
         if t.respawn_timer().timestamp > ecs.timestamp {
@@ -85,14 +89,14 @@ pub fn respawn_system(ecs: Ecs) {
         match handle.checkpoint() {
             None => {
                 log::error!(
-                    "Entity {} finished the death-trance with no checkpoint; waking in place.",
+                    "Entity {} hit its respawn with no checkpoint; reviving in place.",
                     handle.entity_id()
                 );
             }
             Some(checkpoint) => match resolve_checkpoint_room(ecs, &checkpoint) {
                 Err(reason) => {
                     log::error!(
-                        "Entity {} cannot reach its checkpoint ({}); waking in place.",
+                        "Entity {} cannot reach its checkpoint ({}); reviving in place.",
                         handle.entity_id(),
                         reason
                     );
@@ -102,25 +106,7 @@ pub fn respawn_system(ecs: Ecs) {
                 }
             },
         }
-        if let Some(mut hp) = handle.hp() {
-            hp.hp = hp.mhp;
-            hp.accumulated_damage = 0;
-            hp.accumulated_healing = 0;
-            handle.update_hp_row(hp);
-        }
-        if let Some(mut ep) = handle.ep() {
-            ep.ep = ep.mep;
-            handle.update_ep_row(ep);
-        }
-        if handle.fear_status().is_some() {
-            handle.delete_fear_status();
-        }
-        if handle.courage_status().is_some() {
-            handle.delete_courage_status();
-        }
-        if handle.braced_status().is_some() {
-            handle.delete_braced_status();
-        }
+        handle.restore_fully();
         handle.delete_respawn_timer();
     }
 }

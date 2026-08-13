@@ -19,6 +19,10 @@ pub trait EntityHandleExtension {
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
     fn allegiance_id(&self) -> Option<u64>;
     fn is_ally(&self, other_entity_id: u64) -> bool;
+    /// Full restoration: hp and ep to their maxima, every status effect
+    /// shed. Reviving at a checkpoint and attuning to a checkpoint object
+    /// deliberately share this — they are the same blessing.
+    fn restore_fully(&self);
     /// The morale that counts against intimidation: the best rigid morale
     /// among co-located faction members, self included (courage and gear
     /// contributions are already folded in through the stat caches). Your
@@ -148,6 +152,29 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             a == o
         } else {
             false
+        }
+    }
+
+    fn restore_fully(&self) {
+        let e = self.to_handle();
+        if let Some(mut hp) = e.hp() {
+            hp.hp = hp.mhp;
+            hp.accumulated_damage = 0;
+            hp.accumulated_healing = 0;
+            e.update_hp_row(hp);
+        }
+        if let Some(mut ep) = e.ep() {
+            ep.ep = ep.mep;
+            e.update_ep_row(ep);
+        }
+        if e.fear_status().is_some() {
+            e.delete_fear_status();
+        }
+        if e.courage_status().is_some() {
+            e.delete_courage_status();
+        }
+        if e.braced_status().is_some() {
+            e.delete_braced_status();
         }
     }
 
