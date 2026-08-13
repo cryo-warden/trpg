@@ -75,7 +75,7 @@ afterAll(() => {
   player?.disconnect();
 });
 
-test("taking a room item moves it into the player (carrying IS location)", async () => {
+test("taking a sword pockets it AND wields it while the grip allows", async () => {
   const swordItemId = [...player.db.item_components.iter()].find(
     (row) => row.itemRef.tag === "Armament",
   )!.entityId;
@@ -87,7 +87,9 @@ test("taking a room item moves it into the player (carrying IS location)", async
     targetEntityId: swordItemId,
   });
   await waitFor(() => carriedItemIds().includes(swordItemId), 30000);
-  expect(carriedItemIds()).toContain(swordItemId);
+  // The auto-wield: a free hand means the blade goes straight into it —
+  // its granted attack appears without any menu step.
+  await waitFor(() => myActionNames().includes("test_slash"), 30000);
 }, 60000);
 
 test("armor and relics require ownership; owned ones equip", async () => {
@@ -124,33 +126,12 @@ test("armor and relics require ownership; owned ones equip", async () => {
   );
 }, 60000);
 
-test("assigning the taken sword to a stance arms it on swap", async () => {
+test("loadout assignments re-arm on swap; a pocketed blade is not IN HAND", async () => {
   const swordId = idByName(player.db.armaments, "test_sword");
   const duelingId = idByName(player.db.stances, "test_dueling");
   const standingId = idByName(player.db.stances, "test_standing");
 
-  // Unarmed, the blade stance is unreachable.
-  await expect(
-    player.reducers.setStance({ stanceId: duelingId }),
-  ).rejects.toThrow(/requirements/);
-
-  await player.reducers.assignStanceArmaments({
-    stanceId: duelingId,
-    armamentIds: [swordId],
-  });
-
-  // Still standing (no assignment there): still no blade, no slash.
-  expect(myActionNames()).not.toContain("test_slash");
-
-  // Assignments alone do not arm: dueling is only reachable once the blade
-  // is IN HAND — swap while standing keeps failing until standing itself is
-  // assigned the sword.
-  await player.reducers.assignStanceArmaments({
-    stanceId: standingId,
-    armamentIds: [swordId],
-  });
-  await waitFor(() => myActionNames().includes("test_slash"), 30000);
-
+  // The auto-wielded blade makes the blade stance reachable right away.
   await player.reducers.setStance({ stanceId: duelingId });
   await waitFor(
     () =>
@@ -159,7 +140,36 @@ test("assigning the taken sword to a stance arms it on swap", async () => {
       )?.stanceId === duelingId,
     30000,
   );
-  expect(myActionNames()).toContain("test_slash");
+
+  // Assign standing EMPTY and swap back: the loadout re-arm dis-arms —
+  // the sword is still POCKETED (owned) but no longer in hand.
+  await player.reducers.assignStanceArmaments({
+    stanceId: standingId,
+    armamentIds: [],
+  });
+  await player.reducers.setStance({ stanceId: standingId });
+  await waitFor(() => !myActionNames().includes("test_slash"), 30000);
+
+  // Bare-handed, the blade stance refuses: pocketed gear is not wielded.
+  await expect(
+    player.reducers.setStance({ stanceId: duelingId }),
+  ).rejects.toThrow(/requirements/);
+
+  // Assign the sword to the ACTIVE stance: re-arms immediately, the blade
+  // returns, and the stance opens again.
+  await player.reducers.assignStanceArmaments({
+    stanceId: standingId,
+    armamentIds: [swordId],
+  });
+  await waitFor(() => myActionNames().includes("test_slash"), 30000);
+  await player.reducers.setStance({ stanceId: duelingId });
+  await waitFor(
+    () =>
+      [...player.db.active_stance_components.iter()].find(
+        (row) => row.entityId === playerEntityId,
+      )?.stanceId === duelingId,
+    30000,
+  );
 }, 60000);
 
 test("the four-relic cap is enforced", async () => {

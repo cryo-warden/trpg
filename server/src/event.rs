@@ -11,6 +11,7 @@ secador::secador!(
 
         use crate::{
             action::{ActionEffect, ActionId},
+            asset::armament::armaments,
             asset::stance::{special_stances, SpecialStanceKey},
             entity::*,
             entity_handle_extension::EntityHandleExtension,
@@ -20,6 +21,58 @@ secador::secador!(
         pub enum EventType {
             StartAction(ActionId),
             ActionEffect(ActionEffect),
+        }
+
+        /// THE take: shared verbatim by the Take effect and Dive's grab so
+        /// the two can never drift. A co-located item moves into the taker
+        /// (carrying IS location — pocketing needs no free hand), and an
+        /// armament is additionally WIELDED when the grip allows it.
+        /// FUTURE (user note): a fighter with unarmed bonuses may prefer
+        /// empty hands — once "unarmed bonus" is a definable predicate, it
+        /// becomes an additional no-auto-wield condition.
+        fn take_item(ecs: Ecs, taker_entity_id: u64, item_entity_id: u64) -> bool {
+            let item = ecs.db.item_components().entity_id().find(item_entity_id);
+            let taker_location = ecs
+                .db
+                .location_components()
+                .entity_id()
+                .find(taker_entity_id);
+            let item_location = ecs
+                .db
+                .location_components()
+                .entity_id()
+                .find(item_entity_id);
+            match (item, taker_location, item_location) {
+                (Some(item), Some(taker_location), Some(mut item_location))
+                    if item_location.location_entity_id
+                        == taker_location.location_entity_id =>
+                {
+                    item_location.location_entity_id = taker_entity_id;
+                    ecs.db.location_components().entity_id().update(item_location);
+                    if let crate::item::ItemRef::Armament(armament_id) = item.item_ref {
+                        let taker = ecs.find(taker_entity_id);
+                        let current_hand = taker
+                            .total_stat_block()
+                            .map_or(0, |t| i32::from(t.stat_block.hand));
+                        let armament_hand = ecs
+                            .db
+                            .armaments()
+                            .id()
+                            .find(armament_id)
+                            .map_or(0, |a| i32::from(a.stat_block.hand));
+                        if current_hand + armament_hand >= 0 {
+                            let mut armament_ids = taker
+                                .equipment()
+                                .map(|c| c.armament_ids)
+                                .unwrap_or_default();
+                            armament_ids.push(armament_id);
+                            taker.upsert_new_equipment(armament_ids);
+                        }
+                    }
+                    true
+                }
+                _ => false,
+            }
         }
 
         #[table(accessor = observable_events, public, event)]
@@ -92,39 +145,10 @@ secador::secador!(
                             }
                             true
                         }
-                        // Carrying IS location: a taken item's location
-                        // becomes the taker; a dropped item's location
-                        // becomes the dropper's own location.
+                        // Carrying IS location; the shared take_item does
+                        // the move and the grip-permitting auto-wield.
                         ActionEffect::Take => {
-                            let item = ecs
-                                .db
-                                .item_components()
-                                .entity_id()
-                                .find(target_entity_id);
-                            let owner_location = ecs
-                                .db
-                                .location_components()
-                                .entity_id()
-                                .find(self.owner_entity_id);
-                            let target_location = ecs
-                                .db
-                                .location_components()
-                                .entity_id()
-                                .find(target_entity_id);
-                            match (item, owner_location, target_location) {
-                                (Some(_), Some(owner_location), Some(mut target_location))
-                                    if target_location.location_entity_id
-                                        == owner_location.location_entity_id =>
-                                {
-                                    target_location.location_entity_id = self.owner_entity_id;
-                                    ecs.db
-                                        .location_components()
-                                        .entity_id()
-                                        .update(target_location);
-                                    true
-                                }
-                                _ => false,
-                            }
+                            take_item(ecs, self.owner_entity_id, target_entity_id)
                         }
                         ActionEffect::Drop => {
                             let item = ecs
@@ -243,48 +267,9 @@ secador::secador!(
                                         .upsert_new_active_stance(prone.stance_id)
                                         .into_handle()
                                         .upsert_new_braced_status(*defense);
-                                    let item = ecs
-                                        .db
-                                        .item_components()
-                                        .entity_id()
-                                        .find(target_entity_id);
-                                    let owner_location = ecs
-                                        .db
-                                        .location_components()
-                                        .entity_id()
-                                        .find(self.owner_entity_id);
-                                    let target_location = ecs
-                                        .db
-                                        .location_components()
-                                        .entity_id()
-                                        .find(target_entity_id);
-                                    if let (
-                                        Some(item),
-                                        Some(owner_location),
-                                        Some(mut target_location),
-                                    ) = (item, owner_location, target_location)
-                                    {
-                                        if target_location.location_entity_id
-                                            == owner_location.location_entity_id
-                                        {
-                                            target_location.location_entity_id =
-                                                self.owner_entity_id;
-                                            ecs.db
-                                                .location_components()
-                                                .entity_id()
-                                                .update(target_location);
-                                            if let crate::item::ItemRef::Armament(armament_id) =
-                                                item.item_ref
-                                            {
-                                                let mut armament_ids = owner
-                                                    .equipment()
-                                                    .map(|c| c.armament_ids)
-                                                    .unwrap_or_default();
-                                                armament_ids.push(armament_id);
-                                                owner.clone().upsert_new_equipment(armament_ids);
-                                            }
-                                        }
-                                    }
+                                    // The grab IS a take — same code, same
+                                    // pocket-vs-wield rule, cannot drift.
+                                    take_item(ecs, self.owner_entity_id, target_entity_id);
                                     true
                                 }
                             }

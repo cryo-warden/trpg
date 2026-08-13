@@ -153,10 +153,12 @@ export const ACTIONS = {
     rounds: [round(Attack(1), Attack(1))],
   },
   // Inventory verbs: carrying IS location, so taking pulls the item into
-  // the taker and dropping pushes it back out to the room.
+  // the taker and dropping pushes it back out to the room. Taking needs no
+  // FREE grip — items go to inventory (containment), not into a hand, so a
+  // fully-armed wielder can still pocket what they find.
   take: {
     actionType: { tag: "Inventory" },
-    requirements: requirements({ hand: 1 }),
+    requirements: NO_REQUIREMENTS,
     rounds: [round(Take)],
   },
   drop: {

@@ -267,7 +267,7 @@ export const loadoutPack = (): AssetPack => ({
       name: "test_take",
       value: {
         actionType: { tag: "Inventory" },
-        requirements: requirements({ hand: 1 }),
+        requirements: NO_REQUIREMENTS,
         rounds: [{ effects: [{ tag: "Take" }], interruptible: false }],
       },
     },
