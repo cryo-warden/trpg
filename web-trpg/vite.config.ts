@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   base: "/trpg/",
   // Bind to 0.0.0.0 so the dev server is reachable from other devices on the
-  // LAN (e.g. manual testing on a phone).
-  server: { host: true },
+  // LAN (e.g. manual testing on a phone). Port 5180 keeps DEV clear of the
+  // production web port; prod (vite preview) gets its port explicitly from
+  // TRPG_WEB_PORT via scripts/prod-web.sh.
+  server: { host: true, port: 5180 },
 });
