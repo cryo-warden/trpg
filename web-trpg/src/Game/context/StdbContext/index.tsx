@@ -19,18 +19,28 @@ const queries = [
 
 type ConnectionStatus = "connecting" | "connected" | "error";
 
-// The database URI: explicit override first, else DERIVED from the page
-// itself — the scheme follows the page's scheme (an https page gets wss;
-// browsers refuse plain ws from a secure page as mixed content) and the
-// host is whatever served the client, so localhost, LAN, and the public
-// domain all work with no per-device configuration. The PORT alone is
-// overridable (VITE_STDB_PORT, baked at build): production runs its own
-// separate SpacetimeDB instance on a different port.
-const STDB_URI: string =
-  import.meta.env.VITE_STDB_URI ??
-  `${window.location.protocol === "https:" ? "wss" : "ws"}://${
-    window.location.hostname
-  }:${import.meta.env.VITE_STDB_PORT ?? "3000"}`;
+// The database URI: explicit override (VITE_STDB_URI) or DERIVED from the
+// page — scheme follows the page's scheme (an https page gets wss; browsers
+// refuse plain ws from a secure page as mixed content), host is whatever
+// served the client, and the PORT comes from VITE_STDB_PORT, baked at build
+// time. There is deliberately NO default port: every build states which
+// SpacetimeDB instance it dials (dev scripts pass 3000 explicitly; prod
+// bakes TRPG_STDB_PORT), and a build that forgot fails loudly right here
+// instead of silently talking to the wrong database.
+const STDB_URI: string = (() => {
+  const override: string | undefined = import.meta.env.VITE_STDB_URI;
+  if (override != null && override !== "") {
+    return override;
+  }
+  const port: string | undefined = import.meta.env.VITE_STDB_PORT;
+  if (port == null || port === "") {
+    throw new Error(
+      "VITE_STDB_PORT was not set at build time (and no VITE_STDB_URI override): this build does not know which SpacetimeDB instance to dial.",
+    );
+  }
+  const scheme = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${scheme}://${window.location.hostname}:${port}`;
+})();
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
