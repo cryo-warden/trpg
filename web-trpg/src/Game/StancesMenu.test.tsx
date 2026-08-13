@@ -85,13 +85,34 @@ test("shows exactly the REACHABLE stances, marking the active one", () => {
   expect(cardOf(container, "perched")).toBeUndefined();
 });
 
-test("a card shows the stats and actions the stance would grant", () => {
+test("gallery dots: one per reachable stance, the active stance marked", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });
 
+  const dots = [...container.querySelectorAll(".dots button")];
+  expect(dots.length).toBe(container.querySelectorAll(".stanceCard").length);
+  const standingDot = dots.find(
+    (dot) => dot.getAttribute("aria-label") === "standing",
+  )!;
+  expect(standingDot.className).toContain("activeStance");
+});
+
+test("a card leads with the FULL totals the stance + loadout would give", () => {
+  const wrapper = gameWrapper(tables(), { identity: {} as Identity });
+  const { container } = render(<StancesMenu />, { wrapper });
+
+  // Dueling with the assigned sword: base attack 0 + stance 1, base hand 2
+  // + sword -1, and the sword's own morale ride along.
   const dueling = cardOf(container, "dueling")!;
-  expect(dueling.textContent).toContain("Attack +1");
+  expect(dueling.textContent).toContain("Attack 1");
+  expect(dueling.textContent).toContain("Hand 1");
+  expect(dueling.textContent).toContain("Morale 1");
   expect(dueling.textContent).toContain("Grants: lunge");
+
+  // Standing assigns nothing: bare-body totals.
+  const standing = cardOf(container, "standing")!;
+  expect(standing.textContent).toContain("Hand 2");
+  expect(standing.textContent).toContain("Attack 0");
 });
 
 test("assigned armaments highlight and unassign; overweight ones disable", () => {

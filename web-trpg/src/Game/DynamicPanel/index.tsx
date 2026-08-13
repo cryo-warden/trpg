@@ -3,24 +3,14 @@ import { Panel } from "../../structural/Panel";
 import { Scroller } from "../../structural/Scroller";
 import "./index.css";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
-import { useStanceRows } from "../context/StdbContext/assetLookup";
 import { sortByProminenceDescending } from "../domain/prominence";
 import {
-  useAttackComponent,
-  useCourageStatusComponent,
   useEntityPresentations,
-  useFearStatusComponent,
   useHostiles,
-  useHpComponent,
   useLocation,
   useLocationEntities,
-  useMyActiveStanceId,
   usePlayerEntity,
-  useTotalStatBlockComponent,
 } from "../context/StdbContext/components";
-import { EntityName } from "../EntityName";
-import { EPBar } from "../EntityPanel/EPBar";
-import { HPBar } from "../EntityPanel/HPBar";
 import { LoadoutPanel } from "../LoadoutPanel";
 import { StancesMenu } from "../StancesMenu";
 import { EntityId } from "../trpg";
@@ -32,14 +22,6 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const location = useLocation(playerEntity);
   const locationEntities = useLocationEntities(location);
   const playerContents = useLocationEntities(playerEntity);
-  const hpComponent = useHpComponent(playerEntity);
-  const attackComponent = useAttackComponent(playerEntity);
-  const totalStatBlock = useTotalStatBlockComponent(playerEntity);
-  const fearStatus = useFearStatusComponent(playerEntity);
-  const courageStatus = useCourageStatusComponent(playerEntity);
-  const activeStanceId = useMyActiveStanceId();
-  const stanceName =
-    useStanceRows().find(({ id }) => id === activeStanceId)?.name ?? "none";
   const entities: EntityId[] =
     mode === "location"
       ? locationEntities
@@ -70,33 +52,6 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
       <Panel {...props}>
         <Scroller>
           <LoadoutPanel />
-        </Scroller>
-      </Panel>
-    );
-  }
-
-  if (mode === "stats") {
-    if (playerEntity == null) {
-      return <Panel {...props} />;
-    }
-
-    return (
-      <Panel {...props}>
-        <Scroller>
-          <div>
-            <EntityName entityId={playerEntity} />
-          </div>
-          <HPBar entity={playerEntity} />
-          <EPBar entity={playerEntity} />
-          <div>Attack: {attackComponent?.attack ?? 0}</div>
-          <div>Defense: {hpComponent?.defense ?? 0}</div>
-          <div>
-            Morale: {totalStatBlock?.statBlock.morale ?? 0}
-            {courageStatus != null &&
-              ` (incl. +${courageStatus.morale} courage)`}
-            {fearStatus != null && ` — fear ${fearStatus.intimidation}`}
-          </div>
-          <div>Stance: {stanceName}</div>
         </Scroller>
       </Panel>
     );

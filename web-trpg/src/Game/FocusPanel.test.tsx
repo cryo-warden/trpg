@@ -46,5 +46,5 @@ test("FocusPanel shows the self-selection panel when focusing the player", () =>
     wrapper: gameWrapper(tables(), { identity, focus: 1n }),
   });
   expect(getByText("Room")).not.toBeNull();
-  expect(getByText("Stats")).not.toBeNull();
+  expect(getByText("Stances")).not.toBeNull();
 });

@@ -9,7 +9,7 @@ import {
 const Probe = () => {
   const mode = useDynamicPanelMode();
   const setMode = useSetDynamicPanelMode();
-  return <button onClick={() => setMode("stats")}>{mode}</button>;
+  return <button onClick={() => setMode("stances")}>{mode}</button>;
 };
 
 test("WithDynamicPanel provides mode state that updates via setMode", () => {
@@ -22,5 +22,5 @@ test("WithDynamicPanel provides mode state that updates via setMode", () => {
   expect(button.textContent).toBe("location");
 
   act(() => button.click());
-  expect(button.textContent).toBe("stats");
+  expect(button.textContent).toBe("stances");
 });

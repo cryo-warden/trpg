@@ -20,9 +20,6 @@ export const DynamicSelectionPanel = (
   const setStancesMode = useCallback(() => {
     setMode("stances");
   }, [setMode]);
-  const setStatsMode = useCallback(() => {
-    setMode("stats");
-  }, [setMode]);
 
   // TODO Add hotkeys and refactor ActionButton to create a Button component in structures directory.
   return (
@@ -37,11 +34,8 @@ export const DynamicSelectionPanel = (
         <Button hotkey="e" onClick={setEquipmentMode}>
           Equipment
         </Button>
-        <Button hotkey="t" onClick={setStancesMode}>
+        <Button hotkey="s" onClick={setStancesMode}>
           Stances
-        </Button>
-        <Button hotkey="s" onClick={setStatsMode}>
-          Stats
         </Button>
       </Scroller>
     </Panel>

@@ -32,13 +32,11 @@ const tables = () => ({
   path_components: mockTable([]),
 });
 
-test("DynamicPanel stats mode shows the player's vitals, attack, and defense", () => {
+test("DynamicPanel stances mode renders the stances menu", () => {
   const { container } = render(<DynamicPanel />, {
-    wrapper: gameWrapper(tables(), { identity, mode: "stats" }),
+    wrapper: gameWrapper(tables(), { identity, mode: "stances" }),
   });
-  expect(container.textContent).toContain("5 / 5 HP");
-  expect(container.textContent).toContain("Attack: 4");
-  expect(container.textContent).toContain("Defense: 2");
+  expect(container.querySelector(".StancesMenu")).not.toBeNull();
 });
 
 test("DynamicPanel location mode lists co-located entities, excluding the player", () => {

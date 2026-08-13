@@ -1,25 +1,72 @@
-/* One card per stance. Horizontal movement is LOCKED to whole stances
- * (mandatory snap, no stopping between cards); vertical scrolling inside a
- * card is free and independent per card. */
+/* A gallery: an indicator row of dots above a horizontal strip of stance
+ * cards. Horizontal movement is LOCKED to whole cards (mandatory snap, no
+ * stopping between them); vertical scrolling inside a card is free and
+ * independent per card. On wide screens cards cap their width, so several
+ * show at once — the dots track the strip's leading (snapped) card. */
 .StancesMenu {
   display: flex;
+  flex-direction: column;
   height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
 
-  .stanceCard {
-    flex: 0 0 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    overflow-y: auto;
-    padding: 0 0.4em;
+  .dots {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    gap: 0.45em;
+    padding: 0.3em 0;
 
-    h3,
-    h4 {
-      margin: 0.2em 0;
+    button {
+      width: 0.65em;
+      height: 0.65em;
+      padding: 0;
+      border: 1px solid currentColor;
+      border-radius: 50%;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    /* The card the strip is snapped to. */
+    button.current {
+      background: currentColor;
+    }
+
+    /* The stance the player is ACTUALLY in right now. */
+    button.activeStance {
+      border-width: 2px;
+    }
+  }
+
+  .cards {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+
+    .stanceCard {
+      /* Full width on narrow screens; capped on wide ones so multiple
+       * stances show side by side. */
+      flex: 0 0 min(100%, 20em);
+      min-width: 0;
+      box-sizing: border-box;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      overflow-y: auto;
+      padding: 0 0.4em;
+
+      h3,
+      h4 {
+        margin: 0.2em 0;
+      }
+
+      /* The full would-be totals, compact: every stat, two per row. */
+      .totals {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0 0.6em;
+      }
     }
   }
 }

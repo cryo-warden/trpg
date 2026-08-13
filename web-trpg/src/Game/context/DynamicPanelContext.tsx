@@ -5,8 +5,7 @@ export type DynamicPanelMode =
   | "location"
   | "inventory"
   | "equipment"
-  | "stances"
-  | "stats";
+  | "stances";
 
 export const DynamicPanelContext = createContext<{
   mode: DynamicPanelMode;

@@ -16,12 +16,12 @@ test("useDynamicPanelMode defaults to 'location' with no provider", () => {
 test("useDynamicPanelMode / useSetDynamicPanelMode read the provider", () => {
   const setMode = () => {};
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <DynamicPanelContext.Provider value={{ mode: "stats", setMode }}>
+    <DynamicPanelContext.Provider value={{ mode: "stances", setMode }}>
       {children}
     </DynamicPanelContext.Provider>
   );
   expect(renderHook(() => useDynamicPanelMode(), { wrapper }).result.current).toBe(
-    "stats",
+    "stances",
   );
   expect(
     renderHook(() => useSetDynamicPanelMode(), { wrapper }).result.current,
@@ -30,5 +30,5 @@ test("useDynamicPanelMode / useSetDynamicPanelMode read the provider", () => {
 
 test("useSetDynamicPanelMode returns a no-op default outside a provider", () => {
   const setMode = renderHook(() => useSetDynamicPanelMode()).result.current;
-  expect(() => setMode("stats")).not.toThrow();
+  expect(() => setMode("stances")).not.toThrow();
 });

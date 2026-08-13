@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Button } from "../structural/Button";
 import "./StancesMenu.css";
 import {
@@ -42,17 +42,18 @@ const STAT_DISPLAY = [
   ["morale", "Morale"],
 ] as const;
 
-const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+type IntStatKey = (typeof STAT_DISPLAY)[number][0];
 
 /**
  * The standalone stances menu: one card per REACHABLE stance. There is no
  * "known stances" state anywhere — reachability (the closure from the
  * player's granted actions and carried items' grants) IS availability,
  * here and in the server's adoption gate. Cards snap-scroll horizontally,
- * each free to scroll vertically on its own. A card shows the stats the
- * stance would grant and assigns its armaments — the actions the stance
- * will fight with. Assignments are CONFIGURATION and apply immediately;
- * the actual equipment only changes when a stance change pays its round.
+ * each free to scroll vertically on its own. A card leads with the FULL
+ * stat totals the player would have in that stance with its assigned
+ * loadout, then assigns its armaments — the actions the stance will fight
+ * with. Assignments are CONFIGURATION and apply immediately; the actual
+ * equipment only changes when a stance change pays its round.
  */
 export const StancesMenu = () => {
   const connection = useStdbConnection();
@@ -88,33 +89,93 @@ export const StancesMenu = () => {
   }, [totalStatBlock, owned, gearStatBlockOf, graph]);
   const shown = stanceRows.filter((row) => reachable.has(row.id));
 
-  // The stance-free, armament-free grip: the total includes the active
-  // stance and the equipment actually in hand, so peel both back off. (The
-  // server revalidates against the true base on every assignment; this
-  // budget only decides which buttons are worth offering.)
-  const activeStanceHand =
-    stanceRows.find((row) => row.id === activeStanceId)?.statBlock.hand ?? 0;
-  const equippedHand = equippedArmamentIds.reduce(
-    (sum, id) => sum + (armamentStats.get(id)?.hand ?? 0),
-    0,
-  );
-  const baseHand = (totalStatBlock?.hand ?? 0) - activeStanceHand - equippedHand;
+  // The stance-free, armament-free base of EVERY stat: the total includes
+  // the active stance and the equipment actually in hand, so peel both
+  // back off. Each card then shows the FULL TOTALS the player would have
+  // in that stance with its assigned loadout. (The server revalidates
+  // against the true base on every assignment; these numbers only inform.)
+  const activeStanceBlock =
+    stanceRows.find((row) => row.id === activeStanceId)?.statBlock ?? null;
+  const armamentStatSum = (armamentIds: number[], key: IntStatKey): number =>
+    armamentIds.reduce(
+      (sum, id) => sum + (armamentStats.get(id)?.[key] ?? 0),
+      0,
+    );
+  const baseStats = Object.fromEntries(
+    STAT_DISPLAY.map(([key]) => [
+      key,
+      (totalStatBlock?.[key] ?? 0) -
+        (activeStanceBlock?.[key] ?? 0) -
+        armamentStatSum(equippedArmamentIds, key),
+    ]),
+  ) as Record<IntStatKey, number>;
 
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
 
+  // Gallery indicators: one dot per card; the leading (snapped) card is
+  // the current one. Cards are narrower than the strip on wide screens,
+  // so several show at once — the dots track the strip's leading edge.
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const cardElements = (): HTMLElement[] =>
+    cardsRef.current == null
+      ? []
+      : ([...cardsRef.current.querySelectorAll(".stanceCard")] as HTMLElement[]);
+  const handleScroll = () => {
+    const strip = cardsRef.current;
+    if (strip == null) {
+      return;
+    }
+    let nearest = 0;
+    let nearestDistance = Infinity;
+    cardElements().forEach((card, index) => {
+      const distance = Math.abs(card.offsetLeft - strip.scrollLeft);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = index;
+      }
+    });
+    setCurrentIndex(nearest);
+  };
+  const scrollToIndex = (index: number) => {
+    const strip = cardsRef.current;
+    const card = cardElements()[index];
+    if (strip == null || card == null) {
+      return;
+    }
+    strip.scrollTo?.({ left: card.offsetLeft, behavior: "smooth" });
+  };
+
   return (
     <div className="StancesMenu">
-      {shown.map((stance) => {
+      <div className="dots">
+        {shown.map((stance, index) => (
+          <button
+            key={stance.id}
+            type="button"
+            aria-label={stance.name}
+            title={stance.name}
+            className={[
+              index === currentIndex ? "current" : "",
+              stance.id === activeStanceId ? "activeStance" : "",
+            ].join(" ")}
+            onClick={() => scrollToIndex(index)}
+          />
+        ))}
+      </div>
+      <div className="cards" ref={cardsRef} onScroll={handleScroll}>
+        {shown.map((stance) => {
         const assigned =
           assignments.find((a) => a.stanceId === stance.id)?.armamentIds ?? [];
-        const assignedHand = assigned.reduce(
-          (sum, id) => sum + (armamentStats.get(id)?.hand ?? 0),
-          0,
-        );
-        const freeHand = baseHand + stance.statBlock.hand + assignedHand;
-        const grants = STAT_DISPLAY.filter(
-          ([key]) => stance.statBlock[key] !== 0,
-        );
+        const candidate = Object.fromEntries(
+          STAT_DISPLAY.map(([key]) => [
+            key,
+            baseStats[key] +
+              stance.statBlock[key] +
+              armamentStatSum(assigned, key),
+          ]),
+        ) as Record<IntStatKey, number>;
+        const freeHand = candidate.hand;
         const grantedActionNames = [...stance.statBlock.actionIds].map(
           (id) => actionNames.get(id) ?? `#${id}`,
         );
@@ -126,19 +187,16 @@ export const StancesMenu = () => {
               {stance.name}
               {stance.id === activeStanceId && " (active)"}
             </h3>
-            <div className="grants">
-              {grants.map(([key, label]) => (
+            <div className="totals">
+              {STAT_DISPLAY.map(([key, label]) => (
                 <div key={key}>
-                  {label} {signed(stance.statBlock[key])}
+                  {label} {candidate[key]}
                 </div>
               ))}
-              {grantedActionNames.length > 0 && (
-                <div>Grants: {grantedActionNames.join(", ")}</div>
-              )}
-              {grants.length === 0 && grantedActionNames.length === 0 && (
-                <div>No changes — pure improvisation.</div>
-              )}
             </div>
+            {grantedActionNames.length > 0 && (
+              <div>Grants: {grantedActionNames.join(", ")}</div>
+            )}
             <h4>Armaments (free hand: {freeHand})</h4>
             {ownedArmaments.map((item) => {
               const itemHand = armamentStats.get(item.assetId)?.hand ?? 0;
@@ -166,7 +224,8 @@ export const StancesMenu = () => {
             {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
           </section>
         );
-      })}
+        })}
+      </div>
     </div>
   );
 };

@@ -14,9 +14,9 @@ test("DynamicSelectionPanel switches the dynamic panel mode on click", () => {
   const { getByText } = render(<DynamicSelectionPanel />, { wrapper });
 
   getByText("Items").click();
-  getByText("Stats").click();
+  getByText("Stances").click();
   getByText("Room").click();
   getByText("Equipment").click();
 
-  expect(modes).toEqual(["inventory", "stats", "location", "equipment"]);
+  expect(modes).toEqual(["inventory", "stances", "location", "equipment"]);
 });
