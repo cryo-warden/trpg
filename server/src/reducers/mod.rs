@@ -42,10 +42,29 @@ pub fn identity_connected(ctx: &ReducerContext) -> Result<(), String> {
         return Ok(());
     };
     let Some(p) = ctx.ecs().from_player_account(account_id) else {
-        return Err(format!(
-            "Account {} has no player entity; account creation should have made one.",
-            account_id
-        ));
+        // A playerless account is legitimate: bootstrap_admin creates the
+        // account ALONE, necessarily before any assets exist (so no player
+        // blob could have been instantiated). Never reject the connection —
+        // that locks the operator out of the very connection they need to
+        // push assets. Heal late instead: once the new-player blob exists,
+        // the next connect creates the player.
+        match ctx.ecs().new_player(account_id) {
+            Ok(p) => {
+                log::info!(
+                    "Created player {} late for previously playerless account {}.",
+                    p.entity_id(),
+                    account_id
+                );
+            }
+            Err(reason) => {
+                log::info!(
+                    "Account {} connected playerless ({}); admin operations remain available.",
+                    account_id,
+                    reason
+                );
+            }
+        }
+        return Ok(());
     };
     p.delete_player_deactivation_timer();
     log::debug!(
