@@ -5,6 +5,9 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   base: "/trpg/",
+  // The client bakes exactly the vars the cw manifest declares — no
+  // parallel VITE_* names to drift out of sync.
+  envPrefix: "TRPG_",
   // Bind to 0.0.0.0 so the dev server is reachable from other devices on the
   // LAN (e.g. manual testing on a phone). Port 5180 keeps DEV clear of the
   // production web port; prod (vite preview) gets its port explicitly from

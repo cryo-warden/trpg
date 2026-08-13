@@ -19,23 +19,20 @@ const queries = [
 
 type ConnectionStatus = "connecting" | "connected" | "error";
 
-// The database URI: explicit override (VITE_STDB_URI) or DERIVED from the
-// page — scheme follows the page's scheme (an https page gets wss; browsers
-// refuse plain ws from a secure page as mixed content), host is whatever
-// served the client, and the PORT comes from VITE_STDB_PORT, baked at build
-// time. There is deliberately NO default port: every build states which
-// SpacetimeDB instance it dials (dev scripts pass 3000 explicitly; prod
-// bakes TRPG_STDB_PORT), and a build that forgot fails loudly right here
-// instead of silently talking to the wrong database.
+// The database URI, DERIVED from the page — scheme follows the page's
+// scheme (an https page gets wss; browsers refuse plain ws from a secure
+// page as mixed content), host is whatever served the client, and the PORT
+// is TRPG_STDB_PORT baked at build time: the SAME env var the cw manifest
+// declares (vite.config's envPrefix exposes it), not a parallel VITE_*
+// name. Deliberately NO default port: every build states which SpacetimeDB
+// instance it dials (dev scripts pass 3000 explicitly; cw injects the prod
+// value), and a build that forgot fails loudly right here instead of
+// silently talking to the wrong database.
 const STDB_URI: string = (() => {
-  const override: string | undefined = import.meta.env.VITE_STDB_URI;
-  if (override != null && override !== "") {
-    return override;
-  }
-  const port: string | undefined = import.meta.env.VITE_STDB_PORT;
+  const port: string | undefined = import.meta.env.TRPG_STDB_PORT;
   if (port == null || port === "") {
     throw new Error(
-      "VITE_STDB_PORT was not set at build time (and no VITE_STDB_URI override): this build does not know which SpacetimeDB instance to dial.",
+      "TRPG_STDB_PORT was not set at build time: this build does not know which SpacetimeDB instance to dial.",
     );
   }
   const scheme = window.location.protocol === "https:" ? "wss" : "ws";
