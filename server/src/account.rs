@@ -532,7 +532,7 @@ pub fn refuse_login_request(ctx: &ReducerContext, login_request_id: u64) -> Resu
 
 #[reducer]
 pub fn finalize_login(ctx: &ReducerContext, timer: LoginFinalizeTimer) -> Result<(), String> {
-    if ctx.sender() != ctx.identity() {
+    if ctx.sender() != ctx.database_identity() {
         return Err("finalize_login may only run on schedule.".to_string());
     }
     let request = ctx

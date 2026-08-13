@@ -9,7 +9,7 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-spacetimedb = "2.1.0"
+spacetimedb = "2.8.1"
 log = "0.4"
 derive_builder = "0.20.2"
 sha2 = "0.10"

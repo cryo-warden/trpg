@@ -21,7 +21,7 @@
     "gh-pages": "^6.3.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "spacetimedb": "^2.1.0"
+    "spacetimedb": "^2.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
