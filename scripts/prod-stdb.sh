@@ -8,13 +8,25 @@
 # handoff, no TLS gymnastics. The fixed TRPG_STDB_PORT value remains the
 # TLS/wss face for browsers only.
 #
-# Publish runs WITHOUT --delete-data: production data persists, and an
-# incompatible schema change fails loudly — taking this process down so the
-# deploy reads as unhealthy — rather than wiping anything.
+# Whether publish wipes the database is an EXPLICIT deploy-time decision:
+# TRPG_STDB_DELETE_DATA must be exactly "true" (pre-alpha posture — the
+# schema is churning and an incompatible change would otherwise brick the
+# deploy) or "false" (data persists; an incompatible schema change fails
+# loudly, taking this process down so the deploy reads as unhealthy,
+# rather than wiping anything). No default: the operator states it.
 set -euo pipefail
 : "${TRPG_STDB_PORT:?TRPG_STDB_PORT must be set}"
 : "${TRPG_STDB_DATA_DIR:?TRPG_STDB_DATA_DIR must be set}"
+: "${TRPG_STDB_DELETE_DATA:?TRPG_STDB_DELETE_DATA must be set to \"true\" or \"false\"}"
 : "${TRPG_ADMIN_TOKEN:?TRPG_ADMIN_TOKEN must be set (provisional admin password)}"
+case "${TRPG_STDB_DELETE_DATA}" in
+  true) PUBLISH_DATA_ARGS=(--delete-data) ;;
+  false) PUBLISH_DATA_ARGS=() ;;
+  *)
+    echo "TRPG_STDB_DELETE_DATA must be exactly \"true\" or \"false\"; got \"${TRPG_STDB_DELETE_DATA}\"." >&2
+    exit 1
+    ;;
+esac
 mkdir -p "${TRPG_STDB_DATA_DIR}"
 
 spacetime start --listen-addr "0.0.0.0:${TRPG_STDB_PORT}" --data-dir "${TRPG_STDB_DATA_DIR}" &
@@ -32,8 +44,8 @@ until curl -s -o /dev/null "${SERVER}"; do
   sleep 1
 done
 
-echo "Publishing module to ${SERVER} (no --delete-data: prod data persists)."
-spacetime publish --server "${SERVER}" --module-path ./server trpg --yes
+echo "Publishing module to ${SERVER} (TRPG_STDB_DELETE_DATA=${TRPG_STDB_DELETE_DATA})."
+spacetime publish --server "${SERVER}" --module-path ./server trpg "${PUBLISH_DATA_ARGS[@]}" --yes
 
 if spacetime call --server "${SERVER}" trpg bootstrap_admin "\"${TRPG_ADMIN_TOKEN}\""; then
   echo "Admin bootstrapped; claim it and rotate the password."
