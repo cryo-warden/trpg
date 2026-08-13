@@ -21,9 +21,12 @@ type ConnectionStatus = "connecting" | "connected" | "error";
 
 // The database URI: explicit override first, else SpacetimeDB on the same
 // host that served this client — localhost stays localhost, and a LAN
-// browser reaches the LAN host, with no per-device configuration.
+// browser reaches the LAN host, with no per-device configuration. The PORT
+// alone is also overridable (VITE_STDB_PORT, baked at build): production
+// runs its own separate SpacetimeDB instance on a different port.
 const STDB_URI: string =
-  import.meta.env.VITE_STDB_URI ?? `ws://${window.location.hostname}:3000`;
+  import.meta.env.VITE_STDB_URI ??
+  `ws://${window.location.hostname}:${import.meta.env.VITE_STDB_PORT ?? "3000"}`;
 
 export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [status, setStatus] = useState<ConnectionStatus>("connecting");

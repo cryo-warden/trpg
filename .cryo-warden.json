@@ -1,0 +1,28 @@
+{
+  "name": "trpg",
+  "processes": [
+    {
+      "name": "spacetimedb",
+      "start_command": "spacetime start --listen-addr 0.0.0.0:$TRPG_STDB_PORT --data-dir \"$TRPG_STDB_DATA_DIR\"",
+      "proxied_ports": ["TRPG_STDB_PORT"]
+    },
+    {
+      "name": "publisher",
+      "start_command": "bash scripts/prod-publish.sh",
+      "proxied_ports": []
+    },
+    {
+      "name": "web",
+      "start_command": "cd web-trpg && bunx vite preview --host 0.0.0.0 --port $TRPG_WEB_PORT",
+      "proxied_ports": ["TRPG_WEB_PORT"]
+    }
+  ],
+  "build_command": "cd web-trpg && bun install && VITE_STDB_PORT=$TRPG_STDB_PORT bun run build",
+  "required_environment_variables": [
+    "TRPG_STDB_PORT",
+    "TRPG_WEB_PORT",
+    "TRPG_STDB_DATA_DIR",
+    "TRPG_ADMIN_TOKEN",
+    "CARGO_TARGET_DIR"
+  ]
+}
