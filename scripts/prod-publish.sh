@@ -14,15 +14,25 @@
 #   exit would read as a crash; the hold makes "published and healthy"
 #   visible in `cw status`.
 set -euo pipefail
-: "${TRPG_STDB_PORT:?TRPG_STDB_PORT must be set (the prod SpacetimeDB port)}"
+: "${TRPG_STDB_DATA_DIR:?TRPG_STDB_DATA_DIR must be set}"
 : "${TRPG_ADMIN_TOKEN:?TRPG_ADMIN_TOKEN must be set (provisional admin password)}"
 
-SERVER="http://127.0.0.1:${TRPG_STDB_PORT}"
+# The stdb process writes its SUBSTITUTED (real) port here at startup; the
+# fixed TRPG_STDB_PORT is the TLS proxy for browsers, which local admin
+# traffic deliberately bypasses (plain loopback HTTP, no cert gymnastics).
+PORT_FILE="${TRPG_STDB_DATA_DIR}/local-port"
 
-echo "Waiting for SpacetimeDB at ${SERVER}..."
-until curl -s -o /dev/null "${SERVER}"; do
+# Re-read the file every attempt: the data dir persists across deploys, so
+# a stale port from the PREVIOUS instance may sit there until the new one
+# overwrites it.
+echo "Waiting for SpacetimeDB (real port published at ${PORT_FILE})..."
+SERVER=""
+until [ -s "${PORT_FILE}" ] \
+  && SERVER="http://127.0.0.1:$(cat "${PORT_FILE}")" \
+  && curl -s -o /dev/null "${SERVER}"; do
   sleep 1
 done
+echo "SpacetimeDB answering at ${SERVER}."
 
 echo "Publishing module to ${SERVER} (no --delete-data: prod data persists)."
 spacetime publish --server "${SERVER}" --module-path ./server trpg --yes
