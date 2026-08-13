@@ -1,14 +1,6 @@
 import { StatBlockAsset } from "../../stdb/types";
 import { statBlock } from "./stat_block";
 
-const CASTING_STANCES = [
-  "standing",
-  "casting",
-  "fire_casting",
-  "ice_casting",
-  "lightning_casting",
-];
-
 const CASTING_POSTURES = ["stand", "center", "kindle", "chill", "charge"];
 
 // Bodies are the primary providers of the counted property stats: hands to
@@ -38,15 +30,6 @@ export const BASELINES = {
       "stride",
     ],
     appearanceFeatureNames: ["human"],
-    stanceNames: [
-      "standing",
-      "prone",
-      "sitting",
-      "ready",
-      "brawler",
-      "dueling",
-      "striding",
-    ],
   }),
   slime: statBlock({
     attack: -1,
@@ -58,7 +41,6 @@ export const BASELINES = {
     morale: 3,
     actionNames: ["slime_spray", "slump"],
     appearanceFeatureNames: ["slime"],
-    stanceNames: ["amorphous"],
   }),
   bat: statBlock({
     attack: 0,
@@ -71,7 +53,6 @@ export const BASELINES = {
     morale: 5,
     actionNames: ["scratch", "perch", "take_wing"],
     appearanceFeatureNames: ["bat"],
-    stanceNames: ["perched", "flapping"],
   }),
   // A human body wearing a different life: same slots, different look.
   bandit: statBlock({
@@ -97,15 +78,6 @@ export const BASELINES = {
       "stride",
     ],
     appearanceFeatureNames: ["bandit"],
-    stanceNames: [
-      "standing",
-      "prone",
-      "sitting",
-      "ready",
-      "brawler",
-      "dueling",
-      "striding",
-    ],
   }),
   // Starting-area teachers. The ogre looms: size delta plus its smash
   // telegraph overwhelms a fresh human's nerve — the intended first lesson
@@ -121,7 +93,6 @@ export const BASELINES = {
     size: 5,
     morale: 6,
     appearanceFeatureNames: ["ogre"],
-    stanceNames: ["standing", "striding"],
   }),
   rat: statBlock({
     attack: -1,
@@ -132,7 +103,6 @@ export const BASELINES = {
     morale: 2,
     actionNames: ["bite"],
     appearanceFeatureNames: ["rat"],
-    stanceNames: ["standing"],
   }),
   wolf: statBlock({
     attack: 1,
@@ -143,7 +113,6 @@ export const BASELINES = {
     morale: 3,
     actionNames: ["bite", "stand", "lie_down", "stride"],
     appearanceFeatureNames: ["wolf"],
-    stanceNames: ["standing", "prone", "striding"],
   }),
   // The elemental bodies channel innately: focus without any staff, and
   // every casting stance known from birth. Their ELEMENT is not the body:
@@ -159,7 +128,6 @@ export const BASELINES = {
     morale: 4,
     actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["imp"],
-    stanceNames: CASTING_STANCES,
   }),
   sprite: statBlock({
     mhp: 4,
@@ -171,7 +139,6 @@ export const BASELINES = {
     morale: 4,
     actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["sprite"],
-    stanceNames: CASTING_STANCES,
   }),
   wisp: statBlock({
     mhp: 2,
@@ -182,7 +149,6 @@ export const BASELINES = {
     morale: 4,
     actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["wisp"],
-    stanceNames: CASTING_STANCES,
   }),
 } satisfies Record<string, StatBlockAsset>;
 

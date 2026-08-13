@@ -20,8 +20,7 @@ secador::secador_multi!(
         (stat, StatType),
         [
             (action_ids, ActionId),
-            (appearance_feature_ids, u32),
-            (stance_ids, u32)
+            (appearance_feature_ids, u32)
         ]
     ),
     {

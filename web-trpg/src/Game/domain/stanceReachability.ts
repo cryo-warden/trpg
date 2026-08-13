@@ -1,14 +1,13 @@
-// Which stances does the stances menu show? Every stance the player could
-// POSSIBLY reach: seeded by what they have now (known stances, the total
-// stat block's unfiltered action grants, and the grants of every item they
-// carry), then closed over two edges — an action whose effects set a stance
-// reaches that stance, and a reached stance grants its own actions and
-// stances. Stances can grant actions that grant stances that grant actions;
-// the visited sets are the cycle prevention.
+// Which stances exist for the player? There is NO "known stances" state:
+// every stance is exactly as available as it is REACHABLE — seeded by the
+// player's granted actions and the grants of every item they carry, then
+// closed over two edges: an action whose effects set a stance reaches that
+// stance, and a reached stance grants its own actions. Stances can grant
+// actions that adopt stances that grant actions back; the visited sets are
+// the cycle prevention. The server gates adoption by the same closure.
 
 export type StanceGrants = {
   actionIds: number[];
-  stanceIds: number[];
 };
 
 export type StanceReachabilityGraph = {
@@ -39,7 +38,6 @@ export const reachableStanceIds = ({
       const grants = graph.stanceGrants.get(stanceId);
       if (grants != null) {
         actionQueue.push(...grants.actionIds);
-        stanceQueue.push(...grants.stanceIds);
       }
     }
     const actionId = actionQueue.pop();

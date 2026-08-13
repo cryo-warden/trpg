@@ -4,6 +4,7 @@ import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, playerEntityIdFor, waitFor } from "./client";
 import { claimAdmin } from "./admin";
+import { requirements } from "../src/Game/assets/stat_requirements";
 import { stancePack } from "./testAssets";
 
 // Phase 7: stances. The player's available actions are DERIVED: the total
@@ -67,6 +68,8 @@ test("the derived actions come from the baseline grant, requirement-filtered", (
       actionIdByName("test_punch"),
       actionIdByName("test_shuffle"),
       actionIdByName("test_lie"),
+      actionIdByName("test_square"),
+      actionIdByName("test_reach_wide"),
     ]),
   );
 });
@@ -83,7 +86,12 @@ test("swapping to a gait-starved stance drops the movement action", async () => 
     30000,
   );
   expect(new Set(myActionIds())).toEqual(
-    new Set([actionIdByName("test_punch"), actionIdByName("test_lie")]),
+    new Set([
+      actionIdByName("test_punch"),
+      actionIdByName("test_lie"),
+      actionIdByName("test_square"),
+      actionIdByName("test_reach_wide"),
+    ]),
   );
 });
 
@@ -100,6 +108,8 @@ test("swapping back restores the movement action", async () => {
       actionIdByName("test_punch"),
       actionIdByName("test_shuffle"),
       actionIdByName("test_lie"),
+      actionIdByName("test_square"),
+      actionIdByName("test_reach_wide"),
     ]),
   );
 });
@@ -138,4 +148,24 @@ test("a stance whose requirements the body cannot meet is rejected", async () =>
       stanceId: stanceIdByName("test_four_arms"),
     }),
   ).rejects.toThrow(/requirements/);
+});
+
+test("an asset re-push re-derives EXISTING entities under the new truth", async () => {
+  // The punch's requirements harden beyond any body. Without the push
+  // dirtying every entity, this player's derived set — computed under the
+  // OLD requirements — would keep the stale punch forever.
+  const base = stancePack();
+  const pack = {
+    ...base,
+    actions: base.actions.map((a) =>
+      a.name === "test_punch"
+        ? { ...a, value: { ...a.value, requirements: requirements({ hand: 99 }) } }
+        : a,
+    ),
+  };
+  await admin.reducers.pushAssets({ assetPack: pack });
+  await waitFor(
+    () => !myActionIds().includes(actionIdByName("test_punch")),
+    30000,
+  );
 });

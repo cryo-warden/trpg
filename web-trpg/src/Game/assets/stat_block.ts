@@ -20,6 +20,5 @@ export const statBlock = (partial: Partial<StatBlockAsset>): StatBlockAsset => (
   morale: 0,
   actionNames: [],
   appearanceFeatureNames: [],
-  stanceNames: [],
   ...partial,
 });

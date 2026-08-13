@@ -212,6 +212,35 @@ export const stancePack = (): AssetPack => ({
         ],
       },
     },
+    // Stances have no "known" state: each is REACHABLE exactly when some
+    // action (or item grant) adopts it — so every stance the tests adopt
+    // or probe gets a posture action.
+    {
+      name: "test_square",
+      value: {
+        actionType: { tag: "Posture" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [{ tag: "SetStance", value: "test_brawler" }],
+            interruptible: false,
+          },
+        ],
+      },
+    },
+    {
+      name: "test_reach_wide",
+      value: {
+        actionType: { tag: "Posture" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [{ tag: "SetStance", value: "test_four_arms" }],
+            interruptible: false,
+          },
+        ],
+      },
+    },
   ],
   baselines: [
     {
@@ -220,8 +249,13 @@ export const stancePack = (): AssetPack => ({
         mhp: 5,
         hand: 2,
         gait: 2,
-        actionNames: ["test_punch", "test_shuffle", "test_lie"],
-        stanceNames: ["test_brawler", "test_prone", "test_four_arms"],
+        actionNames: [
+          "test_punch",
+          "test_shuffle",
+          "test_lie",
+          "test_square",
+          "test_reach_wide",
+        ],
       }),
     },
   ],
@@ -279,6 +313,32 @@ export const loadoutPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Attack", value: 2 }], interruptible: false }],
       },
     },
+    {
+      name: "test_stand",
+      value: {
+        actionType: { tag: "Posture" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [{ tag: "SetStance", value: "test_standing" }],
+            interruptible: false,
+          },
+        ],
+      },
+    },
+    {
+      name: "test_duel",
+      value: {
+        actionType: { tag: "Posture" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [{ tag: "SetStance", value: "test_dueling" }],
+            interruptible: false,
+          },
+        ],
+      },
+    },
   ],
   baselines: [
     {
@@ -287,8 +347,7 @@ export const loadoutPack = (): AssetPack => ({
         mhp: 5,
         hand: 2,
         gait: 2,
-        actionNames: ["test_take", "test_slash"],
-        stanceNames: ["test_standing", "test_dueling"],
+        actionNames: ["test_take", "test_slash", "test_stand", "test_duel"],
       }),
     },
   ],
@@ -379,6 +438,19 @@ export const moralePack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
       },
     },
+    {
+      name: "test_stand",
+      value: {
+        actionType: { tag: "Posture" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [{ tag: "SetStance", value: "test_standing" }],
+            interruptible: false,
+          },
+        ],
+      },
+    },
   ],
   stances: [
     {
@@ -403,8 +475,7 @@ export const moralePack = (): AssetPack => ({
         gait: 2,
         size: 2,
         morale: 5,
-        actionNames: ["test_move"],
-        stanceNames: ["test_standing"],
+        actionNames: ["test_move", "test_stand"],
       }),
     },
     {
@@ -695,7 +766,6 @@ export const divePack = (): AssetPack => ({
         hand: 2,
         gait: 2,
         morale: 5,
-        stanceNames: ["test_standing", "test_prone"],
       }),
     },
   ],

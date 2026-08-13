@@ -41,7 +41,6 @@ export const componentQueries = [
   "select * from pinned_actions_components",
   "select * from actions_components",
   "select * from active_stance_components",
-  "select * from known_stances_components",
   "select * from total_stat_block_components",
   "select * from fear_status_components",
   "select * from courage_status_components",
@@ -204,24 +203,12 @@ export const useHostiles = (): EntityId[] => {
 };
 
 const useActiveStanceComponent = createUseComponent("active_stance_components");
-const useKnownStancesComponent = createUseComponent("known_stances_components");
 
 /** The player's active stance id, or null before one is adopted. */
 export const useMyActiveStanceId = (): number | null => {
   const playerEntity = usePlayerEntity();
   const activeStance = useActiveStanceComponent(playerEntity);
   return activeStance?.stanceId ?? null;
-};
-
-/** The stances the player KNOWS (granted by the total stat block) — the
- * only ones the menu offers and set_stance accepts. */
-export const useMyKnownStanceIds = (): number[] => {
-  const playerEntity = usePlayerEntity();
-  const knownStances = useKnownStancesComponent(playerEntity);
-  return useMemo(
-    () => (knownStances == null ? [] : [...knownStances.stanceIds]),
-    [knownStances],
-  );
 };
 
 /** The player's ordered pinned actions; bar position auto-assigns the

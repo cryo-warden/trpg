@@ -29,14 +29,13 @@ const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
   mep: 0,
   actionIds: [],
   appearanceFeatureIds: [],
-  stanceIds: [],
   ...partial,
 });
 
-// The player (entity 1) knows standing, stands in it with empty hands
-// (grip 2), and could reach dueling through the duel posture in their
-// total's unfiltered action grants. They carry a sword (entity 5, hand -1,
-// assigned to dueling) and a spear (entity 8, hand -2, assigned nowhere).
+// The player (entity 1) stands with empty hands (grip 2); standing and
+// dueling are REACHABLE through the stand and duel postures in their
+// total's action grants. They carry a sword (entity 5, hand -1, assigned
+// to dueling) and a spear (entity 8, hand -2, assigned nowhere).
 const tables = () => ({
   player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
   total_stat_block_components: mockTable([
@@ -47,9 +46,6 @@ const tables = () => ({
         actionIds: [actionIdOf("stand"), actionIdOf("duel")],
       }),
     },
-  ]),
-  known_stances_components: mockTable([
-    { entityId: 1n, stanceIds: [stanceIdOf("standing")] },
   ]),
   active_stance_components: mockTable([
     { entityId: 1n, stanceId: stanceIdOf("standing") },
@@ -77,16 +73,15 @@ const cardOf = (container: HTMLElement, stanceName: string) =>
     card.querySelector("h3")!.textContent!.startsWith(stanceName),
   );
 
-test("shows exactly the REACHABLE stances, marking active and unknown", () => {
+test("shows exactly the REACHABLE stances, marking the active one", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });
 
   expect(cardOf(container, "standing")?.textContent).toContain("(active)");
-  // Dueling is reachable through the duel posture but not yet KNOWN.
-  expect(cardOf(container, "dueling")?.textContent).toContain(
-    "(not yet known)",
-  );
-  // No wings anywhere in the seeds: perched stays out of the menu.
+  // Dueling is reachable through the duel posture — no "known" state
+  // exists; reachability alone decides.
+  expect(cardOf(container, "dueling")).toBeDefined();
+  // No action anywhere in the seeds adopts perched: out of the menu.
   expect(cardOf(container, "perched")).toBeUndefined();
 });
 

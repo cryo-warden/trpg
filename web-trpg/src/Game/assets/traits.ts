@@ -1,12 +1,10 @@
 import { StatBlockAsset } from "../../stdb/types";
 import { ACTIONS } from "./actions";
-import { STANCES } from "./stances";
 import { statBlock } from "./stat_block";
 
 export const TRAITS = {
   admin: statBlock({
     actionNames: Object.keys(ACTIONS),
-    stanceNames: Object.keys(STANCES),
   }),
   mobile: statBlock({ actionNames: ["move"] }),
   bopper: statBlock({ actionNames: ["bop", "boppity_bop"] }),

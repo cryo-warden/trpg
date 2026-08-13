@@ -102,10 +102,6 @@ pub struct StatBlockAsset {
     pub morale: i8,
     pub action_names: Vec<String>,
     pub appearance_feature_names: Vec<String>,
-    /// Stances GRANTED by this block: bodies grant their postures, traits
-    /// (and later quest rewards) grant more. An entity knows exactly the
-    /// stances its total stat block grants.
-    pub stance_names: Vec<String>,
 }
 
 /// A stance as authored. Its stat block contributes to the entity's total

@@ -68,10 +68,7 @@ export const useStanceReachabilityGraph = (): StanceReachabilityGraph => {
     const stanceGrants = new Map(
       stanceRows.map((row) => [
         row.id,
-        {
-          actionIds: [...row.statBlock.actionIds],
-          stanceIds: [...row.statBlock.stanceIds],
-        },
+        { actionIds: [...row.statBlock.actionIds] },
       ]),
     );
     const actionStanceTargets = new Map<number, number[]>();

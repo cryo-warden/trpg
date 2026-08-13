@@ -88,14 +88,13 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
 // as the server here; app code never computes an asset id this way —
 // including the name -> id resolution inside stat blocks, mirrored below.
 const resolveMockStatBlock = (asset: StatBlockAsset) => {
-  const { actionNames, appearanceFeatureNames, stanceNames, ...ints } = asset;
+  const { actionNames, appearanceFeatureNames, ...ints } = asset;
   return {
     ...ints,
     actionIds: actionNames.map((name) => actionIdOf(name as ActionName)),
     appearanceFeatureIds: appearanceFeatureNames.map((name) =>
       appearanceFeatureIndexOf(name as AppearanceFeatureName),
     ),
-    stanceIds: stanceNames.map((name) => stanceIdOf(name as StanceName)),
   };
 };
 
@@ -200,7 +199,6 @@ export const stdbWrapper = (
       path_components: mockTable([]),
       actions_components: mockTable([]),
       active_stance_components: mockTable([]),
-      known_stances_components: mockTable([]),
       total_stat_block_components: mockTable([]),
       fear_status_components: mockTable([]),
       courage_status_components: mockTable([]),

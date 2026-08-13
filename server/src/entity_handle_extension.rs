@@ -1,7 +1,13 @@
+use std::collections::HashSet;
+
 use crate::{
-    action::{actions, ActionId, ActionType},
-    asset::{baseline::baselines, stance::stances, stat_block::StatBlock},
+    action::{action_rounds, actions, ActionEffect, ActionId, ActionType},
+    asset::{
+        armament::armaments, armor::armors, baseline::baselines, relic::relics,
+        stance::stances, stat_block::StatBlock,
+    },
     entity::*,
+    item::ItemRef,
 };
 
 pub trait EntityHandleExtension {
@@ -15,8 +21,14 @@ pub trait EntityHandleExtension {
     fn set_defense(self, defense: i8) -> Self;
     fn set_mep(self, mep: i16) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
-    fn set_known_stances(self, stance_ids: Vec<u32>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
+    /// There is NO concept of known stances: a stance is available exactly
+    /// when it is REACHABLE — the closure seeded by the entity's granted
+    /// actions and every carried item's grants, over two edges (an action
+    /// whose SetStance effect adopts a stance; a stance granting its own
+    /// actions). Visited sets are the cycle prevention: a stance may grant
+    /// an action that adopts another stance that grants one back.
+    fn stance_is_reachable(&self, stance_id: u32) -> bool;
     fn allegiance_id(&self) -> Option<u64>;
     fn is_ally(&self, other_entity_id: u64) -> bool;
     /// Full restoration: hp and ep to their maxima, every status effect
@@ -25,7 +37,7 @@ pub trait EntityHandleExtension {
     fn restore_fully(&self);
     /// The one deliberate stance-adoption path — shared by the set_stance
     /// reducer and the SetStance action effect so their gates cannot drift.
-    /// Gates: the fear gate (nerve must overcome a held fear), known
+    /// Gates: the fear gate (nerve must overcome a held fear), REACHABLE
     /// stances only, and the stance's own requirements against the
     /// stance-free base. Success sheds the momentary statuses and re-arms
     /// from the stance loadouts. Forced transitions (intimidation, dive)
@@ -70,7 +82,6 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
             .set_actions(stat_block.action_ids)
-            .set_known_stances(stat_block.stance_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids);
         self
     }
@@ -119,15 +130,68 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
-    fn set_known_stances(self, stance_ids: Vec<u32>) -> Self {
+    fn stance_is_reachable(&self, stance_id: u32) -> bool {
         let e = self.to_handle();
-        if let Some(mut c) = e.known_stances() {
-            c.stance_ids = stance_ids;
-            e.update_known_stances_row(c);
-        } else {
-            e.insert_new_known_stances(stance_ids);
+        let ecs = e.ecs();
+
+        // Seeds: the total's granted actions plus every carried item's
+        // granted actions (gear reaches its stances without being wielded —
+        // the loadout menu must let you configure toward them).
+        let mut action_queue: Vec<ActionId> = { e.total_stat_block() }
+            .map(|t| t.stat_block.action_ids)
+            .unwrap_or_default();
+        for carried in ecs
+            .db
+            .location_components()
+            .location_entity_id()
+            .filter(e.entity_id())
+        {
+            if let Some(item) = ecs.find(carried.entity_id).item() {
+                let grants = match item.item_ref {
+                    ItemRef::Armament(id) => {
+                        ecs.db.armaments().id().find(id).map(|a| a.stat_block.action_ids)
+                    }
+                    ItemRef::Armor(id) => {
+                        ecs.db.armors().id().find(id).map(|a| a.stat_block.action_ids)
+                    }
+                    ItemRef::Relic(id) => {
+                        ecs.db.relics().id().find(id).map(|r| r.stat_block.action_ids)
+                    }
+                };
+                action_queue.extend(grants.unwrap_or_default());
+            }
         }
-        self
+
+        let mut reached: HashSet<u32> = HashSet::new();
+        let mut visited_actions: HashSet<ActionId> = HashSet::new();
+        let mut stance_queue: Vec<u32> = Vec::new();
+        loop {
+            if let Some(action_id) = action_queue.pop() {
+                if visited_actions.insert(action_id) {
+                    for round in ecs.db.action_rounds().action_sequence().filter(action_id) {
+                        for effect in &round.effects {
+                            if let ActionEffect::SetStance(target) = effect {
+                                stance_queue.push(*target);
+                            }
+                        }
+                    }
+                }
+                continue;
+            }
+            match stance_queue.pop() {
+                None => return false,
+                Some(reached_id) => {
+                    if reached.insert(reached_id) {
+                        if reached_id == stance_id {
+                            return true;
+                        }
+                        if let Some(s) = ecs.db.stances().id().find(reached_id) {
+                            action_queue.extend(s.stat_block.action_ids);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
@@ -183,11 +247,12 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                 ));
             }
         }
-        // Only KNOWN stances may be adopted: the total stat block grants
-        // them (bodies now, quest rewards later).
-        if !{ e.known_stances() }.is_some_and(|known| known.stance_ids.contains(&stance_id)) {
+        // Only REACHABLE stances may be adopted: some action this entity
+        // could have — through its grants, its gear, or another reachable
+        // stance — must adopt it. No separate "known stances" state exists.
+        if !self.stance_is_reachable(stance_id) {
             return Err(format!(
-                "The stance \"{}\" is not among this entity's known stances.",
+                "The stance \"{}\" is not reachable from this entity's actions or items.",
                 stance.name
             ));
         }

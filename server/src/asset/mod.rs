@@ -31,11 +31,14 @@ use crate::{
     },
     ecs_extension::EcsExtension,
     entity::{
-        named_entities, ActionsComponentBlob, ActiveStanceComponentBlob,
+        baseline_components, equipment_stat_block_dirty_flag_components, named_entities,
+        total_stat_block_dirty_flag_components, traits_stat_block_dirty_flag_components,
+        ActionsComponentBlob, ActiveStanceComponentBlob,
         AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
         CheckpointBindingComponentBlob, EntityBlob,
-        EquipmentComponentBlob, FindEntityHandle, InstantiateEntityBlob, ItemComponentBlob,
-        NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob, TraitsComponentBlob,
+        EquipmentComponentBlob, FindEntityHandle, FlagComponent, InstantiateEntityBlob,
+        ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
+        TraitsComponentBlob,
     },
     item::ItemRef,
 };
@@ -229,7 +232,6 @@ fn resolve_entity_blob(
             })
             .transpose()?,
         stance_loadouts: None,
-        known_stances: None,
         checkpoint_object: author.checkpoint_object,
         checkpoint_binding: author
             .checkpoint_binding
@@ -383,7 +385,6 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         morale,
         action_names,
         appearance_feature_names,
-        stance_names,
     } = author;
     Ok(StatBlock {
         attack,
@@ -408,10 +409,6 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         appearance_feature_ids: appearance_feature_names
             .iter()
             .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
-            .collect::<Result<_, _>>()?,
-        stance_ids: stance_names
-            .iter()
-            .map(|n| resolve_name(&maps.stances, "stance", n))
             .collect::<Result<_, _>>()?,
     })
 }
@@ -490,6 +487,8 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     // including empty (wait) rounds, because round-row existence is what
     // keeps an action alive.
     let stale_round_ids: Vec<u64> = ctx.db.action_rounds().iter().map(|r| r.id).collect();
+    // (Round rows are rebuilt below; derived per-entity state is re-dirtied
+    // at the end of the push.)
     for id in stale_round_ids {
         ctx.db.action_rounds().id().delete(id);
     }
@@ -875,6 +874,29 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         ctx.db.special_entity_blobs().key().update(new_player_blob);
     } else {
         ctx.db.special_entity_blobs().insert(new_player_blob);
+    }
+
+    // The push changed the truth every per-entity derivation was computed
+    // from (baseline bodies, trait and gear stat blocks, action
+    // requirements), so every stat-bearing entity re-derives. Without this,
+    // an existing character keeps a derived action set filtered under the
+    // OLD requirements until something else happens to dirty it.
+    for baseline in ctx.db.baseline_components().iter() {
+        let flag = FlagComponent {
+            entity_id: baseline.entity_id,
+        };
+        let traits_flags = ctx.db.traits_stat_block_dirty_flag_components();
+        if traits_flags.entity_id().find(baseline.entity_id).is_none() {
+            traits_flags.insert(flag.clone());
+        }
+        let equipment_flags = ctx.db.equipment_stat_block_dirty_flag_components();
+        if equipment_flags.entity_id().find(baseline.entity_id).is_none() {
+            equipment_flags.insert(flag.clone());
+        }
+        let total_flags = ctx.db.total_stat_block_dirty_flag_components();
+        if total_flags.entity_id().find(baseline.entity_id).is_none() {
+            total_flags.insert(flag);
+        }
     }
 
     Ok(())

@@ -5,17 +5,18 @@ import {
 } from "./stanceReachability";
 
 // Stances 1 and 2 form a cycle through actions 10 and 20; stance 3 hangs
-// off stance 2; stance 9 is unreachable.
+// off stance 2 via action 30; stance 9 is unreachable.
 const graph: StanceReachabilityGraph = {
   stanceGrants: new Map([
-    [1, { actionIds: [10], stanceIds: [] }],
-    [2, { actionIds: [20], stanceIds: [3] }],
-    [3, { actionIds: [], stanceIds: [] }],
-    [9, { actionIds: [], stanceIds: [] }],
+    [1, { actionIds: [10] }],
+    [2, { actionIds: [20, 30] }],
+    [3, { actionIds: [] }],
+    [9, { actionIds: [] }],
   ]),
   actionStanceTargets: new Map([
     [10, [2]],
     [20, [1]],
+    [30, [3]],
   ]),
 };
 

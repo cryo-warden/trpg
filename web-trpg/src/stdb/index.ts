@@ -86,7 +86,6 @@ import EquipmentStatBlockDirtyFlagComponentsRow from "./equipment_stat_block_dir
 import FearStatusComponentsRow from "./fear_status_components_table";
 import HpComponentsRow from "./hp_components_table";
 import ItemComponentsRow from "./item_components_table";
-import KnownStancesComponentsRow from "./known_stances_components_table";
 import LocationComponentsRow from "./location_components_table";
 import LocationMapComponentsRow from "./location_map_components_table";
 import LoginRequestVotersRow from "./login_request_voters_table";
@@ -504,17 +503,6 @@ const tablesSchema = __schema({
       { name: 'item_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, ItemComponentsRow),
-  known_stances_components: __table({
-    name: 'known_stances_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'known_stances_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'known_stances_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, KnownStancesComponentsRow),
   location_components: __table({
     name: 'location_components',
     indexes: [

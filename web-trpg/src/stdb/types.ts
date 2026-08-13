@@ -574,9 +574,6 @@ export const EntityBlob = __t.object("EntityBlob", {
   get actions() {
     return __t.option(ActionsComponentBlob);
   },
-  get knownStances() {
-    return __t.option(KnownStancesComponentBlob);
-  },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob);
   },
@@ -800,17 +797,6 @@ export const ItemRefAsset = __t.enum("ItemRefAsset", {
   Relic: __t.string(),
 });
 export type ItemRefAsset = __Infer<typeof ItemRefAsset>;
-
-export const KnownStancesComponent = __t.object("KnownStancesComponent", {
-  entityId: __t.u64(),
-  stanceIds: __t.array(__t.u32()),
-});
-export type KnownStancesComponent = __Infer<typeof KnownStancesComponent>;
-
-export const KnownStancesComponentBlob = __t.object("KnownStancesComponentBlob", {
-  stanceIds: __t.array(__t.u32()),
-});
-export type KnownStancesComponentBlob = __Infer<typeof KnownStancesComponentBlob>;
 
 // The tagged union or sum type for the algebraic type `Layout`.
 export const Layout = __t.enum("Layout", {
@@ -1275,7 +1261,6 @@ export const StatBlock = __t.object("StatBlock", {
   mep: __t.i16(),
   actionIds: __t.array(__t.u32()),
   appearanceFeatureIds: __t.array(__t.u32()),
-  stanceIds: __t.array(__t.u32()),
 });
 export type StatBlock = __Infer<typeof StatBlock>;
 
@@ -1297,7 +1282,6 @@ export const StatBlockAsset = __t.object("StatBlockAsset", {
   morale: __t.i8(),
   actionNames: __t.array(__t.string()),
   appearanceFeatureNames: __t.array(__t.string()),
-  stanceNames: __t.array(__t.string()),
 });
 export type StatBlockAsset = __Infer<typeof StatBlockAsset>;
 

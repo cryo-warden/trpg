@@ -7,7 +7,6 @@ import {
 } from "./context/StdbContext/assetLookup";
 import {
   useMyActiveStanceId,
-  useMyKnownStanceIds,
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "./context/StdbContext/components";
@@ -46,20 +45,20 @@ const STAT_DISPLAY = [
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 
 /**
- * The standalone stances menu: one card per REACHABLE stance (the closure
- * over every stance the player could possibly adopt through the actions
- * they could possibly gain), snap-scrolled horizontally, each card free to
- * scroll vertically on its own. A card shows the stats the stance would
- * grant and assigns its armaments — the actions the stance will fight
- * with. Assignments are CONFIGURATION and apply immediately; the actual
- * equipment only changes when a stance change pays its round.
+ * The standalone stances menu: one card per REACHABLE stance. There is no
+ * "known stances" state anywhere — reachability (the closure from the
+ * player's granted actions and carried items' grants) IS availability,
+ * here and in the server's adoption gate. Cards snap-scroll horizontally,
+ * each free to scroll vertically on its own. A card shows the stats the
+ * stance would grant and assigns its armaments — the actions the stance
+ * will fight with. Assignments are CONFIGURATION and apply immediately;
+ * the actual equipment only changes when a stance change pays its round.
  */
 export const StancesMenu = () => {
   const connection = useStdbConnection();
   const playerEntity = usePlayerEntity();
   const total = useTotalStatBlockComponent(playerEntity);
   const activeStanceId = useMyActiveStanceId();
-  const knownStanceIds = useMyKnownStanceIds();
   const stanceRows = useStanceDetailRows();
   const graph = useStanceReachabilityGraph();
   const assignments = useMyStanceAssignments();
@@ -77,16 +76,16 @@ export const StancesMenu = () => {
   const totalStatBlock = total?.statBlock ?? null;
   const reachable = useMemo(() => {
     const seedActionIds = [...(totalStatBlock?.actionIds ?? [])];
-    const seedStanceIds = [...knownStanceIds];
     for (const item of owned) {
       const gear = gearStatBlockOf(item);
       if (gear != null) {
         seedActionIds.push(...gear.actionIds);
-        seedStanceIds.push(...gear.stanceIds);
       }
     }
-    return new Set(reachableStanceIds({ seedActionIds, seedStanceIds, graph }));
-  }, [totalStatBlock, knownStanceIds, owned, gearStatBlockOf, graph]);
+    return new Set(
+      reachableStanceIds({ seedActionIds, seedStanceIds: [], graph }),
+    );
+  }, [totalStatBlock, owned, gearStatBlockOf, graph]);
   const shown = stanceRows.filter((row) => reachable.has(row.id));
 
   // The stance-free, armament-free grip: the total includes the active
@@ -126,7 +125,6 @@ export const StancesMenu = () => {
             <h3>
               {stance.name}
               {stance.id === activeStanceId && " (active)"}
-              {!knownStanceIds.includes(stance.id) && " (not yet known)"}
             </h3>
             <div className="grants">
               {grants.map(([key, label]) => (
