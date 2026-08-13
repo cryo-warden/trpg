@@ -72,6 +72,9 @@ export const getActionOptions = ({
         return targetHasItem || allegiance.target === allegiance.playerEntity;
       case "Attune":
         return targetHasCheckpointObject;
+      // Deliberate stance changes act on yourself alone.
+      case "Posture":
+        return allegiance.target === allegiance.playerEntity;
       default:
         return false;
     }

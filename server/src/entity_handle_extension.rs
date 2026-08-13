@@ -1,6 +1,6 @@
 use crate::{
     action::{actions, ActionId, ActionType},
-    asset::{baseline::baselines, stat_block::StatBlock},
+    asset::{baseline::baselines, stance::stances, stat_block::StatBlock},
     entity::*,
 };
 
@@ -23,6 +23,14 @@ pub trait EntityHandleExtension {
     /// shed. Reviving at a checkpoint and attuning to a checkpoint object
     /// deliberately share this — they are the same blessing.
     fn restore_fully(&self);
+    /// The one deliberate stance-adoption path — shared by the set_stance
+    /// reducer and the SetStance action effect so their gates cannot drift.
+    /// Gates: the fear gate (nerve must overcome a held fear), known
+    /// stances only, and the stance's own requirements against the
+    /// stance-free base. Success sheds the momentary statuses and re-arms
+    /// from the stance loadouts. Forced transitions (intimidation, dive)
+    /// bypass this on purpose.
+    fn try_adopt_stance(&self, stance_id: u32) -> Result<(), String>;
     /// The morale that counts against intimidation: the best rigid morale
     /// among co-located faction members, self included (courage and gear
     /// contributions are already folded in through the stat caches). Your
@@ -155,6 +163,70 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         }
     }
 
+    fn try_adopt_stance(&self, stance_id: u32) -> Result<(), String> {
+        let e = self.to_handle();
+        let stance = e
+            .ecs()
+            .db
+            .stances()
+            .id()
+            .find(stance_id)
+            .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
+        // A fear status holds the cower until effective morale overcomes
+        // the highest intimidation received.
+        if let Some(fear) = e.fear_status() {
+            let nerve = self.effective_morale();
+            if nerve <= i32::from(fear.intimidation) {
+                return Err(format!(
+                    "Too shaken to change stance: morale {} does not overcome the fear {}.",
+                    nerve, fear.intimidation
+                ));
+            }
+        }
+        // Only KNOWN stances may be adopted: the total stat block grants
+        // them (bodies now, quest rewards later).
+        if !{ e.known_stances() }.is_some_and(|known| known.stance_ids.contains(&stance_id)) {
+            return Err(format!(
+                "The stance \"{}\" is not among this entity's known stances.",
+                stance.name
+            ));
+        }
+        // Checked against the stance-free base: a stance never provides
+        // the properties needed to enter itself.
+        if !self.base_stat_block().meets(&stance.requirements) {
+            return Err(format!(
+                "The requirements of stance \"{}\" are not met.",
+                stance.name
+            ));
+        }
+        // A deliberate stance change sheds the momentary statuses: the fear
+        // is overcome, the surge of courage spent, the brace abandoned.
+        if e.fear_status().is_some() {
+            e.delete_fear_status();
+        }
+        if e.courage_status().is_some() {
+            e.delete_courage_status();
+        }
+        if e.braced_status().is_some() {
+            e.delete_braced_status();
+        }
+        let handle = e.clone().upsert_new_active_stance(stance_id).into_handle();
+
+        // A player with stance loadouts re-arms on swap: the new stance's
+        // assigned armaments (or none, when unassigned) become the wielded
+        // set. Entities without loadouts keep their flat equipment.
+        if let Some(loadouts) = handle.stance_loadouts() {
+            let armament_ids = loadouts
+                .assignments
+                .iter()
+                .find(|a| a.stance_id == stance_id)
+                .map(|a| a.armament_ids.to_owned())
+                .unwrap_or_default();
+            handle.upsert_new_equipment(armament_ids);
+        }
+        Ok(())
+    }
+
     fn restore_fully(&self) {
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {
@@ -248,6 +320,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                     }
                 }
                 ActionType::Move => o.path().is_some(),
+                // Deliberate stance changes act on yourself alone.
+                ActionType::Posture => other_entity_id == e.entity_id(),
                 // A co-located checkpoint object (fortune-telling scenery).
                 ActionType::Attune => {
                     o.checkpoint_object().is_some()

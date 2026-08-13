@@ -3,6 +3,7 @@ import { Panel } from "../../structural/Panel";
 import { Scroller } from "../../structural/Scroller";
 import "./index.css";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
+import { useStanceRows } from "../context/StdbContext/assetLookup";
 import { sortByProminenceDescending } from "../domain/prominence";
 import {
   useAttackComponent,
@@ -13,6 +14,7 @@ import {
   useHpComponent,
   useLocation,
   useLocationEntities,
+  useMyActiveStanceId,
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "../context/StdbContext/components";
@@ -34,6 +36,9 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const totalStatBlock = useTotalStatBlockComponent(playerEntity);
   const fearStatus = useFearStatusComponent(playerEntity);
   const courageStatus = useCourageStatusComponent(playerEntity);
+  const activeStanceId = useMyActiveStanceId();
+  const stanceName =
+    useStanceRows().find(({ id }) => id === activeStanceId)?.name ?? "none";
   const entities: EntityId[] =
     mode === "location"
       ? locationEntities
@@ -80,6 +85,7 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
               ` (incl. +${courageStatus.morale} courage)`}
             {fearStatus != null && ` — fear ${fearStatus.intimidation}`}
           </div>
+          <div>Stance: {stanceName}</div>
         </Scroller>
       </Panel>
     );

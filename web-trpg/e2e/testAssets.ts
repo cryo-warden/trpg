@@ -199,6 +199,19 @@ export const stancePack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
       },
     },
+    {
+      name: "test_lie",
+      value: {
+        actionType: { tag: "Posture" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [
+          {
+            effects: [{ tag: "SetStance", value: "test_prone" }],
+            interruptible: false,
+          },
+        ],
+      },
+    },
   ],
   baselines: [
     {
@@ -207,7 +220,7 @@ export const stancePack = (): AssetPack => ({
         mhp: 5,
         hand: 2,
         gait: 2,
-        actionNames: ["test_punch", "test_shuffle"],
+        actionNames: ["test_punch", "test_shuffle", "test_lie"],
         stanceNames: ["test_brawler", "test_prone", "test_four_arms"],
       }),
     },

@@ -9,6 +9,8 @@ const CASTING_STANCES = [
   "lightning_casting",
 ];
 
+const CASTING_POSTURES = ["stand", "center", "kindle", "chill", "charge"];
+
 // Bodies are the primary providers of the counted property stats: hands to
 // hold and swing with, gait to move on, reach to threaten at range. Stances
 // and (later) equipment and circumstances add to or consume these.
@@ -23,7 +25,18 @@ export const BASELINES = {
     reach: 1,
     size: 0,
     morale: 5,
-    actionNames: ["take", "drop", "attune"],
+    actionNames: [
+      "take",
+      "drop",
+      "attune",
+      "stand",
+      "sit",
+      "lie_down",
+      "ready_up",
+      "square_up",
+      "duel",
+      "stride",
+    ],
     appearanceFeatureNames: ["human"],
     stanceNames: [
       "standing",
@@ -43,7 +56,7 @@ export const BASELINES = {
     gait: 1,
     size: -2,
     morale: 3,
-    actionNames: ["slime_spray"],
+    actionNames: ["slime_spray", "slump"],
     appearanceFeatureNames: ["slime"],
     stanceNames: ["amorphous"],
   }),
@@ -56,7 +69,7 @@ export const BASELINES = {
     wing: 2,
     size: -4,
     morale: 5,
-    actionNames: ["scratch"],
+    actionNames: ["scratch", "perch", "take_wing"],
     appearanceFeatureNames: ["bat"],
     stanceNames: ["perched", "flapping"],
   }),
@@ -71,7 +84,18 @@ export const BASELINES = {
     reach: 1,
     size: 0,
     morale: 4,
-    actionNames: ["take", "drop", "attune"],
+    actionNames: [
+      "take",
+      "drop",
+      "attune",
+      "stand",
+      "sit",
+      "lie_down",
+      "ready_up",
+      "square_up",
+      "duel",
+      "stride",
+    ],
     appearanceFeatureNames: ["bandit"],
     stanceNames: [
       "standing",
@@ -117,7 +141,7 @@ export const BASELINES = {
     gait: 2,
     size: -1,
     morale: 3,
-    actionNames: ["bite"],
+    actionNames: ["bite", "stand", "lie_down", "stride"],
     appearanceFeatureNames: ["wolf"],
     stanceNames: ["standing", "prone", "striding"],
   }),
@@ -133,6 +157,7 @@ export const BASELINES = {
     focus: 1,
     size: -3,
     morale: 4,
+    actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["imp"],
     stanceNames: CASTING_STANCES,
   }),
@@ -144,6 +169,7 @@ export const BASELINES = {
     focus: 1,
     size: -3,
     morale: 4,
+    actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["sprite"],
     stanceNames: CASTING_STANCES,
   }),
@@ -154,6 +180,7 @@ export const BASELINES = {
     focus: 1,
     size: -3,
     morale: 4,
+    actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["wisp"],
     stanceNames: CASTING_STANCES,
   }),

@@ -81,8 +81,29 @@ export const ActionEffect = __t.enum("ActionEffect", {
   Rally: __t.unit(),
   Dive: __t.i16(),
   Attune: __t.unit(),
+  SetStance: __t.u32(),
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
+
+// The tagged union or sum type for the algebraic type `ActionEffectAsset`.
+export const ActionEffectAsset = __t.enum("ActionEffectAsset", {
+  get Buff() {
+    return Buff;
+  },
+  Attack: __t.i16(),
+  Heal: __t.i16(),
+  Move: __t.unit(),
+  Take: __t.unit(),
+  Drop: __t.unit(),
+  Equip: __t.unit(),
+  Unequip: __t.unit(),
+  Intimidate: __t.i16(),
+  Rally: __t.unit(),
+  Dive: __t.i16(),
+  Attune: __t.unit(),
+  SetStance: __t.string(),
+});
+export type ActionEffectAsset = __Infer<typeof ActionEffectAsset>;
 
 export const ActionRound = __t.object("ActionRound", {
   id: __t.u64(),
@@ -97,7 +118,7 @@ export type ActionRound = __Infer<typeof ActionRound>;
 
 export const ActionRoundAsset = __t.object("ActionRoundAsset", {
   get effects() {
-    return __t.array(ActionEffect);
+    return __t.array(ActionEffectAsset);
   },
   interruptible: __t.bool(),
 });
@@ -129,6 +150,7 @@ export const ActionType = __t.enum("ActionType", {
   Equip: __t.unit(),
   Dive: __t.unit(),
   Attune: __t.unit(),
+  Posture: __t.unit(),
 });
 export type ActionType = __Infer<typeof ActionType>;
 

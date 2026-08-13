@@ -331,6 +331,33 @@ fn resolve_entity_blobs_sampler(
     })
 }
 
+/// The forward (name -> id) conversion for effect payloads, mirroring every
+/// other asset reference.
+fn resolve_action_effect(
+    author: types::ActionEffectAsset,
+    maps: &AssetNameMaps,
+) -> Result<crate::action::ActionEffect, String> {
+    use crate::action::ActionEffect;
+    use types::ActionEffectAsset;
+    Ok(match author {
+        ActionEffectAsset::Buff(buff) => ActionEffect::Buff(buff),
+        ActionEffectAsset::Attack(damage) => ActionEffect::Attack(damage),
+        ActionEffectAsset::Heal(heal) => ActionEffect::Heal(heal),
+        ActionEffectAsset::Move => ActionEffect::Move,
+        ActionEffectAsset::Take => ActionEffect::Take,
+        ActionEffectAsset::Drop => ActionEffect::Drop,
+        ActionEffectAsset::Equip => ActionEffect::Equip,
+        ActionEffectAsset::Unequip => ActionEffect::Unequip,
+        ActionEffectAsset::Intimidate(magnitude) => ActionEffect::Intimidate(magnitude),
+        ActionEffectAsset::Rally => ActionEffect::Rally,
+        ActionEffectAsset::Dive(defense) => ActionEffect::Dive(defense),
+        ActionEffectAsset::Attune => ActionEffect::Attune,
+        ActionEffectAsset::SetStance(name) => {
+            ActionEffect::SetStance(resolve_name(&maps.stances, "stance", &name)?)
+        }
+    })
+}
+
 fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<StatBlock, String> {
     let StatBlockAsset {
         attack,
@@ -402,53 +429,19 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     let is_update = ctx.get_new_player_blob().is_some();
 
-    let action_ids = match_names(
-        "action",
-        ctx.db.actions().iter().map(|a| (a.name, a.id)),
-        asset_pack.actions.iter().map(|a| &a.name),
-    )?;
-    // Action rounds are derived rows and nothing references their ids, so
-    // each push rebuilds them wholesale. Every authored round gets a row —
-    // including empty (wait) rounds, because round-row existence is what
-    // keeps an action alive.
-    let stale_round_ids: Vec<u64> = ctx.db.action_rounds().iter().map(|r| r.id).collect();
-    for id in stale_round_ids {
-        ctx.db.action_rounds().id().delete(id);
-    }
-    let mut next_action_round_id: u64 = 1;
-    for a in asset_pack.actions {
-        let action_id = action_ids[&a.name];
-        let row = Action {
-            id: action_id,
-            name: a.name,
-            action_type: a.value.action_type,
-            requirements: a.value.requirements,
-        };
-        if ctx.db.actions().id().find(action_id).is_some() {
-            ctx.db.actions().id().update(row);
-        } else {
-            ctx.db.actions().insert(row);
-        }
-        for (sequence_index, round) in a.value.rounds.into_iter().enumerate() {
-            ctx.db.action_rounds().insert(ActionRound {
-                id: next_action_round_id,
-                action_id,
-                sequence_index: sequence_index as i32,
-                effects: round.effects,
-                interruptible: round.interruptible,
-            });
-            next_action_round_id += 1;
-        }
-    }
-
-    let appearance_feature_ids = match_names(
-        "appearance feature",
-        ctx.db.appearance_features().iter().map(|a| (a.name, a.index)),
-        asset_pack.appearance_features.iter().map(|a| &a.name),
-    )?;
+    // All name -> id maps come first: effect payloads (e.g. SetStance) may
+    // reference any kind, so the action loop below already needs them.
     let maps = AssetNameMaps {
-        actions: action_ids,
-        appearance_features: appearance_feature_ids,
+        actions: match_names(
+            "action",
+            ctx.db.actions().iter().map(|a| (a.name, a.id)),
+            asset_pack.actions.iter().map(|a| &a.name),
+        )?,
+        appearance_features: match_names(
+            "appearance feature",
+            ctx.db.appearance_features().iter().map(|a| (a.name, a.index)),
+            asset_pack.appearance_features.iter().map(|a| &a.name),
+        )?,
         baselines: match_names(
             "baseline",
             ctx.db.baselines().iter().map(|b| (b.name, b.id)),
@@ -485,6 +478,45 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             asset_pack.location_maps.iter().map(|m| &m.name),
         )?,
     };
+
+    // Action rounds are derived rows and nothing references their ids, so
+    // each push rebuilds them wholesale. Every authored round gets a row —
+    // including empty (wait) rounds, because round-row existence is what
+    // keeps an action alive.
+    let stale_round_ids: Vec<u64> = ctx.db.action_rounds().iter().map(|r| r.id).collect();
+    for id in stale_round_ids {
+        ctx.db.action_rounds().id().delete(id);
+    }
+    let mut next_action_round_id: u64 = 1;
+    for a in asset_pack.actions {
+        let action_id = maps.actions[&a.name];
+        let row = Action {
+            id: action_id,
+            name: a.name,
+            action_type: a.value.action_type,
+            requirements: a.value.requirements,
+        };
+        if ctx.db.actions().id().find(action_id).is_some() {
+            ctx.db.actions().id().update(row);
+        } else {
+            ctx.db.actions().insert(row);
+        }
+        for (sequence_index, round) in a.value.rounds.into_iter().enumerate() {
+            ctx.db.action_rounds().insert(ActionRound {
+                id: next_action_round_id,
+                action_id,
+                sequence_index: sequence_index as i32,
+                effects: round
+                    .effects
+                    .into_iter()
+                    .map(|effect| resolve_action_effect(effect, &maps))
+                    .collect::<Result<_, _>>()?,
+                interruptible: round.interruptible,
+            });
+            next_action_round_id += 1;
+        }
+    }
+
     for a in asset_pack.appearance_features {
         let index = maps.appearance_features[&a.name];
         let row = AppearanceFeature {

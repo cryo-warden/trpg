@@ -14,6 +14,7 @@ import { stancePack } from "./testAssets";
 
 let admin: DbConnection;
 let player: DbConnection;
+let playerEntityId: bigint;
 
 const stanceIdByName = (name: string): number =>
   [...player.db.stances.iter()].find((row) => row.name === name)!.id;
@@ -47,6 +48,8 @@ beforeAll(async () => {
   await player.reducers.createAccount({ name: "stancer" });
 
   await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
+  playerEntityId = [...player.db.player_controller_components.iter()][0]
+    .entityId;
   await waitFor(() => player.db.stances.count() === 3n, 30000);
   // The stats system has run once the derived actions arrive.
   await waitFor(() => myActionIds().length > 0, 30000);
@@ -59,7 +62,11 @@ afterAll(() => {
 
 test("the derived actions come from the baseline grant, requirement-filtered", () => {
   expect(new Set(myActionIds())).toEqual(
-    new Set([actionIdByName("test_punch"), actionIdByName("test_shuffle")]),
+    new Set([
+      actionIdByName("test_punch"),
+      actionIdByName("test_shuffle"),
+      actionIdByName("test_lie"),
+    ]),
   );
 });
 
@@ -74,7 +81,9 @@ test("swapping to a gait-starved stance drops the movement action", async () => 
     () => !myActionIds().includes(actionIdByName("test_shuffle")),
     30000,
   );
-  expect(myActionIds()).toEqual([actionIdByName("test_punch")]);
+  expect(new Set(myActionIds())).toEqual(
+    new Set([actionIdByName("test_punch"), actionIdByName("test_lie")]),
+  );
 });
 
 test("swapping back restores the movement action", async () => {
@@ -86,9 +95,41 @@ test("swapping back restores the movement action", async () => {
     30000,
   );
   expect(new Set(myActionIds())).toEqual(
-    new Set([actionIdByName("test_punch"), actionIdByName("test_shuffle")]),
+    new Set([
+      actionIdByName("test_punch"),
+      actionIdByName("test_shuffle"),
+      actionIdByName("test_lie"),
+    ]),
   );
 });
+
+test("a posture ACTION spends a round to change stance", async () => {
+  // Back to brawler first (previous test left us there), then lie down via
+  // the round-costing action rather than the reducer.
+  const lieId = actionIdByName("test_lie");
+  await player.reducers.act({
+    actionId: lieId,
+    targetEntityId: playerEntityId,
+  });
+  const proneId = stanceIdByName("test_prone");
+  await waitFor(
+    () =>
+      [...player.db.active_stance_components.iter()].find(
+        (row) => row.entityId === playerEntityId,
+      )?.stanceId === proneId,
+    30000,
+  );
+  // The stance's grants re-derive exactly as with the reducer path.
+  await waitFor(
+    () => !myActionIds().includes(actionIdByName("test_shuffle")),
+    30000,
+  );
+  await player.reducers.setStance({ stanceId: stanceIdByName("test_brawler") });
+  await waitFor(
+    () => myActionIds().includes(actionIdByName("test_shuffle")),
+    30000,
+  );
+}, 60000);
 
 test("a stance whose requirements the body cannot meet is rejected", async () => {
   await expect(

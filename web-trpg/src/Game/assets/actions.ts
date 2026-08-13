@@ -1,34 +1,43 @@
-import { ActionAsset, ActionEffect } from "../../stdb/types";
+import { ActionAsset, ActionEffectAsset } from "../../stdb/types";
 import { NO_REQUIREMENTS, requirements } from "./stat_requirements";
 
 // The TS assets ARE the generated wire types; the only client-side step is
 // bundling the Records into entries arrays (see namedPairs). The helpers
 // below just construct those generated shapes.
 
-const Move = { tag: "Move" } as const satisfies ActionEffect;
+const Move = { tag: "Move" } as const satisfies ActionEffectAsset;
 const Attack = (value: number) =>
-  ({ tag: "Attack", value }) as const satisfies ActionEffect;
+  ({ tag: "Attack", value }) as const satisfies ActionEffectAsset;
 const Heal = (value: number) =>
-  ({ tag: "Heal", value }) as const satisfies ActionEffect;
+  ({ tag: "Heal", value }) as const satisfies ActionEffectAsset;
 const Guard = (value: number) =>
   ({
     tag: "Buff",
     value: { tag: "Guard", value },
-  }) as const satisfies ActionEffect;
-const Take = { tag: "Take" } as const satisfies ActionEffect;
-const Drop = { tag: "Drop" } as const satisfies ActionEffect;
+  }) as const satisfies ActionEffectAsset;
+const Take = { tag: "Take" } as const satisfies ActionEffectAsset;
+const Drop = { tag: "Drop" } as const satisfies ActionEffectAsset;
 const Intimidate = (value: number) =>
-  ({ tag: "Intimidate", value }) as const satisfies ActionEffect;
-const Rally = { tag: "Rally" } as const satisfies ActionEffect;
-const Attune = { tag: "Attune" } as const satisfies ActionEffect;
-const Dive = (defense: number) =>
-  ({ tag: "Dive", value: defense }) as const satisfies ActionEffect;
+  ({ tag: "Intimidate", value }) as const satisfies ActionEffectAsset;
+const Rally = { tag: "Rally" } as const satisfies ActionEffectAsset;
+const Attune = { tag: "Attune" } as const satisfies ActionEffectAsset;
+const SetStance = (stanceName: string) =>
+  ({ tag: "SetStance", value: stanceName }) as const satisfies ActionEffectAsset;
 
-const round = (...effects: ActionEffect[]) => ({
+/** A deliberate stance change: one round spent shifting posture. */
+const posture = (stanceName: string) => ({
+  actionType: { tag: "Posture" } as const,
+  requirements: NO_REQUIREMENTS,
+  rounds: [round(SetStance(stanceName))],
+});
+const Dive = (defense: number) =>
+  ({ tag: "Dive", value: defense }) as const satisfies ActionEffectAsset;
+
+const round = (...effects: ActionEffectAsset[]) => ({
   effects,
   interruptible: false,
 });
-const interruptibleRound = (...effects: ActionEffect[]) => ({
+const interruptibleRound = (...effects: ActionEffectAsset[]) => ({
   effects,
   interruptible: true,
 });
@@ -170,6 +179,23 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [interruptibleRound(), round(Attune)],
   },
+  // Stance changes ARE actions — a round spent shifting posture, no
+  // separate UI. Each goes through the shared adoption gates (known stance,
+  // requirements, the fear gate).
+  stand: posture("standing"),
+  sit: posture("sitting"),
+  lie_down: posture("prone"),
+  ready_up: posture("ready"),
+  square_up: posture("brawler"),
+  duel: posture("dueling"),
+  stride: posture("striding"),
+  perch: posture("perched"),
+  take_wing: posture("flapping"),
+  center: posture("casting"),
+  kindle: posture("fire_casting"),
+  chill: posture("ice_casting"),
+  charge: posture("lightning_casting"),
+  slump: posture("amorphous"),
   // Hit the deck: lands prone (fear stays if present), braced for +2
   // defense, and grabs a targeted item mid-dive — a wielded weapon's morale
   // can itself overcome a fear.
@@ -285,5 +311,61 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   attune: {
     displayName: "Attune",
     beginTemplate: "{0:sentence:subject} gazed into {1:object}, entranced.",
+  },
+  stand: {
+    displayName: "Stand",
+    beginTemplate: "{0:sentence:subject} rose to {0:possessive} feet.",
+  },
+  sit: {
+    displayName: "Sit",
+    beginTemplate: "{0:sentence:subject} sat down.",
+  },
+  lie_down: {
+    displayName: "Lie Down",
+    beginTemplate: "{0:sentence:subject} lay down flat.",
+  },
+  ready_up: {
+    displayName: "Ready Up",
+    beginTemplate: "{0:sentence:subject} took a guarded footing.",
+  },
+  square_up: {
+    displayName: "Square Up",
+    beginTemplate: "{0:sentence:subject} raised {0:possessive} fists.",
+  },
+  duel: {
+    displayName: "Duel",
+    beginTemplate: "{0:sentence:subject} slid into a duelist's guard.",
+  },
+  stride: {
+    displayName: "Stride",
+    beginTemplate: "{0:sentence:subject} set off at a stride.",
+  },
+  perch: {
+    displayName: "Perch",
+    beginTemplate: "{0:sentence:subject} settled onto a perch.",
+  },
+  take_wing: {
+    displayName: "Take Wing",
+    beginTemplate: "{0:sentence:subject} took wing.",
+  },
+  center: {
+    displayName: "Center",
+    beginTemplate: "{0:sentence:subject} centered {0:possessive} focus.",
+  },
+  kindle: {
+    displayName: "Kindle",
+    beginTemplate: "{0:sentence:subject} kindled an inner flame.",
+  },
+  chill: {
+    displayName: "Chill",
+    beginTemplate: "{0:sentence:subject} drew in a killing cold.",
+  },
+  charge: {
+    displayName: "Charge",
+    beginTemplate: "{0:sentence:subject} crackled with gathering charge.",
+  },
+  slump: {
+    displayName: "Slump",
+    beginTemplate: "{0:sentence:subject} slumped back into formlessness.",
   },
 };

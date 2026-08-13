@@ -31,10 +31,32 @@ use crate::{
 /// inside a nested array.)
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ActionRoundAsset {
-    pub effects: Vec<ActionEffect>,
+    pub effects: Vec<ActionEffectAsset>,
     /// While this round is the active one, queuing a new action cancels the
     /// action immediately instead of waiting it out.
     pub interruptible: bool,
+}
+
+/// The AUTHORED form of an action effect: effects that reference other
+/// assets do so by NAME, and push_assets resolves them to the stored
+/// ActionEffect's integer ids — the same forward-only conversion as every
+/// other asset reference.
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum ActionEffectAsset {
+    Buff(crate::action::Buff),
+    Attack(i16),
+    Heal(i16),
+    Move,
+    Take,
+    Drop,
+    Equip,
+    Unequip,
+    Intimidate(i16),
+    Rally,
+    Dive(i16),
+    Attune,
+    /// The stance to change into, by name.
+    SetStance(String),
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

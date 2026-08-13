@@ -270,6 +270,13 @@ pub fn action_system(ecs: Ecs) {
                         action_state.target_entity_id,
                     ));
                 }
+                ActionEffect::SetStance(_) => {
+                    queue.emit_late(ecs.new_event(
+                        entity_id,
+                        EventType::ActionEffect(effect.to_owned()),
+                        action_state.target_entity_id,
+                    ));
+                }
                 // A defensive reaction: early, so the braced defense stands
                 // before this tick's blows.
                 ActionEffect::Dive(_) => {

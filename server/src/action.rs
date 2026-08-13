@@ -16,6 +16,8 @@ pub enum ActionType {
     /// Targets a co-located checkpoint object (fortune-telling scenery) to
     /// bind where the actor wakes from the death-trance.
     Attune,
+    /// Self-targeted deliberate stance changes.
+    Posture,
 }
 
 #[table(accessor = actions, public)]
@@ -71,6 +73,11 @@ pub enum ActionEffect {
     /// Bind the actor's checkpoint to the targeted checkpoint object's
     /// room: a trance sealed now, woken from at death.
     Attune,
+    /// A DELIBERATE stance change — "stand", "sit", "lie down" are ordinary
+    /// round-costing actions carrying this. Goes through the same gates as
+    /// the set_stance reducer (known stance, requirements, the fear gate);
+    /// forced transitions (intimidation, dive) bypass those on purpose.
+    SetStance(u32),
 }
 
 /// One round of an action, with its effects denormalized into the row: every

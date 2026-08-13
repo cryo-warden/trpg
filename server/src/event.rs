@@ -322,6 +322,25 @@ secador::secador!(
                                 _ => false,
                             }
                         }
+                        // A deliberate stance change carried by a Posture
+                        // action: same gates as the reducer, via the shared
+                        // adoption path. A refused adoption (fear held,
+                        // unknown, requirements) simply fizzles the round.
+                        ActionEffect::SetStance(stance_id) => {
+                            let owner = ecs.find(self.owner_entity_id);
+                            match owner.try_adopt_stance(*stance_id) {
+                                Ok(()) => true,
+                                Err(reason) => {
+                                    log::debug!(
+                                        "Entity {} could not adopt stance {}: {}",
+                                        self.owner_entity_id,
+                                        stance_id,
+                                        reason
+                                    );
+                                    false
+                                }
+                            }
+                        }
                         // Rally spends EP DYNAMICALLY: exactly the deficit
                         // (1:1) between the fear's intimidation and current
                         // effective morale, granting a courage status just
