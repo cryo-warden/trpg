@@ -66,12 +66,71 @@ pub struct LocationMap {
     pub max_encounter_count: u8,
 }
 
+/// Where a connection attaches inside a generated map.
+#[derive(Debug, Clone, SpacetimeType)]
+pub enum ConnectionAnchor {
+    /// The first main room.
+    Entrance,
+    /// The last main room.
+    Ending,
+    /// A random main-chain room.
+    Edge,
+    /// A random branched (extra) room; falls back to a main room when the
+    /// map generated no extras.
+    Branch,
+}
+
+/// A DIRECTED cross-map connection (both-ways authoring expands to two rows
+/// at push): from the exit map's anchor room, a path materializes into the
+/// destination map's anchor room — lazily, when a player stands in the
+/// anchor room (the demand predicate).
 #[table(accessor = location_map_connections)]
 pub struct LocationMapConnection {
     #[primary_key]
     pub id: u32,
     pub exit_location_map_id: u32,
     pub destination_location_map_id: u32,
+    pub exit_anchor: ConnectionAnchor,
+    pub destination_anchor: ConnectionAnchor,
+}
+
+/// The room a ConnectionAnchor selects within a generated (or recorded)
+/// room layout, or None for an empty map.
+pub fn resolve_anchor_room(
+    main_room_entity_ids: &[u64],
+    extra_room_entity_ids: &[u64],
+    anchor: &ConnectionAnchor,
+    rng: &mut StdRng,
+) -> Option<u64> {
+    match anchor {
+        ConnectionAnchor::Entrance => main_room_entity_ids.first().copied(),
+        ConnectionAnchor::Ending => main_room_entity_ids.last().copied(),
+        ConnectionAnchor::Edge => {
+            if main_room_entity_ids.is_empty() {
+                None
+            } else {
+                let index: usize =
+                    rng.get_range::<u32, usize>(0, (main_room_entity_ids.len() - 1) as u32);
+                main_room_entity_ids.get(index).copied()
+            }
+        }
+        ConnectionAnchor::Branch => {
+            if let Some(&room) = extra_room_entity_ids.first() {
+                // Deterministically varied would be nicer; any branch room
+                // serves the fiction.
+                let index: usize =
+                    rng.get_range::<u32, usize>(0, (extra_room_entity_ids.len() - 1) as u32);
+                extra_room_entity_ids.get(index).copied().or(Some(room))
+            } else {
+                resolve_anchor_room(
+                    main_room_entity_ids,
+                    &[],
+                    &ConnectionAnchor::Edge,
+                    rng,
+                )
+            }
+        }
+    }
 }
 
 pub struct MapGenerationResult {
@@ -209,11 +268,48 @@ impl LocationMap {
                     );
             }
         }
+        let main_room_entity_ids: Vec<u64> = room_handles[..main_room_count]
+            .iter()
+            .map(|h| h.entity_id())
+            .collect();
+        let extra_room_entity_ids: Vec<u64> = room_handles[main_room_count..]
+            .iter()
+            .map(|h| h.entity_id())
+            .collect();
         location_map_entity
             .clone()
             .upsert_new_map_instance(self.id)
             .into_handle()
-            .upsert_new_map_checkpoints(checkpoint_room_entity_ids.clone());
+            .clone()
+            .upsert_new_map_checkpoints(checkpoint_room_entity_ids.clone())
+            .into_handle()
+            .upsert_new_map_rooms(
+                main_room_entity_ids.clone(),
+                extra_room_entity_ids.clone(),
+            );
+
+        // Seed the anchors: every connection LEAVING this map attaches, as
+        // pending, to its resolved anchor room. A player standing there
+        // later demands the far map and the path materializes.
+        use spacetimedb::Table as _;
+        for connection in ecs.db.location_map_connections().iter() {
+            if connection.exit_location_map_id != self.id {
+                continue;
+            }
+            if let Some(anchor_room) = resolve_anchor_room(
+                &main_room_entity_ids,
+                &extra_room_entity_ids,
+                &connection.exit_anchor,
+                &mut rng,
+            ) {
+                let room = ecs.find(anchor_room);
+                let mut connection_ids = { room.pending_connections() }
+                    .map(|c| c.connection_ids)
+                    .unwrap_or_default();
+                connection_ids.push(connection.id);
+                room.upsert_new_pending_connections(connection_ids);
+            }
+        }
 
         Ok(MapGenerationResult {
             main_room_ids: room_handles[..main_room_count]

@@ -93,11 +93,14 @@ import LoginRequestVotersRow from "./login_request_voters_table";
 import LoginRequestsRow from "./login_requests_table";
 import LoginResponsesRow from "./login_responses_table";
 import MapCheckpointsComponentsRow from "./map_checkpoints_components_table";
+import MapCleanupTimerComponentsRow from "./map_cleanup_timer_components_table";
 import MapInstanceComponentsRow from "./map_instance_components_table";
+import MapRoomsComponentsRow from "./map_rooms_components_table";
 import NameComponentsRow from "./name_components_table";
 import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
 import PathComponentsRow from "./path_components_table";
+import PendingConnectionsComponentsRow from "./pending_connections_components_table";
 import PinnedActionsComponentsRow from "./pinned_actions_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
@@ -590,6 +593,17 @@ const tablesSchema = __schema({
       { name: 'map_checkpoints_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, MapCheckpointsComponentsRow),
+  map_cleanup_timer_components: __table({
+    name: 'map_cleanup_timer_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'map_cleanup_timer_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'map_cleanup_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, MapCleanupTimerComponentsRow),
   map_instance_components: __table({
     name: 'map_instance_components',
     indexes: [
@@ -601,6 +615,17 @@ const tablesSchema = __schema({
       { name: 'map_instance_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, MapInstanceComponentsRow),
+  map_rooms_components: __table({
+    name: 'map_rooms_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'map_rooms_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'map_rooms_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, MapRoomsComponentsRow),
   name_components: __table({
     name: 'name_components',
     indexes: [
@@ -653,6 +678,17 @@ const tablesSchema = __schema({
       { name: 'path_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, PathComponentsRow),
+  pending_connections_components: __table({
+    name: 'pending_connections_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'pending_connections_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'pending_connections_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, PendingConnectionsComponentsRow),
   pinned_actions_components: __table({
     name: 'pinned_actions_components',
     indexes: [

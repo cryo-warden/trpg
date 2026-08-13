@@ -6,7 +6,11 @@ import { BASELINES } from "./baselines";
 import { RELICS } from "./relics";
 import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./encounters";
 import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./entity_blobs";
-import { LOCATION_MAPS, LOCATION_MAP_THEMES } from "./location_maps";
+import {
+  LOCATION_MAPS,
+  LOCATION_MAP_CONNECTIONS,
+  LOCATION_MAP_THEMES,
+} from "./location_maps";
 import { STANCES } from "./stances";
 import { TRAITS } from "./traits";
 
@@ -40,6 +44,7 @@ export const assets = {
   encounters: ENCOUNTERS,
   locationMapThemes: LOCATION_MAP_THEMES,
   locationMaps: LOCATION_MAPS,
+  locationMapConnections: LOCATION_MAP_CONNECTIONS,
   namedEntityBlobs: NAMED_ENTITY_BLOBS,
   newPlayerBlob: NEW_PLAYER_BLOB,
 };

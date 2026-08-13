@@ -1,9 +1,17 @@
 use crate::{
     action::{actions, ActionEffect, ActionHandle},
     asset::{
-        armament::armaments, armor::armors, location_map::location_maps, r#trait::traits,
-        relic::relics, stance::stances, stat_block::StatBlock,
+        armament::armaments,
+        armor::armors,
+        location_map::{location_map_connections, location_maps},
+        location_map_theme::location_map_themes,
+        r#trait::traits,
+        relic::relics,
+        stance::stances,
+        stat_block::StatBlock,
+        weighted_sampler::WeightedSampler,
     },
+    ecs_extension::EcsExtension,
     entity::*,
     entity_handle_extension::EntityHandleExtension,
     event::{observable_events, EventQueue, EventType, NewEvent},
@@ -517,6 +525,225 @@ pub fn player_activation_system(ecs: Ecs) {
     }
 }
 
+/// How long an undemanded map instance lingers before cleanup.
+const MAP_CLEANUP_DELAY_MICROS: i64 = 900_000_000;
+
+/// THE demand predicate, driving generation, keep-alive, and cleanup alike:
+/// a map instance is demanded when a player is inside it, or a player
+/// shares a room with a path — materialized or pending — leading into it.
+/// Demanded pending connections materialize (generating the far map on
+/// demand); demanded instances shed any cleanup timer; undemanded ones gain
+/// a timer and are torn down when it expires.
+pub fn map_demand_system(ecs: Ecs) {
+    let mut demanded: std::collections::HashSet<u64> = std::collections::HashSet::new();
+    // Anchor picks need no determinism; seed a StdRng from the tick's rng.
+    use spacetimedb::rand::{Rng as _, SeedableRng as _};
+    let mut rng =
+        spacetimedb::rand::rngs::StdRng::seed_from_u64(ecs.rng().gen::<u64>());
+    for p in ecs.iter_player_controller() {
+        let player = p.into_handle();
+        let room_entity_id = match player.location() {
+            None => continue,
+            Some(location) => location.location_entity_id,
+        };
+        let room = ecs.find(room_entity_id);
+        if let Some(m) = room.location_map() {
+            demanded.insert(m.location_map_entity_id);
+        }
+        // Pending connections: demand generates the far side and the
+        // connecting path appears.
+        if let Some(pending) = room.pending_connections() {
+            let mut remaining: Vec<u32> = Vec::new();
+            for connection_id in pending.connection_ids {
+                match materialize_connection(ecs, room_entity_id, connection_id, &mut rng) {
+                    Ok(destination_instance_id) => {
+                        demanded.insert(destination_instance_id);
+                    }
+                    Err(reason) => {
+                        log::error!(
+                            "Connection {} at room {} failed to materialize: {}",
+                            connection_id,
+                            room_entity_id,
+                            reason
+                        );
+                        remaining.push(connection_id);
+                    }
+                }
+            }
+            if remaining.is_empty() {
+                room.delete_pending_connections();
+            } else {
+                room.clone().upsert_new_pending_connections(remaining);
+            }
+        }
+        // Paths out of this room keep their destinations' maps alive.
+        let cohabitants: Vec<_> = ecs
+            .db
+            .location_components()
+            .location_entity_id()
+            .filter(room_entity_id)
+            .collect();
+        for cohabitant in cohabitants {
+            let entity = ecs.find(cohabitant.entity_id);
+            if let Some(path) = entity.path() {
+                if let Some(destination_map) =
+                    ecs.find(path.destination_entity_id).location_map()
+                {
+                    demanded.insert(destination_map.location_map_entity_id);
+                }
+            }
+        }
+    }
+
+    for m in ecs.iter_map_instance() {
+        let instance = m.into_handle();
+        if demanded.contains(&instance.entity_id()) {
+            if instance.map_cleanup_timer().is_some() {
+                instance.delete_map_cleanup_timer();
+            }
+        } else if instance.map_cleanup_timer().is_none() {
+            instance.upsert_new_map_cleanup_timer(
+                ecs.timestamp
+                    + spacetimedb::TimeDuration::from_micros(MAP_CLEANUP_DELAY_MICROS),
+            );
+        }
+    }
+
+    let expired: Vec<u64> = ecs
+        .iter_map_cleanup_timer()
+        .filter(|t| t.map_cleanup_timer().timestamp <= ecs.timestamp)
+        .map(|t| t.entity_id())
+        .filter(|id| !demanded.contains(id))
+        .collect();
+    for map_entity_id in expired {
+        cleanup_map_instance(ecs, map_entity_id);
+    }
+}
+
+/// Create the cross-map path for a demanded pending connection, generating
+/// the destination map when no instance of it exists.
+fn materialize_connection(
+    ecs: Ecs,
+    room_entity_id: u64,
+    connection_id: u32,
+    rng: &mut spacetimedb::rand::rngs::StdRng,
+) -> Result<u64, String> {
+    let connection = ecs
+        .db
+        .location_map_connections()
+        .id()
+        .find(connection_id)
+        .ok_or_else(|| format!("unknown connection {}", connection_id))?;
+    let find_instance = || {
+        ecs.iter_map_instance()
+            .find(|m| m.map_instance().location_map_id == connection.destination_location_map_id)
+            .map(|m| m.entity_id())
+    };
+    let destination_instance_id = match find_instance() {
+        Some(id) => id,
+        None => {
+            let map = ecs
+                .db
+                .location_maps()
+                .id()
+                .find(connection.destination_location_map_id)
+                .ok_or_else(|| {
+                    format!(
+                        "unknown location map {}",
+                        connection.destination_location_map_id
+                    )
+                })?;
+            map.generate_entities(ecs)?;
+            find_instance().ok_or("destination map generated no instance")?
+        }
+    };
+    let rooms = ecs
+        .find(destination_instance_id)
+        .map_rooms()
+        .ok_or("destination instance records no rooms")?;
+    let destination_room = crate::asset::location_map::resolve_anchor_room(
+        &rooms.main_room_entity_ids,
+        &rooms.extra_room_entity_ids,
+        &connection.destination_anchor,
+        rng,
+    )
+    .ok_or("destination anchor resolves to no room")?;
+    // The path wears the EXIT map's theme.
+    let exit_map = ecs
+        .db
+        .location_maps()
+        .id()
+        .find(connection.exit_location_map_id)
+        .ok_or("unknown exit map")?;
+    let path_blob = ecs
+        .db
+        .location_map_themes()
+        .id()
+        .find(exit_map.theme_id)
+        .and_then(|theme| theme.paths_selector.sample(rng).map(|b| b.to_owned()));
+    match path_blob {
+        Some(blob) => {
+            ecs.new_path(blob, room_entity_id, destination_room)?;
+        }
+        // A theme without path blobs still connects; the path is simply
+        // featureless.
+        None => {
+            ecs.new()
+                .upsert_new_location(room_entity_id)
+                .into_handle()
+                .upsert_new_path(destination_room);
+        }
+    }
+    Ok(destination_instance_id)
+}
+
+/// Tear down an undemanded map instance: every path pointing INTO its rooms
+/// (including materialized cross-map paths living elsewhere), the rooms'
+/// contents (recursively — carried items go with their carriers), the rooms,
+/// and the instance itself.
+fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
+    log::info!("Cleaning up undemanded map instance {}.", map_entity_id);
+    let room_ids: Vec<u64> = ecs
+        .db
+        .location_map_components()
+        .iter()
+        .filter(|c| c.location_map_entity_id == map_entity_id)
+        .map(|c| c.entity_id)
+        .collect();
+    for room_id in &room_ids {
+        // Leftover paths elsewhere pointing into this room die with it.
+        let inbound: Vec<u64> = ecs
+            .db
+            .path_components()
+            .destination_entity_id()
+            .filter(*room_id)
+            .map(|p| p.entity_id)
+            .collect();
+        for path_entity_id in inbound {
+            ecs.find(path_entity_id).delete();
+        }
+        // Contents, recursively.
+        let mut stack = vec![*room_id];
+        let mut contents: Vec<u64> = Vec::new();
+        while let Some(container) = stack.pop() {
+            for contained in ecs
+                .db
+                .location_components()
+                .location_entity_id()
+                .filter(container)
+            {
+                stack.push(contained.entity_id);
+                contents.push(contained.entity_id);
+            }
+        }
+        for entity_id in contents {
+            ecs.find(entity_id).delete();
+        }
+        ecs.find(*room_id).delete();
+    }
+    ecs.find(map_entity_id).delete();
+}
+
 pub fn enemy_control_system(ecs: Ecs) {
     // TODO Build cache of players-by-location.
     let mut players: Vec<_> = ecs.iter_player_controller().with_location().collect();
@@ -562,5 +789,6 @@ pub fn execute_all_systems(ecs: Ecs) {
     player_deactivation_timer_system(ecs);
     entity_stats_system(ecs);
     player_activation_system(ecs);
+    map_demand_system(ecs);
     enemy_control_system(ecs);
 }

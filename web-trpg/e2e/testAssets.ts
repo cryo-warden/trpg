@@ -36,6 +36,7 @@ const emptyPack = (): AssetPack => ({
   encounters: [],
   locationMapThemes: [],
   locationMaps: [],
+  connections: [],
   namedInstantiateEntityBlobs: [],
   instantiateEntityBlobs: [],
   // An empty blob: accounts created against this pack get a bare player
@@ -158,7 +159,6 @@ export const mapGenPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
-        connectionNames: [],
       },
     },
   ],
@@ -437,6 +437,89 @@ export const moralePack = (): AssetPack => ({
 });
 
 /**
+ * A connections world: two tiny maps joined both-ways (near's Ending to
+ * far's Entrance). The player spawns through real map generation in "near"
+ * (no authored location, so activation generates it), walks to the anchor
+ * room, and demand does the rest: far map generated, path materialized,
+ * return path on arrival, cleanup timer once abandoned.
+ */
+export const connectionsPack = (): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    {
+      name: "test_move",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: requirements({ gait: 1 }),
+        rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_walker",
+      value: statBlock({ mhp: 5, gait: 2, actionNames: ["test_move"] }),
+    },
+  ],
+  locationMapThemes: [
+    {
+      name: "test_link_theme",
+      value: {
+        decorationsSelector: { selections: [] },
+        minDecorationCount: 0,
+        maxDecorationCount: 0,
+        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        checkpointsSelector: { selections: [] },
+      },
+    },
+  ],
+  locationMaps: [
+    {
+      name: "test_near",
+      value: {
+        themeName: "test_link_theme",
+        layout: { tag: "Path" },
+        rngSeed: 0n,
+        mainRoomCount: 2,
+        extraRoomCount: 0,
+        loopCount: 0,
+        encounterNamesSampler: [],
+        minEncounterCount: 0,
+        maxEncounterCount: 0,
+      },
+    },
+    {
+      name: "test_far",
+      value: {
+        themeName: "test_link_theme",
+        layout: { tag: "Path" },
+        rngSeed: 0n,
+        mainRoomCount: 1,
+        extraRoomCount: 0,
+        loopCount: 0,
+        encounterNamesSampler: [],
+        minEncounterCount: 0,
+        maxEncounterCount: 0,
+      },
+    },
+  ],
+  connections: [
+    {
+      exitLocationMapName: "test_near",
+      destinationLocationMapName: "test_far",
+      exitAnchor: { tag: "Ending" },
+      destinationAnchor: { tag: "Entrance" },
+      bothWays: true,
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_walker",
+    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+  }),
+});
+
+/**
  * A death world: a hero, bone dice to attune to in the safe room, a lethal
  * brute one room over, and a fragile vermin to corpse-test. Death wakes the
  * hero at the attuned checkpoint, fully restored; a dead NPC is deleted
@@ -475,7 +558,6 @@ export const deathPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
-        connectionNames: [],
       },
     },
   ],

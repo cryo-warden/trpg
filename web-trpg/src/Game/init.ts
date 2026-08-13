@@ -10,6 +10,7 @@ import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./assets/encounters";
 import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./assets/entity_blobs";
 import {
   LOCATION_MAPS,
+  LOCATION_MAP_CONNECTIONS,
   LOCATION_MAP_THEMES,
 } from "./assets/location_maps";
 import { STANCES } from "./assets/stances";
@@ -37,6 +38,7 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       encounters: namedPairs(ENCOUNTERS),
       locationMapThemes: namedPairs(LOCATION_MAP_THEMES),
       locationMaps: namedPairs(LOCATION_MAPS),
+      connections: LOCATION_MAP_CONNECTIONS,
       namedInstantiateEntityBlobs: namedPairs(NAMED_ENTITY_BLOBS),
       instantiateEntityBlobs: [],
       newPlayerBlob: NEW_PLAYER_BLOB,

@@ -1,6 +1,7 @@
 import {
   Layout,
   LocationMapAsset,
+  LocationMapConnectionAsset,
   LocationMapThemeAsset,
 } from "../../stdb/types";
 import { blob } from "./entity_blobs";
@@ -405,7 +406,6 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 2,
     maxEncounterCount: 4,
-    connectionNames: ["beginner_cave", "verdant_meadow"],
   },
   beginner_cave: {
     themeName: "cave",
@@ -422,7 +422,6 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 8,
     maxEncounterCount: 12,
-    connectionNames: [],
   },
   verdant_meadow: {
     themeName: "meadow",
@@ -439,7 +438,6 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 5,
     maxEncounterCount: 8,
-    connectionNames: ["whispering_forest"],
   },
   whispering_forest: {
     themeName: "forest",
@@ -456,7 +454,6 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 6,
     maxEncounterCount: 10,
-    connectionNames: ["old_keep"],
   },
   old_keep: {
     themeName: "keep",
@@ -475,7 +472,6 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 6,
     maxEncounterCount: 9,
-    connectionNames: ["elemental_sanctum"],
   },
   elemental_sanctum: {
     themeName: "sanctum",
@@ -492,7 +488,6 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 5,
     maxEncounterCount: 8,
-    connectionNames: [],
   },
   triangle_loop: {
     // Smallest case that produces a triangular join: three main rooms chained
@@ -506,8 +501,31 @@ export const LOCATION_MAPS = {
     encounterNamesSampler: [],
     minEncounterCount: 0,
     maxEncounterCount: 0,
-    connectionNames: [],
   },
 } satisfies Record<string, LocationMapAsset>;
 
 export type LocationMapName = keyof typeof LOCATION_MAPS;
+
+// The world graph: a JOIN list, directed with both-ways expansion at push.
+// Paths materialize lazily — a player standing in the anchor room demands
+// the far map into existence.
+const connect = (
+  exit: LocationMapName,
+  exitAnchor: LocationMapConnectionAsset["exitAnchor"]["tag"],
+  destination: LocationMapName,
+  destinationAnchor: LocationMapConnectionAsset["destinationAnchor"]["tag"],
+): LocationMapConnectionAsset => ({
+  exitLocationMapName: exit,
+  destinationLocationMapName: destination,
+  exitAnchor: { tag: exitAnchor },
+  destinationAnchor: { tag: destinationAnchor },
+  bothWays: true,
+});
+
+export const LOCATION_MAP_CONNECTIONS: LocationMapConnectionAsset[] = [
+  connect("start_zone", "Branch", "beginner_cave", "Entrance"),
+  connect("start_zone", "Ending", "verdant_meadow", "Entrance"),
+  connect("verdant_meadow", "Ending", "whispering_forest", "Entrance"),
+  connect("whispering_forest", "Ending", "old_keep", "Entrance"),
+  connect("old_keep", "Ending", "elemental_sanctum", "Entrance"),
+];

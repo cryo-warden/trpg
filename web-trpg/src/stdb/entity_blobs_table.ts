@@ -27,6 +27,8 @@ import {
   CheckpointComponentBlob,
   MapInstanceComponentBlob,
   MapCheckpointsComponentBlob,
+  MapRoomsComponentBlob,
+  PendingConnectionsComponentBlob,
   CheckpointBindingComponentBlob,
   AttackComponentBlob,
   HpComponentBlob,
@@ -117,6 +119,12 @@ export default __t.row({
   get mapCheckpoints() {
     return __t.option(MapCheckpointsComponentBlob).name("map_checkpoints");
   },
+  get mapRooms() {
+    return __t.option(MapRoomsComponentBlob).name("map_rooms");
+  },
+  get pendingConnections() {
+    return __t.option(PendingConnectionsComponentBlob).name("pending_connections");
+  },
   get checkpointBinding() {
     return __t.option(CheckpointBindingComponentBlob).name("checkpoint_binding");
   },
@@ -170,6 +178,9 @@ export default __t.row({
   },
   get respawnTimer() {
     return __t.option(TimerComponentBlob).name("respawn_timer");
+  },
+  get mapCleanupTimer() {
+    return __t.option(TimerComponentBlob).name("map_cleanup_timer");
   },
   get locationMap() {
     return __t.option(LocationMapComponentBlob).name("location_map");

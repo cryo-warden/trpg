@@ -16,7 +16,7 @@ use spacetimedb::SpacetimeType;
 use crate::{
     action::{ActionEffect, ActionType},
     appearance::AppearanceFeatureType,
-    asset::location_map::Layout,
+    asset::location_map::{ConnectionAnchor, Layout},
     asset::stat_block::StatRequirements,
     entity::{
         AllegianceComponentBlob, AttackComponentBlob, EnemyControllerComponentBlob,
@@ -214,9 +214,18 @@ pub struct LocationMapAsset {
     pub encounter_names_sampler: Vec<WeightedNameAsset>,
     pub min_encounter_count: u8,
     pub max_encounter_count: u8,
-    /// Names of destination maps; push_assets derives the
-    /// LocationMapConnection rows from these.
-    pub connection_names: Vec<String>,
+}
+
+/// A cross-map connection as authored: a JOIN row between two maps by name,
+/// with the anchor on each side and an optional both-ways expansion (push
+/// derives one directed LocationMapConnection row per direction).
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct LocationMapConnectionAsset {
+    pub exit_location_map_name: String,
+    pub destination_location_map_name: String,
+    pub exit_anchor: ConnectionAnchor,
+    pub destination_anchor: ConnectionAnchor,
+    pub both_ways: bool,
 }
 
 // One entry of an authored Record: `name` is the Record key, taken verbatim

@@ -295,6 +295,9 @@ export const AssetPack = __t.object("AssetPack", {
   get locationMaps() {
     return __t.array(NamedLocationMapAsset);
   },
+  get connections() {
+    return __t.array(LocationMapConnectionAsset);
+  },
   get namedInstantiateEntityBlobs() {
     return __t.array(NamedEntityBlobAsset);
   },
@@ -386,6 +389,15 @@ export const CheckpointComponentBlob = __t.object("CheckpointComponentBlob", {
   checkpointIndex: __t.u32(),
 });
 export type CheckpointComponentBlob = __Infer<typeof CheckpointComponentBlob>;
+
+// The tagged union or sum type for the algebraic type `ConnectionAnchor`.
+export const ConnectionAnchor = __t.enum("ConnectionAnchor", {
+  Entrance: __t.unit(),
+  Ending: __t.unit(),
+  Edge: __t.unit(),
+  Branch: __t.unit(),
+});
+export type ConnectionAnchor = __Infer<typeof ConnectionAnchor>;
 
 export const CourageStatusComponent = __t.object("CourageStatusComponent", {
   entityId: __t.u64(),
@@ -517,6 +529,12 @@ export const EntityBlob = __t.object("EntityBlob", {
   get mapCheckpoints() {
     return __t.option(MapCheckpointsComponentBlob);
   },
+  get mapRooms() {
+    return __t.option(MapRoomsComponentBlob);
+  },
+  get pendingConnections() {
+    return __t.option(PendingConnectionsComponentBlob);
+  },
   get checkpointBinding() {
     return __t.option(CheckpointBindingComponentBlob);
   },
@@ -569,6 +587,9 @@ export const EntityBlob = __t.object("EntityBlob", {
     return __t.option(TimerComponentBlob);
   },
   get respawnTimer() {
+    return __t.option(TimerComponentBlob);
+  },
+  get mapCleanupTimer() {
     return __t.option(TimerComponentBlob);
   },
   get locationMap() {
@@ -844,7 +865,6 @@ export const LocationMapAsset = __t.object("LocationMapAsset", {
   },
   minEncounterCount: __t.u8(),
   maxEncounterCount: __t.u8(),
-  connectionNames: __t.array(__t.string()),
 });
 export type LocationMapAsset = __Infer<typeof LocationMapAsset>;
 
@@ -865,8 +885,27 @@ export const LocationMapConnection = __t.object("LocationMapConnection", {
   id: __t.u32(),
   exitLocationMapId: __t.u32(),
   destinationLocationMapId: __t.u32(),
+  get exitAnchor() {
+    return ConnectionAnchor;
+  },
+  get destinationAnchor() {
+    return ConnectionAnchor;
+  },
 });
 export type LocationMapConnection = __Infer<typeof LocationMapConnection>;
+
+export const LocationMapConnectionAsset = __t.object("LocationMapConnectionAsset", {
+  exitLocationMapName: __t.string(),
+  destinationLocationMapName: __t.string(),
+  get exitAnchor() {
+    return ConnectionAnchor;
+  },
+  get destinationAnchor() {
+    return ConnectionAnchor;
+  },
+  bothWays: __t.bool(),
+});
+export type LocationMapConnectionAsset = __Infer<typeof LocationMapConnectionAsset>;
 
 export const LocationMapTheme = __t.object("LocationMapTheme", {
   id: __t.u32(),
@@ -978,6 +1017,19 @@ export const MapInstanceComponentBlob = __t.object("MapInstanceComponentBlob", {
 });
 export type MapInstanceComponentBlob = __Infer<typeof MapInstanceComponentBlob>;
 
+export const MapRoomsComponent = __t.object("MapRoomsComponent", {
+  entityId: __t.u64(),
+  mainRoomEntityIds: __t.array(__t.u64()),
+  extraRoomEntityIds: __t.array(__t.u64()),
+});
+export type MapRoomsComponent = __Infer<typeof MapRoomsComponent>;
+
+export const MapRoomsComponentBlob = __t.object("MapRoomsComponentBlob", {
+  mainRoomEntityIds: __t.array(__t.u64()),
+  extraRoomEntityIds: __t.array(__t.u64()),
+});
+export type MapRoomsComponentBlob = __Infer<typeof MapRoomsComponentBlob>;
+
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),
   name: __t.string(),
@@ -1071,6 +1123,17 @@ export const PathComponentBlob = __t.object("PathComponentBlob", {
   },
 });
 export type PathComponentBlob = __Infer<typeof PathComponentBlob>;
+
+export const PendingConnectionsComponent = __t.object("PendingConnectionsComponent", {
+  entityId: __t.u64(),
+  connectionIds: __t.array(__t.u32()),
+});
+export type PendingConnectionsComponent = __Infer<typeof PendingConnectionsComponent>;
+
+export const PendingConnectionsComponentBlob = __t.object("PendingConnectionsComponentBlob", {
+  connectionIds: __t.array(__t.u32()),
+});
+export type PendingConnectionsComponentBlob = __Infer<typeof PendingConnectionsComponentBlob>;
 
 export const PinnedActionsComponent = __t.object("PinnedActionsComponent", {
   entityId: __t.u64(),

@@ -147,6 +147,22 @@ entity!(
         pub checkpoint_room_entity_ids: Vec<EntityId>,
     }
 
+    // A map instance's generated rooms, in generation order — what a
+    // ConnectionAnchor resolves against.
+    #[component(map_rooms in map_rooms_components)]
+    struct MapRoomsComponent {
+        pub main_room_entity_ids: Vec<EntityId>,
+        pub extra_room_entity_ids: Vec<EntityId>,
+    }
+
+    // On an anchor ROOM: cross-map connections not yet materialized. A
+    // player standing here demands the destination map — generating it if
+    // needed — and the connecting path appears.
+    #[component(pending_connections in pending_connections_components)]
+    struct PendingConnectionsComponent {
+        pub connection_ids: Vec<u32>,
+    }
+
     // On a checkpoint OBJECT: the abstract destination attuning to it
     // binds (its own map + index).
     #[component(checkpoint_binding in checkpoint_binding_components)]
@@ -258,6 +274,7 @@ entity!(
       entity_deletion_timer in entity_deletion_timer_components,
       player_deactivation_timer in player_deactivation_timer_components,
       respawn_timer in respawn_timer_components,
+      map_cleanup_timer in map_cleanup_timer_components,
     )]
     struct TimerComponent {
         pub timestamp: Timestamp,

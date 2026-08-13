@@ -89,6 +89,9 @@ pub struct AssetPack {
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
     location_maps: Vec<NamedLocationMapAsset>,
 
+    /// Cross-map connections: a join list, not per-map fields.
+    connections: Vec<types::LocationMapConnectionAsset>,
+
     named_instantiate_entity_blobs: Vec<NamedEntityBlobAsset>,
 
     instantiate_entity_blobs: Vec<EntityBlobAsset>,
@@ -244,7 +247,10 @@ fn resolve_entity_blob(
         checkpoint: None,
         map_instance: None,
         map_checkpoints: None,
+        map_rooms: None,
+        pending_connections: None,
         respawn_timer: None,
+        map_cleanup_timer: None,
         total_stat_block: None,
         fear_status: None,
         courage_status: None,
@@ -738,24 +744,46 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     for id in stale_connection_ids {
         ctx.db.location_map_connections().id().delete(id);
     }
+    // Authored as a JOIN list; both-ways rows expand into one directed row
+    // per direction.
     let mut next_connection_id: u32 = 0;
-    for m in asset_pack.location_maps {
-        let NamedLocationMapAsset { name, value: m } = m;
-        let id = location_map_ids[&name];
-        for destination_name in &m.connection_names {
+    for connection in asset_pack.connections {
+        let exit_id = resolve_name(
+            location_map_ids,
+            "location map",
+            &connection.exit_location_map_name,
+        )?;
+        let destination_id = resolve_name(
+            location_map_ids,
+            "location map",
+            &connection.destination_location_map_name,
+        )?;
+        ctx.db
+            .location_map_connections()
+            .insert(LocationMapConnection {
+                id: next_connection_id,
+                exit_location_map_id: exit_id,
+                destination_location_map_id: destination_id,
+                exit_anchor: connection.exit_anchor.clone(),
+                destination_anchor: connection.destination_anchor.clone(),
+            });
+        next_connection_id += 1;
+        if connection.both_ways {
             ctx.db
                 .location_map_connections()
                 .insert(LocationMapConnection {
                     id: next_connection_id,
-                    exit_location_map_id: id,
-                    destination_location_map_id: resolve_name(
-                        &location_map_ids,
-                        "location map",
-                        destination_name,
-                    )?,
+                    exit_location_map_id: destination_id,
+                    destination_location_map_id: exit_id,
+                    exit_anchor: connection.destination_anchor,
+                    destination_anchor: connection.exit_anchor,
                 });
             next_connection_id += 1;
         }
+    }
+    for m in asset_pack.location_maps {
+        let NamedLocationMapAsset { name, value: m } = m;
+        let id = location_map_ids[&name];
         let row = LocationMap {
             id,
             name,

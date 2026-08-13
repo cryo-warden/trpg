@@ -143,6 +143,14 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-connections": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/13-connections.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
     "dev": {
       "command": [
         "bun",
@@ -234,7 +242,8 @@
         "test-e2e-loadout",
         "test-e2e-morale",
         "test-e2e-dive",
-        "test-e2e-death"
+        "test-e2e-death",
+        "test-e2e-connections"
       ]
     }
   }
