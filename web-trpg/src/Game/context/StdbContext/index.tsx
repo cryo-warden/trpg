@@ -7,6 +7,7 @@ import { componentQueries } from "./components";
 import { gearQueries } from "./loadout";
 import { renderingQueries } from "./rendering";
 import { StdbContext } from "./StdbContext";
+import { describeConnectionError } from "./connectionErrorText";
 import { ConnectionScreen } from "../../ConnectionScreen";
 import { pushProductionAssets } from "../../init";
 
@@ -148,7 +149,9 @@ const StdbGate = ({
       status={state.connectionError != null ? "error" : "connecting"}
       uri={uri}
       detail={
-        state.connectionError == null ? null : String(state.connectionError)
+        state.connectionError == null
+          ? null
+          : describeConnectionError(state.connectionError)
       }
     />
   );
