@@ -7,11 +7,6 @@
       "proxied_ports": ["TRPG_STDB_PORT"]
     },
     {
-      "name": "publisher",
-      "start_command": "bash scripts/prod-publish.sh",
-      "proxied_ports": []
-    },
-    {
       "name": "web",
       "start_command": "bash scripts/prod-web.sh",
       "proxied_ports": ["TRPG_WEB_PORT"]
