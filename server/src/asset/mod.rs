@@ -32,7 +32,8 @@ use crate::{
     ecs_extension::EcsExtension,
     entity::{
         named_entities, ActionsComponentBlob, ActiveStanceComponentBlob,
-        AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob, EntityBlob,
+        AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
+        CheckpointBindingComponentBlob, EntityBlob,
         EquipmentComponentBlob, FindEntityHandle, InstantiateEntityBlob, ItemComponentBlob,
         NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob, TraitsComponentBlob,
     },
@@ -145,6 +146,7 @@ struct AssetNameMaps {
     armors: HashMap<String, u32>,
     relics: HashMap<String, u32>,
     stances: HashMap<String, u32>,
+    location_maps: HashMap<String, u32>,
 }
 
 /// Resolve an authored blob's asset-name references into the stored
@@ -226,7 +228,23 @@ fn resolve_entity_blob(
         stance_loadouts: None,
         known_stances: None,
         checkpoint_object: author.checkpoint_object,
+        checkpoint_binding: author
+            .checkpoint_binding
+            .map(|binding| {
+                Ok::<_, String>(CheckpointBindingComponentBlob {
+                    location_map_id: resolve_name(
+                        &maps.location_maps,
+                        "location map",
+                        &binding.location_map_name,
+                    )?,
+                    checkpoint_index: binding.checkpoint_index,
+                })
+            })
+            .transpose()?,
         checkpoint: None,
+        map_instance: None,
+        map_checkpoints: None,
+        respawn_timer: None,
         total_stat_block: None,
         fear_status: None,
         courage_status: None,
@@ -461,6 +479,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.stances().iter().map(|s| (s.name, s.id)),
             asset_pack.stances.iter().map(|s| &s.name),
         )?,
+        location_maps: match_names(
+            "location map",
+            ctx.db.location_maps().iter().map(|m| (m.name, m.id)),
+            asset_pack.location_maps.iter().map(|m| &m.name),
+        )?,
     };
     for a in asset_pack.appearance_features {
         let index = maps.appearance_features[&a.name];
@@ -669,11 +692,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    let location_map_ids = match_names(
-        "location map",
-        ctx.db.location_maps().iter().map(|m| (m.name, m.id)),
-        asset_pack.location_maps.iter().map(|m| &m.name),
-    )?;
+    // (Matched early, in AssetNameMaps, because blobs may reference maps
+    // through checkpoint bindings.)
+    let location_map_ids = &maps.location_maps;
     // Connections are derived rows and nothing references their ids, so each
     // push rebuilds them wholesale.
     let stale_connection_ids: Vec<u32> = ctx

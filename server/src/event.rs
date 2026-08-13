@@ -295,16 +295,21 @@ secador::secador!(
                         ActionEffect::Attune => {
                             let owner = ecs.find(self.owner_entity_id);
                             let target = ecs.find(target_entity_id);
-                            match (target.checkpoint_object(), target.location()) {
-                                (Some(_), Some(object_location)) => {
+                            match (target.checkpoint_binding(), target.location()) {
+                                (Some(binding), Some(object_location)) => {
                                     let co_located =
                                         { owner.location() }.is_some_and(|mine| {
                                             mine.location_entity_id
                                                 == object_location.location_entity_id
                                         });
                                     if co_located {
+                                        // The binding is ABSTRACT (map +
+                                        // index): the destination room may
+                                        // not even exist when death cashes
+                                        // it in.
                                         owner.upsert_new_checkpoint(
-                                            object_location.location_entity_id,
+                                            binding.location_map_id,
+                                            binding.checkpoint_index,
                                         );
                                         true
                                     } else {

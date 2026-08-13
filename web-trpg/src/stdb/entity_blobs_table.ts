@@ -25,6 +25,9 @@ import {
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
   CheckpointComponentBlob,
+  MapInstanceComponentBlob,
+  MapCheckpointsComponentBlob,
+  CheckpointBindingComponentBlob,
   AttackComponentBlob,
   HpComponentBlob,
   EpComponentBlob,
@@ -108,6 +111,15 @@ export default __t.row({
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
+  get mapInstance() {
+    return __t.option(MapInstanceComponentBlob).name("map_instance");
+  },
+  get mapCheckpoints() {
+    return __t.option(MapCheckpointsComponentBlob).name("map_checkpoints");
+  },
+  get checkpointBinding() {
+    return __t.option(CheckpointBindingComponentBlob).name("checkpoint_binding");
+  },
   get attack() {
     return __t.option(AttackComponentBlob);
   },
@@ -155,6 +167,9 @@ export default __t.row({
   },
   get playerDeactivationTimer() {
     return __t.option(TimerComponentBlob).name("player_deactivation_timer");
+  },
+  get respawnTimer() {
+    return __t.option(TimerComponentBlob).name("respawn_timer");
   },
   get locationMap() {
     return __t.option(LocationMapComponentBlob).name("location_map");

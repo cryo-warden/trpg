@@ -71,6 +71,7 @@ import ArmorsRow from "./armors_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
 import BracedStatusComponentsRow from "./braced_status_components_table";
+import CheckpointBindingComponentsRow from "./checkpoint_binding_components_table";
 import CheckpointComponentsRow from "./checkpoint_components_table";
 import CheckpointObjectComponentsRow from "./checkpoint_object_components_table";
 import CourageStatusComponentsRow from "./courage_status_components_table";
@@ -91,6 +92,8 @@ import LocationMapComponentsRow from "./location_map_components_table";
 import LoginRequestVotersRow from "./login_request_voters_table";
 import LoginRequestsRow from "./login_requests_table";
 import LoginResponsesRow from "./login_responses_table";
+import MapCheckpointsComponentsRow from "./map_checkpoints_components_table";
+import MapInstanceComponentsRow from "./map_instance_components_table";
 import NameComponentsRow from "./name_components_table";
 import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
@@ -101,6 +104,7 @@ import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_co
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
+import RespawnTimerComponentsRow from "./respawn_timer_components_table";
 import RolesRow from "./roles_table";
 import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
@@ -336,6 +340,17 @@ const tablesSchema = __schema({
       { name: 'braced_status_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, BracedStatusComponentsRow),
+  checkpoint_binding_components: __table({
+    name: 'checkpoint_binding_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'checkpoint_binding_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'checkpoint_binding_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, CheckpointBindingComponentsRow),
   checkpoint_components: __table({
     name: 'checkpoint_components',
     indexes: [
@@ -564,6 +579,28 @@ const tablesSchema = __schema({
       { name: 'login_responses_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, LoginResponsesRow),
+  map_checkpoints_components: __table({
+    name: 'map_checkpoints_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'map_checkpoints_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'map_checkpoints_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, MapCheckpointsComponentsRow),
+  map_instance_components: __table({
+    name: 'map_instance_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'map_instance_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'map_instance_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, MapInstanceComponentsRow),
   name_components: __table({
     name: 'name_components',
     indexes: [
@@ -690,6 +727,17 @@ const tablesSchema = __schema({
       { name: 'relics_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, RelicsComponentsRow),
+  respawn_timer_components: __table({
+    name: 'respawn_timer_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'respawn_timer_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'respawn_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, RespawnTimerComponentsRow),
   roles: __table({
     name: 'roles',
     indexes: [

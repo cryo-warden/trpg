@@ -13,5 +13,4 @@ import {
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
   locationMapId: __t.u32().name("location_map_id"),
-  checkpointIndex: __t.u32().name("checkpoint_index"),
 });

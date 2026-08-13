@@ -34,17 +34,24 @@ pub fn ep_system(ecs: Ecs) {
     }
 }
 
+/// How long the death-trance holds before waking at the checkpoint.
+const RESPAWN_TRANCE_MICROS: i64 = 3_000_000;
+
 /// Zero HP resolves here, right after damage settles. NPCs die: they stop
 /// acting immediately and are handed to the deletion timer (which spills
-/// their carried items into the room). A player instead wakes from a trance
-/// at their checkpoint room: fully restored, shed of statuses and actions —
-/// death is the fiction's scene change, not an account event.
+/// their carried items into the room). A player instead falls into the
+/// death-trance: unable to act until the respawn timer wakes them at their
+/// checkpoint.
 pub fn death_system(ecs: Ecs) {
     for e in ecs.iter_hp() {
         if e.hp().hp > 0 {
             continue;
         }
         let handle = e.into_handle();
+        if handle.player_controller().is_some() && handle.respawn_timer().is_some() {
+            // Already entranced; the respawn system will wake them.
+            continue;
+        }
         if handle.action_state().is_some() {
             handle.delete_action_state();
         }
@@ -52,38 +59,10 @@ pub fn death_system(ecs: Ecs) {
             handle.delete_queued_action_state();
         }
         if handle.player_controller().is_some() {
-            match handle.checkpoint() {
-                None => {
-                    log::error!(
-                        "Player entity {} died with no checkpoint; leaving it where it fell.",
-                        handle.entity_id()
-                    );
-                }
-                Some(checkpoint) => {
-                    handle
-                        .clone()
-                        .upsert_new_location(checkpoint.checkpoint_room_entity_id);
-                }
-            }
-            if let Some(mut hp) = handle.hp() {
-                hp.hp = hp.mhp;
-                hp.accumulated_damage = 0;
-                hp.accumulated_healing = 0;
-                handle.update_hp_row(hp);
-            }
-            if let Some(mut ep) = handle.ep() {
-                ep.ep = ep.mep;
-                handle.update_ep_row(ep);
-            }
-            if handle.fear_status().is_some() {
-                handle.delete_fear_status();
-            }
-            if handle.courage_status().is_some() {
-                handle.delete_courage_status();
-            }
-            if handle.braced_status().is_some() {
-                handle.delete_braced_status();
-            }
+            handle.upsert_new_respawn_timer(
+                ecs.timestamp
+                    + spacetimedb::TimeDuration::from_micros(RESPAWN_TRANCE_MICROS),
+            );
         } else {
             if handle.enemy_controller().is_some() {
                 handle.delete_enemy_controller();
@@ -91,6 +70,95 @@ pub fn death_system(ecs: Ecs) {
             handle.upsert_new_entity_deletion_timer(ecs.timestamp);
         }
     }
+}
+
+/// Waking from the death-trance: resolve the abstract checkpoint (map asset
+/// + checkpoint index) to a real room — generating the map on demand when
+/// no instance exists yet (the same resolution teleportation will use) —
+/// then restore and relocate.
+pub fn respawn_system(ecs: Ecs) {
+    for t in ecs.iter_respawn_timer() {
+        if t.respawn_timer().timestamp > ecs.timestamp {
+            continue;
+        }
+        let handle = t.into_handle();
+        match handle.checkpoint() {
+            None => {
+                log::error!(
+                    "Entity {} finished the death-trance with no checkpoint; waking in place.",
+                    handle.entity_id()
+                );
+            }
+            Some(checkpoint) => match resolve_checkpoint_room(ecs, &checkpoint) {
+                Err(reason) => {
+                    log::error!(
+                        "Entity {} cannot reach its checkpoint ({}); waking in place.",
+                        handle.entity_id(),
+                        reason
+                    );
+                }
+                Ok(room_entity_id) => {
+                    handle.clone().upsert_new_location(room_entity_id);
+                }
+            },
+        }
+        if let Some(mut hp) = handle.hp() {
+            hp.hp = hp.mhp;
+            hp.accumulated_damage = 0;
+            hp.accumulated_healing = 0;
+            handle.update_hp_row(hp);
+        }
+        if let Some(mut ep) = handle.ep() {
+            ep.ep = ep.mep;
+            handle.update_ep_row(ep);
+        }
+        if handle.fear_status().is_some() {
+            handle.delete_fear_status();
+        }
+        if handle.courage_status().is_some() {
+            handle.delete_courage_status();
+        }
+        if handle.braced_status().is_some() {
+            handle.delete_braced_status();
+        }
+        handle.delete_respawn_timer();
+    }
+}
+
+/// The checkpoint's room: an existing instance of the map if one is
+/// generated, else a freshly generated one.
+fn resolve_checkpoint_room(
+    ecs: Ecs,
+    checkpoint: &CheckpointComponent,
+) -> Result<u64, String> {
+    let instance_checkpoints = ecs
+        .iter_map_instance()
+        .find(|m| m.map_instance().location_map_id == checkpoint.location_map_id)
+        .and_then(|m| m.into_handle().map_checkpoints())
+        .map(|c| c.checkpoint_room_entity_ids);
+    let checkpoints = match instance_checkpoints {
+        Some(checkpoints) => checkpoints,
+        None => {
+            let map = ecs
+                .db
+                .location_maps()
+                .id()
+                .find(checkpoint.location_map_id)
+                .ok_or_else(|| {
+                    format!("unknown location map {}", checkpoint.location_map_id)
+                })?;
+            map.generate_entities(ecs)?.checkpoint_room_entity_ids
+        }
+    };
+    checkpoints
+        .get(checkpoint.checkpoint_index as usize)
+        .copied()
+        .ok_or_else(|| {
+            format!(
+                "map {} has no checkpoint {}",
+                checkpoint.location_map_id, checkpoint.checkpoint_index
+            )
+        })
 }
 
 pub fn shift_queued_action_system(ecs: Ecs) {
@@ -440,9 +508,11 @@ pub fn player_activation_system(ecs: Ecs) {
                             map_generation_result.main_room_ids.first()
                         {
                             p.insert_new_location(*location_entity_id);
-                            // A new player's checkpoint is the starting
-                            // room, automatically.
-                            p.upsert_new_checkpoint(*location_entity_id);
+                            // A new player's checkpoint: the starting map's
+                            // first generated checkpoint, automatically —
+                            // an ABSTRACT destination (map + index), never
+                            // a room entity.
+                            p.upsert_new_checkpoint(m.id, 0);
                         }
                     }
                     Err(e) => {
@@ -492,6 +562,7 @@ pub fn execute_all_systems(ecs: Ecs) {
     action_system(ecs);
     hp_system(ecs);
     death_system(ecs);
+    respawn_system(ecs);
     ep_system(ecs);
     shift_queued_action_system(ecs);
     entity_deletion_timer_system(ecs);

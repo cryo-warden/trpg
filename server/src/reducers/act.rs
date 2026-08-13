@@ -9,6 +9,9 @@ use crate::{
 #[reducer]
 pub fn act(ctx: &ReducerContext, action_id: ActionId, target_entity_id: u64) -> Result<(), String> {
     if let Some(p) = ctx.ecs().from_player_identity(ctx.sender()) {
+        if p.respawn_timer().is_some() {
+            return Err("The death-trance holds; no acting until you wake.".to_string());
+        }
         if p.can_target_other(target_entity_id, action_id) {
             p.set_queued_action_state(action_id, target_entity_id);
             Ok(())
@@ -28,6 +31,9 @@ pub fn set_stance(ctx: &ReducerContext, stance_id: u32) -> Result<(), String> {
         .ecs()
         .from_player_identity(ctx.sender())
         .ok_or("Cannot find a player entity.")?;
+    if p.respawn_timer().is_some() {
+        return Err("The death-trance holds; no acting until you wake.".to_string());
+    }
     let stance = ctx
         .db
         .stances()

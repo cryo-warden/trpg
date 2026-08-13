@@ -77,6 +77,7 @@ pub struct LocationMapConnection {
 pub struct MapGenerationResult {
     pub main_room_ids: Vec<u64>,
     pub extra_room_ids: Vec<u64>,
+    pub checkpoint_room_entity_ids: Vec<u64>,
 }
 impl LocationMap {
     pub fn generate_entities(&self, ecs: Ecs) -> Result<MapGenerationResult, String> {
@@ -96,6 +97,7 @@ impl LocationMap {
             return Ok(MapGenerationResult {
                 main_room_ids: vec![],
                 extra_room_ids: vec![],
+                checkpoint_room_entity_ids: vec![],
             });
         };
 
@@ -186,17 +188,32 @@ impl LocationMap {
 
         // The entrance's visible checkpoint: one themed fortune-telling
         // object to attune to. Placed last for the same rng-stability
-        // reason as decorations.
+        // reason as decorations. The object carries its abstract binding
+        // (this map asset + index), and the map instance records its
+        // identity and checkpoint rooms so respawn/teleport resolution can
+        // find them — or regenerate the map — later.
+        let mut checkpoint_room_entity_ids: Vec<u64> = Vec::new();
         if let Some(entrance) = room_handles.first() {
             if let Some(checkpoint_blob) = theme.checkpoints_selector.sample(&mut rng) {
+                checkpoint_room_entity_ids.push(entrance.entity_id());
                 ecs.new()
                     .instantiate_blob(
                         checkpoint_blob.to_owned(),
                         &ecs.instantiation_scope(),
                     )?
-                    .insert_new_location(entrance.entity_id());
+                    .upsert_new_location(entrance.entity_id())
+                    .into_handle()
+                    .upsert_new_checkpoint_binding(
+                        self.id,
+                        (checkpoint_room_entity_ids.len() - 1) as u32,
+                    );
             }
         }
+        location_map_entity
+            .clone()
+            .upsert_new_map_instance(self.id)
+            .into_handle()
+            .upsert_new_map_checkpoints(checkpoint_room_entity_ids.clone());
 
         Ok(MapGenerationResult {
             main_room_ids: room_handles[..main_room_count]
@@ -207,6 +224,7 @@ impl LocationMap {
                 .iter()
                 .map(|h| h.entity_id())
                 .collect(),
+            checkpoint_room_entity_ids,
         })
     }
 }

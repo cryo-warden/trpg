@@ -333,16 +333,35 @@ export const Buff = __t.enum("Buff", {
 });
 export type Buff = __Infer<typeof Buff>;
 
+export const CheckpointBindingAsset = __t.object("CheckpointBindingAsset", {
+  locationMapName: __t.string(),
+  checkpointIndex: __t.u32(),
+});
+export type CheckpointBindingAsset = __Infer<typeof CheckpointBindingAsset>;
+
+export const CheckpointBindingComponent = __t.object("CheckpointBindingComponent", {
+  entityId: __t.u64(),
+  locationMapId: __t.u32(),
+  checkpointIndex: __t.u32(),
+});
+export type CheckpointBindingComponent = __Infer<typeof CheckpointBindingComponent>;
+
+export const CheckpointBindingComponentBlob = __t.object("CheckpointBindingComponentBlob", {
+  locationMapId: __t.u32(),
+  checkpointIndex: __t.u32(),
+});
+export type CheckpointBindingComponentBlob = __Infer<typeof CheckpointBindingComponentBlob>;
+
 export const CheckpointComponent = __t.object("CheckpointComponent", {
   entityId: __t.u64(),
-  checkpointRoomEntityId: __t.u64(),
+  locationMapId: __t.u32(),
+  checkpointIndex: __t.u32(),
 });
 export type CheckpointComponent = __Infer<typeof CheckpointComponent>;
 
 export const CheckpointComponentBlob = __t.object("CheckpointComponentBlob", {
-  get checkpointRoomEntityId() {
-    return EntityIdSelector;
-  },
+  locationMapId: __t.u32(),
+  checkpointIndex: __t.u32(),
 });
 export type CheckpointComponentBlob = __Infer<typeof CheckpointComponentBlob>;
 
@@ -470,6 +489,15 @@ export const EntityBlob = __t.object("EntityBlob", {
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
+  get mapInstance() {
+    return __t.option(MapInstanceComponentBlob);
+  },
+  get mapCheckpoints() {
+    return __t.option(MapCheckpointsComponentBlob);
+  },
+  get checkpointBinding() {
+    return __t.option(CheckpointBindingComponentBlob);
+  },
   get attack() {
     return __t.option(AttackComponentBlob);
   },
@@ -516,6 +544,9 @@ export const EntityBlob = __t.object("EntityBlob", {
     return __t.option(TimerComponentBlob);
   },
   get playerDeactivationTimer() {
+    return __t.option(TimerComponentBlob);
+  },
+  get respawnTimer() {
     return __t.option(TimerComponentBlob);
   },
   get locationMap() {
@@ -569,6 +600,9 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   },
   get checkpointObject() {
     return __t.option(FlagComponentBlob);
+  },
+  get checkpointBinding() {
+    return __t.option(CheckpointBindingAsset);
   },
 });
 export type EntityBlobAsset = __Infer<typeof EntityBlobAsset>;
@@ -899,6 +933,28 @@ export const LoginResponse = __t.object("LoginResponse", {
   respondedAt: __t.timestamp(),
 });
 export type LoginResponse = __Infer<typeof LoginResponse>;
+
+export const MapCheckpointsComponent = __t.object("MapCheckpointsComponent", {
+  entityId: __t.u64(),
+  checkpointRoomEntityIds: __t.array(__t.u64()),
+});
+export type MapCheckpointsComponent = __Infer<typeof MapCheckpointsComponent>;
+
+export const MapCheckpointsComponentBlob = __t.object("MapCheckpointsComponentBlob", {
+  checkpointRoomEntityIds: __t.array(__t.u64()),
+});
+export type MapCheckpointsComponentBlob = __Infer<typeof MapCheckpointsComponentBlob>;
+
+export const MapInstanceComponent = __t.object("MapInstanceComponent", {
+  entityId: __t.u64(),
+  locationMapId: __t.u32(),
+});
+export type MapInstanceComponent = __Infer<typeof MapInstanceComponent>;
+
+export const MapInstanceComponentBlob = __t.object("MapInstanceComponentBlob", {
+  locationMapId: __t.u32(),
+});
+export type MapInstanceComponentBlob = __Infer<typeof MapInstanceComponentBlob>;
 
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),

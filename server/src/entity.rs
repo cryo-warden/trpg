@@ -124,12 +124,35 @@ entity!(
     )]
     struct FlagComponent {}
 
-    // Where this entity wakes from the death-trance: a room entity id, set
-    // automatically at first placement and re-set by attuning to a
-    // checkpoint object (bone dice, a scrying bowl, a deck of fate cards).
+    // Where this entity wakes from the death-trance. NEVER a concrete room
+    // entity — the destination map may not be generated yet — but a map
+    // ASSET plus which of that map's generated checkpoints; respawn (and,
+    // later, teleportation) resolves it, generating the map on demand.
     #[component(checkpoint in checkpoint_components)]
     struct CheckpointComponent {
-        pub checkpoint_room_entity_id: EntityId,
+        pub location_map_id: u32,
+        pub checkpoint_index: u32,
+    }
+
+    // A generated map instance's identity: which map ASSET it realizes.
+    #[component(map_instance in map_instance_components)]
+    struct MapInstanceComponent {
+        pub location_map_id: u32,
+    }
+
+    // The generated checkpoint rooms of a map instance, in placement order —
+    // what a CheckpointComponent's index selects.
+    #[component(map_checkpoints in map_checkpoints_components)]
+    struct MapCheckpointsComponent {
+        pub checkpoint_room_entity_ids: Vec<EntityId>,
+    }
+
+    // On a checkpoint OBJECT: the abstract destination attuning to it
+    // binds (its own map + index).
+    #[component(checkpoint_binding in checkpoint_binding_components)]
+    struct CheckpointBindingComponent {
+        pub location_map_id: u32,
+        pub checkpoint_index: u32,
     }
 
     #[component(attack in attack_components)]
@@ -234,6 +257,7 @@ entity!(
     #[component(
       entity_deletion_timer in entity_deletion_timer_components,
       player_deactivation_timer in player_deactivation_timer_components,
+      respawn_timer in respawn_timer_components,
     )]
     struct TimerComponent {
         pub timestamp: Timestamp,

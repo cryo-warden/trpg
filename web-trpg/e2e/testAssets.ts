@@ -431,6 +431,41 @@ export const moralePack = (): AssetPack => ({
  */
 export const deathPack = (): AssetPack => ({
   ...emptyPack(),
+  // The haven: a map that is NEVER generated up front. The seeded bone dice
+  // bind to it abstractly; the first death cashes the binding in, forcing
+  // fluent on-demand generation before the wake.
+  locationMapThemes: [
+    {
+      name: "test_haven_theme",
+      value: {
+        decorationsSelector: { selections: [] },
+        minDecorationCount: 0,
+        maxDecorationCount: 0,
+        pathsSelector: { selections: [] },
+        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        checkpointsSelector: {
+          selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
+        },
+      },
+    },
+  ],
+  locationMaps: [
+    {
+      name: "test_haven",
+      value: {
+        themeName: "test_haven_theme",
+        layout: { tag: "Path" },
+        rngSeed: 0n,
+        mainRoomCount: 1,
+        extraRoomCount: 0,
+        loopCount: 0,
+        encounterNamesSampler: [],
+        minEncounterCount: 0,
+        maxEncounterCount: 0,
+        connectionNames: [],
+      },
+    },
+  ],
   actions: [
     {
       name: "test_attune",
@@ -494,6 +529,7 @@ export const deathPack = (): AssetPack => ({
   instantiateEntityBlobs: [
     blob({
       checkpointObject: {},
+      checkpointBinding: { locationMapName: "test_haven", checkpointIndex: 0 },
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
     }),
     blob({

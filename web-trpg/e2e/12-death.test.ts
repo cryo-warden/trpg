@@ -63,7 +63,7 @@ afterAll(() => {
   player?.disconnect();
 });
 
-test("attuning to the bone dice binds the checkpoint to their room", async () => {
+test("attuning to the bone dice binds the ABSTRACT checkpoint (map + index)", async () => {
   const attuneId = idByName(player.db.actions, "test_attune");
   const diceId = [...player.db.checkpoint_object_components.iter()][0]
     .entityId;
@@ -72,7 +72,7 @@ test("attuning to the bone dice binds the checkpoint to their room", async () =>
     () =>
       [...player.db.checkpoint_components.iter()].find(
         (row) => row.entityId === playerEntityId,
-      )?.checkpointRoomEntityId === 999n,
+      )?.checkpointIndex === 0,
     30000,
   );
 }, 60000);
@@ -103,13 +103,27 @@ test("a slain vermin is deleted outright: dead rats stop nipping", async () => {
   ).toBe(false);
 }, 60000);
 
-test("dying wakes the player at the checkpoint, fully restored", async () => {
+test("death entrances (no acting), then wakes the player in the freshly generated haven", async () => {
   const moveId = idByName(player.db.actions, "test_move");
+  const jabId = idByName(player.db.actions, "test_jab");
   const pathEntityId = [...player.db.path_components.iter()][0].entityId;
   await player.reducers.act({ actionId: moveId, targetEntityId: pathEntityId });
   await waitFor(() => myLocation() === 1000n, 30000);
 
-  // The brute's crush is lethal; the trance breaks in the checkpoint room.
-  await waitFor(() => myLocation() === 999n, 30000);
+  // The brute's crush is lethal: hp hits 0 and the trance holds — acting
+  // is refused until the wake.
+  await waitFor(() => myHp()?.hp === 0, 30000);
+  await expect(
+    player.reducers.act({ actionId: jabId, targetEntityId: playerEntityId }),
+  ).rejects.toThrow(/trance/);
+
+  // The haven map did not exist; waking generates it on demand. The wake
+  // room is brand new — neither seeded room.
+  await waitFor(
+    () => myLocation() !== 1000n && (myHp()?.hp ?? 0) > 0,
+    30000,
+  );
+  expect(myLocation()).not.toBe(999n);
+  expect(myLocation()).not.toBe(1000n);
   expect(myHp()!.hp).toBe(myHp()!.mhp);
 }, 60000);
