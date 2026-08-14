@@ -13,6 +13,7 @@ import {
   NameComponentBlob,
   LocationComponentBlob,
   PathComponentBlob,
+  PathBlockerComponentBlob,
   AllegianceComponentBlob,
   BaselineComponentBlob,
   TraitsComponentBlob,
@@ -59,6 +60,9 @@ export default __t.row({
   },
   get path() {
     return __t.option(PathComponentBlob);
+  },
+  get pathBlocker() {
+    return __t.option(PathBlockerComponentBlob).name("path_blocker");
   },
   get allegiance() {
     return __t.option(AllegianceComponentBlob);

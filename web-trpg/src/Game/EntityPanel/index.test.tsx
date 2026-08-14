@@ -43,3 +43,24 @@ test("a path to a visited location does not", () => {
     "interesting",
   );
 });
+
+test("a guarded path is invisible while its blocker stands, visible once smashed", () => {
+  const guarded = (blockerHp: { entityId: bigint; hp: number; mhp: number }[]) => ({
+    ...tables([]),
+    path_blocker_components: mockTable([
+      { entityId: 4n, blockerEntityId: 7n },
+    ]),
+    hp_components: mockTable(blockerHp),
+  });
+  const standing = render(<EntityPanel entity={4n} />, {
+    wrapper: gameWrapper(guarded([{ entityId: 7n, hp: 1, mhp: 1 }]), {
+      identity: {} as Identity,
+    }),
+  });
+  expect(standing.container.querySelector(".EntityPanel")).toBeNull();
+
+  const smashed = render(<EntityPanel entity={4n} />, {
+    wrapper: gameWrapper(guarded([]), { identity: {} as Identity }),
+  });
+  expect(smashed.container.querySelector(".EntityPanel")).not.toBeNull();
+});

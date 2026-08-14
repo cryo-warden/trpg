@@ -65,6 +65,7 @@ export const componentQueries = [
   "select * from entities_quests_progress",
   "select * from location_map_components",
   "select * from turn_paused_components",
+  "select * from path_blocker_components",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -468,6 +469,16 @@ export const usePlayerEntity = (): EntityId | null => {
 
 const useLocationMapComponent = createUseComponent("location_map_components");
 const useTurnPausedComponent = createUseComponent("turn_paused_components");
+const usePathBlockerComponent = createUseComponent("path_blocker_components");
+
+/** A guarded path stays INVISIBLE while its breakable blocker still
+ * stands (has hp): hidden rooms and unopened backward shortcuts simply
+ * do not read as paths. Smashing the blocker reveals the way. */
+export const useIsBlockedPath = (entityId: EntityId | null): boolean => {
+  const pathBlocker = usePathBlockerComponent(entityId);
+  const blockerHp = useHpComponent(pathBlocker?.blockerEntityId ?? null);
+  return pathBlocker != null && blockerHp != null;
+};
 
 /** Whether MY map instance's turn is on hold — the server-derived
  * turn_paused flag on the instance my current room belongs to. True

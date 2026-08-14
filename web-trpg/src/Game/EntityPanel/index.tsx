@@ -6,6 +6,7 @@ import { ActionButton } from "../ActionButton";
 import {
   useActionOptions,
   useActionPhase,
+  useIsBlockedPath,
   useMyVisitedLocationIds,
   usePathComponent,
   usePlayerEntity,
@@ -39,6 +40,9 @@ export const EntityPanel = ({
   const visited = useMyVisitedLocationIds();
   const leadsSomewhereNew =
     path != null && !visited.has(path.destinationEntityId);
+  // A guarded path is not a path yet: hidden rooms and unopened
+  // shortcuts stay invisible until their blocker is smashed.
+  const blockedPath = useIsBlockedPath(entity);
   // Per-viewer quest-item freshness: a stinky duplicate reads as such
   // EVERYWHERE — on the ground before pickup included.
   const questFreshness = useQuestItemFreshness(entity);
@@ -47,6 +51,10 @@ export const EntityPanel = ({
   }, [entity, setFocus]);
 
   const panelRef = useHotkeyRef<HTMLDivElement>(hotkey);
+
+  if (blockedPath) {
+    return null;
+  }
 
   const ActionBar = () => {
     const actions = useActionOptions(entity);

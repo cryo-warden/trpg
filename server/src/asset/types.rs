@@ -231,6 +231,9 @@ pub struct LocationMapThemeAsset {
     pub containers_selector: EntityBlobsSamplerAsset,
     pub min_container_count: u8,
     pub max_container_count: u8,
+    /// Themed breakable walls blocking hidden paths and shortcuts until
+    /// smashed; authored with hp and remains like any breakable.
+    pub blockers_selector: EntityBlobsSamplerAsset,
 }
 
 /// One quest's spawn window in one map, as authored: the quest by NAME
@@ -260,6 +263,11 @@ pub struct LocationMapAsset {
     pub encounter_names_sampler: Vec<WeightedNameAsset>,
     pub min_encounter_count: u8,
     pub max_encounter_count: u8,
+    /// Half-open count range: side rooms hidden behind breakable walls
+    /// (capped by generated extras). Backward paths have no separate
+    /// count — loop_count IS the number of guarded backward paths.
+    pub min_hidden_room_count: u8,
+    pub max_hidden_room_count: u8,
     pub quest_spawns: Vec<QuestSpawnAsset>,
 }
 

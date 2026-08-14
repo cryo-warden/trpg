@@ -64,6 +64,9 @@ pub trait EntityHandleExtension {
     fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
     fn shift_queued_action_state(self) -> Self;
     fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool;
+    /// A path is open when nothing blocks it, or its blocker has been
+    /// smashed (no hp row left). Non-path entities are trivially open.
+    fn path_is_open(&self) -> bool;
 }
 
 impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension for T {
@@ -444,6 +447,14 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
+    fn path_is_open(&self) -> bool {
+        let e = self.to_handle();
+        match e.path_blocker() {
+            None => true,
+            Some(blocker) => e.ecs().find(blocker.blocker_entity_id).hp().is_none(),
+        }
+    }
+
     fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool {
         let e = self.to_handle();
         if let Some(a) = e.ecs().db.actions().id().find(action_id) {
@@ -474,7 +485,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                         carried || co_located
                     }
                 }
-                ActionType::Move => o.path().is_some(),
+                ActionType::Move => o.path().is_some() && o.path_is_open(),
                 // Deliberate stance changes act on yourself alone.
                 ActionType::Posture => other_entity_id == e.entity_id(),
                 // A co-located checkpoint object (fortune-telling scenery).

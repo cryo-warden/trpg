@@ -42,6 +42,15 @@ entity!(
         pub destination_entity_id: EntityId,
     }
 
+    // On a PATH entity: impassable while the referenced breakable still
+    // stands (still has hp). Hidden side rooms and one-way shortcuts both
+    // hang off this — smashing the blocker opens the way, permanently.
+    #[component(path_blocker in path_blocker_components)]
+    struct PathBlockerComponent {
+        #[index(btree)]
+        pub blocker_entity_id: EntityId,
+    }
+
     #[component(allegiance in allegiance_components)]
     struct AllegianceComponent {
         #[index(btree)]

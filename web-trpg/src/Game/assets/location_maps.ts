@@ -59,6 +59,13 @@ const sack = container(["sack"], ["torn_cloth"]);
 const hollowStump = container(["hollow", "stump"], ["scrap_wood"]);
 const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
 
+// Path guards: the same breakable shape, standing in for a blocked way.
+const boulderGuard = container(["boulder"], ["rubble"]);
+const barricadeGuard = container(["barricade"], ["scrap_wood"]);
+const thicketGuard = container(["thicket"], ["scrap_wood"]);
+const crumblingWallGuard = container(["crumbling", "wall"], ["rubble"]);
+const crumblingPillarGuard = container(["crumbling", "pillar"], ["rubble"]);
+
 export const LOCATION_MAP_THEMES = {
   encampment: {
     // The training ground: dummies to hit (hp makes scenery attackable) and
@@ -181,6 +188,7 @@ export const LOCATION_MAP_THEMES = {
     },
     minContainerCount: 1,
     maxContainerCount: 3,
+    blockersSelector: { selections: [{ weight: 1, blob: barricadeGuard }] },
   },
   cave: {
     decorationsSelector: {
@@ -219,6 +227,7 @@ export const LOCATION_MAP_THEMES = {
     },
     minContainerCount: 1,
     maxContainerCount: 3,
+    blockersSelector: { selections: [{ weight: 1, blob: boulderGuard }] },
   },
   meadow: {
     decorationsSelector: {
@@ -255,6 +264,7 @@ export const LOCATION_MAP_THEMES = {
     },
     minContainerCount: 1,
     maxContainerCount: 3,
+    blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
   },
   forest: {
     decorationsSelector: {
@@ -293,6 +303,7 @@ export const LOCATION_MAP_THEMES = {
     },
     minContainerCount: 1,
     maxContainerCount: 3,
+    blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
   },
   keep: {
     // The armory of a fallen garrison: the gear here is REAL — every
@@ -398,6 +409,9 @@ export const LOCATION_MAP_THEMES = {
     },
     minContainerCount: 1,
     maxContainerCount: 3,
+    blockersSelector: {
+      selections: [{ weight: 1, blob: crumblingWallGuard }],
+    },
   },
   sanctum: {
     decorationsSelector: {
@@ -477,6 +491,9 @@ export const LOCATION_MAP_THEMES = {
     },
     minContainerCount: 1,
     maxContainerCount: 3,
+    blockersSelector: {
+      selections: [{ weight: 1, blob: crumblingPillarGuard }],
+    },
   },
 } satisfies Record<string, LocationMapThemeAsset>;
 
@@ -530,6 +547,9 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 2,
     maxEncounterCount: 4,
+    // The tutorial zone hides nothing: no extras, no guarded rooms.
+    minHiddenRoomCount: 0,
+    maxHiddenRoomCount: 0,
     // The overlapping-window progression: each map guarantees a couple of
     // its own cookie bits and MAY spawn its neighbors' — most of the
     // supply spreads across the world, duplicates included.
@@ -556,6 +576,8 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 8,
     maxEncounterCount: 12,
+    minHiddenRoomCount: 1,
+    maxHiddenRoomCount: 4,
     questSpawns: cookieSpawns({
       guaranteedIndexes: [2, 3],
       eligibleIndexes: [0, 1, 4, 5],
@@ -579,6 +601,8 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 5,
     maxEncounterCount: 8,
+    minHiddenRoomCount: 1,
+    maxHiddenRoomCount: 3,
     questSpawns: cookieSpawns({
       guaranteedIndexes: [4, 5],
       eligibleIndexes: [0, 1, 2, 3, 6],
@@ -602,6 +626,8 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 6,
     maxEncounterCount: 10,
+    minHiddenRoomCount: 1,
+    maxHiddenRoomCount: 4,
     questSpawns: cookieSpawns({
       guaranteedIndexes: [6, 7],
       eligibleIndexes: [0, 1, 2, 3, 4, 5, 8],
@@ -627,6 +653,8 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 6,
     maxEncounterCount: 9,
+    minHiddenRoomCount: 1,
+    maxHiddenRoomCount: 3,
     questSpawns: cookieSpawns({
       guaranteedIndexes: [8],
       eligibleIndexes: [0, 1, 2, 3, 4, 5, 6, 7],
@@ -650,6 +678,8 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 5,
     maxEncounterCount: 8,
+    minHiddenRoomCount: 1,
+    maxHiddenRoomCount: 3,
     questSpawns: cookieSpawns({
       guaranteedIndexes: [9],
       eligibleIndexes: [0, 1, 2, 3, 4, 5, 6, 7, 8],

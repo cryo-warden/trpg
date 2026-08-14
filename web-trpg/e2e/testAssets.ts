@@ -164,6 +164,7 @@ export const mapGenPack = (): AssetPack => ({
         containersSelector: { selections: [] },
         minContainerCount: 0,
         maxContainerCount: 0,
+        blockersSelector: { selections: [] },
       },
     },
   ],
@@ -181,6 +182,8 @@ export const mapGenPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        minHiddenRoomCount: 0,
+        maxHiddenRoomCount: 0,
         questSpawns: [],
       },
     },
@@ -534,6 +537,7 @@ export const connectionsPack = (): AssetPack => ({
         containersSelector: { selections: [] },
         minContainerCount: 0,
         maxContainerCount: 0,
+        blockersSelector: { selections: [] },
       },
     },
   ],
@@ -551,6 +555,8 @@ export const connectionsPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        minHiddenRoomCount: 0,
+        maxHiddenRoomCount: 0,
         questSpawns: [],
       },
     },
@@ -567,6 +573,8 @@ export const connectionsPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        minHiddenRoomCount: 0,
+        maxHiddenRoomCount: 0,
         questSpawns: [],
       },
     },
@@ -612,6 +620,7 @@ export const deathPack = (): AssetPack => ({
         containersSelector: { selections: [] },
         minContainerCount: 0,
         maxContainerCount: 0,
+        blockersSelector: { selections: [] },
       },
     },
   ],
@@ -629,6 +638,8 @@ export const deathPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        minHiddenRoomCount: 0,
+        maxHiddenRoomCount: 0,
         questSpawns: [],
       },
     },
@@ -1018,6 +1029,7 @@ export const spawnPack = (): AssetPack => ({
         },
         minContainerCount: 1,
         maxContainerCount: 1,
+        blockersSelector: { selections: [] },
       },
     },
   ],
@@ -1035,6 +1047,8 @@ export const spawnPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        minHiddenRoomCount: 0,
+        maxHiddenRoomCount: 0,
         questSpawns: [
           {
             questName: "test_spawn_cookies",
@@ -1124,6 +1138,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
         containersSelector: { selections: [] },
         minContainerCount: 0,
         maxContainerCount: 0,
+        blockersSelector: { selections: [] },
       },
     },
   ],
@@ -1141,9 +1156,130 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
         encounterNamesSampler: [{ weight: 1, name: "test_ambush" }],
         minEncounterCount: 1,
         maxEncounterCount: 1,
+        minHiddenRoomCount: 0,
+        maxHiddenRoomCount: 0,
         questSpawns: [],
       },
     },
   ],
   newPlayerBlob: blob({ baselineName: "test_hero" }),
+});
+
+/**
+ * A guarded three-room chain for hidden paths and backward-loop guards.
+ * hiddenRoomCount side rooms hide behind a breakable boulder in their
+ * attachment room (count locked exact); loopCount adds the guarded
+ * backward path pair (rooms 0<->2 for a 3-room chain) with its boulder
+ * in the FAR room. Boulders die to one smash and leave rubble.
+ */
+export const guardedMapPack = ({
+  hiddenRoomCount,
+  loopCount,
+}: {
+  hiddenRoomCount: number;
+  loopCount: number;
+}): AssetPack => ({
+  ...emptyPack(),
+  appearanceFeatures: [
+    {
+      name: "test_boulder",
+      value: {
+        text: "boulder",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 5000,
+      },
+    },
+    {
+      name: "test_rubble",
+      value: {
+        text: "rubble",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 4000,
+      },
+    },
+  ],
+  actions: [
+    {
+      name: "test_move",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: requirements({ gait: 1 }),
+        rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_smash",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Attack", value: 2 }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_scout",
+      value: statBlock({
+        mhp: 10,
+        gait: 2,
+        attack: 1,
+        actionNames: ["test_move", "test_smash"],
+      }),
+    },
+  ],
+  locationMapThemes: [
+    {
+      name: "test_guard_theme",
+      value: {
+        decorationsSelector: { selections: [] },
+        minDecorationCount: 0,
+        maxDecorationCount: 0,
+        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        checkpointsSelector: { selections: [] },
+        containersSelector: { selections: [] },
+        minContainerCount: 0,
+        maxContainerCount: 0,
+        blockersSelector: {
+          selections: [
+            {
+              weight: 1,
+              blob: blob({
+                appearanceFeatureNames: ["test_boulder"],
+                remainsAppearanceFeatureNames: ["test_rubble"],
+                hp: {
+                  hp: 1,
+                  mhp: 1,
+                  defense: 0,
+                  accumulatedDamage: 0,
+                  accumulatedHealing: 0,
+                },
+              }),
+            },
+          ],
+        },
+      },
+    },
+  ],
+  locationMaps: [
+    {
+      name: "test_guarded",
+      value: {
+        themeName: "test_guard_theme",
+        layout: { tag: "Path" },
+        zoneKind: { tag: "Private" },
+        rngSeed: 0n,
+        mainRoomCount: 3,
+        extraRoomCount: hiddenRoomCount,
+        loopCount,
+        encounterNamesSampler: [],
+        minEncounterCount: 0,
+        maxEncounterCount: 0,
+        minHiddenRoomCount: hiddenRoomCount,
+        maxHiddenRoomCount: hiddenRoomCount,
+        questSpawns: [],
+      },
+    },
+  ],
+  newPlayerBlob: blob({ baselineName: "test_scout" }),
 });

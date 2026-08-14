@@ -58,6 +58,10 @@ pub struct LocationMapTheme {
     pub containers_selector: EntityBlobsSampler,
     pub min_container_count: u8,
     pub max_container_count: u8,
+    /// Themed breakable walls (boulders, barricades, thickets) that block
+    /// hidden paths and shortcuts until smashed. Authored with hp and
+    /// remains like any breakable.
+    pub blockers_selector: EntityBlobsSampler,
 }
 
 impl LocationMapTheme {

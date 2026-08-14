@@ -103,6 +103,7 @@ import MapRoomsComponentsRow from "./map_rooms_components_table";
 import NameComponentsRow from "./name_components_table";
 import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
+import PathBlockerComponentsRow from "./path_blocker_components_table";
 import PathComponentsRow from "./path_components_table";
 import PendingConnectionsComponentsRow from "./pending_connections_components_table";
 import PinnedActionsComponentsRow from "./pinned_actions_components_table";
@@ -718,6 +719,20 @@ const tablesSchema = __schema({
     ],
     event: true,
   }, ObservableEventsRow),
+  path_blocker_components: __table({
+    name: 'path_blocker_components',
+    indexes: [
+      { accessor: 'blocker_entity_id', name: 'path_blocker_components_blocker_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'blockerEntityId',
+      ] },
+      { accessor: 'entity_id', name: 'path_blocker_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'path_blocker_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, PathBlockerComponentsRow),
   path_components: __table({
     name: 'path_components',
     indexes: [

@@ -223,6 +223,9 @@ secador::secador!(
                         ActionEffect::Move => {
                             match ecs.db.path_components().entity_id().find(target_entity_id) {
                                 None => {}
+                                // A blocked path refuses passage even if the
+                                // move was somehow queued before validation.
+                                Some(_) if !ecs.find(target_entity_id).path_is_open() => {}
                                 Some(path_component) => {
                                     match ecs
                                         .db

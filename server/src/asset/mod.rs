@@ -171,6 +171,8 @@ fn resolve_entity_blob(
         name: author.name,
         location: author.location,
         path: author.path,
+        // Not authorable yet: blockers exist only through generation.
+        path_blocker: None,
         allegiance: author.allegiance,
         baseline: author
             .baseline_name
@@ -784,6 +786,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             )?,
             min_container_count: t.value.min_container_count,
             max_container_count: t.value.max_container_count,
+            blockers_selector: resolve_entity_blobs_sampler(
+                t.value.blockers_selector,
+                &maps,
+            )?,
         };
         if ctx.db.location_map_themes().id().find(id).is_some() {
             ctx.db.location_map_themes().id().update(row);
@@ -912,6 +918,8 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             },
             min_encounter_count: m.min_encounter_count,
             max_encounter_count: m.max_encounter_count,
+            min_hidden_room_count: m.min_hidden_room_count,
+            max_hidden_room_count: m.max_hidden_room_count,
             quest_spawns,
         };
         if ctx.db.location_maps().id().find(id).is_some() {

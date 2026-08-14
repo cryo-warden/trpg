@@ -9,7 +9,7 @@ use crate::{
 };
 use ecs::Ecs;
 use spacetimedb::{
-    rand::{rngs::StdRng, SeedableRng},
+    rand::{rngs::StdRng, seq::SliceRandom, SeedableRng},
     table, SpacetimeType,
 };
 
@@ -76,6 +76,12 @@ pub struct LocationMap {
     pub encounter_ids_sampler: EncounterIdsSampler,
     pub min_encounter_count: u8,
     pub max_encounter_count: u8,
+    /// How many side rooms hide behind a themed breakable wall (capped by
+    /// the extra rooms actually generated). Half-open like other counts.
+    /// (Backward paths need no separate count: loop_count IS the number
+    /// of guarded backward paths.)
+    pub min_hidden_room_count: u8,
+    pub max_hidden_room_count: u8,
     /// Which quest indexes spawn in instances of this map. Generation never
     /// reads these — the quest application layer consumes them together
     /// with the role-tagged generation result (see materialize_map).
@@ -253,21 +259,37 @@ impl LocationMap {
             }
         }
 
-        // Extra rooms attach back to a random earlier room.
+        // Extra rooms attach back to a random earlier room. Each
+        // attachment is recorded so the hidden-room step can later hide
+        // one behind a wall: the OUTBOUND path (attach room -> side room)
+        // is the blockable one; the way back out always stays open.
+        struct SideAttachment {
+            attach_room_entity_id: u64,
+            outbound_path_entity_id: u64,
+        }
+        let mut side_attachments: Vec<SideAttachment> = Vec::new();
         for i in main_room_count..room_count {
             if let Some(p) = theme.paths_selector.sample(&mut rng) {
                 let a = room_handles[i].entity_id();
                 let b = room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
                 ecs.new_path(p.to_owned(), a, b)?;
-                ecs.new_path(p.to_owned(), b, a)?;
+                let outbound = ecs.new_path(p.to_owned(), b, a)?;
+                side_attachments.push(SideAttachment {
+                    attach_room_entity_id: b,
+                    outbound_path_entity_id: outbound.entity_id(),
+                });
             }
         }
 
         // Loop edges: the main rooms form a linear chain, so connecting a room
         // to the one two steps further along the chain closes a 3-room cycle (a
         // triangle) within this map. `loop_count` controls how many such loops
-        // are added, turning the map from a pure tree into a graph with cycles.
-        // (This is intra-map only; it is unrelated to cross-map connections.)
+        // are added — and each is a GUARDED backward path: both directions
+        // blocked by one themed breakable wall standing in the LATER room, so
+        // the shortcut can only ever be broken open from the far side. Early
+        // rooms show fewer paths until someone loops back and smashes the
+        // guard. (Intra-map only; unrelated to cross-map connections. Themes
+        // without blockers leave their loops open.)
         if main_room_count >= 3 {
             for _ in 0..self.loop_count {
                 let a_index: usize =
@@ -275,8 +297,18 @@ impl LocationMap {
                 if let Some(p) = theme.paths_selector.sample(&mut rng) {
                     let a = room_handles[a_index].entity_id();
                     let b = room_handles[a_index + 2].entity_id();
-                    ecs.new_path(p.to_owned(), a, b)?;
-                    ecs.new_path(p.to_owned(), b, a)?;
+                    let forward = ecs.new_path(p.to_owned(), a, b)?;
+                    let backward = ecs.new_path(p.to_owned(), b, a)?;
+                    if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
+                        let wall = ecs.new().instantiate_blob(
+                            wall_blob.to_owned(),
+                            &ecs.instantiation_scope(),
+                        )?;
+                        let wall_entity_id = wall.entity_id();
+                        wall.insert_new_location(b);
+                        forward.upsert_new_path_blocker(wall_entity_id);
+                        backward.upsert_new_path_blocker(wall_entity_id);
+                    }
                 }
             }
         }
@@ -366,6 +398,24 @@ impl LocationMap {
                         room_role: room.role,
                     });
                 }
+            }
+        }
+
+        // Hidden rooms: some side rooms vanish behind a themed breakable
+        // wall standing in their attachment room. Only the way IN is
+        // blocked — anything already inside can always walk out.
+        let hidden_count: usize =
+            rng.get_range(self.min_hidden_room_count, self.max_hidden_room_count);
+        side_attachments.shuffle(&mut rng);
+        for attachment in side_attachments.iter().take(hidden_count) {
+            if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
+                let wall = ecs
+                    .new()
+                    .instantiate_blob(wall_blob.to_owned(), &ecs.instantiation_scope())?;
+                let wall_entity_id = wall.entity_id();
+                wall.insert_new_location(attachment.attach_room_entity_id);
+                ecs.find(attachment.outbound_path_entity_id)
+                    .upsert_new_path_blocker(wall_entity_id);
             }
         }
 

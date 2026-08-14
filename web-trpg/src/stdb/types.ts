@@ -508,6 +508,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get path() {
     return __t.option(PathComponentBlob);
   },
+  get pathBlocker() {
+    return __t.option(PathBlockerComponentBlob);
+  },
   get allegiance() {
     return __t.option(AllegianceComponentBlob);
   },
@@ -901,6 +904,8 @@ export const LocationMap = __t.object("LocationMap", {
   },
   minEncounterCount: __t.u8(),
   maxEncounterCount: __t.u8(),
+  minHiddenRoomCount: __t.u8(),
+  maxHiddenRoomCount: __t.u8(),
   get questSpawns() {
     return __t.array(QuestSpawn);
   },
@@ -924,6 +929,8 @@ export const LocationMapAsset = __t.object("LocationMapAsset", {
   },
   minEncounterCount: __t.u8(),
   maxEncounterCount: __t.u8(),
+  minHiddenRoomCount: __t.u8(),
+  maxHiddenRoomCount: __t.u8(),
   get questSpawns() {
     return __t.array(QuestSpawnAsset);
   },
@@ -991,6 +998,9 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
   },
   minContainerCount: __t.u8(),
   maxContainerCount: __t.u8(),
+  get blockersSelector() {
+    return EntityBlobsSampler;
+  },
 });
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 
@@ -1014,6 +1024,9 @@ export const LocationMapThemeAsset = __t.object("LocationMapThemeAsset", {
   },
   minContainerCount: __t.u8(),
   maxContainerCount: __t.u8(),
+  get blockersSelector() {
+    return EntityBlobsSamplerAsset;
+  },
 });
 export type LocationMapThemeAsset = __Infer<typeof LocationMapThemeAsset>;
 
@@ -1190,6 +1203,19 @@ export const NamedStatBlockAsset = __t.object("NamedStatBlockAsset", {
   },
 });
 export type NamedStatBlockAsset = __Infer<typeof NamedStatBlockAsset>;
+
+export const PathBlockerComponent = __t.object("PathBlockerComponent", {
+  entityId: __t.u64(),
+  blockerEntityId: __t.u64(),
+});
+export type PathBlockerComponent = __Infer<typeof PathBlockerComponent>;
+
+export const PathBlockerComponentBlob = __t.object("PathBlockerComponentBlob", {
+  get blockerEntityId() {
+    return EntityIdSelector;
+  },
+});
+export type PathBlockerComponentBlob = __Infer<typeof PathBlockerComponentBlob>;
 
 export const PathComponent = __t.object("PathComponent", {
   entityId: __t.u64(),

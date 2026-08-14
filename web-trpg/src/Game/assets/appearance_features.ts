@@ -62,6 +62,9 @@ export const APPEARANCE_FEATURES = {
   urn: noun("urn", 5000),
   basket: noun("basket", 5000),
   strongbox: noun("strongbox", 5000),
+  // Path guards: breakable walls hiding side rooms and backward loops.
+  wall: noun("wall", 5000),
+  barricade: noun("barricade", 5000),
   // (rubble already exists among the theme decorations below.)
   ceramic_shards: noun("ceramic shards", 4000),
   scrap_wood: noun("scrap wood", 4000),
