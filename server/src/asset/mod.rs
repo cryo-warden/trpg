@@ -10,9 +10,10 @@ use crate::{
         types::{
             EntityBlobAsset, EntityBlobsSamplerAsset, ItemRefAsset, NamedActionAsset,
             NamedAppearanceFeatureAsset, NamedEncounterAsset, NamedEntityBlobAsset,
-            NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedStanceAsset,
-            NamedStatBlockAsset, StatBlockAsset,
+            NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedQuestAsset,
+            NamedStanceAsset, NamedStatBlockAsset, StatBlockAsset,
         },
+        quest::{quests, Quest},
         baseline::{baselines, Baseline},
         encounter::{encounter_blobs, encounters, Encounter, EncounterBlob},
         location_map::{
@@ -32,7 +33,8 @@ use crate::{
     ecs_extension::EcsExtension,
     entity::{
         baseline_components, equipment_stat_block_dirty_flag_components, named_entities,
-        total_stat_block_dirty_flag_components, traits_stat_block_dirty_flag_components,
+        quest_stat_block_dirty_flag_components, total_stat_block_dirty_flag_components,
+        traits_stat_block_dirty_flag_components,
         ActionsComponentBlob, ActiveStanceComponentBlob,
         AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
         CheckpointBindingComponentBlob, EntityBlob,
@@ -45,6 +47,7 @@ use crate::{
 
 pub mod types;
 pub mod armament;
+pub mod quest;
 pub mod armor;
 pub mod baseline;
 pub mod relic;
@@ -82,6 +85,7 @@ pub struct AssetPack {
     armors: Vec<NamedStatBlockAsset>,
     relics: Vec<NamedStatBlockAsset>,
     stances: Vec<NamedStanceAsset>,
+    quests: Vec<NamedQuestAsset>,
     /// Which stance intimidation forces entities into; a pack without
     /// morale-relevant content may omit it (forcing then fails loudly).
     cowering_stance_name: Option<String>,
@@ -152,6 +156,7 @@ struct AssetNameMaps {
     armors: HashMap<String, u32>,
     relics: HashMap<String, u32>,
     stances: HashMap<String, u32>,
+    quests: HashMap<String, u32>,
     location_maps: HashMap<String, u32>,
 }
 
@@ -259,6 +264,8 @@ fn resolve_entity_blob(
         courage_status: None,
         braced_status: None,
         status_stat_block_dirty_flag: None,
+        quest_stat_block_cache: None,
+        quest_stat_block_dirty_flag: None,
         traits: author
             .trait_names
             .map(|names| {
@@ -485,6 +492,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.stances().iter().map(|s| (s.name, s.id)),
             asset_pack.stances.iter().map(|s| &s.name),
         )?,
+        quests: match_names(
+            "quest",
+            ctx.db.quests().iter().map(|q| (q.name, q.id)),
+            asset_pack.quests.iter().map(|q| &q.name),
+        )?,
         location_maps: match_names(
             "location map",
             ctx.db.location_maps().iter().map(|m| (m.name, m.id)),
@@ -615,6 +627,21 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.relics().id().update(row);
         } else {
             ctx.db.relics().insert(row);
+        }
+    }
+
+    for q in asset_pack.quests {
+        let id = maps.quests[&q.name];
+        let row = Quest {
+            id,
+            name: q.name,
+            per_bit_stat_block: resolve_stat_block(q.value.per_bit_stat_block, &maps)?,
+            bit_count: q.value.bit_count,
+        };
+        if ctx.db.quests().id().find(id).is_some() {
+            ctx.db.quests().id().update(row);
+        } else {
+            ctx.db.quests().insert(row);
         }
     }
 
@@ -902,6 +929,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         let equipment_flags = ctx.db.equipment_stat_block_dirty_flag_components();
         if equipment_flags.entity_id().find(baseline.entity_id).is_none() {
             equipment_flags.insert(flag.clone());
+        }
+        let quest_flags = ctx.db.quest_stat_block_dirty_flag_components();
+        if quest_flags.entity_id().find(baseline.entity_id).is_none() {
+            quest_flags.insert(flag.clone());
         }
         let total_flags = ctx.db.total_stat_block_dirty_flag_components();
         if total_flags.entity_id().find(baseline.entity_id).is_none() {

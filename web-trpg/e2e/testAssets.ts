@@ -47,6 +47,7 @@ const emptyPack = (): AssetPack => ({
   armors: [],
   relics: [],
   stances: [],
+  quests: [],
   coweringStanceName: undefined,
   proneStanceName: undefined,
   encounterBlobs: [],

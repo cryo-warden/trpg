@@ -98,6 +98,9 @@ export default __t.row({
   get traitsStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob).name("traits_stat_block_cache");
   },
+  get questStatBlockCache() {
+    return __t.option(StatBlockCacheComponentBlob).name("quest_stat_block_cache");
+  },
   get traitsStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("traits_stat_block_dirty_flag");
   },
@@ -106,6 +109,9 @@ export default __t.row({
   },
   get statusStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("status_stat_block_dirty_flag");
+  },
+  get questStatBlockDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("quest_stat_block_dirty_flag");
   },
   get totalStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob).name("total_stat_block_dirty_flag");

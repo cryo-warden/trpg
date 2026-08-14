@@ -281,6 +281,9 @@ export const AssetPack = __t.object("AssetPack", {
   get stances() {
     return __t.array(NamedStanceAsset);
   },
+  get quests() {
+    return __t.array(NamedQuestAsset);
+  },
   coweringStanceName: __t.option(__t.string()),
   proneStanceName: __t.option(__t.string()),
   get encounterBlobs() {
@@ -541,6 +544,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get traitsStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob);
   },
+  get questStatBlockCache() {
+    return __t.option(StatBlockCacheComponentBlob);
+  },
   get traitsStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
@@ -548,6 +554,9 @@ export const EntityBlob = __t.object("EntityBlob", {
     return __t.option(FlagComponentBlob);
   },
   get statusStatBlockDirtyFlag() {
+    return __t.option(FlagComponentBlob);
+  },
+  get questStatBlockDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
   get totalStatBlockDirtyFlag() {
@@ -1117,6 +1126,14 @@ export const NamedLocationMapThemeAsset = __t.object("NamedLocationMapThemeAsset
 });
 export type NamedLocationMapThemeAsset = __Infer<typeof NamedLocationMapThemeAsset>;
 
+export const NamedQuestAsset = __t.object("NamedQuestAsset", {
+  name: __t.string(),
+  get value() {
+    return QuestAsset;
+  },
+});
+export type NamedQuestAsset = __Infer<typeof NamedQuestAsset>;
+
 export const NamedStanceAsset = __t.object("NamedStanceAsset", {
   name: __t.string(),
   get value() {
@@ -1178,6 +1195,24 @@ export const PlayerControllerComponentBlob = __t.object("PlayerControllerCompone
   accountId: __t.u64(),
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
+
+export const Quest = __t.object("Quest", {
+  id: __t.u32(),
+  name: __t.string(),
+  get perBitStatBlock() {
+    return StatBlock;
+  },
+  bitCount: __t.u32(),
+});
+export type Quest = __Infer<typeof Quest>;
+
+export const QuestAsset = __t.object("QuestAsset", {
+  get perBitStatBlock() {
+    return StatBlockAsset;
+  },
+  bitCount: __t.u32(),
+});
+export type QuestAsset = __Infer<typeof QuestAsset>;
 
 export const Relic = __t.object("Relic", {
   id: __t.u32(),

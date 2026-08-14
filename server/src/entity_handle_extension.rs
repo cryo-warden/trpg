@@ -82,6 +82,9 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         if let Some(c) = e.status_stat_block_cache() {
             stat_block += &c.stat_block;
         }
+        if let Some(c) = e.quest_stat_block_cache() {
+            stat_block += &c.stat_block;
+        }
         stat_block
     }
 

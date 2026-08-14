@@ -6,6 +6,7 @@ use crate::{
         armament::armaments,
         armor::armors,
         location_map::{location_map_connections, location_maps},
+        quest::quests,
         location_map_theme::location_map_themes,
         r#trait::traits,
         relic::relics,
@@ -17,6 +18,7 @@ use crate::{
     entity::*,
     entity_handle_extension::EntityHandleExtension,
     event::{observable_events, EventQueue, EventType, NewEvent},
+    quest::entities_quests_progress,
 };
 use ecs::Ecs;
 use spacetimedb::{rand::seq::SliceRandom, Table};
@@ -476,6 +478,31 @@ pub fn entity_stats_system(ecs: Ecs) {
         }
         f.upsert_new_status_stat_block_cache(stat_block)
             .delete_status_stat_block_dirty_flag()
+            .into_handle();
+    }
+
+    // Quest progress contributes through its own cache like every other
+    // source: each quest's per-bit block, added popcount times (saturating;
+    // any granted ids dedup through the id-vec union rule). Bits only turn
+    // ON, so this contribution is monotonic — exactly what the max-pool
+    // ratchet asks of mhp/mep sources.
+    for f in ecs.iter_quest_stat_block_dirty_flag() {
+        let entity_id = f.entity_id();
+        let mut stat_block = StatBlock::default();
+        for row in ecs
+            .db
+            .entities_quests_progress()
+            .entity_id()
+            .filter(entity_id)
+        {
+            if let Some(quest) = ecs.db.quests().id().find(row.quest_id) {
+                for _ in 0..row.bits.count_ones() {
+                    stat_block += &quest.per_bit_stat_block;
+                }
+            }
+        }
+        f.upsert_new_quest_stat_block_cache(stat_block)
+            .delete_quest_stat_block_dirty_flag()
             .into_handle();
     }
 

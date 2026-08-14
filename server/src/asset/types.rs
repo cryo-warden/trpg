@@ -119,6 +119,15 @@ pub struct StanceAsset {
     pub stat_block: StatBlockAsset,
 }
 
+/// A quest as authored: the stat contribution EACH progress bit grants
+/// (the computed total scales with the holder's popcount) and the quest's
+/// total bit supply across the whole world — one quest may span many maps.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestAsset {
+    pub per_bit_stat_block: StatBlockAsset,
+    pub bit_count: u32,
+}
+
 /// What an authored item entity IS, referencing its gear asset by NAME;
 /// push_assets resolves it to the stored ItemRef's integer id.
 #[derive(Debug, Clone, SpacetimeType)]
@@ -240,6 +249,7 @@ secador::secador!(
         (AppearanceFeatureAsset, NamedAppearanceFeatureAsset),
         (StatBlockAsset, NamedStatBlockAsset),
         (StanceAsset, NamedStanceAsset),
+        (QuestAsset, NamedQuestAsset),
         (EntityBlobAsset, NamedEntityBlobAsset),
         (EncounterAsset, NamedEncounterAsset),
         (LocationMapThemeAsset, NamedLocationMapThemeAsset),

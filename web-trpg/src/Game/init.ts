@@ -13,6 +13,7 @@ import {
   LOCATION_MAP_CONNECTIONS,
   LOCATION_MAP_THEMES,
 } from "./assets/location_maps";
+import { QUESTS } from "./assets/quests";
 import { STANCES } from "./assets/stances";
 import { TRAITS } from "./assets/traits";
 
@@ -32,6 +33,7 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       armors: namedPairs(ARMORS),
       relics: namedPairs(RELICS),
       stances: namedPairs(STANCES),
+      quests: namedPairs(QUESTS),
       coweringStanceName: "cowering",
       proneStanceName: "prone",
       encounterBlobs: namedPairs(ENCOUNTER_BLOBS),

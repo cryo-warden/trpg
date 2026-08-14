@@ -119,6 +119,7 @@ entity!(
       equipment_stat_block_cache in equipment_stat_block_cache_components,
       status_stat_block_cache in status_stat_block_cache_components,
       traits_stat_block_cache in traits_stat_block_cache_components,
+      quest_stat_block_cache in quest_stat_block_cache_components,
       dirties(total_stat_block_dirty_flag),
     )]
     struct StatBlockCacheComponent {
@@ -130,6 +131,7 @@ entity!(
       traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
       equipment_stat_block_dirty_flag in equipment_stat_block_dirty_flag_components,
       status_stat_block_dirty_flag in status_stat_block_dirty_flag_components,
+      quest_stat_block_dirty_flag in quest_stat_block_dirty_flag_components,
       total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
       checkpoint_object in checkpoint_object_components,
     )]

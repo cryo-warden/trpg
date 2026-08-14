@@ -107,6 +107,9 @@ import PendingConnectionsComponentsRow from "./pending_connections_components_ta
 import PinnedActionsComponentsRow from "./pinned_actions_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
+import QuestStatBlockCacheComponentsRow from "./quest_stat_block_cache_components_table";
+import QuestStatBlockDirtyFlagComponentsRow from "./quest_stat_block_dirty_flag_components_table";
+import QuestsRow from "./quests_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
@@ -763,6 +766,43 @@ const tablesSchema = __schema({
       { name: 'player_deactivation_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, PlayerDeactivationTimerComponentsRow),
+  quest_stat_block_cache_components: __table({
+    name: 'quest_stat_block_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'quest_stat_block_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'quest_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, QuestStatBlockCacheComponentsRow),
+  quest_stat_block_dirty_flag_components: __table({
+    name: 'quest_stat_block_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'quest_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'quest_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, QuestStatBlockDirtyFlagComponentsRow),
+  quests: __table({
+    name: 'quests',
+    indexes: [
+      { accessor: 'id', name: 'quests_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'name', name: 'quests_name_idx_btree', algorithm: 'btree', columns: [
+        'name',
+      ] },
+    ],
+    constraints: [
+      { name: 'quests_id_key', constraint: 'unique', columns: ['id'] },
+      { name: 'quests_name_key', constraint: 'unique', columns: ['name'] },
+    ],
+  }, QuestsRow),
   queued_action_state_components: __table({
     name: 'queued_action_state_components',
     indexes: [
