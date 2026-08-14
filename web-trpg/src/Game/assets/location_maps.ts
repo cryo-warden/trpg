@@ -679,14 +679,21 @@ export const LOCATION_MAPS = {
     // The keep's far hall belongs to its warden — and the room at its door
     // holds a fortune-teller's checkpoint, so the challenge is always
     // approached from a save point. Felling the warden's whole retinue
-    // grants the quest's single bit (+2 mhp) to everyone present.
+    // DROPS one sparkling cookie per player present (+2 mhp when eaten):
+    // a visible reward to pick up, not a silent stat bump.
     questRoomClaims: [
       {
         questName: "warden_of_the_keep",
         role: QuestRoomRole.Boss,
         encounterName: "keep_warden",
         spawnCheckpointBefore: true,
-        defeatBitIndex: 0,
+        defeatDrop: {
+          questName: "warden_of_the_keep",
+          index: 0,
+          itemBlob: blob({
+            appearanceFeatureNames: ["sparkling", "red_cookie"],
+          }),
+        },
       },
     ],
   },

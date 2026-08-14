@@ -437,18 +437,18 @@ export const DefaultArmamentsComponentBlob = __t.object("DefaultArmamentsCompone
 });
 export type DefaultArmamentsComponentBlob = __Infer<typeof DefaultArmamentsComponentBlob>;
 
-export const DefeatBitComponent = __t.object("DefeatBitComponent", {
+export const DefeatDropComponent = __t.object("DefeatDropComponent", {
   entityId: __t.u64(),
   questId: __t.u32(),
   index: __t.u32(),
 });
-export type DefeatBitComponent = __Infer<typeof DefeatBitComponent>;
+export type DefeatDropComponent = __Infer<typeof DefeatDropComponent>;
 
-export const DefeatBitComponentBlob = __t.object("DefeatBitComponentBlob", {
+export const DefeatDropComponentBlob = __t.object("DefeatDropComponentBlob", {
   questId: __t.u32(),
   index: __t.u32(),
 });
-export type DefeatBitComponentBlob = __Infer<typeof DefeatBitComponentBlob>;
+export type DefeatDropComponentBlob = __Infer<typeof DefeatDropComponentBlob>;
 
 export const Encounter = __t.object("Encounter", {
   id: __t.u32(),
@@ -616,8 +616,8 @@ export const EntityBlob = __t.object("EntityBlob", {
   get checkpointBinding() {
     return __t.option(CheckpointBindingComponentBlob);
   },
-  get defeatBit() {
-    return __t.option(DefeatBitComponentBlob);
+  get defeatDrop() {
+    return __t.option(DefeatDropComponentBlob);
   },
   get attack() {
     return __t.option(AttackComponentBlob);
@@ -1315,6 +1315,24 @@ export const QuestAsset = __t.object("QuestAsset", {
 });
 export type QuestAsset = __Infer<typeof QuestAsset>;
 
+export const QuestDefeatDrop = __t.object("QuestDefeatDrop", {
+  questId: __t.u32(),
+  index: __t.u32(),
+  get itemBlob() {
+    return EntityBlob;
+  },
+});
+export type QuestDefeatDrop = __Infer<typeof QuestDefeatDrop>;
+
+export const QuestDefeatDropAsset = __t.object("QuestDefeatDropAsset", {
+  questName: __t.string(),
+  index: __t.u32(),
+  get itemBlob() {
+    return EntityBlobAsset;
+  },
+});
+export type QuestDefeatDropAsset = __Infer<typeof QuestDefeatDropAsset>;
+
 export const QuestItemRef = __t.object("QuestItemRef", {
   questId: __t.u32(),
   index: __t.u32(),
@@ -1334,7 +1352,9 @@ export const QuestRoomClaim = __t.object("QuestRoomClaim", {
   },
   encounterId: __t.u32(),
   spawnCheckpointBefore: __t.bool(),
-  defeatBitIndex: __t.option(__t.u32()),
+  get defeatDrop() {
+    return __t.option(QuestDefeatDrop);
+  },
 });
 export type QuestRoomClaim = __Infer<typeof QuestRoomClaim>;
 
@@ -1345,7 +1365,9 @@ export const QuestRoomClaimAsset = __t.object("QuestRoomClaimAsset", {
   },
   encounterName: __t.string(),
   spawnCheckpointBefore: __t.bool(),
-  defeatBitIndex: __t.option(__t.u32()),
+  get defeatDrop() {
+    return __t.option(QuestDefeatDropAsset);
+  },
 });
 export type QuestRoomClaimAsset = __Infer<typeof QuestRoomClaimAsset>;
 

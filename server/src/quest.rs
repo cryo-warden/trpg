@@ -5,7 +5,7 @@ use spacetimedb::{
 };
 
 use crate::asset::encounter::encounters;
-use crate::asset::location_map::{LocationMap, MapGenerationResult, RoomRole};
+use crate::asset::location_map::{location_maps, LocationMap, MapGenerationResult, RoomRole};
 use crate::asset::location_map_theme::location_map_themes;
 use crate::asset::rng_range::RngRange;
 use crate::asset::weighted_sampler::WeightedSampler;
@@ -126,9 +126,24 @@ pub struct QuestRoomClaim {
     pub encounter_id: u32,
     pub spawn_checkpoint_before: bool,
     /// When set, every entity the claimed encounter spawns carries a
-    /// DefeatBitComponent for this bit: felling the last of them grants
-    /// it to every player present.
-    pub defeat_bit_index: Option<u32>,
+    /// DefeatDropComponent: felling the last of them DROPS one of these
+    /// items per player present — a visible reward to take and eat, not
+    /// a silent stat bump.
+    pub defeat_drop: Option<QuestDefeatDrop>,
+}
+
+/// What a boss claim drops on defeat: a quest item — same bit logic as
+/// the hidden cookies (per-player progress, freshness, eat) — with its
+/// OWN quest reference, so one quest's monster may hold another quest's
+/// item. The blob lives here on the map row, not on the carrier: an
+/// EntityBlob inside a component would make EntityBlob recursive.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestDefeatDrop {
+    pub quest_id: u32,
+    pub index: u32,
+    /// The dropped item's presentation; the payout stamps the QuestItem
+    /// ref onto a copy, exactly like the spawn windows do.
+    pub item_blob: EntityBlob,
 }
 
 /// One quest's spawn window in one map (a column on LocationMap): the bit
@@ -349,10 +364,10 @@ pub fn apply_quest_room_claims(
         if let Some(encounter) = ecs.db.encounters().id().find(claim.encounter_id) {
             let spawned_entity_ids =
                 encounter.populate(&ecs.find(rooms.boss_room_entity_id))?;
-            if let Some(index) = claim.defeat_bit_index {
+            if let Some(drop) = &claim.defeat_drop {
                 for spawned_entity_id in spawned_entity_ids {
                     ecs.find(spawned_entity_id)
-                        .upsert_new_defeat_bit(claim.quest_id, index);
+                        .upsert_new_defeat_drop(drop.quest_id, drop.index);
                 }
             }
         }
@@ -404,22 +419,24 @@ pub fn apply_quest_room_claims(
 }
 
 /// The payoff of a boss claim, called by the death system on a fallen
-/// defeat-bit carrier: when no other LIVING carrier of the same (quest,
-/// index) pair remains in the same map instance — the bit falls with the
-/// last of the claim's spawn — every player standing in the room gets
-/// the bit (party-friendly; the fallen included, if they rise again).
-/// The carrier's component is consumed here: the one-shot latch, since a
-/// dead NPC lingers as a corpse and re-enters the death scan every tick.
-/// Instance-scoped on purpose: another player's instance of the same map
-/// keeps its own warden, and that one standing must not hold THIS grant.
-pub fn grant_defeat_bit(ecs: Ecs, entity_id: u64) {
-    let Some(defeat) = ecs.find(entity_id).defeat_bit() else {
+/// defeat-drop carrier: when no other LIVING carrier of the same (quest,
+/// index) pair remains in the same map instance — the reward falls with
+/// the last of the claim's spawn — one sparkling quest item per player
+/// present DROPS into the room, to be seen, taken, and eaten (the same
+/// per-player bit logic as the hidden cookies; anticipation over a
+/// silent stat bump). The carrier's component is consumed here: the
+/// one-shot latch, since a dead NPC lingers as a corpse and re-enters
+/// the death scan every tick. Instance-scoped on purpose: another
+/// player's instance of the same map keeps its own warden, and that one
+/// standing must not hold THIS payout.
+pub fn drop_defeat_reward(ecs: Ecs, entity_id: u64) {
+    let Some(defeat) = ecs.find(entity_id).defeat_drop() else {
         return;
     };
-    ecs.find(entity_id).delete_defeat_bit();
-    let instance = crate::turn::map_instance_id_of(ecs, entity_id);
-    let another_carrier_stands = ecs.iter_defeat_bit().any(|other| {
-        let other_defeat = other.defeat_bit();
+    ecs.find(entity_id).delete_defeat_drop();
+    let instance_entity_id = crate::turn::map_instance_id_of(ecs, entity_id);
+    let another_carrier_stands = ecs.iter_defeat_drop().any(|other| {
+        let other_defeat = other.defeat_drop();
         let other_entity_id = other.entity_id();
         other_entity_id != entity_id
             && other_defeat.quest_id == defeat.quest_id
@@ -428,7 +445,7 @@ pub fn grant_defeat_bit(ecs: Ecs, entity_id: u64) {
                 .find(other_entity_id)
                 .hp()
                 .is_some_and(|hp| hp.hp > 0)
-            && crate::turn::map_instance_id_of(ecs, other_entity_id) == instance
+            && crate::turn::map_instance_id_of(ecs, other_entity_id) == instance_entity_id
     });
     if another_carrier_stands {
         return;
@@ -440,16 +457,52 @@ pub fn grant_defeat_bit(ecs: Ecs, entity_id: u64) {
     else {
         return;
     };
-    let witness_entity_ids: Vec<u64> = ecs
+    // The drop's blob lives on the map row (see QuestDefeatDrop): resolve
+    // instance -> map asset -> the matching claim.
+    let item_blob = instance_entity_id
+        .and_then(|id| ecs.find(id).map_instance().map(|m| m.location_map_id))
+        .and_then(|map_id| ecs.db.location_maps().id().find(map_id))
+        .and_then(|map| {
+            map.quest_room_claims.into_iter().find_map(|claim| {
+                claim.defeat_drop.filter(|drop| {
+                    drop.quest_id == defeat.quest_id && drop.index == defeat.index
+                })
+            })
+        })
+        .map(|drop| drop.item_blob);
+    let Some(item_blob) = item_blob else {
+        log::error!(
+            "Defeat-drop carrier {} fell but no claim on its map declares the (quest {}, bit {}) drop.",
+            entity_id,
+            defeat.quest_id,
+            defeat.index
+        );
+        return;
+    };
+    // One per player present — party-friendly — and never fewer than one:
+    // an empty room must not erase the instance's reward supply.
+    let player_count = ecs
         .db
         .location_components()
         .location_entity_id()
         .filter(room_entity_id)
-        .map(|row| row.entity_id)
-        .collect();
-    for witness_entity_id in witness_entity_ids {
-        if ecs.find(witness_entity_id).player_controller().is_some() {
-            set_quest_bit(ecs, witness_entity_id, defeat.quest_id, defeat.index);
+        .filter(|row| ecs.find(row.entity_id).player_controller().is_some())
+        .count();
+    for _ in 0..player_count.max(1) {
+        let mut blob = item_blob.clone();
+        blob.item = Some(ItemComponentBlob {
+            item_ref: ItemRef::QuestItem(QuestItemRef {
+                quest_id: defeat.quest_id,
+                index: defeat.index,
+            }),
+        });
+        match ecs.new().instantiate_blob(blob, &ecs.instantiation_scope()) {
+            Ok(item) => {
+                item.insert_new_location(room_entity_id);
+            }
+            Err(error) => {
+                log::error!("Defeat drop failed to instantiate: {}", error);
+            }
         }
     }
 }

@@ -253,10 +253,20 @@ pub struct QuestRoomClaimAsset {
     pub role: crate::quest::QuestRoomRole,
     pub encounter_name: String,
     pub spawn_checkpoint_before: bool,
-    /// When set (validated against the quest's bit count), felling the
-    /// last of the claimed encounter's spawns grants this bit to every
-    /// player present.
-    pub defeat_bit_index: Option<u32>,
+    /// When set, felling the last of the claimed encounter's spawns
+    /// drops these items — one per player present.
+    pub defeat_drop: Option<QuestDefeatDropAsset>,
+}
+
+/// A boss claim's drop as authored: the reward quest by NAME — its OWN
+/// reference, so one quest's monster may hold another quest's item — the
+/// bit index (validated against that quest's bit count), and the item's
+/// presentation blob inline, exactly like a spawn window's.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestDefeatDropAsset {
+    pub quest_name: String,
+    pub index: u32,
+    pub item_blob: EntityBlobAsset,
 }
 
 /// One quest's spawn window in one map, as authored: the quest by NAME

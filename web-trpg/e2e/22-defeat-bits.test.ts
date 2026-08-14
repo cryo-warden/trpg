@@ -6,10 +6,12 @@ import { connect, playerEntityIdFor, waitFor } from "./client";
 import { claimAdmin } from "./admin";
 import { bossPack } from "./testAssets";
 
-// Phase 22: defeat bits. Felling the boss claim's spawn grants the
-// quest's bit to every player present — and the grant is scoped to MY
-// map instance: the other instance's warden still standing must not
-// hold it. The bit pays out through the quest stat cache (+2 mhp).
+// Phase 22: defeat drops. Felling the boss claim's spawn DROPS one
+// quest item per player present — anticipation: the reward is seen on
+// the floor, taken, and eaten, riding the same bit logic as the hidden
+// cookies. The payout is scoped to MY map instance: the other
+// instance's warden still standing must not hold it. Eating the drop
+// pays +2 mhp through the quest stat cache.
 
 let admin: DbConnection;
 let player: DbConnection;
@@ -95,6 +97,7 @@ beforeAll(async () => {
       "SELECT * FROM location_map_components",
       "SELECT * FROM path_components",
       "SELECT * FROM hp_components",
+      "SELECT * FROM item_components",
       "SELECT * FROM enemy_controller_components",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM accounts",
@@ -127,10 +130,18 @@ afterAll(() => {
   player?.disconnect();
 });
 
-test("felling my warden grants the bit — while the OTHER instance's warden still stands", async () => {
-  expect(myBitZero()).toBe(false);
+const questItemsIn = (roomId: bigint) =>
+  [...player.db.item_components.iter()].filter(
+    (row) =>
+      row.itemRef.tag === "QuestItem" && roomOf(row.entityId) === roomId,
+  );
 
-  await moveTowards(roomOf(wardenEntityId)!);
+test("felling my warden drops ONE sparkling reward — while the OTHER instance's warden still stands", async () => {
+  expect(myBitZero()).toBe(false);
+  const lairRoomId = roomOf(wardenEntityId)!;
+  expect(questItemsIn(lairRoomId)).toEqual([]);
+
+  await moveTowards(lairRoomId);
   // Strike until the warden falls (5 damage a blow, 10 hp).
   for (let blows = 0; (hpOf(wardenEntityId) ?? 0) > 0 && blows < 6; blows++) {
     const before = hpOf(wardenEntityId)!;
@@ -142,13 +153,29 @@ test("felling my warden grants the bit — while the OTHER instance's warden sti
   }
   expect(hpOf(wardenEntityId) ?? 0).toBeLessThanOrEqual(0);
 
-  // The instance-scoped grant: MY warden's fall pays out even though the
+  // The drop lands on the floor — one item, one player present — and the
+  // bit is NOT granted yet: the reward must be picked up and eaten.
+  await waitFor(() => questItemsIn(lairRoomId).length > 0, 30000);
+  expect(questItemsIn(lairRoomId).length).toBe(1);
+  expect(myBitZero()).toBe(false);
+
+  // Instance-scoped payout: MY warden's fall dropped it even though the
   // admin instance's warden lives on.
-  await waitFor(() => myBitZero(), 30000);
   expect(hpOf(otherWardenEntityId)).toBe(10);
 }, 90000);
 
-test("the bit pays out through the quest stat cache: +2 mhp", async () => {
+test("take and eat the drop: the bit sets and pays +2 mhp through the quest cache", async () => {
+  const cookieEntityId = questItemsIn(roomOf(wardenEntityId)!)[0]!.entityId;
+  await player.reducers.act({
+    actionId: actionIdByName("test_take"),
+    targetEntityId: cookieEntityId,
+  });
+  await waitFor(() => roomOf(cookieEntityId) === playerEntityId, 30000);
+  await player.reducers.act({
+    actionId: actionIdByName("test_eat"),
+    targetEntityId: cookieEntityId,
+  });
+  await waitFor(() => myBitZero(), 30000);
   await waitFor(
     () =>
       [...player.db.hp_components.iter()].find(

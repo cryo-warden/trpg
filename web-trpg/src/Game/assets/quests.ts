@@ -16,8 +16,8 @@ export const QUESTS = {
     bitCount: 10,
   },
   // A boss quest: no spawn windows (the bit never lies in a jar) — its
-  // room claim in old_keep spawns the warden, and the defeat-bit wiring
-  // will grant the single bit when the warden falls.
+  // room claim in old_keep spawns the warden, whose fall drops one
+  // sparkling cookie per player present (+2 mhp when eaten).
   warden_of_the_keep: {
     perBitStatBlock: statBlock({ mhp: 2 }),
     bitCount: 1,

@@ -108,6 +108,8 @@ export const APPEARANCE_FEATURES = {
   sanctum: noun("sanctum", 10000),
   vault: noun("vault", 10000),
   hollow: adjective("hollow", 1000),
+  // Boss drops sparkle: the reward that anticipation promised.
+  sparkling: adjective("sparkling", 1000),
   tiny: adjective("tiny", 1000),
   small: adjective("small", 900),
   big: adjective("big", 900),

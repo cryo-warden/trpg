@@ -1177,7 +1177,8 @@ export const spawnPack = (): AssetPack => ({
  * A boss-claim world: a three-room chain whose map gives its Ending room
  * to a 1-bit conquest quest — the warden encounter spawns there, the link
  * row records the claim, and a themed checkpoint object lands in the
- * middle room (the boss approached from a save point). No wandering
+ * middle room (the boss approached from a save point). Felling the
+ * warden drops one conquest quest item per player present. No wandering
  * encounters and no item spawns: the only inhabitants are the claim's.
  */
 export const bossPack = (): AssetPack => ({
@@ -1205,6 +1206,22 @@ export const bossPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Attack", value: 5 }], interruptible: false }],
       },
     },
+    {
+      name: "test_take",
+      value: {
+        actionType: { tag: "Inventory" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Take" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_eat",
+      value: {
+        actionType: { tag: "Eat" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Eat" }], interruptible: false }],
+      },
+    },
   ],
   baselines: [
     {
@@ -1213,7 +1230,7 @@ export const bossPack = (): AssetPack => ({
         mhp: 10,
         gait: 2,
         attack: 0,
-        actionNames: ["test_move", "test_strike"],
+        actionNames: ["test_move", "test_strike", "test_take", "test_eat"],
       }),
     },
     {
@@ -1282,7 +1299,11 @@ export const bossPack = (): AssetPack => ({
             role: { tag: "Boss" },
             encounterName: "test_warden_lair",
             spawnCheckpointBefore: true,
-            defeatBitIndex: 0,
+            defeatDrop: {
+              questName: "test_conquest",
+              index: 0,
+              itemBlob: blob({}),
+            },
           },
         ],
       },

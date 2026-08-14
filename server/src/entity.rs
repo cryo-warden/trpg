@@ -214,11 +214,13 @@ entity!(
     }
 
     // On a boss-claim spawn: felling the LAST living carrier of this
-    // (quest, index) pair in the same map instance sets that quest bit
-    // for every player present. Consumed on death — the one-shot latch
-    // that keeps a lingering corpse from re-granting every tick.
-    #[component(defeat_bit in defeat_bit_components)]
-    struct DefeatBitComponent {
+    // (quest, index) pair in the same map instance drops that quest
+    // item — one per player present — into the room (the blob lives on
+    // the map's claim; an EntityBlob here would make EntityBlob
+    // recursive). Consumed on death: the one-shot latch that keeps a
+    // lingering corpse from re-dropping every tick.
+    #[component(defeat_drop in defeat_drop_components)]
+    struct DefeatDropComponent {
         pub quest_id: u32,
         pub index: u32,
     }

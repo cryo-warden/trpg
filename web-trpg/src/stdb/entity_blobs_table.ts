@@ -33,7 +33,7 @@ import {
   MapRoomsComponentBlob,
   PendingConnectionsComponentBlob,
   CheckpointBindingComponentBlob,
-  DefeatBitComponentBlob,
+  DefeatDropComponentBlob,
   AttackComponentBlob,
   HpComponentBlob,
   EpComponentBlob,
@@ -152,8 +152,8 @@ export default __t.row({
   get checkpointBinding() {
     return __t.option(CheckpointBindingComponentBlob).name("checkpoint_binding");
   },
-  get defeatBit() {
-    return __t.option(DefeatBitComponentBlob).name("defeat_bit");
+  get defeatDrop() {
+    return __t.option(DefeatDropComponentBlob).name("defeat_drop");
   },
   get attack() {
     return __t.option(AttackComponentBlob);
