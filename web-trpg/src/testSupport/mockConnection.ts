@@ -212,7 +212,7 @@ export const stdbWrapper = (
       equipment_components: mockTable([]),
       default_armaments_components: mockTable([]),
       queued_action_state_components: mockTable([]),
-      visited_locations: mockTable([]),
+      entities_visited_locations: mockTable([]),
       action_hotkeys_components: mockTable([]),
       appearance_features_components: mockTable([]),
       ...tables,

@@ -72,7 +72,7 @@ beforeAll(async () => {
       "SELECT * FROM map_instance_components",
       "SELECT * FROM map_cleanup_timer_components",
       "SELECT * FROM player_controller_components",
-      "SELECT * FROM visited_locations",
+      "SELECT * FROM entities_visited_locations",
       "SELECT * FROM accounts",
     ]);
   await player.reducers.createAccount({ name: "wayfarer" });
@@ -107,7 +107,7 @@ test("standing in the anchor room generates the far map and materializes the pat
   // for every room stood in, and drives the "more interesting" markers.
   await waitFor(
     () =>
-      [...player.db.visited_locations.iter()].some(
+      [...player.db.entities_visited_locations.iter()].some(
         (row) =>
           row.visitorEntityId === playerEntityId &&
           row.locationEntityId === anchorRoomId,

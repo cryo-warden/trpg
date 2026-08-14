@@ -1,0 +1,1 @@
+"trpg exception: COMPONENT tables (the ecs-macro *_components tables) are exempt -- they follow the ecs component naming convention, not the join principle, even when a component references other entities."

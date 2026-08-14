@@ -60,7 +60,7 @@ export const componentQueries = [
   "select * from path_components",
   "select * from player_controller_components",
   "select * from queued_action_state_components",
-  "select * from visited_locations",
+  "select * from entities_visited_locations",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -95,7 +95,7 @@ export const usePathComponent = createUseComponent("path_components");
 export const useMyVisitedLocationIds = (): Set<EntityId> => {
   const playerEntity = usePlayerEntity();
   const visitedRows = useTableData(
-    "visited_locations",
+    "entities_visited_locations",
     (table) => [...table.iter()],
     [],
   );

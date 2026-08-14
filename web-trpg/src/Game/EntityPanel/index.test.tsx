@@ -15,7 +15,7 @@ const tables = (visited: { locationEntityId: bigint }[]) => ({
   path_components: mockTable([
     { entityId: 4n, destinationEntityId: 20n },
   ]),
-  visited_locations: mockTable(
+  entities_visited_locations: mockTable(
     visited.map((row, index) => ({
       id: BigInt(index + 1),
       visitorEntityId: 1n,

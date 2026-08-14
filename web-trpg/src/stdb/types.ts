@@ -480,6 +480,13 @@ export const EntitiesQuestsProgress = __t.object("EntitiesQuestsProgress", {
 });
 export type EntitiesQuestsProgress = __Infer<typeof EntitiesQuestsProgress>;
 
+export const EntitiesVisitedLocation = __t.object("EntitiesVisitedLocation", {
+  id: __t.u64(),
+  visitorEntityId: __t.u64(),
+  locationEntityId: __t.u64(),
+});
+export type EntitiesVisitedLocation = __Infer<typeof EntitiesVisitedLocation>;
+
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
 });
@@ -1403,13 +1410,6 @@ export const TraitsComponentBlob = __t.object("TraitsComponentBlob", {
   traitIds: __t.array(__t.u32()),
 });
 export type TraitsComponentBlob = __Infer<typeof TraitsComponentBlob>;
-
-export const VisitedLocation = __t.object("VisitedLocation", {
-  id: __t.u64(),
-  visitorEntityId: __t.u64(),
-  locationEntityId: __t.u64(),
-});
-export type VisitedLocation = __Infer<typeof VisitedLocation>;
 
 export const WeightedNameAsset = __t.object("WeightedNameAsset", {
   weight: __t.u8(),

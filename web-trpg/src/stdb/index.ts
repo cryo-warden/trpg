@@ -80,6 +80,7 @@ import DefaultArmamentsComponentsRow from "./default_armaments_components_table"
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
 import EntitiesQuestsProgressRow from "./entities_quests_progress_table";
+import EntitiesVisitedLocationsRow from "./entities_visited_locations_table";
 import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
 import EpComponentsRow from "./ep_components_table";
@@ -120,7 +121,6 @@ import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_
 import TraitsComponentsRow from "./traits_components_table";
 import TraitsStatBlockCacheComponentsRow from "./traits_stat_block_cache_components_table";
 import TraitsStatBlockDirtyFlagComponentsRow from "./traits_stat_block_dirty_flag_components_table";
-import VisitedLocationsRow from "./visited_locations_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -440,6 +440,23 @@ const tablesSchema = __schema({
       { name: 'entities_quests_progress_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, EntitiesQuestsProgressRow),
+  entities_visited_locations: __table({
+    name: 'entities_visited_locations',
+    indexes: [
+      { accessor: 'id', name: 'entities_visited_locations_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'location_entity_id', name: 'entities_visited_locations_location_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'locationEntityId',
+      ] },
+      { accessor: 'visitor_entity_id', name: 'entities_visited_locations_visitor_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'visitorEntityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'entities_visited_locations_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, EntitiesVisitedLocationsRow),
   entity_blobs: __table({
     name: 'entity_blobs',
     indexes: [
@@ -912,23 +929,6 @@ const tablesSchema = __schema({
       { name: 'traits_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, TraitsStatBlockDirtyFlagComponentsRow),
-  visited_locations: __table({
-    name: 'visited_locations',
-    indexes: [
-      { accessor: 'id', name: 'visited_locations_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'location_entity_id', name: 'visited_locations_location_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'locationEntityId',
-      ] },
-      { accessor: 'visitor_entity_id', name: 'visited_locations_visitor_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'visitorEntityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'visited_locations_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, VisitedLocationsRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
