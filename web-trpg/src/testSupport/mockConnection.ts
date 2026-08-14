@@ -218,7 +218,7 @@ export const stdbWrapper = (
     },
     reducers,
   } as unknown as DbConnection;
-  const value = { connection, identity };
+  const value = { connection, identity, synced: true };
   return function StdbWrapper({ children }: { children: ReactNode }) {
     return createElement(StdbContext.Provider, { value }, children);
   };

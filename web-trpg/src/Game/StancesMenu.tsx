@@ -119,9 +119,8 @@ export const StancesMenu = () => {
         seedActionIds.push(...gear.actionIds);
       }
     }
-    // The stance currently HELD is trivially reachable — its own posture
-    // is same-stance-filtered out of the derived actions, so without this
-    // seed the active stance's card would vanish from its own menu.
+    // The stance currently HELD is trivially reachable — even one adopted
+    // by force or at creation, with no posture action granting it.
     const seedStanceIds = activeStanceId == null ? [] : [activeStanceId];
     return new Set(reachableStanceIds({ seedActionIds, seedStanceIds, graph }));
   }, [totalStatBlock, owned, gearStatBlockOf, graph, activeStanceId]);

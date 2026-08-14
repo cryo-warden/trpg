@@ -87,6 +87,13 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState(
     () => localStorage.getItem("auth_token") || "",
   );
+  // WHICH connection has finished its initial subscription sync. Keyed by
+  // the connection object so a reconnect (a fresh connection) reads as
+  // unsynced until its own sync applies — before that, absent rows mean
+  // "not loaded yet", never "does not exist".
+  const [syncedConnection, setSyncedConnection] = useState<DbConnection | null>(
+    null,
+  );
 
   const builder = useMemo(() => {
     if (resolved.uri == null) {
@@ -102,7 +109,10 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
 
         // Re-fires on every rebuilt connection: subscriptions come back
         // after each reconnect without extra bookkeeping.
-        connection.subscriptionBuilder().subscribe(queries);
+        connection
+          .subscriptionBuilder()
+          .onApplied(() => setSyncedConnection(connection))
+          .subscribe(queries);
         installDevHooks(connection);
       });
   }, [resolved.uri, token]);
@@ -119,16 +129,20 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
 
   return (
     <SpacetimeDBProvider connectionBuilder={builder}>
-      <StdbGate uri={resolved.uri}>{children}</StdbGate>
+      <StdbGate uri={resolved.uri} syncedConnection={syncedConnection}>
+        {children}
+      </StdbGate>
     </SpacetimeDBProvider>
   );
 };
 
 const StdbGate = ({
   uri,
+  syncedConnection,
   children,
 }: {
   uri: string | null;
+  syncedConnection: DbConnection | null;
   children: ReactNode;
 }) => {
   const state = useSpacetimeDB();
@@ -137,7 +151,11 @@ const StdbGate = ({
   if (state.isActive && state.identity != null && connection != null) {
     return (
       <StdbContext.Provider
-        value={{ connection, identity: state.identity }}
+        value={{
+          connection,
+          identity: state.identity,
+          synced: connection === syncedConnection,
+        }}
       >
         {children}
       </StdbContext.Provider>

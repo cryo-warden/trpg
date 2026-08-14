@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Panel } from "../structural/Panel";
-import { useStdbConnection } from "./context/StdbContext/useStdb";
+import {
+  useStdbConnection,
+  useStdbSynced,
+} from "./context/StdbContext/useStdb";
 
 /**
  * DEV smooth entry: with TRPG_AUTO_ENTRY=true baked into the build, an
@@ -36,19 +39,25 @@ const newDevAccountName = (): string => {
 
 export const AutoEntryPanel = () => {
   const connection = useStdbConnection();
+  // A new account is generated ONLY for an identity that truly has none:
+  // wait for the initial sync to apply before reading "no account rows"
+  // as an absence — a reconnecting identity must land on its existing
+  // account. (The server independently enforces this: create_account
+  // rejects any identity already attached.)
+  const synced = useStdbSynced();
   const [name] = useState(newDevAccountName);
   const [error, setError] = useState<string | null>(null);
   const sentRef = useRef(false);
 
   useEffect(() => {
-    if (sentRef.current) {
+    if (!synced || sentRef.current) {
       return;
     }
     sentRef.current = true;
     connection.reducers
       .createAccount({ name })
       .catch((reason) => setError(String(reason)));
-  }, [name, connection]);
+  }, [synced, name, connection]);
 
   return (
     <Panel className="account">

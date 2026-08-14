@@ -16,7 +16,11 @@ pub trait EntityHandleExtension {
     /// on and the context stance-adoption requirements are checked against —
     /// a stance never provides the properties needed to enter itself.
     fn base_stat_block(&self) -> StatBlock;
-    fn apply_stat_block(self, stat_block: StatBlock) -> Self;
+    fn apply_stat_block(
+        self,
+        stat_block: StatBlock,
+        available_action_ids: Vec<ActionId>,
+    ) -> Self;
     fn set_mhp(self, mhp: i16) -> Self;
     fn set_defense(self, defense: i8) -> Self;
     fn set_mep(self, mep: i16) -> Self;
@@ -72,7 +76,16 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         stat_block
     }
 
-    fn apply_stat_block(self, stat_block: StatBlock) -> Self {
+    /// The published total keeps its FULL grants (action_ids unfiltered):
+    /// clients build candidate pools from it, and filtering out valid
+    /// candidates there would lie to them. The USABLE set — requirement-
+    /// and same-stance-filtered — is `available_action_ids`, and lives
+    /// solely in ActionsComponent.
+    fn apply_stat_block(
+        self,
+        stat_block: StatBlock,
+        available_action_ids: Vec<ActionId>,
+    ) -> Self {
         self.to_handle()
             .clone()
             .upsert_new_total_stat_block(stat_block.clone())
@@ -81,7 +94,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .set_mhp(stat_block.mhp)
             .set_mep(stat_block.mep)
             .set_defense(stat_block.defense)
-            .set_actions(stat_block.action_ids)
+            .set_actions(available_action_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids);
         self
     }
