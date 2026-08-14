@@ -841,10 +841,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             next_connection_id += 1;
         }
     }
-    // A quest index guaranteed by two maps would double the world's
-    // guaranteed supply of one bit; eligible overlap is the intended way
-    // to spread an index across maps.
-    let mut guaranteed_index_owners: HashMap<(u32, u32), String> = HashMap::new();
+    // Union of every map's window per quest: any bit of a windowed quest
+    // that no map can spawn is a supply hole (that bit could never be
+    // earned) and fails the push. Quests with no windows at all are
+    // exempt — their items arrive by authored blobs instead.
+    let mut spawnable_indexes: HashMap<u32, crate::bitset::Bitset> = HashMap::new();
     for m in asset_pack.location_maps {
         let NamedLocationMapAsset { name, value: m } = m;
         let id = location_map_ids[&name];
@@ -869,21 +870,18 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                     ));
                 }
             }
-            for index in &spawn.guaranteed_indexes {
-                if let Some(owner) =
-                    guaranteed_index_owners.insert((quest_id, *index), name.clone())
-                {
-                    return Err(format!(
-                        "Index {} of quest \"{}\" is guaranteed by both \"{}\" and \"{}\"; an index may be guaranteed by at most one map.",
-                        index, spawn.quest_name, owner, name
-                    ));
-                }
-            }
+            let guaranteed_indexes =
+                crate::bitset::Bitset::from_indexes(spawn.guaranteed_indexes);
+            let eligible_indexes =
+                crate::bitset::Bitset::from_indexes(spawn.eligible_indexes);
+            let spawnable = spawnable_indexes.entry(quest_id).or_default();
+            spawnable.union_with(&guaranteed_indexes);
+            spawnable.union_with(&eligible_indexes);
             quest_spawns.push(crate::quest::QuestSpawn {
                 quest_id,
                 item_blob: resolve_entity_blob(spawn.item_blob, &maps)?,
-                guaranteed_indexes: spawn.guaranteed_indexes,
-                eligible_indexes: spawn.eligible_indexes,
+                guaranteed_indexes,
+                eligible_indexes,
                 min_eligible_count: spawn.min_eligible_count,
                 max_eligible_count: spawn.max_eligible_count,
             });
@@ -917,6 +915,23 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.location_maps().id().update(row);
         } else {
             ctx.db.location_maps().insert(row);
+        }
+    }
+    for (quest_id, spawnable) in &spawnable_indexes {
+        let quest = ctx
+            .db
+            .quests()
+            .id()
+            .find(*quest_id)
+            .ok_or("Windowed quest vanished during push.")?;
+        let missing: Vec<u32> = (0..quest.bit_count)
+            .filter(|index| !spawnable.is_set(*index))
+            .collect();
+        if !missing.is_empty() {
+            return Err(format!(
+                "Quest \"{}\" has bits no map can spawn: {:?} of bit count {}; every bit of a windowed quest needs at least one map whose window includes it.",
+                quest.name, missing, quest.bit_count
+            ));
         }
     }
 

@@ -46,8 +46,17 @@ const container = (
   });
 
 const jar = container(["jar"], ["ceramic_shards"]);
+const urn = container(["urn"], ["ceramic_shards"]);
 const crate = container(["crate"], ["scrap_wood"]);
 const chest = container(["chest"], ["scrap_wood"]);
+const barrel = container(["barrel"], ["scrap_wood"]);
+const rack = container(["rack"], ["scrap_wood"]);
+const cabinet = container(["cabinet"], ["scrap_wood"]);
+const strongbox = container(["strongbox"], ["scrap_wood"]);
+const basket = container(["basket"], ["scrap_wood"]);
+const sack = container(["sack"], ["torn_cloth"]);
+const hollowStump = container(["hollow", "stump"], ["scrap_wood"]);
+const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
 
 export const LOCATION_MAP_THEMES = {
   encampment: {
@@ -163,6 +172,9 @@ export const LOCATION_MAP_THEMES = {
     containersSelector: {
       selections: [
         { weight: 3, blob: crate },
+        { weight: 3, blob: barrel },
+        { weight: 2, blob: rack },
+        { weight: 2, blob: sack },
         { weight: 1, blob: jar },
       ],
     },
@@ -200,6 +212,7 @@ export const LOCATION_MAP_THEMES = {
     containersSelector: {
       selections: [
         { weight: 3, blob: jar },
+        { weight: 2, blob: urn },
         { weight: 1, blob: crate },
       ],
     },
@@ -232,7 +245,13 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.scryingBowl }],
     },
-    containersSelector: { selections: [{ weight: 1, blob: jar }] },
+    containersSelector: {
+      selections: [
+        { weight: 3, blob: hollowStump },
+        { weight: 2, blob: basket },
+        { weight: 1, blob: jar },
+      ],
+    },
     minContainerCount: 1,
     maxContainerCount: 3,
   },
@@ -263,7 +282,14 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.fateDeck }],
     },
-    containersSelector: { selections: [{ weight: 1, blob: crate }] },
+    containersSelector: {
+      selections: [
+        { weight: 3, blob: hollowLog },
+        { weight: 2, blob: hollowStump },
+        { weight: 1, blob: basket },
+        { weight: 1, blob: crate },
+      ],
+    },
     minContainerCount: 1,
     maxContainerCount: 3,
   },
@@ -363,7 +389,10 @@ export const LOCATION_MAP_THEMES = {
     containersSelector: {
       selections: [
         { weight: 3, blob: chest },
-        { weight: 2, blob: crate },
+        { weight: 2, blob: cabinet },
+        { weight: 2, blob: barrel },
+        { weight: 1, blob: strongbox },
+        { weight: 1, blob: crate },
       ],
     },
     minContainerCount: 1,
@@ -440,6 +469,7 @@ export const LOCATION_MAP_THEMES = {
     },
     containersSelector: {
       selections: [
+        { weight: 3, blob: urn },
         { weight: 2, blob: jar },
         { weight: 1, blob: chest },
       ],
@@ -620,27 +650,6 @@ export const LOCATION_MAPS = {
       maxEligibleCount: 5,
     }),
   },
-  triangle_loop: {
-    // Smallest case that produces a triangular join: three main rooms chained
-    // 0-1-2, plus one loop that adds the closing 0-2 edge to form a triangle.
-    themeName: "cave",
-    layout: Layout.Path,
-    rngSeed: 0n,
-    mainRoomCount: 3,
-    extraRoomCount: 0,
-    loopCount: 1,
-    encounterNamesSampler: [],
-    minEncounterCount: 0,
-    maxEncounterCount: 0,
-    // The demo loop guarantees nothing; wanderers may still luck into
-    // spare cookies from anywhere in the supply.
-    questSpawns: cookieSpawns({
-      guaranteedIndexes: [],
-      eligibleIndexes: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      minEligibleCount: 0,
-      maxEligibleCount: 3,
-    }),
-  },
 } satisfies Record<string, LocationMapAsset>;
 
 export type LocationMapName = keyof typeof LOCATION_MAPS;
@@ -667,7 +676,4 @@ export const LOCATION_MAP_CONNECTIONS: LocationMapConnectionAsset[] = [
   connect("verdant_meadow", "Ending", "whispering_forest", "Entrance"),
   connect("whispering_forest", "Ending", "old_keep", "Entrance"),
   connect("old_keep", "Ending", "elemental_sanctum", "Entrance"),
-  // The triangular-join demo hangs off the cave's far end: EVERY authored
-  // map must be reachable (location_maps.test.ts enforces it).
-  connect("beginner_cave", "Ending", "triangle_loop", "Entrance"),
 ];

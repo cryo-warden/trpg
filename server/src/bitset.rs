@@ -40,6 +40,31 @@ impl Bitset {
     pub fn count_ones(&self) -> u32 {
         self.bytes.iter().map(|byte| byte.count_ones()).sum()
     }
+
+    /// The indexes of every ON bit, ascending.
+    pub fn ones(&self) -> impl Iterator<Item = u32> + '_ {
+        self.bytes.iter().enumerate().flat_map(|(byte_index, byte)| {
+            (0..8u32)
+                .filter(move |bit| byte & (1 << bit) != 0)
+                .map(move |bit| byte_index as u32 * 8 + bit)
+        })
+    }
+
+    /// Turns ON every bit that is ON in the other set.
+    pub fn union_with(&mut self, other: &Bitset) {
+        for index in other.ones() {
+            self.set(index);
+        }
+    }
+
+    /// Builds the set from index values directly.
+    pub fn from_indexes(indexes: impl IntoIterator<Item = u32>) -> Self {
+        let mut bits = Self::new();
+        for index in indexes {
+            bits.set(index);
+        }
+        bits
+    }
 }
 
 #[cfg(test)]
@@ -77,6 +102,19 @@ mod tests {
         bits.set(3);
         bits.set(200);
         assert_eq!(bits.count_ones(), 2);
+    }
+
+    #[test]
+    fn ones_walks_set_bits_in_ascending_order() {
+        let bits = Bitset::from_indexes([9, 0, 200, 7]);
+        assert_eq!(bits.ones().collect::<Vec<_>>(), vec![0, 7, 9, 200]);
+    }
+
+    #[test]
+    fn union_with_merges_without_disturbing_existing_bits() {
+        let mut bits = Bitset::from_indexes([1, 3]);
+        bits.union_with(&Bitset::from_indexes([3, 8]));
+        assert_eq!(bits.ones().collect::<Vec<_>>(), vec![1, 3, 8]);
     }
 
     #[test]

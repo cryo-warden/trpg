@@ -1260,8 +1260,12 @@ export const QuestSpawn = __t.object("QuestSpawn", {
   get itemBlob() {
     return EntityBlob;
   },
-  guaranteedIndexes: __t.array(__t.u32()),
-  eligibleIndexes: __t.array(__t.u32()),
+  get guaranteedIndexes() {
+    return Bitset;
+  },
+  get eligibleIndexes() {
+    return Bitset;
+  },
   minEligibleCount: __t.u8(),
   maxEligibleCount: __t.u8(),
 });

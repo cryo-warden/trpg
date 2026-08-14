@@ -1,6 +1,5 @@
 use crate::{
     asset::{
-        encounter::encounters,
         location_map_theme::location_map_themes,
         rng_range::RngRange,
         weighted_sampler::{WeightedSample, WeightedSampler},
@@ -10,7 +9,7 @@ use crate::{
 };
 use ecs::Ecs;
 use spacetimedb::{
-    rand::{rngs::StdRng, seq::SliceRandom, SeedableRng},
+    rand::{rngs::StdRng, SeedableRng},
     table, SpacetimeType,
 };
 
@@ -158,10 +157,12 @@ pub struct GeneratedRoom {
     pub role: RoomRole,
 }
 
-/// A themed breakable placed by generation, tagged with the role of the
-/// room it landed in so consumers can pick containers by location kind.
+/// A themed breakable placed by generation, tagged with where it stands
+/// so consumers can pick containers by location kind — and consume the
+/// room when they stuff it.
 pub struct GeneratedContainer {
     pub entity_id: u64,
+    pub room_entity_id: u64,
     /// Today's quest layer takes any container; treasure-room and
     /// boss-adjacent placement will select by this.
     #[allow(dead_code)]
@@ -267,25 +268,9 @@ impl LocationMap {
             }
         }
 
-        // TODO Move encounter spawning to a system responding to player movement.
-        // The entrance (room 0) is the map's guaranteed checkpoint room:
-        // encounters never spawn there, so waking from the death-trance is
-        // always safe.
-        let encounter_count: usize =
-            rng.get_range(self.min_encounter_count, self.max_encounter_count);
-        let mut encounter_room_handles: Vec<_> = room_handles
-            .iter()
-            .skip(1)
-            .take(encounter_count)
-            .collect();
-        encounter_room_handles.shuffle(&mut rng);
-        for r in encounter_room_handles {
-            if let Some(encounter_id) = self.encounter_ids_sampler.sample(&mut rng) {
-                if let Some(encounter) = ecs.db.encounters().id().find(*encounter_id) {
-                    encounter.populate(r)?;
-                }
-            }
-        }
+        // (Encounters are NOT generation's business: they are the LAST
+        // stage of the materialization pipeline, drawing from whatever
+        // rooms the quest layers left unconsumed — see materialize_map.)
 
         // Decorate after other steps so that decoration changes do not impact rng.
         for r in &room_handles {
@@ -364,6 +349,7 @@ impl LocationMap {
                     container.insert_new_location(room.entity_id);
                     containers.push(GeneratedContainer {
                         entity_id: container_entity_id,
+                        room_entity_id: room.entity_id,
                         room_role: room.role,
                     });
                 }

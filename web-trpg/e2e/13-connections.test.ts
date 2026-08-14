@@ -159,7 +159,11 @@ test("an abandoned far map gains a cleanup timer; approaching its path sheds it"
     const destinationMap = mapOfRoom(path.destinationEntityId);
     return destinationMap != null && destinationMap !== farInstanceId;
   })!;
+  // RE-ENTRY REUSES: traveling back into an already-generated map lands
+  // in an existing instance — the round trip generates nothing new.
+  const instancesBefore = player.db.map_instance_components.count();
   await moveThrough(returnPath.entityId);
+  expect(player.db.map_instance_components.count()).toBe(instancesBefore);
   const landingRoomId = myLocation()!;
   const landingInstanceId = mapOfRoom(landingRoomId)!;
   expect(landingInstanceId).not.toBe(farInstanceId);

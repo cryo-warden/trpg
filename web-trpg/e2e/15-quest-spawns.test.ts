@@ -89,6 +89,16 @@ test("generation spawns the declared window: guaranteed always, eligible within 
   expect(indexes[5]).toBe(indexes[4]);
 });
 
+test("a supply hole fails the push: every bit of a windowed quest needs a map", async () => {
+  // bitCount 5 but the sole window reaches only [0, 3]: bit 4 could never
+  // be earned anywhere in the world.
+  const holed = spawnPack();
+  holed.locationMaps[0].value.questSpawns[0].eligibleIndexes = [2, 3];
+  await expect(
+    admin.reducers.pushAssets({ assetPack: holed }),
+  ).rejects.toThrow(/no map can spawn/);
+});
+
 test("spawned cookies land away from the entrance, containers included", () => {
   const entrances = entranceRooms();
   expect(entrances.size).toBeGreaterThan(0);
