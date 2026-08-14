@@ -53,9 +53,34 @@ pub fn map_instance_id_of(ecs: Ecs, entity_id: u64) -> Option<u64> {
     )
 }
 
-/// Every map instance whose turn has not come: computed once per system
-/// pass and consulted by the action systems before advancing anything.
-pub fn blocked_map_instance_ids(ecs: Ecs) -> HashSet<u64> {
+/// Reads the derived flag: is this entity's instance waiting on a turn?
+/// Entities outside any instance are never paused.
+pub fn instance_is_paused(ecs: Ecs, entity_id: u64) -> bool {
+    map_instance_id_of(ecs, entity_id)
+        .is_some_and(|instance_id| ecs.find(instance_id).turn_paused().is_some())
+}
+
+/// THE derivation point, once per tick: syncs each map instance's public
+/// turn_paused flag to the guard's verdict. The action systems consult
+/// the flag, and the client renders its waiting overlay from the same
+/// row.
+pub fn turn_pause_system(ecs: Ecs) {
+    let blocked = blocked_map_instance_ids(ecs);
+    for instance in ecs.iter_map_instance() {
+        let handle = instance.into_handle();
+        let paused = blocked.contains(&handle.entity_id());
+        let flagged = handle.turn_paused().is_some();
+        if paused && !flagged {
+            handle.upsert_new_turn_paused();
+        } else if !paused && flagged {
+            handle.delete_turn_paused();
+        }
+    }
+}
+
+/// Every map instance whose turn has not come — the raw verdict
+/// turn_pause_system persists onto the instance rows.
+fn blocked_map_instance_ids(ecs: Ecs) -> HashSet<u64> {
     let mut participants_by_instance: HashMap<u64, Vec<TurnParticipant>> = HashMap::new();
     for p in ecs.iter_player_controller() {
         let handle = p.into_handle();

@@ -63,6 +63,8 @@ export const componentQueries = [
   "select * from queued_action_state_components",
   "select * from entities_visited_locations",
   "select * from entities_quests_progress",
+  "select * from location_map_components",
+  "select * from turn_paused_components",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -462,4 +464,19 @@ export const usePlayerEntity = (): EntityId | null => {
   }
 
   return playerControllerComponent.entityId;
+};
+
+const useLocationMapComponent = createUseComponent("location_map_components");
+const useTurnPausedComponent = createUseComponent("turn_paused_components");
+
+/** Whether MY map instance's turn is on hold — the server-derived
+ * turn_paused flag on the instance my current room belongs to. True
+ * means the world is waiting for an action assignment (mine, unless a
+ * future co-located player owes theirs). */
+export const useMyTurnPaused = (): boolean => {
+  const playerEntity = usePlayerEntity();
+  const location = useLocationComponent(playerEntity);
+  const roomMap = useLocationMapComponent(location?.locationEntityId ?? null);
+  const paused = useTurnPausedComponent(roomMap?.locationMapEntityId ?? null);
+  return paused != null;
 };

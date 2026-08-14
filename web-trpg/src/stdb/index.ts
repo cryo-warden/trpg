@@ -126,6 +126,7 @@ import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_
 import TraitsComponentsRow from "./traits_components_table";
 import TraitsStatBlockCacheComponentsRow from "./traits_stat_block_cache_components_table";
 import TraitsStatBlockDirtyFlagComponentsRow from "./traits_stat_block_dirty_flag_components_table";
+import TurnPausedComponentsRow from "./turn_paused_components_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -993,6 +994,17 @@ const tablesSchema = __schema({
       { name: 'traits_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, TraitsStatBlockDirtyFlagComponentsRow),
+  turn_paused_components: __table({
+    name: 'turn_paused_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'turn_paused_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'turn_paused_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, TurnPausedComponentsRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */

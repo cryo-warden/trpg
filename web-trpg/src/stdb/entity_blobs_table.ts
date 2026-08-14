@@ -123,6 +123,9 @@ export default __t.row({
   get checkpointObject() {
     return __t.option(FlagComponentBlob).name("checkpoint_object");
   },
+  get turnPaused() {
+    return __t.option(FlagComponentBlob).name("turn_paused");
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },

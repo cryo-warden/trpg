@@ -202,13 +202,10 @@ pub fn actionless_stamp_system(ecs: Ecs) {
 }
 
 pub fn shift_queued_action_system(ecs: Ecs) {
-    let blocked = crate::turn::blocked_map_instance_ids(ecs);
     for e in ecs.iter_queued_action_state() {
         // A turn-guarded instance freezes even the queued->active shift:
         // its time simply does not pass.
-        if crate::turn::map_instance_id_of(ecs, e.queued_action_state().entity_id)
-            .is_some_and(|instance_id| blocked.contains(&instance_id))
-        {
+        if crate::turn::instance_is_paused(ecs, e.queued_action_state().entity_id) {
             continue;
         }
         // A queued action normally waits the active one out — but while the
@@ -247,16 +244,13 @@ pub fn shift_queued_action_system(ecs: Ecs) {
 }
 
 pub fn action_system(ecs: Ecs) {
-    let blocked = crate::turn::blocked_map_instance_ids(ecs);
     let mut queue = EventQueue::new();
     for mut e in ecs.iter_action_state() {
         let action_state = e.action_state();
         let entity_id = action_state.entity_id;
         // Turn guard: while the entity's instance waits on a player's
         // choice, its active actions hold mid-round.
-        if crate::turn::map_instance_id_of(ecs, entity_id)
-            .is_some_and(|instance_id| blocked.contains(&instance_id))
-        {
+        if crate::turn::instance_is_paused(ecs, entity_id) {
             continue;
         }
         let action_handle = ActionHandle::from_id(&ecs, action_state.action_id);
@@ -947,6 +941,7 @@ pub fn enemy_control_system(ecs: Ecs) {
 
 pub fn execute_all_systems(ecs: Ecs) {
     actionless_stamp_system(ecs);
+    crate::turn::turn_pause_system(ecs);
     action_system(ecs);
     hp_system(ecs);
     death_system(ecs);

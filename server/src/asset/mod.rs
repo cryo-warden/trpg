@@ -343,6 +343,7 @@ fn resolve_entity_blob(
         entity_deletion_timer: None,
         player_deactivation_timer: None,
         actionless_since: None,
+        turn_paused: None,
         location_map: None,
     })
 }

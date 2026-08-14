@@ -16,6 +16,7 @@ let player: DbConnection;
 let playerEntityId: bigint;
 let enemyEntityId: bigint;
 let enemyRoomId: bigint;
+let myInstanceId: bigint;
 
 const roomOf = (entityId: bigint): bigint | undefined =>
   [...player.db.location_components.iter()].find(
@@ -52,6 +53,7 @@ beforeAll(async () => {
       "SELECT * FROM enemy_controller_components",
       "SELECT * FROM action_state_components",
       "SELECT * FROM queued_action_state_components",
+      "SELECT * FROM turn_paused_components",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM accounts",
     ]);
@@ -62,7 +64,7 @@ beforeAll(async () => {
   // My instance's lurker: the enemy standing in a room of MY map (the
   // admin's auto-provisioned player has its own instance and lurker).
   const entranceRoomId = roomOf(playerEntityId)!;
-  const myInstanceId = [...player.db.location_map_components.iter()].find(
+  myInstanceId = [...player.db.location_map_components.iter()].find(
     (row) => row.entityId === entranceRoomId,
   )!.locationMapEntityId;
   const myRoomIds = new Set(
@@ -107,7 +109,15 @@ afterAll(() => {
   player?.disconnect();
 });
 
+const myInstanceIsPaused = () =>
+  [...player.db.turn_paused_components.iter()].some(
+    (row) => row.entityId === myInstanceId,
+  );
+
 test("the world holds while the player has no assigned action", async () => {
+  // The derived flag surfaces on MY instance: the same row the client's
+  // waiting overlay renders from.
+  await waitFor(myInstanceIsPaused, 30000);
   // The lurker notices the player and queues its strike...
   await waitFor(
     () =>
@@ -127,11 +137,15 @@ test("the world holds while the player has no assigned action", async () => {
   ).toBe(false);
 }, 60000);
 
-test("assigning an action fires the turn: both strikes resolve", async () => {
+test("assigning an action fires the turn: the flag drops and both strikes resolve", async () => {
   await player.reducers.act({
     actionId: actionIdByName("test_strike"),
     targetEntityId: enemyEntityId,
   });
+  // The flag lifts while the turn runs...
+  await waitFor(() => !myInstanceIsPaused(), 30000);
   await waitFor(() => hpOf(playerEntityId)!.hp < 20, 30000);
   await waitFor(() => hpOf(enemyEntityId)!.hp < 10, 30000);
+  // ...and returns once everything resolves and the player owes again.
+  await waitFor(myInstanceIsPaused, 30000);
 }, 60000);

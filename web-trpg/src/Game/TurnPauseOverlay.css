@@ -1,0 +1,24 @@
+.TurnPauseOverlay {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.35rem 1rem;
+  border-radius: 0.5rem;
+  background: rgba(0, 0, 0, 0.65);
+  color: #ddd;
+  font-size: 0.9rem;
+  font-style: italic;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  /* Hidden state carries the FAST fade-out. */
+  transition: opacity 0.15s ease-in;
+}
+
+.TurnPauseOverlay.visible {
+  opacity: 1;
+  /* Visible state carries the SLOW fade-in, so a brief pause between
+   * chained actions barely registers. */
+  transition: opacity 1.5s ease-out;
+}

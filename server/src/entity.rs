@@ -145,6 +145,11 @@ entity!(
       quest_stat_block_dirty_flag in quest_stat_block_dirty_flag_components,
       total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
       checkpoint_object in checkpoint_object_components,
+      // On a map INSTANCE entity: its turn has not come (some player
+      // there still owes an action). Derived once per tick by
+      // turn_pause_system; the action systems and the client's
+      // waiting-overlay both read it.
+      turn_paused in turn_paused_components,
     )]
     struct FlagComponent {}
 

@@ -15,6 +15,7 @@ import { RotatePasswordPanel } from "./RotatePasswordPanel";
 import { SelfPanel } from "./SelfPanel";
 import { FocusPanel } from "./FocusPanel";
 import { FocusProvider } from "./context/FocusProvider";
+import { TurnPauseOverlay } from "./TurnPauseOverlay";
 
 /** No implicit accounts: an unattached connection sees only the account
  * screen; a provisional password blocks everything until rotated; an
@@ -55,6 +56,7 @@ export const Game = () => (
             <SelfPanel className="self" />
             <FocusPanel className="focus" />
             <PinnedActionsPanel className="pinned" />
+            <TurnPauseOverlay />
           </div>
         </FocusProvider>
       </WithDynamicPanel>
