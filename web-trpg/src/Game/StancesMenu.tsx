@@ -1,3 +1,19 @@
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useRef, useState } from "react";
 import type { StatBlock } from "../stdb/types";
 import { Button } from "../structural/Button";
@@ -79,6 +95,109 @@ const ALL_STATS: readonly StatEntry[] = STAT_GROUPS.flatMap(
  * like-for-like reads at a glance ("Hand 1 (-1)"). */
 const deltaText = (delta: number): string =>
   delta > 0 ? `+${delta}` : `${delta}`;
+
+/** One assigned action in the bar: draggable to reorder (position is the
+ * hotkey), a plain tap removes it. A raw button reusing the Button styles
+ * — the structural Button's own click handling would fight the drag
+ * listeners. */
+const SortableActionChip = ({
+  id,
+  label,
+  onRemove,
+}: {
+  id: string;
+  label: string;
+  onRemove: () => void;
+}) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      className={[
+        "Button",
+        "active",
+        "interesting",
+        "actionChip",
+        isDragging ? "dragging" : "",
+      ].join(" ")}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        touchAction: "none",
+      }}
+      onClick={onRemove}
+      {...attributes}
+      {...listeners}
+    >
+      {label}
+    </button>
+  );
+};
+
+/** The stance's bar: its assigned actions in hotkey order. dnd-kit's
+ * PointerSensor covers mouse AND touch through one path; the 8px
+ * activation distance keeps plain taps registering as clicks (remove). */
+const StanceActionsBar = ({
+  assignedActionIds,
+  nameOf,
+  onAssign,
+}: {
+  assignedActionIds: number[];
+  nameOf: (actionId: number) => string;
+  onAssign: (actionIds: number[]) => void;
+}) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={({ active, over }) => {
+        if (over == null || active.id === over.id) {
+          return;
+        }
+        const from = assignedActionIds.findIndex(
+          (id) => String(id) === active.id,
+        );
+        const to = assignedActionIds.findIndex((id) => String(id) === over.id);
+        if (from < 0 || to < 0) {
+          return;
+        }
+        onAssign(arrayMove(assignedActionIds, from, to));
+      }}
+    >
+      <SortableContext
+        items={assignedActionIds.map(String)}
+        strategy={rectSortingStrategy}
+      >
+        <div className="actionBar">
+          {assignedActionIds.map((actionId, index) => (
+            <SortableActionChip
+              key={actionId}
+              id={String(actionId)}
+              label={`${(index + 1) % 10} ${nameOf(actionId)}`}
+              onRemove={() =>
+                onAssign(assignedActionIds.filter((id) => id !== actionId))
+              }
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+};
 
 /**
  * The standalone stances menu: one card per REACHABLE stance. There is no
@@ -230,10 +349,6 @@ export const StancesMenu = () => {
             ]),
           ]),
         ];
-        const toggledActions = (actionId: number) =>
-          assignedActions.includes(actionId)
-            ? assignedActions.filter((id) => id !== actionId)
-            : [...assignedActions, actionId];
         const isOn = (item: OwnedItem) =>
           assetInstanceIsOn({ ids: assigned, item, items: ownedArmaments });
         return (
@@ -285,27 +400,32 @@ export const StancesMenu = () => {
             })}
             {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
             <h4>Actions ({assignedActions.length}/10)</h4>
-            {poolActionIds.map((actionId) => {
-              const position = assignedActions.indexOf(actionId);
-              const on = position >= 0;
-              return (
+            <StanceActionsBar
+              assignedActionIds={assignedActions}
+              nameOf={(actionId) => actionNames.get(actionId) ?? `#${actionId}`}
+              onAssign={(actionIds) =>
+                connection.reducers.assignStanceActions({
+                  stanceId: stance.id,
+                  actionIds,
+                })
+              }
+            />
+            {poolActionIds
+              .filter((actionId) => !assignedActions.includes(actionId))
+              .map((actionId) => (
                 <Button
                   key={actionId}
-                  className={on ? "active" : ""}
-                  interesting={on}
-                  disabled={!on && assignedActions.length >= 10}
+                  disabled={assignedActions.length >= 10}
                   onClick={() =>
                     connection.reducers.assignStanceActions({
                       stanceId: stance.id,
-                      actionIds: toggledActions(actionId),
+                      actionIds: [...assignedActions, actionId],
                     })
                   }
                 >
-                  {on ? `${(position + 1) % 10} ` : ""}
                   {actionNames.get(actionId) ?? `#${actionId}`}
                 </Button>
-              );
-            })}
+              ))}
           </section>
         );
         })}

@@ -124,6 +124,49 @@ test("cards show categorized totals with deltas from the no-stance base", () => 
   expect(standing.textContent).toContain("Attack 0 (0)");
 });
 
+test("the bar lists assigned actions in hotkey order; a tap removes", () => {
+  const assignStanceActions = mock(() => {});
+  const withBar = {
+    ...tables(),
+    stance_loadouts_components: mockTable([
+      {
+        entityId: 1n,
+        assignments: [
+          {
+            stanceId: stanceIdOf("dueling"),
+            armamentIds: [armamentIdOf("sword")],
+            actionIds: [actionIdOf("duel"), actionIdOf("stand")],
+          },
+        ],
+      },
+    ]),
+  };
+  const wrapper = gameWrapper(withBar, {
+    identity: {} as Identity,
+    reducers: { assignStanceActions },
+  });
+  const { container } = render(<StancesMenu />, { wrapper });
+
+  const dueling = cardOf(container, "dueling")!;
+  const chips = [...dueling.querySelectorAll(".actionBar .actionChip")];
+  expect(chips.map((chip) => chip.textContent)).toEqual([
+    "1 duel",
+    "2 stand",
+  ]);
+  // Assigned actions live in the bar, not the pool.
+  const poolLabels = [...dueling.querySelectorAll("button")]
+    .filter((button) => !button.className.includes("actionChip"))
+    .map((button) => button.textContent);
+  expect(poolLabels).not.toContain("duel");
+
+  // A plain tap removes, preserving the rest of the order.
+  fireEvent.click(chips[0]);
+  expect(assignStanceActions).toHaveBeenCalledWith({
+    stanceId: stanceIdOf("dueling"),
+    actionIds: [actionIdOf("stand")],
+  });
+});
+
 test("assigning an action pins it into the stance's bar order", () => {
   const assignStanceActions = mock(() => {});
   const wrapper = gameWrapper(tables(), {
