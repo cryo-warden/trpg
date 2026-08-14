@@ -28,6 +28,8 @@ const Intimidate = (value: number) =>
   ({ tag: "Intimidate", value }) as const satisfies ActionEffectAsset;
 const Rally = { tag: "Rally" } as const satisfies ActionEffectAsset;
 const Attune = { tag: "Attune" } as const satisfies ActionEffectAsset;
+const OpenEffect = { tag: "Open" } as const satisfies ActionEffectAsset;
+const DumpEffect = { tag: "Dump" } as const satisfies ActionEffectAsset;
 const SetStance = (stanceName: string) =>
   ({ tag: "SetStance", value: stanceName }) as const satisfies ActionEffectAsset;
 
@@ -211,6 +213,18 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [interruptibleRound(), round(Attune)],
   },
+  // OFFERED actions: no creature knows these — containers (later doors
+  // and levers) offer them to whoever stands beside them.
+  open: {
+    actionType: { tag: "Interact" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(OpenEffect)],
+  },
+  dump: {
+    actionType: { tag: "Interact" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(DumpEffect)],
+  },
   // Stance changes ARE actions — a round spent shifting posture, no
   // separate UI. Each goes through the shared adoption gates (known stance,
   // requirements, the fear gate).
@@ -356,6 +370,14 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   attune: {
     displayName: "Attune",
     beginTemplate: "{0:sentence:subject} gazed into {1:object}, entranced.",
+  },
+  open: {
+    displayName: "Open",
+    beginTemplate: "{0:sentence:subject} opened {1:object}.",
+  },
+  dump: {
+    displayName: "Dump",
+    beginTemplate: "{0:sentence:subject} tipped {1:object} over.",
   },
   stand: {
     displayName: "Stand",

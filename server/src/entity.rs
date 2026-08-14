@@ -159,6 +159,10 @@ entity!(
       // turn_pause_system; the action systems and the client's
       // waiting-overlay both read it.
       turn_paused in turn_paused_components,
+      // On a CONTAINER: it has been opened — its contents are revealed
+      // and takeable while they stay inside, intact. Set by the Open
+      // effect; there is no closing (yet).
+      open in open_components,
     )]
     struct FlagComponent {}
 
@@ -288,7 +292,15 @@ entity!(
         pub sequence_index: i32,
     }
 
-    #[component(actions in actions_components)]
+    #[component(
+      actions in actions_components,
+      // The INTERACTIVE surface of an object: actions this entity OFFERS
+      // to anyone co-located, independent of what the actor knows —
+      // opening a chest, dumping a sack; later doors, levers, attunement.
+      // Which interactions a thing supports is explicit data here, never
+      // inferred from its appearance.
+      offered_actions in offered_actions_components,
+    )]
     struct ActionsComponent {
         pub action_ids: Vec<ActionId>,
     }

@@ -130,6 +130,9 @@ export default __t.row({
   get turnPaused() {
     return __t.option(FlagComponentBlob).name("turn_paused");
   },
+  get open() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -183,6 +186,9 @@ export default __t.row({
   },
   get actions() {
     return __t.option(ActionsComponentBlob);
+  },
+  get offeredActions() {
+    return __t.option(ActionsComponentBlob).name("offered_actions");
   },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob).name("pinned_actions");

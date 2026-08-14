@@ -967,6 +967,109 @@ export const questPack = (): AssetPack => ({
 });
 
 /**
+ * An interactions world: two containers in the shared room, each OFFERING
+ * its gentle verb — a chest that opens (contents revealed, takeable in
+ * place, intact) and a sack that dumps (contents spill to the floor,
+ * container unharmed). The player knows only take: open and dump come
+ * from the containers themselves. A cookie hides in each.
+ */
+export const interactionsPack = (): AssetPack => ({
+  ...emptyPack(),
+  quests: [
+    {
+      name: "test_hidden_cookies",
+      value: { perBitStatBlock: statBlock({ mhp: 1 }), bitCount: 2 },
+    },
+  ],
+  actions: [
+    {
+      name: "test_take",
+      value: {
+        actionType: { tag: "Inventory" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Take" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_open",
+      value: {
+        actionType: { tag: "Interact" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Open" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_dump",
+      value: {
+        actionType: { tag: "Interact" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Dump" }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_looter",
+      value: statBlock({ mhp: 5, hand: 2, actionNames: ["test_take"] }),
+    },
+  ],
+  namedInstantiateEntityBlobs: [
+    {
+      name: "test_chest",
+      value: blob({
+        offeredActionNames: ["test_open"],
+        hp: {
+          hp: 2,
+          mhp: 2,
+          defense: 0,
+          accumulatedDamage: 0,
+          accumulatedHealing: 0,
+        },
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        },
+      }),
+    },
+    {
+      name: "test_sack",
+      value: blob({
+        offeredActionNames: ["test_dump"],
+        hp: {
+          hp: 2,
+          mhp: 2,
+          defense: 0,
+          accumulatedDamage: 0,
+          accumulatedHealing: 0,
+        },
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        },
+      }),
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_looter",
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+  }),
+  instantiateEntityBlobs: [
+    blob({
+      item: {
+        tag: "QuestItem",
+        value: { questName: "test_hidden_cookies", index: 0 },
+      },
+      location: { locationEntityId: { tag: "Named", value: "test_chest" } },
+    }),
+    blob({
+      item: {
+        tag: "QuestItem",
+        value: { questName: "test_hidden_cookies", index: 1 },
+      },
+      location: { locationEntityId: { tag: "Named", value: "test_sack" } },
+    }),
+  ],
+});
+
+/**
  * A generated world with quest windows: one map whose generation must
  * place a breakable container, and whose quest application must inject
  * the declared cookie indexes into it — no cookie is authored at push

@@ -470,8 +470,9 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                             .is_some_and(|l| l.location_entity_id == e.entity_id())
                 }
                 // An item is a valid inventory target when it is within
-                // reach: sharing the room (takeable) or carried (droppable).
-                // The effect itself enforces which of the two applies.
+                // reach: sharing the room (takeable), carried (droppable),
+                // or sitting inside an OPEN container beside the actor.
+                // The effect itself enforces which applies.
                 ActionType::Inventory => {
                     o.item().is_some() && {
                         let carried = { o.location() }
@@ -482,12 +483,36 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                             }
                             _ => false,
                         };
-                        carried || co_located
+                        let in_open_container_here = { o.location() }.is_some_and(|l| {
+                            let container = e.ecs().find(l.location_entity_id);
+                            container.open().is_some()
+                                && match (e.location(), container.location()) {
+                                    (Some(mine), Some(containers)) => {
+                                        mine.location_entity_id
+                                            == containers.location_entity_id
+                                    }
+                                    _ => false,
+                                }
+                        });
+                        carried || co_located || in_open_container_here
                     }
                 }
                 ActionType::Move => o.path().is_some() && o.path_is_open(),
                 // Deliberate stance changes act on yourself alone.
                 ActionType::Posture => other_entity_id == e.entity_id(),
+                // Offered BY the target: the co-located object must list
+                // this very action among its offered_actions — the actor
+                // never needs to know it.
+                ActionType::Interact => {
+                    o.offered_actions()
+                        .is_some_and(|offered| offered.action_ids.contains(&action_id))
+                        && match (e.location(), o.location()) {
+                            (Some(mine), Some(theirs)) => {
+                                mine.location_entity_id == theirs.location_entity_id
+                            }
+                            _ => false,
+                        }
+                }
                 // A co-located checkpoint object (fortune-telling scenery).
                 ActionType::Attune => {
                     o.checkpoint_object().is_some()

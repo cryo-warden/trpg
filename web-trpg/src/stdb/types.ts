@@ -83,6 +83,8 @@ export const ActionEffect = __t.enum("ActionEffect", {
   Dive: __t.i16(),
   Attune: __t.unit(),
   SetStance: __t.u32(),
+  Open: __t.unit(),
+  Dump: __t.unit(),
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
 
@@ -104,6 +106,8 @@ export const ActionEffectAsset = __t.enum("ActionEffectAsset", {
   Dive: __t.i16(),
   Attune: __t.unit(),
   SetStance: __t.string(),
+  Open: __t.unit(),
+  Dump: __t.unit(),
 });
 export type ActionEffectAsset = __Infer<typeof ActionEffectAsset>;
 
@@ -154,6 +158,7 @@ export const ActionType = __t.enum("ActionType", {
   Dive: __t.unit(),
   Attune: __t.unit(),
   Posture: __t.unit(),
+  Interact: __t.unit(),
 });
 export type ActionType = __Infer<typeof ActionType>;
 
@@ -577,6 +582,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get turnPaused() {
     return __t.option(FlagComponentBlob);
   },
+  get open() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -631,6 +639,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get actions() {
     return __t.option(ActionsComponentBlob);
   },
+  get offeredActions() {
+    return __t.option(ActionsComponentBlob);
+  },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob);
   },
@@ -681,6 +692,7 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
     return __t.option(ItemRefAsset);
   },
   actionNames: __t.option(__t.array(__t.string())),
+  offeredActionNames: __t.option(__t.array(__t.string())),
   pinnedActionNames: __t.option(__t.array(__t.string())),
   appearanceFeatureNames: __t.option(__t.array(__t.string())),
   remainsAppearanceFeatureNames: __t.option(__t.array(__t.string())),

@@ -30,14 +30,20 @@ const CHECKPOINT_BLOBS = {
 };
 
 /** A breakable loot container: hp makes it smashable, remains turn the
- * debris into decoration, and the quest layer hides cookies inside. */
+ * debris into decoration, and the quest layer hides cookies inside.
+ * offeredActionNames are the GENTLE interactions this container itself
+ * offers to anyone beside it — a lidded chest opens, a sack tips over —
+ * explicit per container, never inferred from its look. Smashing always
+ * remains an option. */
 const container = (
   appearanceFeatureNames: string[],
   remainsAppearanceFeatureNames: string[],
+  offeredActionNames?: string[],
 ): EntityBlobAsset =>
   blob({
     appearanceFeatureNames,
     remainsAppearanceFeatureNames,
+    offeredActionNames,
     hp: {
       hp: 2,
       mhp: 2,
@@ -48,15 +54,15 @@ const container = (
   });
 
 const jar = container(["jar"], ["ceramic_shards"]);
-const urn = container(["urn"], ["ceramic_shards"]);
+const urn = container(["urn"], ["ceramic_shards"], ["dump"]);
 const crate = container(["crate"], ["scrap_wood"]);
-const chest = container(["chest"], ["scrap_wood"]);
-const barrel = container(["barrel"], ["scrap_wood"]);
+const chest = container(["chest"], ["scrap_wood"], ["open"]);
+const barrel = container(["barrel"], ["scrap_wood"], ["open", "dump"]);
 const rack = container(["rack"], ["scrap_wood"]);
-const cabinet = container(["cabinet"], ["scrap_wood"]);
-const strongbox = container(["strongbox"], ["scrap_wood"]);
-const basket = container(["basket"], ["scrap_wood"]);
-const sack = container(["sack"], ["torn_cloth"]);
+const cabinet = container(["cabinet"], ["scrap_wood"], ["open"]);
+const strongbox = container(["strongbox"], ["scrap_wood"], ["open"]);
+const basket = container(["basket"], ["scrap_wood"], ["dump"]);
+const sack = container(["sack"], ["torn_cloth"], ["dump"]);
 const hollowStump = container(["hollow", "stump"], ["scrap_wood"]);
 const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
 

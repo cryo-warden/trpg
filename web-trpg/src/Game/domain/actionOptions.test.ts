@@ -63,12 +63,16 @@ const enemy = {
   target: 2n,
   playerAllegianceId: 10n,
   targetAllegianceId: 20n,
+  targetOfferedActionIds: [],
+  targetCoLocatedWithPlayer: false,
 };
 const ally = {
   playerEntity: 1n,
   target: 2n,
   playerAllegianceId: 10n,
   targetAllegianceId: 10n,
+  targetOfferedActionIds: [],
+  targetCoLocatedWithPlayer: false,
 };
 
 test("getActionOptions offers attacks and moves against a hostile, reachable target", () => {
@@ -236,6 +240,52 @@ test("only a FRESH carried quest item offers Eat; stinky never does", () => {
   // Not a quest item at all: nothing to eat.
   expect(
     getActionOptions({ ...carriedCookie, targetQuestItemFreshness: null }),
+  ).toEqual([]);
+});
+
+test("a target's offered interactions appear without the player knowing them", () => {
+  const openId = actionIdOf("open");
+  const dumpId = actionIdOf("dump");
+  const besideChest = {
+    ...enemy,
+    // The player knows NONE of these — the chest offers them.
+    actionIds: allIds,
+    actionAssetOf,
+    targetHasHp: true,
+    targetHasPath: false,
+    targetHasItem: false,
+    targetCarriedByPlayer: false,
+    targetIsEquipped: false,
+    targetHasCheckpointObject: false,
+    targetQuestItemFreshness: null,
+    targetOfferedActionIds: [openId, dumpId],
+    targetCoLocatedWithPlayer: true,
+  };
+  expect(getActionOptions(besideChest)).toEqual([attackId, openId, dumpId]);
+  // Out of reach, the offer means nothing.
+  expect(
+    getActionOptions({ ...besideChest, targetCoLocatedWithPlayer: false }),
+  ).toEqual([attackId]);
+});
+
+test("a stray non-Interact id in an offered list never leaks into the options", () => {
+  expect(
+    getActionOptions({
+      ...ally,
+      actionIds: [],
+      actionAssetOf,
+      targetHasHp: true,
+      targetHasPath: false,
+      targetHasItem: false,
+      targetCarriedByPlayer: false,
+      targetIsEquipped: false,
+      targetHasCheckpointObject: false,
+      targetQuestItemFreshness: null,
+      // A buff the player doesn't know, "offered" by the target: refused —
+      // offers carry Interact actions alone.
+      targetOfferedActionIds: [buffId],
+      targetCoLocatedWithPlayer: true,
+    }),
   ).toEqual([]);
 });
 

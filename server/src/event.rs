@@ -42,10 +42,23 @@ secador::secador!(
                 .location_components()
                 .entity_id()
                 .find(item_entity_id);
+            // Within reach: beside the taker, or inside an OPEN container
+            // standing beside the taker (contents stay takeable in place).
+            let within_reach = |item_room: u64, taker_room: u64| {
+                if item_room == taker_room {
+                    return true;
+                }
+                let container = ecs.find(item_room);
+                container.open().is_some()
+                    && { container.location() }
+                        .is_some_and(|l| l.location_entity_id == taker_room)
+            };
             match (item, taker_location, item_location) {
                 (Some(item), Some(taker_location), Some(mut item_location))
-                    if item_location.location_entity_id
-                        == taker_location.location_entity_id =>
+                    if within_reach(
+                        item_location.location_entity_id,
+                        taker_location.location_entity_id,
+                    ) =>
                 {
                     item_location.location_entity_id = taker_entity_id;
                     ecs.db.location_components().entity_id().update(item_location);
@@ -308,6 +321,44 @@ secador::secador!(
                                     true
                                 }
                                 _ => false,
+                            }
+                        }
+                        // Open the container where it stands: contents
+                        // revealed and takeable, intact and in place.
+                        // One-way — nothing closes (yet).
+                        ActionEffect::Open => {
+                            let owner = ecs.find(self.owner_entity_id);
+                            let target = ecs.find(target_entity_id);
+                            let co_located = match (owner.location(), target.location()) {
+                                (Some(mine), Some(theirs)) => {
+                                    mine.location_entity_id == theirs.location_entity_id
+                                }
+                                _ => false,
+                            };
+                            if co_located && target.open().is_none() {
+                                target.upsert_new_open();
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        // Tip it over: contents spill onto the floor of
+                        // the container's room, the container unharmed —
+                        // the same spill a breakable's death uses.
+                        ActionEffect::Dump => {
+                            let owner = ecs.find(self.owner_entity_id);
+                            let target = ecs.find(target_entity_id);
+                            let co_located = match (owner.location(), target.location()) {
+                                (Some(mine), Some(theirs)) => {
+                                    mine.location_entity_id == theirs.location_entity_id
+                                }
+                                _ => false,
+                            };
+                            if co_located {
+                                crate::system::spill_contents(ecs, target_entity_id);
+                                true
+                            } else {
+                                false
                             }
                         }
                         ActionEffect::Equip => {

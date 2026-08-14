@@ -229,6 +229,8 @@ export const stdbWrapper = (
       location_map_components: mockTable([]),
       turn_paused_components: mockTable([]),
       path_blocker_components: mockTable([]),
+      offered_actions_components: mockTable([]),
+      open_components: mockTable([]),
       action_hotkeys_components: mockTable([]),
       appearance_features_components: mockTable([]),
       ...tables,

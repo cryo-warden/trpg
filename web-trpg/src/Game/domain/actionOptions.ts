@@ -51,9 +51,18 @@ export type ActionOptionInputs = AllegianceInputs & {
    * Only a fresh, carried quest item offers Eat — a stinky one (its bit
    * already held) never does. */
   targetQuestItemFreshness: "fresh" | "stinky" | null;
+  /** Actions the TARGET itself offers (its offered_actions component):
+   * context-sensitive interactions — opening a chest, dumping a sack —
+   * available to any actor beside it, known or not. */
+  targetOfferedActionIds: ActionId[];
+  /** The target stands in the player's room (offered actions reach no
+   * further than arm's length). */
+  targetCoLocatedWithPlayer: boolean;
 };
 
-/** The subset of the player's actions that are valid against the target. */
+/** The player's actions valid against the target, plus whatever the
+ * target itself offers: interactions come from the OBJECT, so the player
+ * needs no knowledge of them — only to stand beside it. */
 export const getActionOptions = ({
   actionIds,
   actionAssetOf,
@@ -64,13 +73,25 @@ export const getActionOptions = ({
   targetIsEquipped,
   targetHasCheckpointObject,
   targetQuestItemFreshness,
+  targetOfferedActionIds,
+  targetCoLocatedWithPlayer,
   ...allegiance
 }: ActionOptionInputs): ActionId[] => {
   const ally = isAlly(allegiance);
 
-  return actionIds.filter((id) => {
+  const candidates = [
+    ...actionIds,
+    ...targetOfferedActionIds.filter((id) => !actionIds.includes(id)),
+  ];
+  return candidates.filter((id) => {
     const action = actionAssetOf(id);
     if (!action) return false;
+    // An id the player doesn't know is a candidate only as the target's
+    // offer, and offers carry Interact actions alone — a stray non-
+    // Interact id in an offered list never leaks into the options.
+    if (!actionIds.includes(id) && action.actionType.tag !== "Interact") {
+      return false;
+    }
 
     switch (action.actionType.tag) {
       case "Attack":
@@ -127,6 +148,12 @@ export const getActionOptions = ({
       // Deliberate stance changes act on yourself alone.
       case "Posture":
         return allegiance.target === allegiance.playerEntity;
+      // Offered BY the target: valid only while the target lists this
+      // very action and stands within reach.
+      case "Interact":
+        return (
+          targetOfferedActionIds.includes(id) && targetCoLocatedWithPlayer
+        );
       default:
         return false;
     }

@@ -23,6 +23,10 @@ pub enum ActionType {
     Attune,
     /// Self-targeted deliberate stance changes.
     Posture,
+    /// OFFERED by the target, never known by the actor: valid only when
+    /// the co-located target's offered_actions lists this very action
+    /// (opening a chest, dumping a sack; later doors and levers).
+    Interact,
 }
 
 #[table(accessor = actions, public)]
@@ -84,6 +88,12 @@ pub enum ActionEffect {
     /// the set_stance reducer (known stance, requirements, the fear gate);
     /// forced transitions (intimidation, dive) bypass those on purpose.
     SetStance(u32),
+    /// Open the targeted container: its contents are revealed — visible
+    /// and takeable while they stay inside, intact. One-way (no closing).
+    Open,
+    /// Tip the targeted container over: its contents spill onto the floor
+    /// of its room, the container itself unharmed.
+    Dump,
 }
 
 /// One round of an action, with its effects denormalized into the row: every

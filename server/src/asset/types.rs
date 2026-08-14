@@ -58,6 +58,8 @@ pub enum ActionEffectAsset {
     Attune,
     /// The stance to change into, by name.
     SetStance(String),
+    Open,
+    Dump,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -166,6 +168,10 @@ pub struct EntityBlobAsset {
     pub relic_names: Option<Vec<String>>,
     pub item: Option<ItemRefAsset>,
     pub action_names: Option<Vec<String>>,
+    /// Actions this OBJECT offers to anyone standing beside it (open,
+    /// dump; later doors and levers) — explicit per entity, never
+    /// inferred from what it looks like.
+    pub offered_action_names: Option<Vec<String>>,
     pub pinned_action_names: Option<Vec<String>>,
     pub appearance_feature_names: Option<Vec<String>>,
     /// What breaking this entity leaves behind (rubble, ceramic shards…):

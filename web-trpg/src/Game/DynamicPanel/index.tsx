@@ -9,6 +9,7 @@ import {
   useHostiles,
   useLocation,
   useLocationEntities,
+  useOpenContainerContents,
   usePlayerEntity,
 } from "../context/StdbContext/components";
 import { LoadoutPanel } from "../LoadoutPanel";
@@ -21,10 +22,13 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const playerEntity = usePlayerEntity();
   const location = useLocation(playerEntity);
   const locationEntities = useLocationEntities(location);
+  // An opened container's contents show beside it — revealed, intact,
+  // takeable in place.
+  const revealedContents = useOpenContainerContents(locationEntities);
   const playerContents = useLocationEntities(playerEntity);
   const entities: EntityId[] =
     mode === "location"
-      ? locationEntities
+      ? [...locationEntities, ...revealedContents]
       : mode === "inventory"
       ? playerContents
       : [];

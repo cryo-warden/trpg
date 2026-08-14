@@ -296,6 +296,17 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
+        offered_actions: author
+            .offered_action_names
+            .map(|names| {
+                Ok::<_, String>(ActionsComponentBlob {
+                    action_ids: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.actions, "action", n))
+                        .collect::<Result<_, _>>()?,
+                })
+            })
+            .transpose()?,
         pinned_actions: author
             .pinned_action_names
             .map(|names| {
@@ -346,6 +357,8 @@ fn resolve_entity_blob(
         player_deactivation_timer: None,
         actionless_since: None,
         turn_paused: None,
+        // Runtime state: a container is authored closed and opened in play.
+        open: None,
         location_map: None,
     })
 }
@@ -393,6 +406,8 @@ fn resolve_action_effect(
         ActionEffectAsset::SetStance(name) => {
             ActionEffect::SetStance(resolve_name(&maps.stances, "stance", &name)?)
         }
+        ActionEffectAsset::Open => ActionEffect::Open,
+        ActionEffectAsset::Dump => ActionEffect::Dump,
     })
 }
 

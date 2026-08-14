@@ -66,6 +66,8 @@ export const componentQueries = [
   "select * from location_map_components",
   "select * from turn_paused_components",
   "select * from path_blocker_components",
+  "select * from offered_actions_components",
+  "select * from open_components",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -118,6 +120,41 @@ const useItemComponent = createUseComponent("item_components");
 const useCheckpointObjectComponent = createUseComponent(
   "checkpoint_object_components",
 );
+/** Actions the TARGET offers to anyone beside it (open, dump; later doors
+ * and levers) — the actor needs no knowledge of them. */
+const useOfferedActionsComponent = createUseComponent(
+  "offered_actions_components",
+);
+
+/** The revealed insides of OPEN containers among the given co-located
+ * entities: their contents stay where they are, intact, but render (and
+ * are takeable) as if laid out beside the container. */
+export const useOpenContainerContents = (
+  containerCandidates: EntityId[],
+): EntityId[] => {
+  const openRows = useTableData(
+    "open_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  const locationRows = useTableData(
+    "location_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  return useMemo(() => {
+    const openHere = new Set(
+      openRows
+        .map((row) => row.entityId)
+        .filter((entityId) =>
+          containerCandidates.some((candidate) => candidate === entityId),
+        ),
+    );
+    return locationRows
+      .filter((row) => openHere.has(row.locationEntityId))
+      .map((row) => row.entityId);
+  }, [openRows, locationRows, containerCandidates]);
+};
 
 export const useLocation = (entityId: EntityId | null) => {
   const component = useLocationComponent(entityId);
@@ -265,6 +302,8 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   const targetCheckpointObject = useCheckpointObjectComponent(focus);
   const targetIsEquipped = useTargetIsEquipped(focus);
   const targetQuestItemFreshness = useQuestItemFreshness(focus);
+  const targetOfferedActions = useOfferedActionsComponent(focus);
+  const playerLocation = useLocationComponent(playerEntity);
 
   return useMemo(
     () =>
@@ -280,6 +319,11 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
         targetIsEquipped,
         targetHasCheckpointObject: !!targetCheckpointObject,
         targetQuestItemFreshness,
+        targetOfferedActionIds: targetOfferedActions?.actionIds ?? [],
+        targetCoLocatedWithPlayer:
+          playerLocation != null &&
+          targetLocation != null &&
+          playerLocation.locationEntityId === targetLocation.locationEntityId,
         playerEntity,
         target: focus,
         playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
@@ -298,6 +342,8 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
       targetCheckpointObject,
       targetIsEquipped,
       targetQuestItemFreshness,
+      targetOfferedActions,
+      playerLocation,
       focus,
     ],
   );
