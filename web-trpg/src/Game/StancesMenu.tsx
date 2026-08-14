@@ -190,6 +190,7 @@ export const StancesMenu = () => {
                 <Button
                   key={item.entityId.toString()}
                   className={on ? "active" : ""}
+                  interesting={on}
                   disabled={!on && freeHand + itemHand < 0}
                   onClick={() =>
                     connection.reducers.assignStanceArmaments({

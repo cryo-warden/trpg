@@ -88,20 +88,22 @@ test("a slain vermin becomes a corpse: de-fanged but never deleted", async () =>
     actionId: jabId,
     targetEntityId: vermin.entityId,
   });
-  // The controller goes (no more nipping, no longer a threat)...
+  // The body remains at zero hp, name intact for the narration...
   await waitFor(
     () =>
-      ![...player.db.enemy_controller_components.iter()].some(
+      [...player.db.hp_components.iter()].find(
         (row) => row.entityId === vermin.entityId,
-      ),
+      )?.hp === 0,
     30000,
   );
-  // ...but the body remains, at zero hp, name intact for the narration.
-  const corpseHp = [...player.db.hp_components.iter()].find(
-    (row) => row.entityId === vermin.entityId,
-  );
-  expect(corpseHp).toBeDefined();
-  expect(corpseHp!.hp).toBe(0);
+  // ...and the controller remains too, DORMANT: it marks "combatant, not
+  // scenery" so the fallen stay put in the threat panel, while
+  // enemy_control_system skips the dead (no more nipping).
+  expect(
+    [...player.db.enemy_controller_components.iter()].some(
+      (row) => row.entityId === vermin.entityId,
+    ),
+  ).toBe(true);
 }, 60000);
 
 test("death entrances (no acting), then wakes the player in the freshly generated haven", async () => {

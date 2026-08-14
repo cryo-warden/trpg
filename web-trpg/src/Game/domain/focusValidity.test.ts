@@ -10,13 +10,11 @@ const locations = new Map<bigint, bigint>([
   [6n, 5n],
   [7n, 20n],
 ]);
-const dead = new Set<bigint>();
 const inputs = (focus: bigint) => ({
   focus,
   playerEntity: 1n,
   playerLocation: 10n,
   locationOf: (id: bigint) => locations.get(id) ?? null,
-  isDead: (id: bigint) => dead.has(id),
 });
 
 test("siblings, self, carried things, their contents, and the room are all focusable", () => {
@@ -35,8 +33,6 @@ test("an entity in another room is not focusable", () => {
   expect(isFocusValid(inputs(7n))).toBe(false);
 });
 
-test("the dead drop the focus", () => {
-  dead.add(3n);
-  expect(isFocusValid(inputs(3n))).toBe(false);
-  dead.delete(3n);
-});
+// Death does NOT invalidate the focus: a corpse is a real, present,
+// targetable thing (it just never auto-takes the focus). Only leaving the
+// scene — losing a known location — drops it, covered above.

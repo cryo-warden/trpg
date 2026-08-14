@@ -73,7 +73,7 @@ test("FocusProvider keeps focus on carried items and their contents", () => {
   expect(result.current.focus).toBe(10n); // the room itself
 });
 
-test("FocusProvider clears focus on unknown and on dead entities", () => {
+test("FocusProvider clears focus on unknown entities; the dead KEEP it", () => {
   const { result } = renderHook(
     () => ({ focus: useFocus(), setFocus: useSetFocus() }),
     {
@@ -85,8 +85,9 @@ test("FocusProvider clears focus on unknown and on dead entities", () => {
 
   act(() => result.current.setFocus(99n)); // no location row at all
   expect(result.current.focus).toBeNull();
-  act(() => result.current.setFocus(3n)); // co-located but dead
-  expect(result.current.focus).toBeNull();
+  // A corpse is a real, present, targetable thing: focusing it holds.
+  act(() => result.current.setFocus(3n)); // co-located and dead
+  expect(result.current.focus).toBe(3n);
 });
 
 test("FocusProvider clears a focus that is not co-located with the player", () => {

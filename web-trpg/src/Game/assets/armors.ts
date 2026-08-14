@@ -6,7 +6,9 @@ import { statBlock } from "./stat_block";
 export const ARMORS = {
   leather_jerkin: statBlock({ defense: 1 }),
   chain_hauberk: statBlock({ defense: 2, gait: -1 }),
-  traveler_robe: statBlock({ mep: 2 }),
+  // NO mhp/mep on swappable gear: max pools are a RATCHET (a swappable
+  // source would be a one-time permanent boost). Kindred stats instead.
+  traveler_robe: statBlock({ focus: 1 }),
 } satisfies Record<string, StatBlockAsset>;
 
 export type ArmorName = keyof typeof ARMORS;

@@ -10,6 +10,24 @@ html {
   scrollbar-color: #333 #000;
 }
 
+/* The ONE "more interesting" marker: a small gold dot in the top-right
+ * corner of whatever carries it — paths to unvisited places, worn gear,
+ * a stance's assigned armaments. */
+.interesting {
+  position: relative;
+}
+.interesting::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d9a521;
+  pointer-events: none;
+}
+
 #root,
 html,
 body {

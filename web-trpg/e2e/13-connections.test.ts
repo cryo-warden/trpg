@@ -72,6 +72,7 @@ beforeAll(async () => {
       "SELECT * FROM map_instance_components",
       "SELECT * FROM map_cleanup_timer_components",
       "SELECT * FROM player_controller_components",
+      "SELECT * FROM visited_locations",
       "SELECT * FROM accounts",
     ]);
   await player.reducers.createAccount({ name: "wayfarer" });
@@ -101,6 +102,18 @@ test("standing in the anchor room generates the far map and materializes the pat
   )!;
   await moveThrough(intraPath.entityId);
   expect(myLocation()).toBe(anchorRoomId);
+
+  // Presence records the visit: the join row (visitor, location) appears
+  // for every room stood in, and drives the "more interesting" markers.
+  await waitFor(
+    () =>
+      [...player.db.visited_locations.iter()].some(
+        (row) =>
+          row.visitorEntityId === playerEntityId &&
+          row.locationEntityId === anchorRoomId,
+      ),
+    30000,
+  );
 
   await waitFor(
     () => player.db.map_instance_components.count() > instancesBefore,

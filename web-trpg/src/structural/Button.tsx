@@ -4,12 +4,16 @@ import { useHotkeyRef } from "./useHotkeyRef";
 
 export const Button = ({
   hotkey,
+  interesting = false,
   children,
   className,
   onClick,
   ...props
 }: {
   hotkey?: string;
+  /** Renders the shared "more interesting" badge: the one marker for
+   * unvisited destinations, worn gear, and assigned armaments. */
+  interesting?: boolean;
 } & ComponentPropsWithoutRef<"button">) => {
   const buttonRef = useHotkeyRef(hotkey);
 
@@ -35,7 +39,9 @@ export const Button = ({
     <button
       {...props}
       ref={buttonRef}
-      className={["Button", className ?? ""].join(" ")}
+      className={["Button", interesting ? "interesting" : "", className ?? ""].join(
+        " ",
+      )}
       onClick={handleClick}
     >
       {children}

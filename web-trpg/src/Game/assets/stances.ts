@@ -52,10 +52,11 @@ export const STANCES = {
     statBlock: statBlock({ gait: 2, actionNames: ["move", "quick_move"] }),
   },
   // General magic; the elemental specializations trade breadth for a
-  // sharper granted technique.
+  // sharper granted technique. (No mep grant: max pools are a ratchet, so
+  // a stance-carried pool would be a one-time permanent boost.)
   casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ mep: 2, actionNames: ["divine_heal"] }),
+    statBlock: statBlock({ actionNames: ["divine_heal"] }),
   },
   fire_casting: {
     requirements: requirements({ focus: 1 }),

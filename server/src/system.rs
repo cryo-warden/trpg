@@ -75,16 +75,15 @@ pub fn death_system(ecs: Ecs) {
                 ecs.timestamp
                     + spacetimedb::TimeDuration::from_micros(RESPAWN_DELAY_MICROS),
             );
-        } else {
-            // A dead NPC becomes a CORPSE, never a deletion: the controller
-            // goes (it stops acting and stops reading as a threat), but the
-            // entity remains — its name stays in every message about what
-            // happened, and the body is there to see. Map-instance cleanup
-            // eventually sweeps it with the room.
-            if handle.enemy_controller().is_some() {
-                handle.delete_enemy_controller();
-            }
         }
+        // A dead NPC becomes a CORPSE, never a deletion: the entity remains
+        // — its name stays in every message about what happened, and the
+        // body is there to see (and to target). The enemy controller also
+        // REMAINS, dormant: it marks "combatant, not scenery", so the
+        // client's threat panel keeps the fallen where they fell instead of
+        // reshuffling mid-fight. enemy_control_system skips the dead.
+        // Map-instance cleanup eventually sweeps corpse and controller with
+        // the room.
     }
 }
 
@@ -387,6 +386,7 @@ pub fn entity_deletion_timer_system(ecs: Ecs) {
                     }
                 }
             }
+            crate::visited::cleanup_visited_rows(ecs, t.entity_id());
             t.delete();
         }
     }
@@ -759,6 +759,7 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
             .map(|p| p.entity_id)
             .collect();
         for path_entity_id in inbound {
+            crate::visited::cleanup_visited_rows(ecs, path_entity_id);
             ecs.find(path_entity_id).delete();
         }
         // Contents, recursively.
@@ -776,11 +777,23 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
             }
         }
         for entity_id in contents {
+            crate::visited::cleanup_visited_rows(ecs, entity_id);
             ecs.find(entity_id).delete();
         }
+        crate::visited::cleanup_visited_rows(ecs, *room_id);
         ecs.find(*room_id).delete();
     }
+    crate::visited::cleanup_visited_rows(ecs, map_entity_id);
     ecs.find(map_entity_id).delete();
+}
+
+/// Visits derive from PRESENCE: any player-controlled entity standing in a
+/// location is recorded as having visited it — one predicate covering every
+/// way of arriving (moves, dives, respawns, future teleports), forever.
+pub fn visited_location_system(ecs: Ecs) {
+    for p in ecs.iter_player_controller().with_location() {
+        crate::visited::record_visit(ecs, p.entity_id(), p.location().location_entity_id);
+    }
 }
 
 pub fn enemy_control_system(ecs: Ecs) {
@@ -789,6 +802,10 @@ pub fn enemy_control_system(ecs: Ecs) {
     let mut player_shuffle_rng = ecs.rng();
     for e in ecs.iter_enemy_controller().with_location().with_actions() {
         if e.action_state().is_some() {
+            continue;
+        }
+        // A corpse keeps its controller (dormant will) but never acts.
+        if { e.hp() }.is_some_and(|hp| hp.hp <= 0) {
             continue;
         }
 
@@ -828,6 +845,7 @@ pub fn execute_all_systems(ecs: Ecs) {
     player_deactivation_timer_system(ecs);
     entity_stats_system(ecs);
     player_provision_system(ecs);
+    visited_location_system(ecs);
     player_activation_system(ecs);
     map_demand_system(ecs);
     enemy_control_system(ecs);

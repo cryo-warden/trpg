@@ -6,26 +6,21 @@ import { EntityId } from "../trpg";
  * location hierarchy (carried items, and their contents, recursively), and
  * the location itself (no mechanics bind to it yet, but inspecting the room
  * is legitimate). An UNKNOWN entity — no location — is assumed to have left
- * the scene and loses the focus, and the dead drop it too.
+ * the scene and loses the focus. The DEAD keep it: a corpse is a real,
+ * present, targetable thing — it just never auto-takes the focus.
  */
 export const isFocusValid = ({
   focus,
   playerEntity,
   playerLocation,
   locationOf,
-  isDead,
 }: {
   focus: EntityId;
   playerEntity: EntityId | null;
   playerLocation: EntityId | null;
   /** An entity's containing entity, or null when unknown. */
   locationOf: (entityId: EntityId) => EntityId | null;
-  /** True when the entity has hp and it is exhausted. */
-  isDead: (entityId: EntityId) => boolean;
 }): boolean => {
-  if (isDead(focus)) {
-    return false;
-  }
   if (focus === playerEntity) {
     return true;
   }

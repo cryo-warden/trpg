@@ -1371,6 +1371,13 @@ export const TraitsComponentBlob = __t.object("TraitsComponentBlob", {
 });
 export type TraitsComponentBlob = __Infer<typeof TraitsComponentBlob>;
 
+export const VisitedLocation = __t.object("VisitedLocation", {
+  id: __t.u64(),
+  visitorEntityId: __t.u64(),
+  locationEntityId: __t.u64(),
+});
+export type VisitedLocation = __Infer<typeof VisitedLocation>;
+
 export const WeightedNameAsset = __t.object("WeightedNameAsset", {
   weight: __t.u8(),
   name: __t.string(),

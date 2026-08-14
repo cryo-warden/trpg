@@ -13,21 +13,30 @@ import { isAlly } from "./actionOptions";
 export type Cohabitant = {
   entityId: EntityId;
   hasHp: boolean;
-  /** Can this entity act on its own (an enemy controller)? Attackable
+  /** Does this entity have a WILL of its own (an enemy controller)? A
+   * corpse keeps its controller, dormant — "combatant, not scenery" — so
+   * the fallen stay in the threat display where they fell. Attackable
    * scenery has hp but no will. */
   canAct: boolean;
+  /** Hp exhausted. The fallen still DISPLAY as threats (their panel stays
+   * put, bars visibly at zero) but never auto-take the focus. */
+  isDead: boolean;
   allegianceId: EntityId | null;
 };
 
+type ThreatInputs = {
+  viewer: EntityId | null;
+  viewerAllegianceId: EntityId | null;
+  cohabitants: Cohabitant[];
+};
+
+/** The threat DISPLAY list: hostiles alive and fallen alike, so a defeat
+ * animates in place instead of reshuffling the panels mid-fight. */
 export const selectHostiles = ({
   viewer,
   viewerAllegianceId,
   cohabitants,
-}: {
-  viewer: EntityId | null;
-  viewerAllegianceId: EntityId | null;
-  cohabitants: Cohabitant[];
-}): EntityId[] =>
+}: ThreatInputs): EntityId[] =>
   cohabitants
     .filter(
       (cohabitant) =>
@@ -41,3 +50,14 @@ export const selectHostiles = ({
         }),
     )
     .map((cohabitant) => cohabitant.entityId);
+
+/** The threats that still FIGHT: the only ones eligible to be a default
+ * target. A corpse stops being one the moment it falls. */
+export const selectActiveHostiles = (inputs: ThreatInputs): EntityId[] => {
+  const dead = new Set(
+    inputs.cohabitants
+      .filter((cohabitant) => cohabitant.isDead)
+      .map((cohabitant) => cohabitant.entityId),
+  );
+  return selectHostiles(inputs).filter((entityId) => !dead.has(entityId));
+};

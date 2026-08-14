@@ -37,6 +37,7 @@ export const LoadoutPanel = () => {
           <Button
             key={item.entityId.toString()}
             className={item.assetId === armorId ? "active" : ""}
+            interesting={item.assetId === armorId}
             onClick={() => connection.reducers.setArmor({ armorId: item.assetId })}
           >
             {item.name}
@@ -53,6 +54,11 @@ export const LoadoutPanel = () => {
                 ? "active"
                 : ""
             }
+            interesting={assetInstanceIsOn({
+              ids: relicIds,
+              item,
+              items: ownedRelics,
+            })}
             onClick={() =>
               connection.reducers.setRelics({
                 relicIds: toggledAssetIds({

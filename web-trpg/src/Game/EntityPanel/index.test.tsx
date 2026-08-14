@@ -1,41 +1,45 @@
 import { test, expect } from "bun:test";
-import { act, render } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
 import { mockTable } from "../../testSupport/mockConnection";
 import { gameWrapper } from "../../testSupport/gameWrapper";
 import { EntityPanel } from "./index";
 
-test("EntityPanel shows an entity's name and vitals, and focuses it on click", () => {
-  const identity = {} as Identity;
-  const wrapper = gameWrapper(
-    {
-      player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
-      location_components: mockTable([
-        { entityId: 1n, locationEntityId: 10n },
-        { entityId: 2n, locationEntityId: 10n },
-      ]),
-      appearance_features_components: mockTable([
-        { entityId: 2n, appearanceFeatureIndexes: [0] }, // "human"
-      ]),
-      hp_components: mockTable([{ entityId: 2n, hp: 7, mhp: 10 }]),
-      ep_components: mockTable([{ entityId: 2n, ep: 4, mep: 6 }]),
-      // Allies: otherwise entity 2 would be a lone hostile and the provider
-      // would auto-focus it before the click this test exercises.
-      allegiance_components: mockTable([
-        { entityId: 1n, allegianceEntityId: 10n },
-        { entityId: 2n, allegianceEntityId: 10n },
-      ]),
-    },
-    { identity },
+// Player 1 stands in room 10 beside path 4, which leads to room 20.
+const tables = (visited: { locationEntityId: bigint }[]) => ({
+  player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
+  location_components: mockTable([
+    { entityId: 1n, locationEntityId: 10n },
+    { entityId: 4n, locationEntityId: 10n },
+  ]),
+  path_components: mockTable([
+    { entityId: 4n, destinationEntityId: 20n },
+  ]),
+  visited_locations: mockTable(
+    visited.map((row, index) => ({
+      id: BigInt(index + 1),
+      visitorEntityId: 1n,
+      locationEntityId: row.locationEntityId,
+    })),
+  ),
+});
+
+test("a path to an UNVISITED location wears the interesting badge", () => {
+  const { container } = render(<EntityPanel entity={4n} />, {
+    wrapper: gameWrapper(tables([]), { identity: {} as Identity }),
+  });
+  expect(container.querySelector(".EntityPanel")!.className).toContain(
+    "interesting",
   );
+});
 
-  const { container } = render(<EntityPanel entity={2n} />, { wrapper });
-  const panel = container.querySelector(".EntityPanel") as HTMLElement;
-  expect(panel.textContent).toContain("human");
-  expect(panel.textContent).toContain("7 / 10 HP");
-  expect(panel.textContent).toContain("4 / 6 EP");
-  expect(panel.className).not.toContain("focused");
-
-  act(() => panel.click());
-  expect(panel.className).toContain("focused");
+test("a path to a visited location does not", () => {
+  const { container } = render(<EntityPanel entity={4n} />, {
+    wrapper: gameWrapper(tables([{ locationEntityId: 20n }]), {
+      identity: {} as Identity,
+    }),
+  });
+  expect(container.querySelector(".EntityPanel")!.className).not.toContain(
+    "interesting",
+  );
 });

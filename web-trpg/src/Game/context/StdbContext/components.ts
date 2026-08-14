@@ -8,7 +8,7 @@ import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
 import { ActionPhase, actionPhaseOf } from "../../domain/actionPhase";
 import { EntityPresentation } from "../../domain/prominence";
-import { selectHostiles } from "../../domain/threat";
+import { selectActiveHostiles, selectHostiles } from "../../domain/threat";
 import {
   selectEntityPresentations,
   selectLocationEntities,
@@ -61,6 +61,7 @@ export const componentQueries = [
   "select * from path_components",
   "select * from player_controller_components",
   "select * from queued_action_state_components",
+  "select * from visited_locations",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -95,7 +96,27 @@ export const useAppearanceFeaturesComponents = createUseTable(
 );
 
 const useAllegianceComponent = createUseComponent("allegiance_components");
-const usePathComponent = createUseComponent("path_components");
+export const usePathComponent = createUseComponent("path_components");
+
+/** The location entity ids the player's entity has ever stood in. Paths to
+ * places OUTSIDE this set are the "more interesting" ones. */
+export const useMyVisitedLocationIds = (): Set<EntityId> => {
+  const playerEntity = usePlayerEntity();
+  const visitedRows = useTableData(
+    "visited_locations",
+    (table) => [...table.iter()],
+    [],
+  );
+  return useMemo(
+    () =>
+      new Set(
+        visitedRows
+          .filter((row) => row.visitorEntityId === playerEntity)
+          .map((row) => row.locationEntityId),
+      ),
+    [visitedRows, playerEntity],
+  );
+};
 const useItemComponent = createUseComponent("item_components");
 const useCheckpointObjectComponent = createUseComponent(
   "checkpoint_object_components",
@@ -157,8 +178,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   );
 };
 
-/** The hostiles sharing the player's location; non-empty means threatened. */
-export const useHostiles = (): EntityId[] => {
+const useThreatInputs = () => {
   const playerEntity = usePlayerEntity();
   const location = useLocation(playerEntity);
   const cohabitantIds = useLocationEntities(location);
@@ -175,23 +195,24 @@ export const useHostiles = (): EntityId[] => {
     [],
   );
   return useMemo(() => {
-    const hpIds = new Set(hpRows.map((row) => row.entityId));
+    const hpById = new Map(hpRows.map((row) => [row.entityId, row.hp]));
     const controllerIds = new Set(
       enemyControllerRows.map((row) => row.entityId),
     );
     const allegianceById = new Map(
       allegianceRows.map((row) => [row.entityId, row.allegianceEntityId]),
     );
-    return selectHostiles({
+    return {
       viewer: playerEntity,
       viewerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
       cohabitants: cohabitantIds.map((entityId) => ({
         entityId,
-        hasHp: hpIds.has(entityId),
+        hasHp: hpById.has(entityId),
         canAct: controllerIds.has(entityId),
+        isDead: hpById.has(entityId) && (hpById.get(entityId) ?? 0) <= 0,
         allegianceId: allegianceById.get(entityId) ?? null,
       })),
-    });
+    };
   }, [
     playerEntity,
     playerAllegiance,
@@ -200,6 +221,19 @@ export const useHostiles = (): EntityId[] => {
     allegianceRows,
     enemyControllerRows,
   ]);
+};
+
+/** The threat DISPLAY list (alive and fallen alike); non-empty means the
+ * threat panel shows. */
+export const useHostiles = (): EntityId[] => {
+  const inputs = useThreatInputs();
+  return useMemo(() => selectHostiles(inputs), [inputs]);
+};
+
+/** The threats still fighting — the only default-target candidates. */
+export const useActiveHostiles = (): EntityId[] => {
+  const inputs = useThreatInputs();
+  return useMemo(() => selectActiveHostiles(inputs), [inputs]);
 };
 
 const useActiveStanceComponent = createUseComponent("active_stance_components");

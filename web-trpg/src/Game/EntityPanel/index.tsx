@@ -6,6 +6,8 @@ import { ActionButton } from "../ActionButton";
 import {
   useActionOptions,
   useActionPhase,
+  useMyVisitedLocationIds,
+  usePathComponent,
   usePlayerEntity,
 } from "../context/StdbContext/components";
 import { EntityName } from "../EntityName";
@@ -30,6 +32,12 @@ export const EntityPanel = ({
   const focus = useFocus();
   const setFocus = useSetFocus();
   const actionPhase = useActionPhase(entity);
+  // A path to somewhere the player has never stood is MORE INTERESTING —
+  // the shared badge marks the unexplored.
+  const path = usePathComponent(entity);
+  const visited = useMyVisitedLocationIds();
+  const leadsSomewhereNew =
+    path != null && !visited.has(path.destinationEntityId);
   const focusThis = useCallback(() => {
     setFocus(entity);
   }, [entity, setFocus]);
@@ -57,6 +65,7 @@ export const EntityPanel = ({
         "EntityPanel",
         getClassName(entity),
         entity === focus ? "focused" : "",
+        leadsSomewhereNew ? "interesting" : "",
       ].join(" ")}
       onClick={focusThis}
     >
