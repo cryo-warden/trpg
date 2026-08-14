@@ -528,4 +528,7 @@ export const LOCATION_MAP_CONNECTIONS: LocationMapConnectionAsset[] = [
   connect("verdant_meadow", "Ending", "whispering_forest", "Entrance"),
   connect("whispering_forest", "Ending", "old_keep", "Entrance"),
   connect("old_keep", "Ending", "elemental_sanctum", "Entrance"),
+  // The triangular-join demo hangs off the cave's far end: EVERY authored
+  // map must be reachable (location_maps.test.ts enforces it).
+  connect("beginner_cave", "Ending", "triangle_loop", "Entrance"),
 ];
