@@ -9,6 +9,7 @@ use crate::{
     },
     ecs_extension::EcsExtension,
     entity::*,
+    entity_handle_extension::EntityHandleExtension,
     item::{ItemRef, StanceLoadout},
 };
 
@@ -226,18 +227,18 @@ pub fn assign_stance_armaments(
         ));
     }
 
-    // Assigning the ACTIVE stance equips/unequips AUTOMATICALLY: hands and
-    // configuration never disagree about the stance you are in. Other
-    // stances arm when a stance change adopts them (paying its round).
-    let is_active =
-        { ecs.find(p.entity_id()).active_stance() }.is_some_and(|a| a.stance_id == stance_id);
-    if is_active {
-        ecs.find(p.entity_id()).upsert_new_equipment(armament_ids.clone());
-    }
     update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
         armament_ids,
         ..loadout
     });
+    // Assigning the ACTIVE stance takes effect IMMEDIATELY: the hands
+    // re-resolve (this override when non-empty, else the default set —
+    // clearing an active override falls back to the default). Other
+    // stances arm when a stance change adopts them.
+    let entity = ecs.find(p.entity_id());
+    if { entity.active_stance() }.is_some_and(|a| a.stance_id == stance_id) {
+        entity.apply_resolved_armaments();
+    }
     Ok(())
 }
 
@@ -298,8 +299,17 @@ pub fn assign_stance_actions(
     }
 
     update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
-        action_ids,
+        action_ids: action_ids.clone(),
         ..loadout
     });
+    // Everything the stance menu derives applies IMMEDIATELY for the
+    // ACTIVE stance: a non-empty bar assignment becomes the pinned bar now
+    // (an empty one means "leave the bar alone", as on adoption).
+    let handle = ecs.find(p.entity_id());
+    if !action_ids.is_empty()
+        && { handle.active_stance() }.is_some_and(|a| a.stance_id == stance_id)
+    {
+        handle.upsert_new_pinned_actions(action_ids);
+    }
     Ok(())
 }

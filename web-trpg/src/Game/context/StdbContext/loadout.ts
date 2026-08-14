@@ -116,6 +116,22 @@ export const useMyEquipmentArmamentIds = (): number[] => {
   );
 };
 
+/** The DEFAULT wielded set (the equip menu's): what the hands hold when
+ * the active stance assigns no override. */
+export const useMyDefaultArmamentIds = (): number[] => {
+  const playerEntity = usePlayerEntity();
+  return useTableData(
+    "default_armaments_components",
+    (t) => {
+      if (playerEntity == null) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (((t.entityId as any).find(playerEntity)?.armamentIds ??
+        []) as number[]).slice();
+    },
+    [playerEntity],
+  );
+};
+
 const useStatBlockMap = (table: "armaments" | "armors" | "relics") =>
   useTableData(
     table,

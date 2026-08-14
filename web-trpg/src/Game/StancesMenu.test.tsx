@@ -90,6 +90,29 @@ test("shows exactly the REACHABLE stances, marking the active one", () => {
   expect(cardOf(container, "perched")).toBeUndefined();
 });
 
+test("a stance with NO assignment uses the DEFAULT set in its totals", () => {
+  const withDefault = {
+    ...tables(),
+    default_armaments_components: mockTable([
+      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+    ]),
+  };
+  const wrapper = gameWrapper(withDefault, { identity: {} as Identity });
+  const { container } = render(<StancesMenu />, { wrapper });
+
+  // Standing assigns nothing: the default sword rides its totals, and the
+  // card says so.
+  const standing = cardOf(container, "standing")!;
+  expect(standing.textContent).toContain("using the default set");
+  expect(standing.textContent).toContain("Hand 1 (-1)");
+  expect(standing.textContent).toContain("Morale 1 (+1)");
+
+  // Dueling OVERRIDES with its own sword assignment: same numbers here,
+  // but by override, not default.
+  const dueling = cardOf(container, "dueling")!;
+  expect(dueling.textContent).not.toContain("using the default set");
+});
+
 test("gallery dots: one per reachable stance, the active stance marked", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });

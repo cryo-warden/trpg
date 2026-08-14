@@ -61,12 +61,16 @@ secador::secador!(
                             .find(armament_id)
                             .map_or(0, |a| i32::from(a.stat_block.hand));
                         if current_hand + armament_hand >= 0 {
+                            // The auto-wield goes to the DEFAULT slot; the
+                            // hands re-resolve (an active stance override
+                            // keeps winning).
                             let mut armament_ids = taker
-                                .equipment()
+                                .default_armaments()
                                 .map(|c| c.armament_ids)
                                 .unwrap_or_default();
                             armament_ids.push(armament_id);
-                            taker.upsert_new_equipment(armament_ids);
+                            taker.upsert_new_default_armaments(armament_ids);
+                            ecs.find(taker_entity_id).apply_resolved_armaments();
                         }
                     }
                     true
@@ -75,40 +79,11 @@ secador::secador!(
             }
         }
 
-        /// Mirrors an equip/unequip into the ACTIVE stance's armament
-        /// assignment: hands and configuration never disagree about the
-        /// stance you are in.
-        fn update_active_stance_armaments(
-            ecs: Ecs,
-            entity_id: u64,
-            mutate: impl FnOnce(&mut Vec<u32>),
-        ) {
-            let handle = ecs.find(entity_id);
-            let Some(active) = handle.active_stance() else {
-                return;
-            };
-            let mut assignments = handle
-                .stance_loadouts()
-                .map(|c| c.assignments)
-                .unwrap_or_default();
-            let mut loadout = assignments
-                .iter()
-                .find(|a| a.stance_id == active.stance_id)
-                .cloned()
-                .unwrap_or(crate::item::StanceLoadout {
-                    stance_id: active.stance_id,
-                    armament_ids: Vec::new(),
-                    action_ids: Vec::new(),
-                });
-            mutate(&mut loadout.armament_ids);
-            assignments.retain(|a| a.stance_id != active.stance_id);
-            assignments.push(loadout);
-            handle.upsert_new_stance_loadouts(assignments);
-        }
-
         /// Equip a CARRIED item: wield an armament (grip permitting), wear
-        /// armor (replacing what is worn), or add a relic (cap 4).
-        /// Armaments also mirror into the active stance's configuration.
+        /// armor (replacing what is worn), or add a relic (cap 4). An
+        /// armament goes into the DEFAULT slot — the set the hands hold
+        /// whenever the active stance assigns no override — and the hands
+        /// re-resolve.
         fn equip_item(ecs: Ecs, owner_entity_id: u64, item_entity_id: u64) -> bool {
             let carried = ecs
                 .db
@@ -139,14 +114,12 @@ secador::secador!(
                         return false;
                     }
                     let mut armament_ids = owner
-                        .equipment()
+                        .default_armaments()
                         .map(|c| c.armament_ids)
                         .unwrap_or_default();
                     armament_ids.push(armament_id);
-                    owner.upsert_new_equipment(armament_ids);
-                    update_active_stance_armaments(ecs, owner_entity_id, |ids| {
-                        ids.push(armament_id);
-                    });
+                    owner.upsert_new_default_armaments(armament_ids);
+                    ecs.find(owner_entity_id).apply_resolved_armaments();
                     true
                 }
                 crate::item::ItemRef::Armor(armor_id) => {
@@ -166,9 +139,9 @@ secador::secador!(
             }
         }
 
-        /// Unequip a CARRIED, currently equipped item: put the armament
-        /// away (mirroring into the active stance's configuration), shed
-        /// the worn armor, or remove the relic. The item stays owned.
+        /// Unequip a CARRIED, currently equipped item: take the armament
+        /// out of the DEFAULT slot (hands re-resolve), shed the worn
+        /// armor, or remove the relic. The item stays owned.
         fn unequip_item(ecs: Ecs, owner_entity_id: u64, item_entity_id: u64) -> bool {
             let carried = ecs
                 .db
@@ -187,7 +160,7 @@ secador::secador!(
             match item.item_ref {
                 crate::item::ItemRef::Armament(armament_id) => {
                     let mut armament_ids = owner
-                        .equipment()
+                        .default_armaments()
                         .map(|c| c.armament_ids)
                         .unwrap_or_default();
                     let Some(position) =
@@ -196,14 +169,8 @@ secador::secador!(
                         return false;
                     };
                     armament_ids.remove(position);
-                    owner.upsert_new_equipment(armament_ids);
-                    update_active_stance_armaments(ecs, owner_entity_id, |ids| {
-                        if let Some(position) =
-                            ids.iter().position(|id| *id == armament_id)
-                        {
-                            ids.remove(position);
-                        }
-                    });
+                    owner.upsert_new_default_armaments(armament_ids);
+                    ecs.find(owner_entity_id).apply_resolved_armaments();
                     true
                 }
                 crate::item::ItemRef::Armor(armor_id) => {

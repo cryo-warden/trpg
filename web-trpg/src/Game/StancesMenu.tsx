@@ -32,6 +32,7 @@ import {
   OwnedItem,
   useArmamentStatBlocks,
   useGearStatBlockOf,
+  useMyDefaultArmamentIds,
   useMyEquipmentArmamentIds,
   useMyStanceAssignments,
   useOwnedItems,
@@ -222,6 +223,7 @@ export const StancesMenu = () => {
   const owned = useOwnedItems();
   const gearStatBlockOf = useGearStatBlockOf();
   const equippedArmamentIds = useMyEquipmentArmamentIds();
+  const defaultArmamentIds = useMyDefaultArmamentIds();
   const armamentStats = useArmamentStatBlocks();
   const actionNames = useTableData(
     "actions",
@@ -325,15 +327,28 @@ export const StancesMenu = () => {
         const loadout = assignments.find((a) => a.stanceId === stance.id);
         const assigned = loadout?.armamentIds ?? [];
         const assignedActions = loadout?.actionIds ?? [];
+        // A stance assignment OVERRIDES the default wielded set, it is
+        // never a requirement: with nothing assigned, this stance fights
+        // with the equip menu's default armaments — and the card's totals
+        // say so.
+        const resolvedArmaments =
+          assigned.length > 0 ? assigned : defaultArmamentIds;
+        const usesDefault = assigned.length === 0;
         const candidate = Object.fromEntries(
           ALL_STATS.map(([key]) => [
             key,
             baseStats[key] +
               stance.statBlock[key] +
-              armamentStatSum(assigned, key),
+              armamentStatSum(resolvedArmaments, key),
           ]),
         ) as Record<IntStatKey, number>;
         const freeHand = candidate.hand;
+        // Toggling gates on the OVERRIDE set alone: assigning the first
+        // item replaces the default set rather than adding to it.
+        const overrideHand =
+          baseStats.hand +
+          stance.statBlock.hand +
+          armamentStatSum(assigned, "hand");
         const grantedActionNames = [...stance.statBlock.actionIds].map(
           (id) => actionNames.get(id) ?? `#${id}`,
         );
@@ -345,7 +360,7 @@ export const StancesMenu = () => {
           ...new Set([
             ...baseActionIds,
             ...stance.statBlock.actionIds,
-            ...assigned.flatMap((id) => [
+            ...resolvedArmaments.flatMap((id) => [
               ...(armamentStats.get(id)?.actionIds ?? []),
             ]),
           ]),
@@ -374,7 +389,10 @@ export const StancesMenu = () => {
             {grantedActionNames.length > 0 && (
               <div>Grants: {grantedActionNames.join(", ")}</div>
             )}
-            <h4>Armaments (free hand: {freeHand})</h4>
+            <h4>
+              Armaments (free hand: {freeHand})
+              {usesDefault && " — using the default set"}
+            </h4>
             {ownedArmaments.map((item) => {
               const itemHand = armamentStats.get(item.assetId)?.hand ?? 0;
               const on = isOn(item);
@@ -383,7 +401,7 @@ export const StancesMenu = () => {
                   key={item.entityId.toString()}
                   className={on ? "active" : ""}
                   interesting={on}
-                  disabled={!on && freeHand + itemHand < 0}
+                  disabled={!on && overrideHand + itemHand < 0}
                   onClick={() =>
                     connection.reducers.assignStanceArmaments({
                       stanceId: stance.id,

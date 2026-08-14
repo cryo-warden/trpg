@@ -75,6 +75,17 @@ entity!(
         pub armament_ids: Vec<u32>,
     }
 
+    // The DEFAULT wielded set: what the hands hold whenever the active
+    // stance's loadout assigns NO armaments — a stance assignment is an
+    // OVERRIDE of this default, never a requirement. Edited by the
+    // equip/unequip item actions and take's auto-wield ("the item goes to
+    // the default slot"); resolution into actual hands lives in
+    // resolved_armament_ids.
+    #[component(default_armaments in default_armaments_components)]
+    struct DefaultArmamentsComponent {
+        pub armament_ids: Vec<u32>,
+    }
+
     // The single global clothing/armor slot, applied across every stance.
     #[component(armor in armor_components, dirties(equipment_stat_block_dirty_flag))]
     struct ArmorComponent {

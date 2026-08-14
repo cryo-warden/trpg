@@ -18,6 +18,7 @@ import {
   TraitsComponentBlob,
   ActiveStanceComponentBlob,
   EquipmentComponentBlob,
+  DefaultArmamentsComponentBlob,
   ArmorComponentBlob,
   RelicsComponentBlob,
   StanceLoadoutsComponentBlob,
@@ -72,6 +73,9 @@ export default __t.row({
   },
   get equipment() {
     return __t.option(EquipmentComponentBlob);
+  },
+  get defaultArmaments() {
+    return __t.option(DefaultArmamentsComponentBlob).name("default_armaments");
   },
   get armor() {
     return __t.option(ArmorComponentBlob);

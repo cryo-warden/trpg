@@ -26,6 +26,15 @@ pub trait EntityHandleExtension {
     fn set_mep(self, mep: i16) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
+    /// The armaments the hands should hold RIGHT NOW: the active stance's
+    /// loadout override when it assigns any, else the DEFAULT set (what
+    /// the equip menu built). A stance assignment overrides the default —
+    /// it is never a requirement.
+    fn resolved_armament_ids(&self) -> Vec<u32>;
+    /// Rewrites the equipment from the resolution above. Gated on the
+    /// player-side components existing: blob-equipped NPCs keep their flat
+    /// equipment untouched.
+    fn apply_resolved_armaments(&self);
     /// There is NO concept of known stances: a stance is available exactly
     /// when it is REACHABLE — the closure seeded by the entity's granted
     /// actions and every carried item's grants, over two edges (an action
@@ -235,6 +244,33 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         }
     }
 
+    fn resolved_armament_ids(&self) -> Vec<u32> {
+        let e = self.to_handle();
+        let override_ids = { e.active_stance() }
+            .and_then(|active| {
+                { e.stance_loadouts() }.and_then(|loadouts| {
+                    loadouts
+                        .assignments
+                        .iter()
+                        .find(|a| a.stance_id == active.stance_id)
+                        .map(|a| a.armament_ids.clone())
+                })
+            })
+            .filter(|ids| !ids.is_empty());
+        override_ids
+            .or_else(|| e.default_armaments().map(|d| d.armament_ids))
+            .unwrap_or_default()
+    }
+
+    fn apply_resolved_armaments(&self) {
+        let e = self.to_handle();
+        if e.stance_loadouts().is_none() && e.default_armaments().is_none() {
+            return;
+        }
+        let resolved = self.resolved_armament_ids();
+        e.clone().upsert_new_equipment(resolved);
+    }
+
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
         log::debug!(
             "Setting appearance feature IDs for {}: {:?}",
@@ -318,27 +354,23 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         }
         let handle = e.clone().upsert_new_active_stance(stance_id).into_handle();
 
-        // A player with stance loadouts re-arms on swap: the new stance's
-        // assigned armaments (or none, when unassigned) become the wielded
-        // set, and its assigned ACTIONS become the pinned bar (an empty
-        // assignment leaves the bar alone). Entities without loadouts keep
-        // their flat equipment.
-        if let Some(loadouts) = handle.stance_loadouts() {
-            let loadout = loadouts
-                .assignments
-                .iter()
-                .find(|a| a.stance_id == stance_id)
-                .cloned();
-            let armament_ids = loadout
-                .as_ref()
-                .map(|a| a.armament_ids.clone())
-                .unwrap_or_default();
-            let handle = handle.clone().upsert_new_equipment(armament_ids).into_handle();
-            if let Some(action_ids) =
-                loadout.map(|a| a.action_ids).filter(|ids| !ids.is_empty())
-            {
-                handle.upsert_new_pinned_actions(action_ids);
-            }
+        // Re-arm on swap: hands resolve to the new stance's OVERRIDE when
+        // it assigns armaments, else the DEFAULT set; the stance's
+        // assigned ACTIONS become the pinned bar (an empty assignment
+        // leaves the bar alone). Entities without loadouts or defaults
+        // keep their flat equipment.
+        self.apply_resolved_armaments();
+        if let Some(action_ids) = { handle.stance_loadouts() }
+            .and_then(|loadouts| {
+                loadouts
+                    .assignments
+                    .iter()
+                    .find(|a| a.stance_id == stance_id)
+                    .map(|a| a.action_ids.clone())
+            })
+            .filter(|ids| !ids.is_empty())
+        {
+            handle.upsert_new_pinned_actions(action_ids);
         }
         Ok(())
     }

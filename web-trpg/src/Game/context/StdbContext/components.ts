@@ -49,6 +49,7 @@ export const componentQueries = [
   "select * from relics_components",
   "select * from stance_loadouts_components",
   "select * from equipment_components",
+  "select * from default_armaments_components",
   "select * from action_state_components",
   "select * from allegiance_components",
   "select * from enemy_controller_components",
@@ -134,8 +135,11 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
     [],
   );
   const itemRows = useTableData("item_components", (table) => [...table.iter()], []);
-  const equipment = useTableData(
-    "equipment_components",
+  // Equip/unequip edit the DEFAULT slot, so "equipped" here means
+  // membership in the default set — not whatever a stance override
+  // currently holds in hand.
+  const defaultArmaments = useTableData(
+    "default_armaments_components",
     (table) =>
       playerEntity == null
         ? null
@@ -182,14 +186,23 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
       .map((row) => ({ entityId: row.entityId, assetId: row.itemRef.value }));
     const onIds: number[] =
       ref.tag === "Armament"
-        ? [...(equipment?.armamentIds ?? [])]
+        ? [...(defaultArmaments?.armamentIds ?? [])]
         : [...(relics?.relicIds ?? [])];
     return assetInstanceIsOn({
       ids: onIds,
       item: { entityId: focus, assetId: ref.value },
       items: carriedSameKind,
     });
-  }, [focus, playerEntity, targetItem, locationRows, itemRows, equipment, armor, relics]);
+  }, [
+    focus,
+    playerEntity,
+    targetItem,
+    locationRows,
+    itemRows,
+    defaultArmaments,
+    armor,
+    relics,
+  ]);
 };
 
 /** Actions valid with the focused entity as their would-be target. */

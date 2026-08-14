@@ -293,6 +293,14 @@ export const loadoutPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Attack", value: 2 }], interruptible: false }],
       },
     },
+    {
+      name: "test_smash",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: requirements({ blunt: 1 }),
+        rounds: [{ effects: [{ tag: "Attack", value: 1 }], interruptible: false }],
+      },
+    },
     postureAction("test_stand", "test_standing"),
     postureAction("test_duel", "test_dueling"),
     {
@@ -335,6 +343,10 @@ export const loadoutPack = (): AssetPack => ({
       name: "test_sword",
       value: statBlock({ bladed: 1, hand: -1 }),
     },
+    {
+      name: "test_club",
+      value: statBlock({ blunt: 1, hand: -1, actionNames: ["test_smash"] }),
+    },
   ],
   armors: [{ name: "test_jerkin", value: statBlock({ defense: 1 }) }],
   relics: [{ name: "test_charm", value: statBlock({ attack: 1 }) }],
@@ -359,6 +371,10 @@ export const loadoutPack = (): AssetPack => ({
   instantiateEntityBlobs: [
     blob({
       item: { tag: "Armament", value: "test_sword" },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    blob({
+      item: { tag: "Armament", value: "test_club" },
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
     }),
     blob({

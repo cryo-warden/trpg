@@ -76,6 +76,7 @@ import CheckpointBindingComponentsRow from "./checkpoint_binding_components_tabl
 import CheckpointComponentsRow from "./checkpoint_components_table";
 import CheckpointObjectComponentsRow from "./checkpoint_object_components_table";
 import CourageStatusComponentsRow from "./courage_status_components_table";
+import DefaultArmamentsComponentsRow from "./default_armaments_components_table";
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
 import EntityBlobsRow from "./entity_blobs_table";
@@ -388,6 +389,17 @@ const tablesSchema = __schema({
       { name: 'courage_status_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, CourageStatusComponentsRow),
+  default_armaments_components: __table({
+    name: 'default_armaments_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'default_armaments_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'default_armaments_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, DefaultArmamentsComponentsRow),
   enemy_controller_components: __table({
     name: 'enemy_controller_components',
     indexes: [

@@ -8,8 +8,11 @@ import { loadoutPack } from "./testAssets";
 
 // Phase 9: inventory + loadouts. Carrying IS location: taking a room item
 // pulls it into the player. Loadouts: one armor slot and up to four relics
-// across all stances; each stance gets its own assigned armaments, and
-// swapping stances re-arms from the assignment.
+// across all stances. Armaments resolve OVERRIDE-OR-DEFAULT: the equip
+// menu builds a DEFAULT wielded set (take's auto-wield and the
+// equip/unequip item actions edit it), and a stance's assignment OVERRIDES
+// it — never a requirement. Everything the stance menu derives applies
+// immediately for the ACTIVE stance.
 
 let admin: DbConnection;
 let player: DbConnection;
@@ -55,6 +58,7 @@ beforeAll(async () => {
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
       "SELECT * FROM equipment_components",
+      "SELECT * FROM default_armaments_components",
       "SELECT * FROM pinned_actions_components",
       "SELECT * FROM stance_loadouts_components",
       "SELECT * FROM armor_components",
@@ -69,8 +73,14 @@ beforeAll(async () => {
 
   playerEntityId = await playerEntityIdFor(player, "collector");
   await waitFor(() => myActionNames().length > 0, 30000);
-  await waitFor(() => player.db.item_components.count() === 3n, 30000);
+  await waitFor(() => player.db.item_components.count() === 4n, 30000);
 }, 60000);
+
+const armamentItemId = (armamentAssetId: number): bigint =>
+  [...player.db.item_components.iter()].find(
+    (row) =>
+      row.itemRef.tag === "Armament" && row.itemRef.value === armamentAssetId,
+  )!.entityId;
 
 afterAll(() => {
   admin?.disconnect();
@@ -78,9 +88,7 @@ afterAll(() => {
 });
 
 test("taking a sword pockets it AND wields it while the grip allows", async () => {
-  const swordItemId = [...player.db.item_components.iter()].find(
-    (row) => row.itemRef.tag === "Armament",
-  )!.entityId;
+  const swordItemId = armamentItemId(idByName(player.db.armaments, "test_sword"));
   expect(carriedItemIds()).not.toContain(swordItemId);
 
   const takeId = idByName(player.db.actions, "test_take");
@@ -128,42 +136,47 @@ test("armor and relics require ownership; owned ones equip", async () => {
   );
 }, 60000);
 
-test("loadout assignments re-arm on swap; a pocketed blade is not IN HAND", async () => {
-  const swordId = idByName(player.db.armaments, "test_sword");
+test("a stance assignment OVERRIDES the default set; clearing it falls back", async () => {
+  const clubId = idByName(player.db.armaments, "test_club");
   const duelingId = idByName(player.db.stances, "test_dueling");
   const standingId = idByName(player.db.stances, "test_standing");
 
-  // The auto-wielded blade makes the blade stance reachable right away.
-  await player.reducers.setStance({ stanceId: duelingId });
+  // The club joins the DEFAULT set beside the sword.
+  const takeId = idByName(player.db.actions, "test_take");
+  await player.reducers.act({
+    actionId: takeId,
+    targetEntityId: armamentItemId(clubId),
+  });
   await waitFor(
     () =>
-      [...player.db.active_stance_components.iter()].find(
-        (row) => row.entityId === playerEntityId,
-      )?.stanceId === duelingId,
+      myActionNames().includes("test_slash") &&
+      myActionNames().includes("test_smash"),
     30000,
   );
 
-  // Assign standing EMPTY and swap back: the loadout re-arm dis-arms —
-  // the sword is still POCKETED (owned) but no longer in hand.
+  // Overriding the ACTIVE stance with the club alone applies IMMEDIATELY:
+  // no stance change, the blade leaves the hands.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
-    armamentIds: [],
+    armamentIds: [clubId],
   });
-  await player.reducers.setStance({ stanceId: standingId });
   await waitFor(() => !myActionNames().includes("test_slash"), 30000);
+  expect(myActionNames()).toContain("test_smash");
 
-  // Bare-handed, the blade stance refuses: pocketed gear is not wielded.
+  // With no blade in the base, the blade stance refuses.
   await expect(
     player.reducers.setStance({ stanceId: duelingId }),
   ).rejects.toThrow(/requirements/);
 
-  // Assigning to the ACTIVE stance equips AUTOMATICALLY — hands and
-  // configuration never disagree about the stance you are in.
+  // Clearing the override falls back to the DEFAULT set — sword and club.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
-    armamentIds: [swordId],
+    armamentIds: [],
   });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
+  expect(myActionNames()).toContain("test_smash");
+
+  // Dueling assigns nothing either: it fights with the default too.
   await player.reducers.setStance({ stanceId: duelingId });
   await waitFor(
     () =>
@@ -172,11 +185,17 @@ test("loadout assignments re-arm on swap; a pocketed blade is not IN HAND", asyn
       )?.stanceId === duelingId,
     30000,
   );
+  await waitFor(() => myActionNames().includes("test_slash"), 30000);
 }, 60000);
 
-test("a stance's assigned ACTIONS become the pinned bar when it re-arms", async () => {
+test("bar assignments: on adoption for other stances, INSTANT for the active one", async () => {
   const takeId = idByName(player.db.actions, "test_take");
+  const equipId = idByName(player.db.actions, "test_equip");
   const standingId = idByName(player.db.stances, "test_standing");
+  const myBar = () =>
+    [...player.db.pinned_actions_components.iter()].find(
+      (r) => r.entityId === playerEntityId,
+    );
 
   // Outside the candidate pool: rejected at assignment time.
   await expect(
@@ -186,53 +205,60 @@ test("a stance's assigned ACTIONS become the pinned bar when it re-arms", async 
     }),
   ).rejects.toThrow(/pool/);
 
+  // Standing is NOT active (we are in dueling): the bar waits for the
+  // adoption to pay its round.
   await player.reducers.assignStanceActions({
     stanceId: standingId,
     actionIds: [takeId],
   });
-  // Configuration only — the bar changes when the stance change pays its
-  // round (we are in dueling from the previous test).
   await player.reducers.setStance({ stanceId: standingId });
-  await waitFor(() => {
-    const row = [...player.db.pinned_actions_components.iter()].find(
-      (r) => r.entityId === playerEntityId,
-    );
-    return row != null && [...row.actionIds].join(",") === `${takeId}`;
-  }, 30000);
+  await waitFor(
+    () => [...(myBar()?.actionIds ?? [])].join(",") === `${takeId}`,
+    30000,
+  );
+
+  // Assigning the ACTIVE stance's bar applies IMMEDIATELY — everything
+  // the stance menu derives does.
+  await player.reducers.assignStanceActions({
+    stanceId: standingId,
+    actionIds: [takeId, equipId],
+  });
+  await waitFor(
+    () =>
+      [...(myBar()?.actionIds ?? [])].join(",") === `${takeId},${equipId}`,
+    30000,
+  );
 }, 60000);
 
-test("unequip/equip actions on a carried item mirror into the active stance's config", async () => {
+test("unequip/equip actions edit the DEFAULT slot; hands re-resolve", async () => {
   const swordId = idByName(player.db.armaments, "test_sword");
-  const standingId = idByName(player.db.stances, "test_standing");
-  const swordItemId = [...player.db.item_components.iter()].find(
-    (row) => row.itemRef.tag === "Armament",
-  )!.entityId;
-  const standingArmaments = () =>
-    [...player.db.stance_loadouts_components.iter()]
-      .find((row) => row.entityId === playerEntityId)
-      ?.assignments.find((a) => a.stanceId === standingId)?.armamentIds;
+  const clubId = idByName(player.db.armaments, "test_club");
+  const swordItemId = armamentItemId(swordId);
+  const myDefaults = () => [
+    ...([...player.db.default_armaments_components.iter()].find(
+      (row) => row.entityId === playerEntityId,
+    )?.armamentIds ?? []),
+  ];
 
-  // We stand with the sword in hand (previous tests). Unequipping the
-  // ITEM puts it away AND clears it from standing's configuration.
+  // Standing holds the default set (no override). Unequipping the sword
+  // ITEM removes it from the default; the hands re-resolve to club only.
   const unequipId = idByName(player.db.actions, "test_unequip");
   await player.reducers.act({
     actionId: unequipId,
     targetEntityId: swordItemId,
   });
   await waitFor(() => !myActionNames().includes("test_slash"), 30000);
-  await waitFor(() => [...(standingArmaments() ?? [])].length === 0, 30000);
+  expect(myDefaults()).toEqual([clubId]);
+  expect(myActionNames()).toContain("test_smash");
 
-  // Equipping the ITEM wields it AND writes it back into the config.
+  // Equipping it back returns it to the default slot.
   const equipId = idByName(player.db.actions, "test_equip");
   await player.reducers.act({
     actionId: equipId,
     targetEntityId: swordItemId,
   });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
-  await waitFor(
-    () => [...(standingArmaments() ?? [])].join(",") === `${swordId}`,
-    30000,
-  );
+  expect(myDefaults()).toEqual([clubId, swordId]);
 }, 60000);
 
 test("the four-relic cap is enforced", async () => {

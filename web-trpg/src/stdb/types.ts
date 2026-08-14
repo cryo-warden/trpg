@@ -410,6 +410,17 @@ export const CourageStatusComponentBlob = __t.object("CourageStatusComponentBlob
 });
 export type CourageStatusComponentBlob = __Infer<typeof CourageStatusComponentBlob>;
 
+export const DefaultArmamentsComponent = __t.object("DefaultArmamentsComponent", {
+  entityId: __t.u64(),
+  armamentIds: __t.array(__t.u32()),
+});
+export type DefaultArmamentsComponent = __Infer<typeof DefaultArmamentsComponent>;
+
+export const DefaultArmamentsComponentBlob = __t.object("DefaultArmamentsComponentBlob", {
+  armamentIds: __t.array(__t.u32()),
+});
+export type DefaultArmamentsComponentBlob = __Infer<typeof DefaultArmamentsComponentBlob>;
+
 export const Encounter = __t.object("Encounter", {
   id: __t.u32(),
   name: __t.string(),
@@ -483,6 +494,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   },
   get equipment() {
     return __t.option(EquipmentComponentBlob);
+  },
+  get defaultArmaments() {
+    return __t.option(DefaultArmamentsComponentBlob);
   },
   get armor() {
     return __t.option(ArmorComponentBlob);
