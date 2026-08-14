@@ -7,9 +7,10 @@ use crate::bitset::Bitset;
 /// entity) holding the ordered bitset — for cookie quests, bit index =
 /// cookie index; the computed stat contribution scales with the popcount.
 /// Public: the client reads its own bits to decide which quest items
-/// still smell fresh.
-#[table(accessor = quest_progress, public)]
-pub struct QuestProgress {
+/// still smell fresh. (Join naming principle: sides joined, then the
+/// relation's semantics — entities x quests, progress.)
+#[table(accessor = entities_quests_progress, public)]
+pub struct EntitiesQuestsProgress {
     #[primary_key]
     #[auto_inc]
     pub id: u64,
@@ -25,12 +26,12 @@ pub struct QuestProgress {
 pub fn cleanup_quest_rows(ecs: Ecs, entity_id: u64) {
     let row_ids: Vec<u64> = ecs
         .db
-        .quest_progress()
+        .entities_quests_progress()
         .entity_id()
         .filter(entity_id)
         .map(|row| row.id)
         .collect();
     for row_id in row_ids {
-        ecs.db.quest_progress().id().delete(row_id);
+        ecs.db.entities_quests_progress().id().delete(row_id);
     }
 }

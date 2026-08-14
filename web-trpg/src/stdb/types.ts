@@ -470,6 +470,16 @@ export type EnemyControllerComponent = __Infer<typeof EnemyControllerComponent>;
 export const EnemyControllerComponentBlob = __t.object("EnemyControllerComponentBlob", {});
 export type EnemyControllerComponentBlob = __Infer<typeof EnemyControllerComponentBlob>;
 
+export const EntitiesQuestsProgress = __t.object("EntitiesQuestsProgress", {
+  id: __t.u64(),
+  entityId: __t.u64(),
+  questId: __t.u32(),
+  get bits() {
+    return Bitset;
+  },
+});
+export type EntitiesQuestsProgress = __Infer<typeof EntitiesQuestsProgress>;
+
 export const Entity = __t.object("Entity", {
   id: __t.u64(),
 });
@@ -1161,16 +1171,6 @@ export const PlayerControllerComponentBlob = __t.object("PlayerControllerCompone
   accountId: __t.u64(),
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
-
-export const QuestProgress = __t.object("QuestProgress", {
-  id: __t.u64(),
-  entityId: __t.u64(),
-  questId: __t.u32(),
-  get bits() {
-    return Bitset;
-  },
-});
-export type QuestProgress = __Infer<typeof QuestProgress>;
 
 export const Relic = __t.object("Relic", {
   id: __t.u32(),
