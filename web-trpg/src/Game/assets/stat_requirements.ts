@@ -15,6 +15,7 @@ export const NO_REQUIREMENTS: StatRequirements = {
   ward: undefined,
   focus: undefined,
   wing: undefined,
+  upright: undefined,
   size: undefined,
   morale: undefined,
   mhp: undefined,

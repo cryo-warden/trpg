@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import type { StatBlock } from "../stdb/types";
 import { Button } from "../structural/Button";
 import "./StancesMenu.css";
 import {
@@ -24,25 +25,60 @@ import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { useTableData } from "./context/StdbContext/useTableData";
 import { reachableStanceIds } from "./domain/stanceReachability";
 
-const STAT_DISPLAY = [
-  ["attack", "Attack"],
-  ["defense", "Defense"],
-  ["mhp", "Max HP"],
-  ["mep", "Max EP"],
-  ["hand", "Hand"],
-  ["gait", "Gait"],
-  ["reach", "Reach"],
-  ["blunt", "Blunt"],
-  ["bladed", "Bladed"],
-  ["pole", "Pole"],
-  ["ward", "Ward"],
-  ["focus", "Focus"],
-  ["wing", "Wing"],
-  ["size", "Size"],
-  ["morale", "Morale"],
-] as const;
+/** Every int stat of the block (the id-vec grants are not numbers). */
+type IntStatKey = Exclude<keyof StatBlock, "actionIds" | "appearanceFeatureIds">;
 
-type IntStatKey = (typeof STAT_DISPLAY)[number][0];
+type StatEntry = readonly [IntStatKey, string];
+
+type StatGroup = { label: string; stats: readonly StatEntry[] };
+
+const STAT_GROUPS: readonly StatGroup[] = [
+  {
+    label: "Combat",
+    stats: [
+      ["attack", "Attack"],
+      ["defense", "Defense"],
+      ["morale", "Morale"],
+    ],
+  },
+  {
+    label: "Pools",
+    stats: [
+      ["mhp", "Max HP"],
+      ["mep", "Max EP"],
+    ],
+  },
+  {
+    label: "Body",
+    stats: [
+      ["hand", "Hand"],
+      ["gait", "Gait"],
+      ["reach", "Reach"],
+      ["wing", "Wing"],
+      ["upright", "Upright"],
+      ["size", "Size"],
+    ],
+  },
+  {
+    label: "Armament",
+    stats: [
+      ["blunt", "Blunt"],
+      ["bladed", "Bladed"],
+      ["pole", "Pole"],
+      ["ward", "Ward"],
+      ["focus", "Focus"],
+    ],
+  },
+];
+
+const ALL_STATS: readonly StatEntry[] = STAT_GROUPS.flatMap(
+  (group) => group.stats,
+);
+
+/** The parenthesized delta against the no-stance value: always shown, so
+ * like-for-like reads at a glance ("Hand 1 (-1)"). */
+const deltaText = (delta: number): string =>
+  delta > 0 ? `+${delta}` : `${delta}`;
 
 /**
  * The standalone stances menu: one card per REACHABLE stance. There is no
@@ -83,10 +119,12 @@ export const StancesMenu = () => {
         seedActionIds.push(...gear.actionIds);
       }
     }
-    return new Set(
-      reachableStanceIds({ seedActionIds, seedStanceIds: [], graph }),
-    );
-  }, [totalStatBlock, owned, gearStatBlockOf, graph]);
+    // The stance currently HELD is trivially reachable — its own posture
+    // is same-stance-filtered out of the derived actions, so without this
+    // seed the active stance's card would vanish from its own menu.
+    const seedStanceIds = activeStanceId == null ? [] : [activeStanceId];
+    return new Set(reachableStanceIds({ seedActionIds, seedStanceIds, graph }));
+  }, [totalStatBlock, owned, gearStatBlockOf, graph, activeStanceId]);
   const shown = stanceRows.filter((row) => reachable.has(row.id));
 
   // The stance-free, armament-free base of EVERY stat: the total includes
@@ -102,7 +140,7 @@ export const StancesMenu = () => {
       0,
     );
   const baseStats = Object.fromEntries(
-    STAT_DISPLAY.map(([key]) => [
+    ALL_STATS.map(([key]) => [
       key,
       (totalStatBlock?.[key] ?? 0) -
         (activeStanceBlock?.[key] ?? 0) -
@@ -153,7 +191,7 @@ export const StancesMenu = () => {
         const assigned =
           assignments.find((a) => a.stanceId === stance.id)?.armamentIds ?? [];
         const candidate = Object.fromEntries(
-          STAT_DISPLAY.map(([key]) => [
+          ALL_STATS.map(([key]) => [
             key,
             baseStats[key] +
               stance.statBlock[key] +
@@ -172,13 +210,19 @@ export const StancesMenu = () => {
               {stance.name}
               {stance.id === activeStanceId && " (active)"}
             </h3>
-            <div className="totals">
-              {STAT_DISPLAY.map(([key, label]) => (
-                <div key={key}>
-                  {label} {candidate[key]}
+            {STAT_GROUPS.map((group) => (
+              <div className="statGroup" key={group.label}>
+                <h4>{group.label}</h4>
+                <div className="totals">
+                  {group.stats.map(([key, label]) => (
+                    <div key={key}>
+                      {label} {candidate[key]} (
+                      {deltaText(candidate[key] - baseStats[key])})
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
             {grantedActionNames.length > 0 && (
               <div>Grants: {grantedActionNames.join(", ")}</div>
             )}

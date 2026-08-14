@@ -6,13 +6,19 @@ import { NO_REQUIREMENTS, requirements } from "./stat_requirements";
 // including its actionNames, the stance's granted techniques (at most 6;
 // enforced at push). Its requirements gate ADOPTING it and are checked
 // against the entity's stance-free base (body + traits + equipment).
+//
+// UPRIGHT is the posture stat: stances provide it, and actions that need
+// footing require it (dive and lie_down need upright 1), so "you can't
+// dive when already flat" is ordinary requirement filtering — no special
+// cases. (A posture into the stance already held is separately filtered
+// out of the derived actions: you can't stand when already standing.)
 export const STANCES = {
   // The improvising default: nothing required, nothing granted, nothing
   // changed. What you can do standing is exactly what your body, traits, and
   // armaments provide.
   standing: {
     requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ actionNames: ["dive"] }),
+    statBlock: statBlock({ upright: 2, actionNames: ["dive"] }),
   },
   // Knocked down: harder to fight from, and gait sinks below what movement
   // actions require, so they drop out of the derived available actions.
@@ -22,53 +28,66 @@ export const STANCES = {
   },
   sitting: {
     requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ defense: -1, gait: -2, actionNames: ["dive"] }),
+    statBlock: statBlock({
+      defense: -1,
+      gait: -2,
+      upright: 1,
+      actionNames: ["dive"],
+    }),
   },
   // Defensive footing. Later this stance also carries the actions whose
   // added benefit is a favorable transition into another stance.
   ready: {
     requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ defense: 1, actionNames: ["guard"] }),
+    statBlock: statBlock({ defense: 1, upright: 2, actionNames: ["guard"] }),
   },
   brawler: {
     requirements: requirements({ hand: 1 }),
-    statBlock: statBlock({}),
+    statBlock: statBlock({ upright: 2 }),
   },
   dueling: {
     requirements: requirements({ bladed: 1 }),
-    statBlock: statBlock({ attack: 1, actionNames: ["lunge"] }),
+    statBlock: statBlock({ attack: 1, upright: 2, actionNames: ["lunge"] }),
   },
   // Built for covering ground.
   striding: {
     requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ gait: 1, actionNames: ["move", "quick_move"] }),
+    statBlock: statBlock({
+      gait: 1,
+      upright: 2,
+      actionNames: ["move", "quick_move"],
+    }),
   },
   perched: {
     requirements: requirements({ wing: 1 }),
-    statBlock: statBlock({ defense: 1, gait: -2 }),
+    statBlock: statBlock({ defense: 1, gait: -2, upright: 1 }),
   },
   flapping: {
     requirements: requirements({ wing: 2 }),
-    statBlock: statBlock({ gait: 2, actionNames: ["move", "quick_move"] }),
+    statBlock: statBlock({
+      gait: 2,
+      upright: 2,
+      actionNames: ["move", "quick_move"],
+    }),
   },
   // General magic; the elemental specializations trade breadth for a
   // sharper granted technique. (No mep grant: max pools are a ratchet, so
   // a stance-carried pool would be a one-time permanent boost.)
   casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ actionNames: ["divine_heal"] }),
+    statBlock: statBlock({ upright: 2, actionNames: ["divine_heal"] }),
   },
   fire_casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ actionNames: ["fire_bolt"] }),
+    statBlock: statBlock({ upright: 2, actionNames: ["fire_bolt"] }),
   },
   ice_casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ defense: 1, actionNames: ["ice_shard"] }),
+    statBlock: statBlock({ defense: 1, upright: 2, actionNames: ["ice_shard"] }),
   },
   lightning_casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ actionNames: ["lightning_arc"] }),
+    statBlock: statBlock({ upright: 2, actionNames: ["lightning_arc"] }),
   },
   amorphous: {
     requirements: NO_REQUIREMENTS,
@@ -77,6 +96,8 @@ export const STANCES = {
   // The FORCED stance intimidation breaks entities into (registered via
   // coweringStanceName). Hands wrap around the head — hand-gated actions
   // starve out — but a crawl survives, and rally is the way back up.
+  // Upright 1: huddled on knees, still able to throw yourself flat at a
+  // weapon (the dive grab whose wielded morale can overcome the fear).
   cowering: {
     requirements: NO_REQUIREMENTS,
     statBlock: statBlock({
@@ -84,6 +105,7 @@ export const STANCES = {
       defense: -1,
       hand: -2,
       gait: -1,
+      upright: 1,
       actionNames: ["rally", "dive"],
     }),
   },

@@ -68,7 +68,11 @@
         margin: 0.2em 0;
       }
 
-      /* The full would-be totals, compact: every stat, two per row. */
+      /* The full would-be totals, by category, compact: two per row, each
+       * with its parenthesized delta from the no-stance base. */
+      .statGroup h4 {
+        opacity: 0.7;
+      }
       .totals {
         display: grid;
         grid-template-columns: repeat(2, 1fr);

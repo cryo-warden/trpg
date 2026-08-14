@@ -151,12 +151,23 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         let ecs = e.ecs();
 
-        // Seeds: the total's granted actions plus every carried item's
-        // granted actions (gear reaches its stances without being wielded —
-        // the loadout menu must let you configure toward them).
-        let mut action_queue: Vec<ActionId> = { e.total_stat_block() }
-            .map(|t| t.stat_block.action_ids)
-            .unwrap_or_default();
+        // Seeds: the UNFILTERED grants — base (body + traits + gear worn)
+        // plus the active stance — never the derived ActionsComponent,
+        // which is requirement- and same-stance-filtered (and a tick
+        // stale): the posture back into your previous stance must count as
+        // reachable even while it is filtered out of your usable actions.
+        // Plus every carried item's granted actions (gear reaches its
+        // stances without being wielded — the loadout menu must let you
+        // configure toward them).
+        let mut action_queue: Vec<ActionId> = {
+            let mut grants = self.base_stat_block();
+            if let Some(active) = e.active_stance() {
+                if let Some(s) = ecs.db.stances().id().find(active.stance_id) {
+                    grants += &s.stat_block;
+                }
+            }
+            grants.action_ids
+        };
         for carried in ecs
             .db
             .location_components()

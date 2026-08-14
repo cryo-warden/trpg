@@ -1,6 +1,6 @@
 use crate::{
     account::accounts,
-    action::{actions, ActionEffect, ActionHandle},
+    action::{action_rounds, actions, ActionEffect, ActionHandle},
     asset::ReducerContextExtension,
     asset::{
         armament::armaments,
@@ -482,12 +482,29 @@ pub fn entity_stats_system(ecs: Ecs) {
 
         // Derived availability: an action the total's requirements check
         // rejects is granted but not currently usable, so it never reaches
-        // the ActionsComponent. Swapping stances (or any stat change)
-        // re-derives this through the same dirty flag.
+        // the ActionsComponent. A posture into the stance ALREADY HELD is
+        // no option either — you can't stand when already standing.
+        // Swapping stances (or any stat change) re-derives this through
+        // the same dirty flag.
+        let active_stance_id = { f.active_stance() }.map(|active| active.stance_id);
+        let adopts_active_stance = |action_id: crate::action::ActionId| {
+            let Some(active) = active_stance_id else {
+                return false;
+            };
+            ecs.db
+                .action_rounds()
+                .action_sequence()
+                .filter(action_id)
+                .any(|round| {
+                    round.effects.iter().any(|effect| {
+                        matches!(effect, ActionEffect::SetStance(s) if *s == active)
+                    })
+                })
+        };
         let total = stat_block.clone();
         stat_block.action_ids.retain(|id| {
             match ecs.db.actions().id().find(id) {
-                Some(action) => total.meets(&action.requirements),
+                Some(action) => total.meets(&action.requirements) && !adopts_active_stance(*id),
                 None => {
                     log::error!("Granted action id {} has no action row.", id);
                     false

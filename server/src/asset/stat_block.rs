@@ -12,7 +12,7 @@ secador::secador_multi!(
         stat,
         [
             attack, defense, hand, gait, reach, blunt, bladed, pole, ward, focus, wing,
-            size, morale
+            upright, size, morale
         ]
     ),
     seca_wide_int!(stat, [mhp, mep]),

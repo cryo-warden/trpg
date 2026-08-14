@@ -381,6 +381,7 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         ward,
         focus,
         wing,
+        upright,
         size,
         morale,
         action_names,
@@ -400,6 +401,7 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         ward,
         focus,
         wing,
+        upright,
         size,
         morale,
         action_ids: action_names

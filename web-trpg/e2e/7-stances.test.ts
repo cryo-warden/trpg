@@ -64,12 +64,13 @@ afterAll(() => {
 });
 
 test("the derived actions come from the baseline grant, requirement-filtered", () => {
+  // test_square is granted but ABSENT: it adopts brawler, the stance
+  // already held — you can't stand when already standing.
   expect(new Set(myActionIds())).toEqual(
     new Set([
       actionIdByName("test_punch"),
       actionIdByName("test_shuffle"),
       actionIdByName("test_lie"),
-      actionIdByName("test_square"),
       actionIdByName("test_reach_wide"),
     ]),
   );
@@ -121,10 +122,11 @@ test("swapping to a gait-starved stance drops the movement action", async () => 
     () => !myActionIds().includes(actionIdByName("test_shuffle")),
     30000,
   );
+  // In prone, test_lie (adopts prone) drops for the same-stance rule and
+  // test_square RETURNS (brawler is no longer held).
   expect(new Set(myActionIds())).toEqual(
     new Set([
       actionIdByName("test_punch"),
-      actionIdByName("test_lie"),
       actionIdByName("test_square"),
       actionIdByName("test_reach_wide"),
     ]),
@@ -144,7 +146,6 @@ test("swapping back restores the movement action", async () => {
       actionIdByName("test_punch"),
       actionIdByName("test_shuffle"),
       actionIdByName("test_lie"),
-      actionIdByName("test_square"),
       actionIdByName("test_reach_wide"),
     ]),
   );

@@ -94,6 +94,9 @@ pub struct StatBlockAsset {
     pub ward: i8,
     pub focus: i8,
     pub wing: i8,
+    /// How upright the posture leaves the body: stances provide it, and
+    /// actions that need footing (dive, lying down) require it.
+    pub upright: i8,
     /// Granular size: contests, intimidation, and (later) pickup and gear
     /// gating all compare DELTAS, so nothing is inherently gargantuan — a
     /// kaiju battle and a fairy battle are the same mechanics.

@@ -23,6 +23,7 @@ const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
   ward: 0,
   focus: 0,
   wing: 0,
+  upright: 0,
   size: 0,
   morale: 0,
   mhp: 0,
@@ -97,22 +98,26 @@ test("gallery dots: one per reachable stance, the active stance marked", () => {
   expect(standingDot.className).toContain("activeStance");
 });
 
-test("a card leads with the FULL totals the stance + loadout would give", () => {
+test("cards show categorized totals with deltas from the no-stance base", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });
 
   // Dueling with the assigned sword: base attack 0 + stance 1, base hand 2
-  // + sword -1, and the sword's own morale ride along.
+  // + sword -1, and the sword's own morale ride along — each with its
+  // parenthesized delta against the no-stance value.
   const dueling = cardOf(container, "dueling")!;
-  expect(dueling.textContent).toContain("Attack 1");
-  expect(dueling.textContent).toContain("Hand 1");
-  expect(dueling.textContent).toContain("Morale 1");
+  expect(dueling.textContent).toContain("Attack 1 (+1)");
+  expect(dueling.textContent).toContain("Hand 1 (-1)");
+  expect(dueling.textContent).toContain("Morale 1 (+1)");
   expect(dueling.textContent).toContain("Grants: lunge");
+  // The category headings structure the list.
+  expect(dueling.textContent).toContain("Combat");
+  expect(dueling.textContent).toContain("Body");
 
-  // Standing assigns nothing: bare-body totals.
+  // Standing assigns nothing: bare-body totals, zero deltas.
   const standing = cardOf(container, "standing")!;
-  expect(standing.textContent).toContain("Hand 2");
-  expect(standing.textContent).toContain("Attack 0");
+  expect(standing.textContent).toContain("Hand 2 (0)");
+  expect(standing.textContent).toContain("Attack 0 (0)");
 });
 
 test("assigned armaments highlight and unassign; overweight ones disable", () => {

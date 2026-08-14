@@ -1,4 +1,8 @@
-import { ActionAsset, ActionEffectAsset } from "../../stdb/types";
+import {
+  ActionAsset,
+  ActionEffectAsset,
+  StatRequirements,
+} from "../../stdb/types";
 import { NO_REQUIREMENTS, requirements } from "./stat_requirements";
 
 // The TS assets ARE the generated wire types; the only client-side step is
@@ -24,10 +28,14 @@ const Attune = { tag: "Attune" } as const satisfies ActionEffectAsset;
 const SetStance = (stanceName: string) =>
   ({ tag: "SetStance", value: stanceName }) as const satisfies ActionEffectAsset;
 
-/** A deliberate stance change: one round spent shifting posture. */
-const posture = (stanceName: string) => ({
+/** A deliberate stance change: one round spent shifting posture. Some
+ * postures need footing (upright) to enter from. */
+const posture = (
+  stanceName: string,
+  postureRequirements: StatRequirements = NO_REQUIREMENTS,
+) => ({
   actionType: { tag: "Posture" } as const,
-  requirements: NO_REQUIREMENTS,
+  requirements: postureRequirements,
   rounds: [round(SetStance(stanceName))],
 });
 const Dive = (defense: number) =>
@@ -186,7 +194,8 @@ export const ACTIONS = {
   // requirements, the fear gate).
   stand: posture("standing"),
   sit: posture("sitting"),
-  lie_down: posture("prone"),
+  // Lying down and diving need footing: nothing to drop from when flat.
+  lie_down: posture("prone", requirements({ upright: 1 })),
   ready_up: posture("ready"),
   square_up: posture("brawler"),
   duel: posture("dueling"),
@@ -203,7 +212,7 @@ export const ACTIONS = {
   // can itself overcome a fear.
   dive: {
     actionType: { tag: "Dive" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({ upright: 1 }),
     rounds: [round(Dive(2))],
   },
 } satisfies Record<string, ActionAsset>;
