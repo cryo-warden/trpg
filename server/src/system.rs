@@ -168,7 +168,8 @@ fn resolve_checkpoint_room(
                 .ok_or_else(|| {
                     format!("unknown location map {}", checkpoint.location_map_id)
                 })?;
-            map.generate_entities(ecs)?.checkpoint_room_entity_ids
+            crate::map_materialization::materialize_map(ecs, &map)?
+                .checkpoint_room_entity_ids
         }
     };
     checkpoints
@@ -620,14 +621,14 @@ pub fn player_activation_system(ecs: Ecs) {
         if p.location().is_none() {
             // WIP Add checkpoint component to select a specific location map.
             if let Some(m) = ecs.db.location_maps().iter().next() {
-                match m.generate_entities(ecs) {
+                match crate::map_materialization::materialize_map(ecs, &m) {
                     // WIP Add checkpoint location to select a specific room.
                     // WIP Consider adding rng seed to checkpoint to allow same map to regen.
                     Ok(map_generation_result) => {
                         if let Some(location_entity_id) =
-                            map_generation_result.main_room_ids.first()
+                            map_generation_result.entrance_room_id()
                         {
-                            p.insert_new_location(*location_entity_id);
+                            p.insert_new_location(location_entity_id);
                             // A new player's checkpoint: the starting map's
                             // first generated checkpoint, automatically —
                             // an ABSTRACT destination (map + index), never
@@ -772,7 +773,7 @@ fn materialize_connection(
                         connection.destination_location_map_id
                     )
                 })?;
-            map.generate_entities(ecs)?;
+            crate::map_materialization::materialize_map(ecs, &map)?;
             find_instance().ok_or("destination map generated no instance")?
         }
     };

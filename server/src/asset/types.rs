@@ -225,6 +225,27 @@ pub struct LocationMapThemeAsset {
     /// The themed fortune-telling scenery placed in each map's guaranteed
     /// checkpoint room (the entrance).
     pub checkpoints_selector: EntityBlobsSamplerAsset,
+    /// Themed breakable containers scattered through side branches and the
+    /// far end; the quest layer may hide loot inside. Count range is
+    /// half-open like the other count ranges.
+    pub containers_selector: EntityBlobsSamplerAsset,
+    pub min_container_count: u8,
+    pub max_container_count: u8,
+}
+
+/// One quest's spawn window in one map, as authored: the quest by NAME
+/// and the item's presentation blob inline (theme samplers author blobs
+/// the same way). Push validates every index against the quest's
+/// bit_count and refuses an index guaranteed by more than one map.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestSpawnAsset {
+    pub quest_name: String,
+    pub item_blob: EntityBlobAsset,
+    pub guaranteed_indexes: Vec<u32>,
+    pub eligible_indexes: Vec<u32>,
+    /// Half-open count range for the eligible draw, like encounter counts.
+    pub min_eligible_count: u8,
+    pub max_eligible_count: u8,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -238,6 +259,7 @@ pub struct LocationMapAsset {
     pub encounter_names_sampler: Vec<WeightedNameAsset>,
     pub min_encounter_count: u8,
     pub max_encounter_count: u8,
+    pub quest_spawns: Vec<QuestSpawnAsset>,
 }
 
 /// A cross-map connection as authored: a JOIN row between two maps by name,

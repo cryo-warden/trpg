@@ -776,6 +776,12 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 t.value.checkpoints_selector,
                 &maps,
             )?,
+            containers_selector: resolve_entity_blobs_sampler(
+                t.value.containers_selector,
+                &maps,
+            )?,
+            min_container_count: t.value.min_container_count,
+            max_container_count: t.value.max_container_count,
         };
         if ctx.db.location_map_themes().id().find(id).is_some() {
             ctx.db.location_map_themes().id().update(row);
@@ -835,9 +841,53 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             next_connection_id += 1;
         }
     }
+    // A quest index guaranteed by two maps would double the world's
+    // guaranteed supply of one bit; eligible overlap is the intended way
+    // to spread an index across maps.
+    let mut guaranteed_index_owners: HashMap<(u32, u32), String> = HashMap::new();
     for m in asset_pack.location_maps {
         let NamedLocationMapAsset { name, value: m } = m;
         let id = location_map_ids[&name];
+        let mut quest_spawns: Vec<crate::quest::QuestSpawn> = Vec::new();
+        for spawn in m.quest_spawns {
+            let quest_id = resolve_name(&maps.quests, "quest", &spawn.quest_name)?;
+            let quest = ctx
+                .db
+                .quests()
+                .id()
+                .find(quest_id)
+                .ok_or_else(|| format!("Quest {} vanished during push.", spawn.quest_name))?;
+            for index in spawn
+                .guaranteed_indexes
+                .iter()
+                .chain(spawn.eligible_indexes.iter())
+            {
+                if *index >= quest.bit_count {
+                    return Err(format!(
+                        "Map \"{}\" spawns index {} of quest \"{}\", beyond its bit count {}.",
+                        name, index, spawn.quest_name, quest.bit_count
+                    ));
+                }
+            }
+            for index in &spawn.guaranteed_indexes {
+                if let Some(owner) =
+                    guaranteed_index_owners.insert((quest_id, *index), name.clone())
+                {
+                    return Err(format!(
+                        "Index {} of quest \"{}\" is guaranteed by both \"{}\" and \"{}\"; an index may be guaranteed by at most one map.",
+                        index, spawn.quest_name, owner, name
+                    ));
+                }
+            }
+            quest_spawns.push(crate::quest::QuestSpawn {
+                quest_id,
+                item_blob: resolve_entity_blob(spawn.item_blob, &maps)?,
+                guaranteed_indexes: spawn.guaranteed_indexes,
+                eligible_indexes: spawn.eligible_indexes,
+                min_eligible_count: spawn.min_eligible_count,
+                max_eligible_count: spawn.max_eligible_count,
+            });
+        }
         let row = LocationMap {
             id,
             name,
@@ -861,6 +911,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             },
             min_encounter_count: m.min_encounter_count,
             max_encounter_count: m.max_encounter_count,
+            quest_spawns,
         };
         if ctx.db.location_maps().id().find(id).is_some() {
             ctx.db.location_maps().id().update(row);

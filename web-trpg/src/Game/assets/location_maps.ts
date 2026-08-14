@@ -1,10 +1,13 @@
 import {
+  EntityBlobAsset,
   Layout,
   LocationMapAsset,
   LocationMapConnectionAsset,
   LocationMapThemeAsset,
+  QuestSpawnAsset,
 } from "../../stdb/types";
 import { blob } from "./entity_blobs";
+import { QuestName } from "./quests";
 
 // The visible checkpoints: fortune-telling scenery placed in every map's
 // guaranteed-safe entrance room. Attuning to one binds where you wake from
@@ -23,6 +26,28 @@ const CHECKPOINT_BLOBS = {
     appearanceFeatureNames: ["fate", "deck"],
   }),
 };
+
+/** A breakable loot container: hp makes it smashable, remains turn the
+ * debris into decoration, and the quest layer hides cookies inside. */
+const container = (
+  appearanceFeatureNames: string[],
+  remainsAppearanceFeatureNames: string[],
+): EntityBlobAsset =>
+  blob({
+    appearanceFeatureNames,
+    remainsAppearanceFeatureNames,
+    hp: {
+      hp: 2,
+      mhp: 2,
+      defense: 0,
+      accumulatedDamage: 0,
+      accumulatedHealing: 0,
+    },
+  });
+
+const jar = container(["jar"], ["ceramic_shards"]);
+const crate = container(["crate"], ["scrap_wood"]);
+const chest = container(["chest"], ["scrap_wood"]);
 
 export const LOCATION_MAP_THEMES = {
   encampment: {
@@ -135,6 +160,14 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.boneDice }],
     },
+    containersSelector: {
+      selections: [
+        { weight: 3, blob: crate },
+        { weight: 1, blob: jar },
+      ],
+    },
+    minContainerCount: 1,
+    maxContainerCount: 3,
   },
   cave: {
     decorationsSelector: {
@@ -164,6 +197,14 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.boneDice }],
     },
+    containersSelector: {
+      selections: [
+        { weight: 3, blob: jar },
+        { weight: 1, blob: crate },
+      ],
+    },
+    minContainerCount: 1,
+    maxContainerCount: 3,
   },
   meadow: {
     decorationsSelector: {
@@ -191,6 +232,9 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.scryingBowl }],
     },
+    containersSelector: { selections: [{ weight: 1, blob: jar }] },
+    minContainerCount: 1,
+    maxContainerCount: 3,
   },
   forest: {
     decorationsSelector: {
@@ -219,6 +263,9 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.fateDeck }],
     },
+    containersSelector: { selections: [{ weight: 1, blob: crate }] },
+    minContainerCount: 1,
+    maxContainerCount: 3,
   },
   keep: {
     // The armory of a fallen garrison: the gear here is REAL — every
@@ -313,6 +360,14 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.fateDeck }],
     },
+    containersSelector: {
+      selections: [
+        { weight: 3, blob: chest },
+        { weight: 2, blob: crate },
+      ],
+    },
+    minContainerCount: 1,
+    maxContainerCount: 3,
   },
   sanctum: {
     decorationsSelector: {
@@ -383,10 +438,47 @@ export const LOCATION_MAP_THEMES = {
     checkpointsSelector: {
       selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.scryingBowl }],
     },
+    containersSelector: {
+      selections: [
+        { weight: 2, blob: jar },
+        { weight: 1, blob: chest },
+      ],
+    },
+    minContainerCount: 1,
+    maxContainerCount: 3,
   },
 } satisfies Record<string, LocationMapThemeAsset>;
 
 export type LocationMapThemeName = keyof typeof LOCATION_MAP_THEMES;
+
+/** One quest's window of bit indexes in one map. Guaranteed indexes are
+ * unique to that map (push refuses a bit guaranteed twice); eligible
+ * windows overlap across maps on purpose — the same index spawning in two
+ * maps is the intended duplicate, stinky to whoever already ate it. Counts
+ * are half-open like the other count ranges. */
+interface CookieWindow {
+  guaranteedIndexes: number[];
+  eligibleIndexes: number[];
+  minEligibleCount: number;
+  maxEligibleCount: number;
+}
+
+const COOKIE_APPEARANCES: Record<QuestName, string[]> = {
+  red_cookies: ["red_cookie"],
+  blue_cookies: ["blue_cookie"],
+};
+
+const cookieBlob = (questName: QuestName): EntityBlobAsset =>
+  blob({ appearanceFeatureNames: COOKIE_APPEARANCES[questName] });
+
+/** Both cookie quests ride the same window in every map: red for mhp,
+ * blue for mep, discovered the same way. */
+const cookieSpawns = (window: CookieWindow): QuestSpawnAsset[] =>
+  (["red_cookies", "blue_cookies"] as const).map((questName) => ({
+    questName,
+    itemBlob: cookieBlob(questName),
+    ...window,
+  }));
 
 export const LOCATION_MAPS = {
   start_zone: {
@@ -406,6 +498,15 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 2,
     maxEncounterCount: 4,
+    // The overlapping-window progression: each map guarantees a couple of
+    // its own cookie bits and MAY spawn its neighbors' — most of the
+    // supply spreads across the world, duplicates included.
+    questSpawns: cookieSpawns({
+      guaranteedIndexes: [0, 1],
+      eligibleIndexes: [2, 3, 4],
+      minEligibleCount: 1,
+      maxEligibleCount: 3,
+    }),
   },
   beginner_cave: {
     themeName: "cave",
@@ -422,6 +523,12 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 8,
     maxEncounterCount: 12,
+    questSpawns: cookieSpawns({
+      guaranteedIndexes: [2, 3],
+      eligibleIndexes: [0, 1, 4, 5],
+      minEligibleCount: 1,
+      maxEligibleCount: 4,
+    }),
   },
   verdant_meadow: {
     themeName: "meadow",
@@ -438,6 +545,12 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 5,
     maxEncounterCount: 8,
+    questSpawns: cookieSpawns({
+      guaranteedIndexes: [4, 5],
+      eligibleIndexes: [0, 1, 2, 3, 6],
+      minEligibleCount: 1,
+      maxEligibleCount: 4,
+    }),
   },
   whispering_forest: {
     themeName: "forest",
@@ -454,6 +567,12 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 6,
     maxEncounterCount: 10,
+    questSpawns: cookieSpawns({
+      guaranteedIndexes: [6, 7],
+      eligibleIndexes: [0, 1, 2, 3, 4, 5, 8],
+      minEligibleCount: 1,
+      maxEligibleCount: 4,
+    }),
   },
   old_keep: {
     themeName: "keep",
@@ -472,6 +591,12 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 6,
     maxEncounterCount: 9,
+    questSpawns: cookieSpawns({
+      guaranteedIndexes: [8],
+      eligibleIndexes: [0, 1, 2, 3, 4, 5, 6, 7],
+      minEligibleCount: 1,
+      maxEligibleCount: 4,
+    }),
   },
   elemental_sanctum: {
     themeName: "sanctum",
@@ -488,6 +613,12 @@ export const LOCATION_MAPS = {
     ],
     minEncounterCount: 5,
     maxEncounterCount: 8,
+    questSpawns: cookieSpawns({
+      guaranteedIndexes: [9],
+      eligibleIndexes: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      minEligibleCount: 2,
+      maxEligibleCount: 5,
+    }),
   },
   triangle_loop: {
     // Smallest case that produces a triangular join: three main rooms chained
@@ -501,6 +632,14 @@ export const LOCATION_MAPS = {
     encounterNamesSampler: [],
     minEncounterCount: 0,
     maxEncounterCount: 0,
+    // The demo loop guarantees nothing; wanderers may still luck into
+    // spare cookies from anywhere in the supply.
+    questSpawns: cookieSpawns({
+      guaranteedIndexes: [],
+      eligibleIndexes: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      minEligibleCount: 0,
+      maxEligibleCount: 3,
+    }),
   },
 } satisfies Record<string, LocationMapAsset>;
 

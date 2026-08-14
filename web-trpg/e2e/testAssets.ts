@@ -161,6 +161,9 @@ export const mapGenPack = (): AssetPack => ({
         checkpointsSelector: {
           selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
         },
+        containersSelector: { selections: [] },
+        minContainerCount: 0,
+        maxContainerCount: 0,
       },
     },
   ],
@@ -177,6 +180,7 @@ export const mapGenPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        questSpawns: [],
       },
     },
   ],
@@ -526,6 +530,9 @@ export const connectionsPack = (): AssetPack => ({
         pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         checkpointsSelector: { selections: [] },
+        containersSelector: { selections: [] },
+        minContainerCount: 0,
+        maxContainerCount: 0,
       },
     },
   ],
@@ -542,6 +549,7 @@ export const connectionsPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        questSpawns: [],
       },
     },
     {
@@ -556,6 +564,7 @@ export const connectionsPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        questSpawns: [],
       },
     },
   ],
@@ -597,6 +606,9 @@ export const deathPack = (): AssetPack => ({
         checkpointsSelector: {
           selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
         },
+        containersSelector: { selections: [] },
+        minContainerCount: 0,
+        maxContainerCount: 0,
       },
     },
   ],
@@ -613,6 +625,7 @@ export const deathPack = (): AssetPack => ({
         encounterNamesSampler: [],
         minEncounterCount: 0,
         maxEncounterCount: 0,
+        questSpawns: [],
       },
     },
   ],
@@ -932,4 +945,103 @@ export const questPack = (): AssetPack => ({
       location: { locationEntityId: { tag: "Named", value: "test_cookie_jar" } },
     }),
   ],
+});
+
+/**
+ * A generated world with quest windows: one map whose generation must
+ * place a breakable container, and whose quest application must inject
+ * the declared cookie indexes into it — no cookie is authored at push
+ * time. Deterministic: seed 0, container count locked to 1, eligible
+ * draw locked to 1 (guaranteed [0, 1] + one of [2, 3, 4]).
+ */
+export const spawnPack = (): AssetPack => ({
+  ...emptyPack(),
+  quests: [
+    {
+      name: "test_spawn_cookies",
+      value: { perBitStatBlock: statBlock({ mhp: 1 }), bitCount: 5 },
+    },
+  ],
+  appearanceFeatures: [
+    {
+      name: "test_jar",
+      value: { text: "jar", appearanceFeatureType: { tag: "Noun" }, priority: 5000 },
+    },
+    {
+      name: "test_shards",
+      value: {
+        text: "ceramic shards",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 4000,
+      },
+    },
+    {
+      name: "test_cookie",
+      value: {
+        text: "cookie",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 5000,
+      },
+    },
+  ],
+  locationMapThemes: [
+    {
+      name: "test_spawn_theme",
+      value: {
+        decorationsSelector: { selections: [] },
+        minDecorationCount: 0,
+        maxDecorationCount: 0,
+        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        checkpointsSelector: { selections: [] },
+        containersSelector: {
+          selections: [
+            {
+              weight: 1,
+              blob: blob({
+                appearanceFeatureNames: ["test_jar"],
+                remainsAppearanceFeatureNames: ["test_shards"],
+                hp: {
+                  hp: 1,
+                  mhp: 1,
+                  defense: 0,
+                  accumulatedDamage: 0,
+                  accumulatedHealing: 0,
+                },
+              }),
+            },
+          ],
+        },
+        minContainerCount: 1,
+        maxContainerCount: 1,
+      },
+    },
+  ],
+  locationMaps: [
+    {
+      name: "test_spawn_map",
+      value: {
+        themeName: "test_spawn_theme",
+        layout: { tag: "Path" },
+        rngSeed: 0n,
+        mainRoomCount: 3,
+        extraRoomCount: 2,
+        loopCount: 0,
+        encounterNamesSampler: [],
+        minEncounterCount: 0,
+        maxEncounterCount: 0,
+        questSpawns: [
+          {
+            questName: "test_spawn_cookies",
+            itemBlob: blob({ appearanceFeatureNames: ["test_cookie"] }),
+            guaranteedIndexes: [0, 1],
+            eligibleIndexes: [2, 3, 4],
+            minEligibleCount: 1,
+            maxEligibleCount: 2,
+          },
+        ],
+      },
+    },
+  ],
+  newPlayerBlob: blob({}),
 });

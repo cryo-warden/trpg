@@ -51,6 +51,13 @@ pub struct LocationMapTheme {
     /// The themed fortune-telling scenery (bone dice, scrying bowls, fate
     /// decks) placed in each map's guaranteed checkpoint room.
     pub checkpoints_selector: EntityBlobsSampler,
+    /// Themed breakable containers (jars, crates, chests) generation
+    /// scatters through side branches and the far end; downstream layers
+    /// may hide loot inside them. Count range is half-open like the other
+    /// count ranges.
+    pub containers_selector: EntityBlobsSampler,
+    pub min_container_count: u8,
+    pub max_container_count: u8,
 }
 
 impl LocationMapTheme {

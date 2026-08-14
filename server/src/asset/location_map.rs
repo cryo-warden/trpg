@@ -64,6 +64,10 @@ pub struct LocationMap {
     pub encounter_ids_sampler: EncounterIdsSampler,
     pub min_encounter_count: u8,
     pub max_encounter_count: u8,
+    /// Which quest indexes spawn in instances of this map. Generation never
+    /// reads these — the quest application layer consumes them together
+    /// with the role-tagged generation result (see materialize_map).
+    pub quest_spawns: Vec<crate::quest::QuestSpawn>,
 }
 
 /// Where a connection attaches inside a generated map.
@@ -133,11 +137,53 @@ pub fn resolve_anchor_room(
     }
 }
 
-// (Extra rooms are recorded on the instance's MapRoomsComponent; callers of
-// generation itself only ever need the main chain and the checkpoints.)
+/// Where a generated room sits in the map's shape. This vocabulary is the
+/// CONTRACT between generation and the layers consuming its result (quest
+/// injection today; treasure and boss placement later): generation reports
+/// roles and stays ignorant of why anyone wants them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RoomRole {
+    /// The first main room: the guaranteed-safe checkpoint room.
+    Entrance,
+    /// A middle room of the main chain.
+    Main,
+    /// The last main room.
+    Ending,
+    /// A branched (extra) room hanging off the main chain.
+    Side,
+}
+
+pub struct GeneratedRoom {
+    pub entity_id: u64,
+    pub role: RoomRole,
+}
+
+/// A themed breakable placed by generation, tagged with the role of the
+/// room it landed in so consumers can pick containers by location kind.
+pub struct GeneratedContainer {
+    pub entity_id: u64,
+    /// Today's quest layer takes any container; treasure-room and
+    /// boss-adjacent placement will select by this.
+    #[allow(dead_code)]
+    pub room_role: RoomRole,
+}
+
+/// What one generation run produced, role-tagged. Purely in-memory: rooms
+/// that must outlive the tick are recorded on the instance's components
+/// (MapRoomsComponent, MapCheckpointsComponent), not through this.
 pub struct MapGenerationResult {
-    pub main_room_ids: Vec<u64>,
+    pub rooms: Vec<GeneratedRoom>,
     pub checkpoint_room_entity_ids: Vec<u64>,
+    pub containers: Vec<GeneratedContainer>,
+}
+
+impl MapGenerationResult {
+    pub fn entrance_room_id(&self) -> Option<u64> {
+        self.rooms
+            .iter()
+            .find(|room| room.role == RoomRole::Entrance)
+            .map(|room| room.entity_id)
+    }
 }
 impl LocationMap {
     pub fn generate_entities(&self, ecs: Ecs) -> Result<MapGenerationResult, String> {
@@ -155,8 +201,9 @@ impl LocationMap {
             theme
         } else {
             return Ok(MapGenerationResult {
-                main_room_ids: vec![],
+                rooms: vec![],
                 checkpoint_room_entity_ids: vec![],
+                containers: vec![],
             });
         };
 
@@ -268,6 +315,61 @@ impl LocationMap {
                     );
             }
         }
+        // Role-tag every room: the shape vocabulary downstream layers key
+        // placement on. Entrance wins over Ending when the chain is one
+        // room long — safety beats reward.
+        let rooms: Vec<GeneratedRoom> = room_handles
+            .iter()
+            .enumerate()
+            .map(|(i, handle)| GeneratedRoom {
+                entity_id: handle.entity_id(),
+                role: if i == 0 {
+                    RoomRole::Entrance
+                } else if i + 1 == main_room_count {
+                    RoomRole::Ending
+                } else if i < main_room_count {
+                    RoomRole::Main
+                } else {
+                    RoomRole::Side
+                },
+            })
+            .collect();
+
+        // Containers: themed breakables holding whatever downstream layers
+        // stuff into them. Placed after every earlier sampling step
+        // (appending keeps existing seeds' draws stable) and biased to the
+        // rooms exploration rewards — side branches and the far end.
+        let mut containers: Vec<GeneratedContainer> = Vec::new();
+        let container_count: usize =
+            rng.get_range(theme.min_container_count, theme.max_container_count);
+        let preferred: Vec<&GeneratedRoom> = rooms
+            .iter()
+            .filter(|room| matches!(room.role, RoomRole::Side | RoomRole::Ending))
+            .collect();
+        let fallback: Vec<&GeneratedRoom> = rooms
+            .iter()
+            .filter(|room| room.role != RoomRole::Entrance)
+            .collect();
+        let container_rooms = if preferred.is_empty() { fallback } else { preferred };
+        if !container_rooms.is_empty() {
+            for _ in 0..container_count {
+                let room = container_rooms
+                    [rng.get_range::<u32, usize>(0, container_rooms.len() as u32)];
+                if let Some(container_blob) = theme.containers_selector.sample(&mut rng) {
+                    let container = ecs.new().instantiate_blob(
+                        container_blob.to_owned(),
+                        &ecs.instantiation_scope(),
+                    )?;
+                    let container_entity_id = container.entity_id();
+                    container.insert_new_location(room.entity_id);
+                    containers.push(GeneratedContainer {
+                        entity_id: container_entity_id,
+                        room_role: room.role,
+                    });
+                }
+            }
+        }
+
         let main_room_entity_ids: Vec<u64> = room_handles[..main_room_count]
             .iter()
             .map(|h| h.entity_id())
@@ -312,8 +414,9 @@ impl LocationMap {
         }
 
         Ok(MapGenerationResult {
-            main_room_ids: main_room_entity_ids,
+            rooms,
             checkpoint_room_entity_ids,
+            containers,
         })
     }
 }

@@ -892,6 +892,9 @@ export const LocationMap = __t.object("LocationMap", {
   },
   minEncounterCount: __t.u8(),
   maxEncounterCount: __t.u8(),
+  get questSpawns() {
+    return __t.array(QuestSpawn);
+  },
 });
 export type LocationMap = __Infer<typeof LocationMap>;
 
@@ -909,6 +912,9 @@ export const LocationMapAsset = __t.object("LocationMapAsset", {
   },
   minEncounterCount: __t.u8(),
   maxEncounterCount: __t.u8(),
+  get questSpawns() {
+    return __t.array(QuestSpawnAsset);
+  },
 });
 export type LocationMapAsset = __Infer<typeof LocationMapAsset>;
 
@@ -968,6 +974,11 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
   get checkpointsSelector() {
     return EntityBlobsSampler;
   },
+  get containersSelector() {
+    return EntityBlobsSampler;
+  },
+  minContainerCount: __t.u8(),
+  maxContainerCount: __t.u8(),
 });
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 
@@ -986,6 +997,11 @@ export const LocationMapThemeAsset = __t.object("LocationMapThemeAsset", {
   get checkpointsSelector() {
     return EntityBlobsSamplerAsset;
   },
+  get containersSelector() {
+    return EntityBlobsSamplerAsset;
+  },
+  minContainerCount: __t.u8(),
+  maxContainerCount: __t.u8(),
 });
 export type LocationMapThemeAsset = __Infer<typeof LocationMapThemeAsset>;
 
@@ -1238,6 +1254,30 @@ export const QuestItemRefAsset = __t.object("QuestItemRefAsset", {
   index: __t.u32(),
 });
 export type QuestItemRefAsset = __Infer<typeof QuestItemRefAsset>;
+
+export const QuestSpawn = __t.object("QuestSpawn", {
+  questId: __t.u32(),
+  get itemBlob() {
+    return EntityBlob;
+  },
+  guaranteedIndexes: __t.array(__t.u32()),
+  eligibleIndexes: __t.array(__t.u32()),
+  minEligibleCount: __t.u8(),
+  maxEligibleCount: __t.u8(),
+});
+export type QuestSpawn = __Infer<typeof QuestSpawn>;
+
+export const QuestSpawnAsset = __t.object("QuestSpawnAsset", {
+  questName: __t.string(),
+  get itemBlob() {
+    return EntityBlobAsset;
+  },
+  guaranteedIndexes: __t.array(__t.u32()),
+  eligibleIndexes: __t.array(__t.u32()),
+  minEligibleCount: __t.u8(),
+  maxEligibleCount: __t.u8(),
+});
+export type QuestSpawnAsset = __Infer<typeof QuestSpawnAsset>;
 
 export const Relic = __t.object("Relic", {
   id: __t.u32(),
