@@ -353,6 +353,12 @@ secador::secador!(
                                         if victim.queued_action_state().is_some() {
                                             victim.delete_queued_action_state();
                                         }
+                                        // FORCED entry: the stance changes
+                                        // but the hands DON'T — a forced
+                                        // stance's loadout applies only
+                                        // when entered deliberately,
+                                        // through an action (try_adopt).
+                                        // Whatever was wielded stays.
                                         victim
                                             .clone()
                                             .upsert_new_active_stance(cowering.stance_id)
@@ -386,6 +392,9 @@ secador::secador!(
                                     false
                                 }
                                 Some(prone) => {
+                                    // FORCED entry (see the cowering note):
+                                    // no re-arm — the dive keeps whatever
+                                    // was already in hand, plus the grab.
                                     let owner = ecs.find(self.owner_entity_id);
                                     owner
                                         .clone()

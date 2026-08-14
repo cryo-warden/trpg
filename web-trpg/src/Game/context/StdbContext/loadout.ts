@@ -166,9 +166,12 @@ export const useGearStatBlockOf = (): ((
 
 export type StanceAssignment = {
   stanceId: number;
-  armamentIds: number[];
-  /** Bar order: position is the hotkey. Empty = leave the bar alone. */
-  actionIds: number[];
+  /** INTENT IS EXPLICIT: null = no override (the stance fights with the
+   * DEFAULT set); [] = deliberately bare hands; ids = the override. */
+  armamentIds: number[] | null;
+  /** null = no bar assignment (adoption leaves the bar alone); [] =
+   * deliberately clear the bar; ids = the bar, in hotkey order. */
+  actionIds: number[] | null;
 };
 
 export const useMyStanceAssignments = (): StanceAssignment[] => {
@@ -179,12 +182,17 @@ export const useMyStanceAssignments = (): StanceAssignment[] => {
       if (playerEntity == null) return [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const row = (t.entityId as any).find(playerEntity);
+      type WireLoadout = {
+        stanceId: number;
+        armamentIds?: number[];
+        actionIds?: number[];
+      };
       return row == null
         ? []
-        : (row.assignments as StanceAssignment[]).map((a) => ({
+        : (row.assignments as WireLoadout[]).map((a) => ({
             stanceId: a.stanceId,
-            armamentIds: [...a.armamentIds],
-            actionIds: [...a.actionIds],
+            armamentIds: a.armamentIds == null ? null : [...a.armamentIds],
+            actionIds: a.actionIds == null ? null : [...a.actionIds],
           }));
     },
     [playerEntity],

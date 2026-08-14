@@ -172,26 +172,29 @@ fn update_stance_loadout(
         .cloned()
         .unwrap_or(StanceLoadout {
             stance_id,
-            armament_ids: Vec::new(),
-            action_ids: Vec::new(),
+            armament_ids: None,
+            action_ids: None,
         });
     assignments.retain(|a| a.stance_id != stance_id);
     assignments.push(update(existing));
     handle.upsert_new_stance_loadouts(assignments);
 }
 
-/// Assign armaments to one stance in the player's loadouts. Preparation-time
-/// validation happens HERE, where the player can read the outcome: the
-/// armaments must be owned, and the candidate context (base + gear + stance)
-/// must keep every counted property non-negative — two hands cannot hold
-/// three one-handed blades. Assigning the ACTIVE stance equips/unequips
-/// automatically; other stances' loadouts apply as data now and arm when
-/// a stance change adopts them (paying its round).
+/// Assign one stance's armament OVERRIDE — explicit intent, never inferred
+/// from emptiness: None removes the override (the stance fights with the
+/// DEFAULT set), Some(vec![]) is deliberately bare hands, Some(ids) is an
+/// override. Preparation-time validation happens HERE, where the player
+/// can read the outcome: overriding armaments must be owned, and the
+/// candidate context (base + gear + stance) must keep every counted
+/// property non-negative — two hands cannot hold three one-handed blades.
+/// Assigning the ACTIVE stance takes effect immediately; other stances'
+/// loadouts apply as data now and arm when a stance change adopts them
+/// (paying its round).
 #[reducer]
 pub fn assign_stance_armaments(
     ctx: &ReducerContext,
     stance_id: u32,
-    armament_ids: Vec<u32>,
+    armament_ids: Option<Vec<u32>>,
 ) -> Result<(), String> {
     let ecs = ctx.ecs();
     let p = ecs
@@ -203,28 +206,30 @@ pub fn assign_stance_armaments(
         .id()
         .find(stance_id)
         .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
-    for id in &armament_ids {
-        ctx.db
-            .armaments()
-            .id()
-            .find(id)
-            .ok_or_else(|| format!("Unknown armament id {}.", id))?;
-    }
-    let requested: Vec<ItemRef> = armament_ids
-        .iter()
-        .map(|id| ItemRef::Armament(*id))
-        .collect();
-    require_owned(&ecs, p.entity_id(), &requested)?;
+    if let Some(override_ids) = &armament_ids {
+        for id in override_ids {
+            ctx.db
+                .armaments()
+                .id()
+                .find(id)
+                .ok_or_else(|| format!("Unknown armament id {}.", id))?;
+        }
+        let requested: Vec<ItemRef> = override_ids
+            .iter()
+            .map(|id| ItemRef::Armament(*id))
+            .collect();
+        require_owned(&ecs, p.entity_id(), &requested)?;
 
-    // The grip rule: two hands cannot hold three one-handed blades. (Other
-    // counted properties gain their own feasibility rules as they need
-    // them.)
-    let candidate = candidate_stat_block(ctx, p.entity_id(), &stance, &armament_ids);
-    if candidate.hand < 0 {
-        return Err(format!(
-            "This loadout needs {} more grip than the body provides.",
-            -i32::from(candidate.hand)
-        ));
+        // The grip rule: two hands cannot hold three one-handed blades.
+        // (Other counted properties gain their own feasibility rules as
+        // they need them.)
+        let candidate = candidate_stat_block(ctx, p.entity_id(), &stance, override_ids);
+        if candidate.hand < 0 {
+            return Err(format!(
+                "This loadout needs {} more grip than the body provides.",
+                -i32::from(candidate.hand)
+            ));
+        }
     }
 
     update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
@@ -254,7 +259,7 @@ const MAX_ASSIGNED_ACTIONS: usize = 10;
 pub fn assign_stance_actions(
     ctx: &ReducerContext,
     stance_id: u32,
-    action_ids: Vec<u32>,
+    action_ids: Option<Vec<u32>>,
 ) -> Result<(), String> {
     let ecs = ctx.ecs();
     let p = ecs
@@ -266,35 +271,43 @@ pub fn assign_stance_actions(
         .id()
         .find(stance_id)
         .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
-    if action_ids.len() > MAX_ASSIGNED_ACTIONS {
-        return Err(format!(
-            "At most {} actions fit the bar; {} requested.",
-            MAX_ASSIGNED_ACTIONS,
-            action_ids.len()
-        ));
-    }
-
-    let assigned_armament_ids = { p.to_handle().stance_loadouts() }
-        .map(|c| c.assignments)
-        .unwrap_or_default()
-        .iter()
-        .find(|a| a.stance_id == stance_id)
-        .map(|a| a.armament_ids.clone())
-        .unwrap_or_default();
-    let pool = candidate_stat_block(ctx, p.entity_id(), &stance, &assigned_armament_ids)
-        .action_ids;
-    for id in &action_ids {
-        if !pool.contains(id) {
-            let name = ctx
-                .db
-                .actions()
-                .id()
-                .find(id)
-                .map_or_else(|| format!("#{}", id), |a| a.name);
+    if let Some(bar_ids) = &action_ids {
+        if bar_ids.len() > MAX_ASSIGNED_ACTIONS {
             return Err(format!(
-                "The action \"{}\" is not in this stance's candidate pool.",
-                name
+                "At most {} actions fit the bar; {} requested.",
+                MAX_ASSIGNED_ACTIONS,
+                bar_ids.len()
             ));
+        }
+
+        // The candidate pool reflects what the stance will ACTUALLY fight
+        // with: its armament override when it has one, else the default
+        // wielded set.
+        let handle = ecs.find(p.entity_id());
+        let stance_armament_ids = { handle.stance_loadouts() }
+            .map(|c| c.assignments)
+            .unwrap_or_default()
+            .iter()
+            .find(|a| a.stance_id == stance_id)
+            .and_then(|a| a.armament_ids.clone())
+            .or_else(|| handle.default_armaments().map(|d| d.armament_ids))
+            .unwrap_or_default();
+        let pool =
+            candidate_stat_block(ctx, p.entity_id(), &stance, &stance_armament_ids)
+                .action_ids;
+        for id in bar_ids {
+            if !pool.contains(id) {
+                let name = ctx
+                    .db
+                    .actions()
+                    .id()
+                    .find(id)
+                    .map_or_else(|| format!("#{}", id), |a| a.name);
+                return Err(format!(
+                    "The action \"{}\" is not in this stance's candidate pool.",
+                    name
+                ));
+            }
         }
     }
 
@@ -303,13 +316,13 @@ pub fn assign_stance_actions(
         ..loadout
     });
     // Everything the stance menu derives applies IMMEDIATELY for the
-    // ACTIVE stance: a non-empty bar assignment becomes the pinned bar now
-    // (an empty one means "leave the bar alone", as on adoption).
+    // ACTIVE stance: a bar assignment (Some, even empty) becomes the
+    // pinned bar now; None (no assignment) leaves the bar alone.
     let handle = ecs.find(p.entity_id());
-    if !action_ids.is_empty()
-        && { handle.active_stance() }.is_some_and(|a| a.stance_id == stance_id)
-    {
-        handle.upsert_new_pinned_actions(action_ids);
+    if let Some(bar_ids) = action_ids {
+        if { handle.active_stance() }.is_some_and(|a| a.stance_id == stance_id) {
+            handle.upsert_new_pinned_actions(bar_ids);
+        }
     }
     Ok(())
 }

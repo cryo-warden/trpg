@@ -246,17 +246,17 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
 
     fn resolved_armament_ids(&self) -> Vec<u32> {
         let e = self.to_handle();
-        let override_ids = { e.active_stance() }
-            .and_then(|active| {
-                { e.stance_loadouts() }.and_then(|loadouts| {
-                    loadouts
-                        .assignments
-                        .iter()
-                        .find(|a| a.stance_id == active.stance_id)
-                        .map(|a| a.armament_ids.clone())
-                })
+        // The override's INTENT is explicit: None falls through to the
+        // default set; Some(vec![]) is deliberately bare hands.
+        let override_ids = { e.active_stance() }.and_then(|active| {
+            { e.stance_loadouts() }.and_then(|loadouts| {
+                loadouts
+                    .assignments
+                    .iter()
+                    .find(|a| a.stance_id == active.stance_id)
+                    .and_then(|a| a.armament_ids.clone())
             })
-            .filter(|ids| !ids.is_empty());
+        });
         override_ids
             .or_else(|| e.default_armaments().map(|d| d.armament_ids))
             .unwrap_or_default()
@@ -355,21 +355,18 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let handle = e.clone().upsert_new_active_stance(stance_id).into_handle();
 
         // Re-arm on swap: hands resolve to the new stance's OVERRIDE when
-        // it assigns armaments, else the DEFAULT set; the stance's
-        // assigned ACTIONS become the pinned bar (an empty assignment
-        // leaves the bar alone). Entities without loadouts or defaults
-        // keep their flat equipment.
+        // it assigns armaments, else the DEFAULT set; a bar assignment
+        // (Some, even empty) becomes the pinned bar, while None leaves the
+        // bar alone. Entities without loadouts or defaults keep their flat
+        // equipment.
         self.apply_resolved_armaments();
-        if let Some(action_ids) = { handle.stance_loadouts() }
-            .and_then(|loadouts| {
-                loadouts
-                    .assignments
-                    .iter()
-                    .find(|a| a.stance_id == stance_id)
-                    .map(|a| a.action_ids.clone())
-            })
-            .filter(|ids| !ids.is_empty())
-        {
+        if let Some(action_ids) = { handle.stance_loadouts() }.and_then(|loadouts| {
+            loadouts
+                .assignments
+                .iter()
+                .find(|a| a.stance_id == stance_id)
+                .and_then(|a| a.action_ids.clone())
+        }) {
             handle.upsert_new_pinned_actions(action_ids);
         }
         Ok(())

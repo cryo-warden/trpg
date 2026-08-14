@@ -325,15 +325,14 @@ export const StancesMenu = () => {
       <div className="cards" ref={cardsRef} onScroll={handleScroll}>
         {shown.map((stance) => {
         const loadout = assignments.find((a) => a.stanceId === stance.id);
-        const assigned = loadout?.armamentIds ?? [];
-        const assignedActions = loadout?.actionIds ?? [];
-        // A stance assignment OVERRIDES the default wielded set, it is
-        // never a requirement: with nothing assigned, this stance fights
-        // with the equip menu's default armaments — and the card's totals
-        // say so.
-        const resolvedArmaments =
-          assigned.length > 0 ? assigned : defaultArmamentIds;
-        const usesDefault = assigned.length === 0;
+        // INTENT IS EXPLICIT in the loadout: null = no override / no bar
+        // assignment; [] = deliberately bare hands / a deliberately blank
+        // bar.
+        const armamentOverride = loadout?.armamentIds ?? null;
+        const barAssignment = loadout?.actionIds ?? null;
+        const usesDefault = armamentOverride == null;
+        const resolvedArmaments = armamentOverride ?? defaultArmamentIds;
+        const assignedActions = barAssignment ?? [];
         const candidate = Object.fromEntries(
           ALL_STATS.map(([key]) => [
             key,
@@ -343,12 +342,6 @@ export const StancesMenu = () => {
           ]),
         ) as Record<IntStatKey, number>;
         const freeHand = candidate.hand;
-        // Toggling gates on the OVERRIDE set alone: assigning the first
-        // item replaces the default set rather than adding to it.
-        const overrideHand =
-          baseStats.hand +
-          stance.statBlock.hand +
-          armamentStatSum(assigned, "hand");
         const grantedActionNames = [...stance.statBlock.actionIds].map(
           (id) => actionNames.get(id) ?? `#${id}`,
         );
@@ -365,8 +358,15 @@ export const StancesMenu = () => {
             ]),
           ]),
         ];
+        // Highlighting always shows the EFFECTIVE set: the override when
+        // one exists, the default items otherwise. Clicking an item while
+        // on defaults copy-on-writes the visible set into a new override.
         const isOn = (item: OwnedItem) =>
-          assetInstanceIsOn({ ids: assigned, item, items: ownedArmaments });
+          assetInstanceIsOn({
+            ids: resolvedArmaments,
+            item,
+            items: ownedArmaments,
+          });
         return (
           <section className="stanceCard" key={stance.id}>
             <h3>
@@ -389,10 +389,19 @@ export const StancesMenu = () => {
             {grantedActionNames.length > 0 && (
               <div>Grants: {grantedActionNames.join(", ")}</div>
             )}
-            <h4>
-              Armaments (free hand: {freeHand})
-              {usesDefault && " — using the default set"}
-            </h4>
+            <h4>Armaments (free hand: {freeHand})</h4>
+            <Button
+              className={usesDefault ? "active" : ""}
+              interesting={usesDefault}
+              onClick={() =>
+                connection.reducers.assignStanceArmaments({
+                  stanceId: stance.id,
+                  armamentIds: undefined,
+                })
+              }
+            >
+              use default
+            </Button>
             {ownedArmaments.map((item) => {
               const itemHand = armamentStats.get(item.assetId)?.hand ?? 0;
               const on = isOn(item);
@@ -401,12 +410,12 @@ export const StancesMenu = () => {
                   key={item.entityId.toString()}
                   className={on ? "active" : ""}
                   interesting={on}
-                  disabled={!on && overrideHand + itemHand < 0}
+                  disabled={!on && freeHand + itemHand < 0}
                   onClick={() =>
                     connection.reducers.assignStanceArmaments({
                       stanceId: stance.id,
                       armamentIds: toggledAssetIds({
-                        ids: assigned,
+                        ids: resolvedArmaments,
                         item,
                         items: ownedArmaments,
                       }),
@@ -418,7 +427,10 @@ export const StancesMenu = () => {
               );
             })}
             {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
-            <h4>Actions ({assignedActions.length}/10)</h4>
+            <h4>
+              Actions ({assignedActions.length}/10)
+              {barAssignment == null && " — bar unchanged on entry"}
+            </h4>
             <StanceActionsBar
               assignedActionIds={assignedActions}
               nameOf={(actionId) => actionNames.get(actionId) ?? `#${actionId}`}

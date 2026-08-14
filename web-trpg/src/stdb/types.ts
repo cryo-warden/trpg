@@ -1238,8 +1238,8 @@ export type StanceAsset = __Infer<typeof StanceAsset>;
 
 export const StanceLoadout = __t.object("StanceLoadout", {
   stanceId: __t.u32(),
-  armamentIds: __t.array(__t.u32()),
-  actionIds: __t.array(__t.u32()),
+  armamentIds: __t.option(__t.array(__t.u32())),
+  actionIds: __t.option(__t.array(__t.u32())),
 });
 export type StanceLoadout = __Infer<typeof StanceLoadout>;
 

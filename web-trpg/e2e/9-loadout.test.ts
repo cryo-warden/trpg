@@ -168,10 +168,19 @@ test("a stance assignment OVERRIDES the default set; clearing it falls back", as
     player.reducers.setStance({ stanceId: duelingId }),
   ).rejects.toThrow(/requirements/);
 
-  // Clearing the override falls back to the DEFAULT set — sword and club.
+  // Some([]) is DELIBERATELY BARE HANDS — explicit intent, not fallback.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
     armamentIds: [],
+  });
+  await waitFor(() => !myActionNames().includes("test_smash"), 30000);
+  expect(myActionNames()).not.toContain("test_slash");
+
+  // None removes the override: fall back to the DEFAULT set — sword and
+  // club both return.
+  await player.reducers.assignStanceArmaments({
+    stanceId: standingId,
+    armamentIds: undefined,
   });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
   expect(myActionNames()).toContain("test_smash");

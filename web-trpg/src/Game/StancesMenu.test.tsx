@@ -90,7 +90,7 @@ test("shows exactly the REACHABLE stances, marking the active one", () => {
   expect(cardOf(container, "perched")).toBeUndefined();
 });
 
-test("a stance with NO assignment uses the DEFAULT set in its totals", () => {
+test("a stance with NO override lights 'use default' and shows the default items", () => {
   const withDefault = {
     ...tables(),
     default_armaments_components: mockTable([
@@ -100,17 +100,28 @@ test("a stance with NO assignment uses the DEFAULT set in its totals", () => {
   const wrapper = gameWrapper(withDefault, { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  // Standing assigns nothing: the default sword rides its totals, and the
-  // card says so.
+  // Standing assigns nothing: the default sword rides its totals, the
+  // "use default" button is lit, and the default item shows highlighted.
   const standing = cardOf(container, "standing")!;
-  expect(standing.textContent).toContain("using the default set");
+  const standingButtons = [...standing.querySelectorAll("button")];
+  const useDefault = standingButtons.find(
+    (button) => button.textContent === "use default",
+  )!;
+  expect(useDefault.className).toContain("active");
+  const standingSword = standingButtons.find(
+    (button) => button.textContent === "sword",
+  )!;
+  expect(standingSword.className).toContain("active");
   expect(standing.textContent).toContain("Hand 1 (-1)");
   expect(standing.textContent).toContain("Morale 1 (+1)");
 
-  // Dueling OVERRIDES with its own sword assignment: same numbers here,
-  // but by override, not default.
+  // Dueling OVERRIDES with its own sword assignment: same numbers, but by
+  // override — its "use default" button is unlit.
   const dueling = cardOf(container, "dueling")!;
-  expect(dueling.textContent).not.toContain("using the default set");
+  const duelingUseDefault = [...dueling.querySelectorAll("button")].find(
+    (button) => button.textContent === "use default",
+  )!;
+  expect(duelingUseDefault.className).not.toContain("active");
 });
 
 test("gallery dots: one per reachable stance, the active stance marked", () => {
