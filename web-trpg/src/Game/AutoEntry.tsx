@@ -4,6 +4,8 @@ import {
   useStdbConnection,
   useStdbSynced,
 } from "./context/StdbContext/useStdb";
+import { useTableData } from "./context/StdbContext/useTableData";
+import { pushProductionAssets } from "./init";
 
 /**
  * DEV smooth entry: with TRPG_AUTO_ENTRY=true baked into the build, an
@@ -48,16 +50,30 @@ export const AutoEntryPanel = () => {
   const [name] = useState(newDevAccountName);
   const [error, setError] = useState<string | null>(null);
   const sentRef = useRef(false);
+  const actionCount = useTableData(
+    "actions",
+    (table) => Number(table.count()),
+    [],
+  );
 
   useEffect(() => {
     if (!synced || sentRef.current) {
       return;
     }
     sentRef.current = true;
+    // An EMPTY instance (no assets yet) has no admin coming to deliver
+    // the bundle in this mode — bootstrap it ourselves. The server allows
+    // exactly the first push without the admin role; without assets, no
+    // player entity could ever provision.
+    if (actionCount === 0) {
+      pushProductionAssets(connection).catch((reason) =>
+        setError(String(reason)),
+      );
+    }
     connection.reducers
       .createAccount({ name })
       .catch((reason) => setError(String(reason)));
-  }, [synced, name, connection]);
+  }, [synced, name, connection, actionCount]);
 
   return (
     <Panel className="account">

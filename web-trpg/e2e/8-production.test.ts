@@ -15,10 +15,12 @@ import { STANCES } from "../src/Game/assets/stances";
 // instance or a typo ships silently.
 
 let admin: DbConnection;
+let bootstrapper: DbConnection;
 
 beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
+  bootstrapper = (await connect()).connection;
   admin = (await connect()).connection;
   await claimAdmin(admin);
   admin
@@ -28,10 +30,14 @@ beforeAll(async () => {
 
 afterAll(() => {
   admin?.disconnect();
+  bootstrapper?.disconnect();
 });
 
-test("the production asset pack pushes cleanly", async () => {
-  await pushProductionAssets(admin);
+test("an EMPTY instance accepts its bootstrap push from ANY connection", async () => {
+  // No admin role on this connection: the first push is deliberately open
+  // (auto-entry deployments have no admin coming to deliver the bundle),
+  // and the window closes the moment assets exist.
+  await pushProductionAssets(bootstrapper);
   await waitFor(
     () => admin.db.actions.count() === BigInt(Object.keys(ACTIONS).length),
     30000,
@@ -44,7 +50,11 @@ test("the production asset pack pushes cleanly", async () => {
   expect(admin.db.stances.count()).toBe(BigInt(Object.keys(STANCES).length));
 });
 
-test("a second identical push is a clean incremental update", async () => {
+test("UPDATES are admin-only; an identical admin push is a clean increment", async () => {
+  // The bootstrapper is now an ordinary ACCOUNT-HOLDING player (exactly
+  // the auto-entry shape) — and still may not update.
+  await bootstrapper.reducers.createAccount({ name: "bootstrapper" });
+  await expect(pushProductionAssets(bootstrapper)).rejects.toThrow(/admin/i);
   await pushProductionAssets(admin);
   expect(admin.db.actions.count()).toBe(BigInt(Object.keys(ACTIONS).length));
 });

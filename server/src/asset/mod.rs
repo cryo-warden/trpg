@@ -430,10 +430,17 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
 fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String> {
     // Only an admin account is trusted to alter game content; clients never
     // push automatically.
-    crate::role::require_admin(ctx)?;
-    log::debug!("Loading asset pack from {}.", ctx.sender());
-
+    // The FIRST push bootstraps an EMPTY instance and is open to any
+    // authenticated connection: an auto-entry (dev smooth-entry)
+    // deployment has no admin logging in to deliver the bundle, and
+    // without assets the player-provision trigger waits forever. The
+    // window self-closes — every subsequent push (an UPDATE) is
+    // admin-only, and no role is granted to whoever bootstrapped.
     let is_update = ctx.get_new_player_blob().is_some();
+    if is_update {
+        crate::role::require_admin(ctx)?;
+    }
+    log::debug!("Loading asset pack from {}.", ctx.sender());
 
     // All name -> id maps come first: effect payloads (e.g. SetStance) may
     // reference any kind, so the action loop below already needs them.
