@@ -523,6 +523,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get equipment() {
     return __t.option(EquipmentComponentBlob);
   },
+  get remains() {
+    return __t.option(RemainsComponentBlob);
+  },
   get defaultArmaments() {
     return __t.option(DefaultArmamentsComponentBlob);
   },
@@ -671,6 +674,7 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   actionNames: __t.option(__t.array(__t.string())),
   pinnedActionNames: __t.option(__t.array(__t.string())),
   appearanceFeatureNames: __t.option(__t.array(__t.string())),
+  remainsAppearanceFeatureNames: __t.option(__t.array(__t.string())),
   get hp() {
     return __t.option(HpComponentBlob);
   },
@@ -1254,6 +1258,17 @@ export const RelicsComponentBlob = __t.object("RelicsComponentBlob", {
   relicIds: __t.array(__t.u32()),
 });
 export type RelicsComponentBlob = __Infer<typeof RelicsComponentBlob>;
+
+export const RemainsComponent = __t.object("RemainsComponent", {
+  entityId: __t.u64(),
+  appearanceFeatureIds: __t.array(__t.u32()),
+});
+export type RemainsComponent = __Infer<typeof RemainsComponent>;
+
+export const RemainsComponentBlob = __t.object("RemainsComponentBlob", {
+  appearanceFeatureIds: __t.array(__t.u32()),
+});
+export type RemainsComponentBlob = __Infer<typeof RemainsComponentBlob>;
 
 export const Role = __t.object("Role", {
   id: __t.u32(),

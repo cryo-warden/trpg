@@ -1,0 +1,1 @@
+"Refinement: map generation RETURNS placed containers, each marked with a room-role indicator — branch path, final room, designated treasure room — so themes and quests can target container placement by role (jars on side paths carrying cookie chances, chests in treasure rooms), aligning with quest_room_links' generation-time roles."

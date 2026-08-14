@@ -40,7 +40,7 @@ use crate::{
         CheckpointBindingComponentBlob, EntityBlob,
         EquipmentComponentBlob, FindEntityHandle, FlagComponent, InstantiateEntityBlob,
         ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
-        TraitsComponentBlob,
+        RemainsComponentBlob, TraitsComponentBlob,
     },
     item::ItemRef,
 };
@@ -310,6 +310,17 @@ fn resolve_entity_blob(
             .map(|names| {
                 Ok::<_, String>(AppearanceFeaturesComponentBlob {
                     appearance_feature_indexes: names
+                        .iter()
+                        .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
+                        .collect::<Result<_, _>>()?,
+                })
+            })
+            .transpose()?,
+        remains: author
+            .remains_appearance_feature_names
+            .map(|names| {
+                Ok::<_, String>(RemainsComponentBlob {
+                    appearance_feature_ids: names
                         .iter()
                         .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
                         .collect::<Result<_, _>>()?,

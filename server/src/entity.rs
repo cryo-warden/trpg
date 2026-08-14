@@ -75,6 +75,17 @@ entity!(
         pub armament_ids: Vec<u32>,
     }
 
+    // What a breakable leaves behind: on destruction (hp exhausted,
+    // neither player nor enemy controller), the entity's contents SPILL
+    // into its room, its appearance becomes these remains (rubble,
+    // ceramic shards, scrap wood — decoration for now), and its hp
+    // component goes: debris is not attackable and never deleted, so its
+    // name survives in narration like any corpse.
+    #[component(remains in remains_components)]
+    struct RemainsComponent {
+        pub appearance_feature_ids: Vec<u32>,
+    }
+
     // The DEFAULT wielded set: what the hands hold whenever the active
     // stance's loadout assigns NO armaments — a stance assignment is an
     // OVERRIDE of this default, never a requirement. Edited by the

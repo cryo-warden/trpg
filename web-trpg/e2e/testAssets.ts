@@ -827,6 +827,20 @@ export const questPack = (): AssetPack => ({
       value: { perBitStatBlock: statBlock({ mhp: 1 }), bitCount: 3 },
     },
   ],
+  appearanceFeatures: [
+    {
+      name: "test_jar",
+      value: { text: "jar", appearanceFeatureType: { tag: "Noun" }, priority: 5000 },
+    },
+    {
+      name: "test_shards",
+      value: {
+        text: "ceramic shards",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 4000,
+      },
+    },
+  ],
   actions: [
     {
       name: "test_take",
@@ -844,6 +858,14 @@ export const questPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Eat" }], interruptible: false }],
       },
     },
+    {
+      name: "test_smash",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Attack", value: 1 }], interruptible: false }],
+      },
+    },
   ],
   baselines: [
     {
@@ -852,7 +874,26 @@ export const questPack = (): AssetPack => ({
         mhp: 5,
         hand: 2,
         gait: 2,
-        actionNames: ["test_take", "test_eat"],
+        actionNames: ["test_take", "test_eat", "test_smash"],
+      }),
+    },
+  ],
+  namedInstantiateEntityBlobs: [
+    {
+      name: "test_cookie_jar",
+      value: blob({
+        appearanceFeatureNames: ["test_jar"],
+        remainsAppearanceFeatureNames: ["test_shards"],
+        hp: {
+          hp: 1,
+          mhp: 1,
+          defense: 0,
+          accumulatedDamage: 0,
+          accumulatedHealing: 0,
+        },
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        },
       }),
     },
   ],
@@ -881,6 +922,14 @@ export const questPack = (): AssetPack => ({
         value: { questName: "test_red_cookies", index: 1 },
       },
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    // The payoff cookie hides INSIDE the jar: smashing it spills this out.
+    blob({
+      item: {
+        tag: "QuestItem",
+        value: { questName: "test_red_cookies", index: 2 },
+      },
+      location: { locationEntityId: { tag: "Named", value: "test_cookie_jar" } },
     }),
   ],
 });

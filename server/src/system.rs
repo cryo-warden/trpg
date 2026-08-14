@@ -57,6 +57,9 @@ const RESPAWN_DELAY_MICROS: i64 = 3_000_000;
 /// fell, unable to act, until the respawn delay elapses and the wake at
 /// the checkpoint takes them out of the situation.
 pub fn death_system(ecs: Ecs) {
+    // Breakables get collected first: shattering deletes their hp row, and
+    // the hp table must not be mutated mid-iteration.
+    let mut shattered: Vec<u64> = Vec::new();
     for e in ecs.iter_hp() {
         if e.hp().hp > 0 {
             continue;
@@ -77,6 +80,9 @@ pub fn death_system(ecs: Ecs) {
                 ecs.timestamp
                     + spacetimedb::TimeDuration::from_micros(RESPAWN_DELAY_MICROS),
             );
+        } else if handle.enemy_controller().is_none() && handle.remains().is_some() {
+            // A BREAKABLE (scenery with authored remains) shatters.
+            shattered.push(handle.entity_id());
         }
         // A dead NPC becomes a CORPSE, never a deletion: the entity remains
         // — its name stays in every message about what happened, and the
@@ -85,7 +91,21 @@ pub fn death_system(ecs: Ecs) {
         // client's threat panel keeps the fallen where they fell instead of
         // reshuffling mid-fight. enemy_control_system skips the dead.
         // Map-instance cleanup eventually sweeps corpse and controller with
-        // the room.
+        // the room. (A dead NPC's inventory stays INSIDE the corpse — loot
+        // is a future feature; only breakables spill.)
+    }
+    for entity_id in shattered {
+        // The break: contents spill into the room, the entity becomes its
+        // authored remains (decoration for now), and the hp component goes
+        // — debris is not attackable. Like a corpse it is never deleted
+        // here, so its name survives in narration; map cleanup sweeps it.
+        spill_contents(ecs, entity_id);
+        let handle = ecs.find(entity_id);
+        if let Some(remains) = handle.remains() {
+            handle.upsert_new_appearance_features(remains.appearance_feature_ids);
+            ecs.find(entity_id).delete_remains();
+            ecs.find(entity_id).delete_hp();
+        }
     }
 }
 
@@ -357,47 +377,49 @@ pub fn action_system(ecs: Ecs) {
 }
 
 /// THE way an entity actually ceases to exist: its join rows (visited
-/// locations, quest progress) die with it, then the entity itself. Every
-/// deletion site calls this — never `.delete()` directly — so a new join
-/// table has exactly one place to hook.
+/// locations, quest progress) die with it, then the entity itself. Its
+/// CONTENTS spill first — nothing is ever stranded inside a thing that
+/// stopped existing. Every deletion site calls this — never `.delete()`
+/// directly — so a new join table has exactly one place to hook.
 pub(crate) fn delete_entity_with_joins(ecs: Ecs, entity_id: u64) {
+    spill_contents(ecs, entity_id);
     crate::visited::cleanup_visited_rows(ecs, entity_id);
     crate::quest::cleanup_quest_rows(ecs, entity_id);
     ecs.find(entity_id).delete();
 }
 
+/// Anything an entity carries has that entity as its location; when the
+/// carrier is destroyed or deleted, the contents move OUT to the carrier's
+/// own location. A carrier with no location (map/room teardown) leaves
+/// this to the recursive cleanup that is already deleting its contents.
+pub(crate) fn spill_contents(ecs: Ecs, entity_id: u64) {
+    let Some(destination) = ecs
+        .db
+        .location_components()
+        .entity_id()
+        .find(entity_id)
+        .map(|l| l.location_entity_id)
+    else {
+        return;
+    };
+    let contained: Vec<u64> = ecs
+        .db
+        .location_components()
+        .location_entity_id()
+        .filter(entity_id)
+        .map(|c| c.entity_id)
+        .collect();
+    for contained_id in contained {
+        if let Some(mut row) = ecs.db.location_components().entity_id().find(contained_id) {
+            row.location_entity_id = destination;
+            ecs.db.location_components().entity_id().update(row);
+        }
+    }
+}
+
 pub fn entity_deletion_timer_system(ecs: Ecs) {
     for t in ecs.iter_entity_deletion_timer() {
         if t.entity_deletion_timer().timestamp <= ecs.timestamp {
-            // Anything an entity carries has that entity as its location;
-            // when the carrier is destroyed, the contents move out to the
-            // carrier's own location. A carrier with no location strands its
-            // contents — surface it rather than leave dangling references.
-            let carried: Vec<_> = ecs
-                .db
-                .location_components()
-                .location_entity_id()
-                .filter(t.entity_id())
-                .collect();
-            let destination = t.location().map(|l| l.location_entity_id);
-            for mut location_component in carried {
-                match destination {
-                    Some(destination) => {
-                        location_component.location_entity_id = destination;
-                        ecs.db
-                            .location_components()
-                            .entity_id()
-                            .update(location_component);
-                    }
-                    None => {
-                        log::error!(
-                            "Entity {} was destroyed with no location; its contents ({}) are stranded.",
-                            t.entity_id(),
-                            location_component.entity_id
-                        );
-                    }
-                }
-            }
             delete_entity_with_joins(ecs, t.entity_id());
         }
     }

@@ -49,6 +49,18 @@ export const APPEARANCE_FEATURES = {
   idol: noun("idol", 5000),
   medallion: noun("medallion", 5000),
   path: noun("path", 10000),
+  // Containers — the chance of finding cookies in jars is something to
+  // look forward to — and the remains breaking them leaves behind
+  // (decoration for now).
+  jar: noun("jar", 5000),
+  chest: noun("chest", 5000),
+  crate: noun("crate", 5000),
+  sack: noun("sack", 5000),
+  // (rubble already exists among the theme decorations below.)
+  ceramic_shards: noun("ceramic shards", 4000),
+  scrap_wood: noun("scrap wood", 4000),
+  red_cookie: noun("red cookie", 5000),
+  blue_cookie: noun("blue cookie", 5000),
   rock: noun("rock", 10000),
   stone: noun("stone", 10000),
   boulder: noun("boulder", 10000),

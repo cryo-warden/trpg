@@ -113,6 +113,7 @@ import QuestsRow from "./quests_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
+import RemainsComponentsRow from "./remains_components_table";
 import RespawnTimerComponentsRow from "./respawn_timer_components_table";
 import RolesRow from "./roles_table";
 import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
@@ -840,6 +841,17 @@ const tablesSchema = __schema({
       { name: 'relics_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, RelicsComponentsRow),
+  remains_components: __table({
+    name: 'remains_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'remains_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'remains_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, RemainsComponentsRow),
   respawn_timer_components: __table({
     name: 'respawn_timer_components',
     indexes: [

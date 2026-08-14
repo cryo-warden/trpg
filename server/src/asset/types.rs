@@ -168,6 +168,10 @@ pub struct EntityBlobAsset {
     pub action_names: Option<Vec<String>>,
     pub pinned_action_names: Option<Vec<String>>,
     pub appearance_feature_names: Option<Vec<String>>,
+    /// What breaking this entity leaves behind (rubble, ceramic shards…):
+    /// presence marks the entity as a BREAKABLE that spills and becomes
+    /// decoration when its hp runs out.
+    pub remains_appearance_feature_names: Option<Vec<String>>,
     pub hp: Option<HpComponentBlob>,
     pub ep: Option<EpComponentBlob>,
     pub attack: Option<AttackComponentBlob>,

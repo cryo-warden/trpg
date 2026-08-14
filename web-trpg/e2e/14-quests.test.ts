@@ -63,6 +63,8 @@ beforeAll(async () => {
       "SELECT * FROM item_components",
       "SELECT * FROM location_components",
       "SELECT * FROM hp_components",
+      "SELECT * FROM appearance_features",
+      "SELECT * FROM appearance_features_components",
       "SELECT * FROM entities_quests_progress",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM accounts",
@@ -70,7 +72,7 @@ beforeAll(async () => {
   await player.reducers.createAccount({ name: "snacker" });
 
   playerEntityId = await playerEntityIdFor(player, "snacker");
-  await waitFor(() => cookieItems().length === 3, 30000);
+  await waitFor(() => cookieItems().length === 4, 30000);
   await waitFor(() => myHp() != null, 30000);
 }, 60000);
 
@@ -99,8 +101,8 @@ test("eating a fresh cookie sets its bit; mhp AND hp rise through the ratchet", 
   expect(myHp()?.hp).toBe(6);
   expect(popcount()).toBe(1);
   // The eaten cookie is GONE.
-  await waitFor(() => cookieItems().length === 2, 30000);
-});
+  await waitFor(() => cookieItems().length === 3, 30000);
+}, 60000);
 
 test("a duplicate index refuses; a fresh index still works — bits are the supply", async () => {
   const takeId = idByName(player.db.actions, "test_take");
@@ -140,7 +142,59 @@ test("a duplicate index refuses; a fresh index still works — bits are the supp
   await waitFor(() => myHp()?.mhp === 7, 30000);
   expect(popcount()).toBe(2);
   const remaining = cookieItems();
-  expect(remaining.length).toBe(1);
-  expect(remaining[0].index).toBe(0);
-  expect(remaining[0].entityId).toBe(duplicate.entityId);
+  expect(remaining.length).toBe(2);
+  expect(remaining.every((cookie) => [0, 2].includes(cookie.index))).toBe(true);
+}, 60000);
+
+test("smashing the jar spills its cookie and leaves ceramic shards", async () => {
+  const takeId = idByName(player.db.actions, "test_take");
+  const eatId = idByName(player.db.actions, "test_eat");
+  const smashId = idByName(player.db.actions, "test_smash");
+
+  // The jar: the only OTHER hp-bearing entity. Its cookie (index 2) is
+  // inside it, not in the room.
+  const jarId = [...player.db.hp_components.iter()].find(
+    (row) => row.entityId !== playerEntityId,
+  )!.entityId;
+  const hidden = cookieItems().find((cookie) => cookie.index === 2)!;
+  expect(
+    [...player.db.location_components.iter()].find(
+      (row) => row.entityId === hidden.entityId,
+    )?.locationEntityId,
+  ).toBe(jarId);
+
+  await player.reducers.act({ actionId: smashId, targetEntityId: jarId });
+
+  // The break: hp component GONE (debris is not attackable)...
+  await waitFor(
+    () =>
+      ![...player.db.hp_components.iter()].some(
+        (row) => row.entityId === jarId,
+      ),
+    30000,
+  );
+  // ...the cookie SPILLED into the room...
+  const roomOf = (entityId: bigint) =>
+    [...player.db.location_components.iter()].find(
+      (row) => row.entityId === entityId,
+    )?.locationEntityId;
+  await waitFor(() => roomOf(hidden.entityId) === roomOf(playerEntityId), 30000);
+  // ...and the jar became its authored remains.
+  const shardsIndex = [...player.db.appearance_features.iter()].find(
+    (row) => row.name === "test_shards",
+  )!.index;
+  await waitFor(
+    () =>
+      [...player.db.appearance_features_components.iter()]
+        .find((row) => row.entityId === jarId)
+        ?.appearanceFeatureIndexes.join(",") === `${shardsIndex}`,
+    30000,
+  );
+
+  // The payoff: take and eat the spilled cookie.
+  await player.reducers.act({ actionId: takeId, targetEntityId: hidden.entityId });
+  await waitFor(() => roomOf(hidden.entityId) === playerEntityId, 30000);
+  await player.reducers.act({ actionId: eatId, targetEntityId: hidden.entityId });
+  await waitFor(() => myHp()?.mhp === 8, 30000);
+  expect(popcount()).toBe(3);
 }, 60000);
