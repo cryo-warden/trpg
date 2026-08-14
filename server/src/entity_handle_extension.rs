@@ -86,11 +86,25 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         self
     }
 
+    // MAXIMUM POOLS ARE A RATCHET. Creation sets them freely (a tiny body
+    // is born with a tiny pool); afterwards a recomputed total can only
+    // RAISE them — and a raise carries the current value up with it, so
+    // gaining a maximum never fakes a damaged/spent state. Reductions are
+    // refused outright: every max-pool exploit is a raise/lower CYCLE
+    // (spend to zero, re-gain the max, repeat), and with the lowering half
+    // impossible the cycle never closes. The stored component is itself
+    // the before-value the comparison needs. The design half of the deal:
+    // mhp/mep sources must be LIMITED — permanent, progression-like grants,
+    // not swappable gear (each swappable source is a one-time permanent
+    // boost under this rule).
     fn set_mhp(self, mhp: i16) -> Self {
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {
-            hp.mhp = mhp;
-            e.update_hp_row(hp);
+            if mhp > hp.mhp {
+                hp.hp = hp.hp.saturating_add(mhp - hp.mhp);
+                hp.mhp = mhp;
+                e.update_hp_row(hp);
+            }
         } else {
             e.insert_new_hp(mhp, mhp, 0, 0, 0);
         }
@@ -111,8 +125,11 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     fn set_mep(self, mep: i16) -> Self {
         let e = self.to_handle();
         if let Some(mut ep_component) = e.ep() {
-            ep_component.mep = mep;
-            e.update_ep_row(ep_component);
+            if mep > ep_component.mep {
+                ep_component.ep = ep_component.ep.saturating_add(mep - ep_component.mep);
+                ep_component.mep = mep;
+                e.update_ep_row(ep_component);
+            }
         } else {
             e.insert_new_ep(mep, mep);
         }

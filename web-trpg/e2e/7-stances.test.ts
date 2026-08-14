@@ -46,6 +46,7 @@ beforeAll(async () => {
       "SELECT * FROM stances",
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
+      "SELECT * FROM ep_components",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM accounts",
     ]);
@@ -78,6 +79,41 @@ test("the new player carries the authored stance", () => {
   const active = [...player.db.active_stance_components.iter()][0];
   expect(active?.stanceId).toBe(stanceIdByName("test_brawler"));
 });
+
+// Runs BEFORE any other test adopts prone: the ratchet's one-time raise is
+// exactly what is under test.
+test("max pools are a RATCHET: a raise carries ep up; leaving never lowers it back", async () => {
+  const myEp = () =>
+    [...player.db.ep_components.iter()].find(
+      (row) => row.entityId === playerEntityId,
+    );
+  const activeStance = () =>
+    [...player.db.active_stance_components.iter()].find(
+      (row) => row.entityId === playerEntityId,
+    )?.stanceId;
+  // The body grants no mep, so the pool starts empty.
+  expect(myEp()?.mep ?? 0).toBe(0);
+
+  // Adopting prone (+3 mep) raises the maximum AND carries ep up with it:
+  // gaining a pool never fakes a spent state.
+  await player.reducers.setStance({ stanceId: stanceIdByName("test_prone") });
+  await waitFor(() => myEp()?.mep === 3, 30000);
+  expect(myEp()?.ep).toBe(3);
+
+  // Leaving refuses the reduction: the raise/lower cycle behind every
+  // max-pool exploit never closes.
+  await player.reducers.setStance({ stanceId: stanceIdByName("test_brawler") });
+  await waitFor(() => activeStance() === stanceIdByName("test_brawler"), 30000);
+  expect(myEp()?.mep).toBe(3);
+  expect(myEp()?.ep).toBe(3);
+
+  // Cycling back grants nothing further.
+  await player.reducers.setStance({ stanceId: stanceIdByName("test_prone") });
+  await player.reducers.setStance({ stanceId: stanceIdByName("test_brawler") });
+  await waitFor(() => activeStance() === stanceIdByName("test_brawler"), 30000);
+  expect(myEp()?.mep).toBe(3);
+  expect(myEp()?.ep).toBe(3);
+}, 60000);
 
 test("swapping to a gait-starved stance drops the movement action", async () => {
   await player.reducers.setStance({ stanceId: stanceIdByName("test_prone") });
