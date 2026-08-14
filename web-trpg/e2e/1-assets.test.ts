@@ -7,9 +7,10 @@ import { TEST_ADMIN_TOKEN } from "./admin";
 import { minimalPack } from "./testAssets";
 import { NO_REQUIREMENTS } from "../src/Game/assets/stat_requirements";
 
-// Phase 1: the admin claim + asset pipeline against a real instance: pushes
-// are admin-gated, the publish-time token is a provisional password that dies
-// on rotation, and pushes are strict incremental updates.
+// Phase 1: the admin claim + asset pipeline against a real instance: the
+// first push bootstraps the empty instance openly, every later push is an
+// admin-gated UPDATE, the publish-time token is a provisional password that
+// dies on rotation, and pushes are strict incremental updates.
 
 let connection: DbConnection;
 
@@ -24,8 +25,14 @@ afterAll(() => {
   connection?.disconnect();
 });
 
-test("pushing is admin-gated and the bootstrap token dies on rotation", async () => {
-  // Unattached connections cannot push.
+test("the empty instance takes ONE open bootstrap push; updates are gated and the token dies on rotation", async () => {
+  // The FIRST push on an empty instance is deliberately open — auto-entry
+  // deployments bootstrap their own bundle — and the window closes the
+  // moment assets exist.
+  await connection.reducers.pushAssets({ assetPack: minimalPack() });
+  await waitFor(() => connection.db.actions.count() > 0);
+
+  // From here every push is an UPDATE: unattached connections cannot.
   await expect(
     connection.reducers.pushAssets({ assetPack: minimalPack() }),
   ).rejects.toThrow(/not attached/);
@@ -53,10 +60,10 @@ test("pushing is admin-gated and the bootstrap token dies on rotation", async ()
     connection.reducers.pushAssets({ assetPack: minimalPack() }),
   ).rejects.toThrow(/rotated/);
 
-  // Rotation destroys the provisional credential and unlocks the account.
+  // Rotation destroys the provisional credential and unlocks the account:
+  // an identical UPDATE push now succeeds.
   await connection.reducers.setPassword({ newPassword: "fresh-secret" });
   await connection.reducers.pushAssets({ assetPack: minimalPack() });
-  await waitFor(() => connection.db.actions.count() > 0);
   expect(connection.db.actions.count()).toBeGreaterThan(0);
 
   // The old token is gone: it can no longer claim anything, and the account
