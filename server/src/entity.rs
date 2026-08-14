@@ -1,7 +1,7 @@
 use crate::{
     action::ActionId,
     asset::stat_block::StatBlock,
-    item::{ItemRef, StanceArmaments},
+    item::{ItemRef, StanceLoadout},
 };
 use ecs::entity;
 use spacetimedb::Timestamp;
@@ -94,7 +94,7 @@ entity!(
     // rewrites EquipmentComponent (on assignment or stance swap).
     #[component(stance_loadouts in stance_loadouts_components)]
     struct StanceLoadoutsComponent {
-        pub assignments: Vec<StanceArmaments>,
+        pub assignments: Vec<StanceLoadout>,
     }
 
     // An entity that IS an item: takeable, droppable, and referenced by the

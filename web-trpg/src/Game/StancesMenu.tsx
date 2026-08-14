@@ -148,6 +148,21 @@ export const StancesMenu = () => {
     ]),
   ) as Record<IntStatKey, number>;
 
+  // The base ACTION grants, mirroring baseStats: the published total minus
+  // the active stance's grants and the in-hand armaments' grants.
+  const baseActionIds = (() => {
+    const ids = new Set(totalStatBlock?.actionIds ?? []);
+    for (const id of activeStanceBlock?.actionIds ?? []) {
+      ids.delete(id);
+    }
+    for (const armamentId of equippedArmamentIds) {
+      for (const id of armamentStats.get(armamentId)?.actionIds ?? []) {
+        ids.delete(id);
+      }
+    }
+    return [...ids];
+  })();
+
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
 
   // Gallery indicators: one dot per card; the leading (snapped) card is
@@ -188,8 +203,9 @@ export const StancesMenu = () => {
     <div className="StancesMenu">
       <div className="cards" ref={cardsRef} onScroll={handleScroll}>
         {shown.map((stance) => {
-        const assigned =
-          assignments.find((a) => a.stanceId === stance.id)?.armamentIds ?? [];
+        const loadout = assignments.find((a) => a.stanceId === stance.id);
+        const assigned = loadout?.armamentIds ?? [];
+        const assignedActions = loadout?.actionIds ?? [];
         const candidate = Object.fromEntries(
           ALL_STATS.map(([key]) => [
             key,
@@ -202,6 +218,23 @@ export const StancesMenu = () => {
         const grantedActionNames = [...stance.statBlock.actionIds].map(
           (id) => actionNames.get(id) ?? `#${id}`,
         );
+        // The stance's candidate ACTION pool: base grants (the total minus
+        // the active stance's and in-hand armaments' grants) plus this
+        // stance's grants plus its assigned armaments' grants. Assigning
+        // picks the pinned bar this stance carries in, in hotkey order.
+        const poolActionIds = [
+          ...new Set([
+            ...baseActionIds,
+            ...stance.statBlock.actionIds,
+            ...assigned.flatMap((id) => [
+              ...(armamentStats.get(id)?.actionIds ?? []),
+            ]),
+          ]),
+        ];
+        const toggledActions = (actionId: number) =>
+          assignedActions.includes(actionId)
+            ? assignedActions.filter((id) => id !== actionId)
+            : [...assignedActions, actionId];
         const isOn = (item: OwnedItem) =>
           assetInstanceIsOn({ ids: assigned, item, items: ownedArmaments });
         return (
@@ -252,6 +285,28 @@ export const StancesMenu = () => {
               );
             })}
             {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
+            <h4>Actions ({assignedActions.length}/10)</h4>
+            {poolActionIds.map((actionId) => {
+              const position = assignedActions.indexOf(actionId);
+              const on = position >= 0;
+              return (
+                <Button
+                  key={actionId}
+                  className={on ? "active" : ""}
+                  interesting={on}
+                  disabled={!on && assignedActions.length >= 10}
+                  onClick={() =>
+                    connection.reducers.assignStanceActions({
+                      stanceId: stance.id,
+                      actionIds: toggledActions(actionId),
+                    })
+                  }
+                >
+                  {on ? `${(position + 1) % 10} ` : ""}
+                  {actionNames.get(actionId) ?? `#${actionId}`}
+                </Button>
+              );
+            })}
           </section>
         );
         })}

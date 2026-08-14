@@ -55,6 +55,7 @@ beforeAll(async () => {
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
       "SELECT * FROM equipment_components",
+      "SELECT * FROM pinned_actions_components",
       "SELECT * FROM armor_components",
       "SELECT * FROM relics_components",
       "SELECT * FROM item_components",
@@ -173,6 +174,33 @@ test("loadout assignments re-arm on swap; a pocketed blade is not IN HAND", asyn
       )?.stanceId === duelingId,
     30000,
   );
+}, 60000);
+
+test("a stance's assigned ACTIONS become the pinned bar when it re-arms", async () => {
+  const takeId = idByName(player.db.actions, "test_take");
+  const standingId = idByName(player.db.stances, "test_standing");
+
+  // Outside the candidate pool: rejected at assignment time.
+  await expect(
+    player.reducers.assignStanceActions({
+      stanceId: standingId,
+      actionIds: [999999],
+    }),
+  ).rejects.toThrow(/pool/);
+
+  await player.reducers.assignStanceActions({
+    stanceId: standingId,
+    actionIds: [takeId],
+  });
+  // Configuration only — the bar changes when the stance change pays its
+  // round (we are in dueling from the previous test).
+  await player.reducers.setStance({ stanceId: standingId });
+  await waitFor(() => {
+    const row = [...player.db.pinned_actions_components.iter()].find(
+      (r) => r.entityId === playerEntityId,
+    );
+    return row != null && [...row.actionIds].join(",") === `${takeId}`;
+  }, 30000);
 }, 60000);
 
 test("the four-relic cap is enforced", async () => {

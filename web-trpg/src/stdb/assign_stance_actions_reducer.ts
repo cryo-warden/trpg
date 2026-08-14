@@ -9,14 +9,8 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  StanceLoadout,
-} from "./types";
 
-
-export default __t.row({
-  entityId: __t.u64().primaryKey().name("entity_id"),
-  get assignments() {
-    return __t.array(StanceLoadout);
-  },
-});
+export default {
+  stanceId: __t.u32(),
+  actionIds: __t.array(__t.u32()),
+};

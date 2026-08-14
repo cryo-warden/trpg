@@ -185,7 +185,12 @@ export const toggledAssetIds = ({
   return [...ids, item.assetId];
 };
 
-export type StanceAssignment = { stanceId: number; armamentIds: number[] };
+export type StanceAssignment = {
+  stanceId: number;
+  armamentIds: number[];
+  /** Bar order: position is the hotkey. Empty = leave the bar alone. */
+  actionIds: number[];
+};
 
 export const useMyStanceAssignments = (): StanceAssignment[] => {
   const playerEntity = usePlayerEntity();
@@ -200,6 +205,7 @@ export const useMyStanceAssignments = (): StanceAssignment[] => {
         : (row.assignments as StanceAssignment[]).map((a) => ({
             stanceId: a.stanceId,
             armamentIds: [...a.armamentIds],
+            actionIds: [...a.actionIds],
           }));
     },
     [playerEntity],

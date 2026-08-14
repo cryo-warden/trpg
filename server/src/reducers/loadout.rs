@@ -2,13 +2,14 @@ use ecs::{Ecs, WithEcs};
 use spacetimedb::{reducer, ReducerContext};
 
 use crate::{
+    action::actions,
     asset::{
         armament::armaments, armor::armors, baseline::baselines, relic::relics,
         stance::stances, stat_block::StatBlock,
     },
     ecs_extension::EcsExtension,
     entity::*,
-    item::{ItemRef, StanceArmaments},
+    item::{ItemRef, StanceLoadout},
 };
 
 /// Counts the gear the entity carries (carrying IS location), per matching
@@ -114,11 +115,77 @@ pub fn set_relics(ctx: &ReducerContext, relic_ids: Vec<u32>) -> Result<(), Strin
     Ok(())
 }
 
+/// The candidate context a stance loadout would produce: base parts
+/// rebuilt explicitly (baseline + traits + worn armor/relics + the
+/// CANDIDATE armaments + the stance) — never the current equipment cache.
+/// Its action_ids are the stance's full candidate action pool.
+fn candidate_stat_block(
+    ctx: &ReducerContext,
+    player_entity_id: u64,
+    stance: &crate::asset::stance::Stance,
+    armament_ids: &[u32],
+) -> StatBlock {
+    let ecs = ctx.ecs();
+    let handle = ecs.find(player_entity_id);
+    let mut candidate = { handle.baseline() }
+        .and_then(|b| ctx.db.baselines().id().find(b.baseline_id))
+        .map_or_else(StatBlock::default, |b| b.stat_block);
+    if let Some(c) = handle.traits_stat_block_cache() {
+        candidate += &c.stat_block;
+    }
+    if let Some(c) = handle.armor() {
+        if let Some(a) = ctx.db.armors().id().find(c.armor_id) {
+            candidate += &a.stat_block;
+        }
+    }
+    if let Some(c) = handle.relics() {
+        for id in &c.relic_ids {
+            if let Some(r) = ctx.db.relics().id().find(id) {
+                candidate += &r.stat_block;
+            }
+        }
+    }
+    for id in armament_ids {
+        if let Some(a) = ctx.db.armaments().id().find(id) {
+            candidate += &a.stat_block;
+        }
+    }
+    candidate += &stance.stat_block;
+    candidate
+}
+
+/// Replace one stance's loadout entry via `update`, preserving the rest.
+fn update_stance_loadout(
+    ctx: &ReducerContext,
+    player_entity_id: u64,
+    stance_id: u32,
+    update: impl FnOnce(StanceLoadout) -> StanceLoadout,
+) {
+    let handle = ctx.ecs().find(player_entity_id);
+    let mut assignments = { handle.stance_loadouts() }
+        .map(|c| c.assignments)
+        .unwrap_or_default();
+    let existing = assignments
+        .iter()
+        .find(|a| a.stance_id == stance_id)
+        .cloned()
+        .unwrap_or(StanceLoadout {
+            stance_id,
+            armament_ids: Vec::new(),
+            action_ids: Vec::new(),
+        });
+    assignments.retain(|a| a.stance_id != stance_id);
+    assignments.push(update(existing));
+    handle.upsert_new_stance_loadouts(assignments);
+}
+
 /// Assign armaments to one stance in the player's loadouts. Preparation-time
 /// validation happens HERE, where the player can read the outcome: the
 /// armaments must be owned, and the candidate context (base + gear + stance)
 /// must keep every counted property non-negative — two hands cannot hold
-/// three one-handed blades.
+/// three one-handed blades. CONFIGURATION ONLY: the loadout applies
+/// immediately as data, but the actual equipment changes solely through a
+/// stance change — which costs a round (the posture actions).
 #[reducer]
 pub fn assign_stance_armaments(
     ctx: &ReducerContext,
@@ -148,37 +215,10 @@ pub fn assign_stance_armaments(
         .collect();
     require_owned(&ecs, p.entity_id(), &requested)?;
 
-    // The candidate context this loadout would produce. base_stat_block
-    // includes the CURRENT equipment cache, so rebuild gear explicitly from
-    // the candidate parts instead.
-    let handle = p.to_handle().clone();
-    let mut candidate = { handle.baseline() }
-        .and_then(|b| ctx.db.baselines().id().find(b.baseline_id))
-        .map_or_else(StatBlock::default, |b| b.stat_block);
-    if let Some(c) = handle.traits_stat_block_cache() {
-        candidate += &c.stat_block;
-    }
-    if let Some(c) = handle.armor() {
-        if let Some(a) = ctx.db.armors().id().find(c.armor_id) {
-            candidate += &a.stat_block;
-        }
-    }
-    if let Some(c) = handle.relics() {
-        for id in &c.relic_ids {
-            if let Some(r) = ctx.db.relics().id().find(id) {
-                candidate += &r.stat_block;
-            }
-        }
-    }
-    for id in &armament_ids {
-        if let Some(a) = ctx.db.armaments().id().find(id) {
-            candidate += &a.stat_block;
-        }
-    }
     // The grip rule: two hands cannot hold three one-handed blades. (Other
     // counted properties gain their own feasibility rules as they need
     // them.)
-    candidate += &stance.stat_block;
+    let candidate = candidate_stat_block(ctx, p.entity_id(), &stance, &armament_ids);
     if candidate.hand < 0 {
         return Err(format!(
             "This loadout needs {} more grip than the body provides.",
@@ -186,19 +226,72 @@ pub fn assign_stance_armaments(
         ));
     }
 
-    let mut assignments = { handle.stance_loadouts() }
-        .map(|c| c.assignments)
-        .unwrap_or_default();
-    assignments.retain(|a| a.stance_id != stance_id);
-    assignments.push(StanceArmaments {
-        stance_id,
+    update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
         armament_ids,
+        ..loadout
     });
-    handle.upsert_new_stance_loadouts(assignments);
+    Ok(())
+}
 
-    // CONFIGURATION ONLY: the loadout applies immediately as data, but the
-    // ACTUAL equipment changes solely through a stance change — which costs
-    // a round (the posture actions). Even re-entering the current stance
-    // pays that round to re-arm.
+/// The bar hotkey positions cap the pinned set.
+const MAX_ASSIGNED_ACTIONS: usize = 10;
+
+/// Assign the ACTIONS one stance pins to the bar, in bar order (position is
+/// the hotkey). Each must come from the stance's candidate pool — what the
+/// body, traits, worn gear, ASSIGNED armaments, and the stance itself
+/// grant. Same configuration-only rule as armaments: the bar actually
+/// changes when a stance change pays its round.
+#[reducer]
+pub fn assign_stance_actions(
+    ctx: &ReducerContext,
+    stance_id: u32,
+    action_ids: Vec<u32>,
+) -> Result<(), String> {
+    let ecs = ctx.ecs();
+    let p = ecs
+        .from_player_identity(ctx.sender())
+        .ok_or("Cannot find a player entity.")?;
+    let stance = ctx
+        .db
+        .stances()
+        .id()
+        .find(stance_id)
+        .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
+    if action_ids.len() > MAX_ASSIGNED_ACTIONS {
+        return Err(format!(
+            "At most {} actions fit the bar; {} requested.",
+            MAX_ASSIGNED_ACTIONS,
+            action_ids.len()
+        ));
+    }
+
+    let assigned_armament_ids = { p.to_handle().stance_loadouts() }
+        .map(|c| c.assignments)
+        .unwrap_or_default()
+        .iter()
+        .find(|a| a.stance_id == stance_id)
+        .map(|a| a.armament_ids.clone())
+        .unwrap_or_default();
+    let pool = candidate_stat_block(ctx, p.entity_id(), &stance, &assigned_armament_ids)
+        .action_ids;
+    for id in &action_ids {
+        if !pool.contains(id) {
+            let name = ctx
+                .db
+                .actions()
+                .id()
+                .find(id)
+                .map_or_else(|| format!("#{}", id), |a| a.name);
+            return Err(format!(
+                "The action \"{}\" is not in this stance's candidate pool.",
+                name
+            ));
+        }
+    }
+
+    update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
+        action_ids,
+        ..loadout
+    });
     Ok(())
 }

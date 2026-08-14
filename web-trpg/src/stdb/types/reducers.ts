@@ -8,6 +8,7 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import AcceptLoginRequestReducer from "../accept_login_request_reducer";
 import ActReducer from "../act_reducer";
+import AssignStanceActionsReducer from "../assign_stance_actions_reducer";
 import AssignStanceArmamentsReducer from "../assign_stance_armaments_reducer";
 import BootstrapAdminReducer from "../bootstrap_admin_reducer";
 import ClearArmorReducer from "../clear_armor_reducer";
@@ -25,6 +26,7 @@ import SetStanceReducer from "../set_stance_reducer";
 
 export type AcceptLoginRequestParams = __Infer<typeof AcceptLoginRequestReducer>;
 export type ActParams = __Infer<typeof ActReducer>;
+export type AssignStanceActionsParams = __Infer<typeof AssignStanceActionsReducer>;
 export type AssignStanceArmamentsParams = __Infer<typeof AssignStanceArmamentsReducer>;
 export type BootstrapAdminParams = __Infer<typeof BootstrapAdminReducer>;
 export type ClearArmorParams = __Infer<typeof ClearArmorReducer>;

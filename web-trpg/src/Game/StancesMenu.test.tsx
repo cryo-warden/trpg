@@ -63,7 +63,11 @@ const tables = () => ({
     {
       entityId: 1n,
       assignments: [
-        { stanceId: stanceIdOf("dueling"), armamentIds: [armamentIdOf("sword")] },
+        {
+          stanceId: stanceIdOf("dueling"),
+          armamentIds: [armamentIdOf("sword")],
+          actionIds: [],
+        },
       ],
     },
   ]),
@@ -118,6 +122,26 @@ test("cards show categorized totals with deltas from the no-stance base", () => 
   const standing = cardOf(container, "standing")!;
   expect(standing.textContent).toContain("Hand 2 (0)");
   expect(standing.textContent).toContain("Attack 0 (0)");
+});
+
+test("assigning an action pins it into the stance's bar order", () => {
+  const assignStanceActions = mock(() => {});
+  const wrapper = gameWrapper(tables(), {
+    identity: {} as Identity,
+    reducers: { assignStanceActions },
+  });
+  const { container } = render(<StancesMenu />, { wrapper });
+
+  // Dueling's candidate pool includes its own grant, lunge.
+  const dueling = cardOf(container, "dueling")!;
+  const lunge = [...dueling.querySelectorAll("button")].find((button) =>
+    button.textContent!.includes("lunge"),
+  )!;
+  fireEvent.click(lunge);
+  expect(assignStanceActions).toHaveBeenCalledWith({
+    stanceId: stanceIdOf("dueling"),
+    actionIds: [actionIdOf("lunge")],
+  });
 });
 
 test("assigned armaments highlight and unassign; overweight ones disable", () => {

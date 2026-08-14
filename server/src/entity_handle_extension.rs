@@ -307,15 +307,25 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
 
         // A player with stance loadouts re-arms on swap: the new stance's
         // assigned armaments (or none, when unassigned) become the wielded
-        // set. Entities without loadouts keep their flat equipment.
+        // set, and its assigned ACTIONS become the pinned bar (an empty
+        // assignment leaves the bar alone). Entities without loadouts keep
+        // their flat equipment.
         if let Some(loadouts) = handle.stance_loadouts() {
-            let armament_ids = loadouts
+            let loadout = loadouts
                 .assignments
                 .iter()
                 .find(|a| a.stance_id == stance_id)
-                .map(|a| a.armament_ids.to_owned())
+                .cloned();
+            let armament_ids = loadout
+                .as_ref()
+                .map(|a| a.armament_ids.clone())
                 .unwrap_or_default();
-            handle.upsert_new_equipment(armament_ids);
+            let handle = handle.clone().upsert_new_equipment(armament_ids).into_handle();
+            if let Some(action_ids) =
+                loadout.map(|a| a.action_ids).filter(|ids| !ids.is_empty())
+            {
+                handle.upsert_new_pinned_actions(action_ids);
+            }
         }
         Ok(())
     }

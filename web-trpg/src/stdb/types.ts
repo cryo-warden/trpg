@@ -1212,12 +1212,6 @@ export const Stance = __t.object("Stance", {
 });
 export type Stance = __Infer<typeof Stance>;
 
-export const StanceArmaments = __t.object("StanceArmaments", {
-  stanceId: __t.u32(),
-  armamentIds: __t.array(__t.u32()),
-});
-export type StanceArmaments = __Infer<typeof StanceArmaments>;
-
 export const StanceAsset = __t.object("StanceAsset", {
   get requirements() {
     return StatRequirements;
@@ -1228,17 +1222,24 @@ export const StanceAsset = __t.object("StanceAsset", {
 });
 export type StanceAsset = __Infer<typeof StanceAsset>;
 
+export const StanceLoadout = __t.object("StanceLoadout", {
+  stanceId: __t.u32(),
+  armamentIds: __t.array(__t.u32()),
+  actionIds: __t.array(__t.u32()),
+});
+export type StanceLoadout = __Infer<typeof StanceLoadout>;
+
 export const StanceLoadoutsComponent = __t.object("StanceLoadoutsComponent", {
   entityId: __t.u64(),
   get assignments() {
-    return __t.array(StanceArmaments);
+    return __t.array(StanceLoadout);
   },
 });
 export type StanceLoadoutsComponent = __Infer<typeof StanceLoadoutsComponent>;
 
 export const StanceLoadoutsComponentBlob = __t.object("StanceLoadoutsComponentBlob", {
   get assignments() {
-    return __t.array(StanceArmaments);
+    return __t.array(StanceLoadout);
   },
 });
 export type StanceLoadoutsComponentBlob = __Infer<typeof StanceLoadoutsComponentBlob>;

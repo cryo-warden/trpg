@@ -36,6 +36,7 @@ import {
 // Import all reducer arg schemas
 import AcceptLoginRequestReducer from "./accept_login_request_reducer";
 import ActReducer from "./act_reducer";
+import AssignStanceActionsReducer from "./assign_stance_actions_reducer";
 import AssignStanceArmamentsReducer from "./assign_stance_armaments_reducer";
 import BootstrapAdminReducer from "./bootstrap_admin_reducer";
 import ClearArmorReducer from "./clear_armor_reducer";
@@ -904,6 +905,7 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_login_request", AcceptLoginRequestReducer),
   __reducerSchema("act", ActReducer),
+  __reducerSchema("assign_stance_actions", AssignStanceActionsReducer),
   __reducerSchema("assign_stance_armaments", AssignStanceArmamentsReducer),
   __reducerSchema("bootstrap_admin", BootstrapAdminReducer),
   __reducerSchema("clear_armor", ClearArmorReducer),
