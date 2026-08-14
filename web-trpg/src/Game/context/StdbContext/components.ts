@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { getActionOptions } from "../../domain/actionOptions";
+import { bitIsSet } from "../../domain/bitset";
 import { assetInstanceIsOn } from "../../domain/countedAssets";
 import { ActionId, EntityId } from "../../trpg";
 import { useMyAccountId } from "./account";
@@ -61,6 +62,7 @@ export const componentQueries = [
   "select * from player_controller_components",
   "select * from queued_action_state_components",
   "select * from entities_visited_locations",
+  "select * from entities_quests_progress",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -123,6 +125,37 @@ export const useLocation = (entityId: EntityId | null) => {
   return component.locationEntityId;
 };
 
+/** A quest item's freshness FOR THE VIEWER — null when the entity is no
+ * quest item at all. "Stinky" the moment the viewer holds its bit,
+ * EVERYWHERE it renders (on the ground before pickup included), so a
+ * duplicate never masquerades as a reward. Per-viewer on purpose: my
+ * stinky cookie is a companion's fresh one. */
+export const useQuestItemFreshness = (
+  entityId: EntityId | null,
+): "fresh" | "stinky" | null => {
+  const playerEntity = usePlayerEntity();
+  const item = useItemComponent(entityId);
+  const progressRows = useTableData(
+    "entities_quests_progress",
+    (table) => [...table.iter()],
+    [],
+  );
+  return useMemo(() => {
+    const ref = item?.itemRef;
+    if (ref == null || ref.tag !== "QuestItem") {
+      return null;
+    }
+    const row = progressRows.find(
+      (progress) =>
+        progress.entityId === playerEntity &&
+        progress.questId === ref.value.questId,
+    );
+    return row != null && bitIsSet(row.bits, ref.value.index)
+      ? "stinky"
+      : "fresh";
+  }, [item, progressRows, playerEntity]);
+};
+
 /** This carried item INSTANCE counts as equipped/worn: the same counted-
  * multiset rule the menus use, so an item's Equip/Unequip options can
  * never disagree with its highlight anywhere else. */
@@ -174,6 +207,10 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
     if (ref.tag === "Armor") {
       return armor?.armorId === ref.value;
     }
+    if (ref.tag === "QuestItem") {
+      // Quest items are eaten, never worn.
+      return false;
+    }
     // Counted kinds: which instances of this asset the player carries, in
     // stable row order, decides whether THIS instance is on.
     const carried = new Set(
@@ -181,9 +218,14 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
         .filter((row) => row.locationEntityId === playerEntity)
         .map((row) => row.entityId),
     );
-    const carriedSameKind = itemRows
-      .filter((row) => carried.has(row.entityId) && row.itemRef.tag === ref.tag)
-      .map((row) => ({ entityId: row.entityId, assetId: row.itemRef.value }));
+    const carriedSameKind = itemRows.flatMap((row) => {
+      const rowRef = row.itemRef;
+      return carried.has(row.entityId) &&
+        rowRef.tag !== "QuestItem" &&
+        rowRef.tag === ref.tag
+        ? [{ entityId: row.entityId, assetId: rowRef.value }]
+        : [];
+    });
     const onIds: number[] =
       ref.tag === "Armament"
         ? [...(defaultArmaments?.armamentIds ?? [])]
@@ -219,6 +261,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   const targetLocation = useLocationComponent(focus);
   const targetCheckpointObject = useCheckpointObjectComponent(focus);
   const targetIsEquipped = useTargetIsEquipped(focus);
+  const targetQuestItemFreshness = useQuestItemFreshness(focus);
 
   return useMemo(
     () =>
@@ -233,6 +276,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
           targetLocation?.locationEntityId === playerEntity,
         targetIsEquipped,
         targetHasCheckpointObject: !!targetCheckpointObject,
+        targetQuestItemFreshness,
         playerEntity,
         target: focus,
         playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
@@ -250,6 +294,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
       targetLocation,
       targetCheckpointObject,
       targetIsEquipped,
+      targetQuestItemFreshness,
       focus,
     ],
   );

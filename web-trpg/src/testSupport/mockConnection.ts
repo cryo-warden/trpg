@@ -10,6 +10,7 @@ import {
 } from "../Game/assets/appearance_features";
 import { ARMAMENTS, ArmamentName } from "../Game/assets/armaments";
 import { ARMORS, ArmorName } from "../Game/assets/armors";
+import { QUESTS, QuestName } from "../Game/assets/quests";
 import { RELICS, RelicName } from "../Game/assets/relics";
 import { STANCES, StanceName } from "../Game/assets/stances";
 
@@ -144,6 +145,14 @@ export const mockAssetTables = () => ({
       statBlock: resolveMockStatBlock(statBlock),
     })),
   ),
+  quests: mockTable(
+    Object.entries(QUESTS).map(([name, quest], id) => ({
+      id,
+      name,
+      perBitStatBlock: resolveMockStatBlock(quest.perBitStatBlock),
+      bitCount: quest.bitCount,
+    })),
+  ),
 });
 
 export const actionIdOf = (name: ActionName): number =>
@@ -160,6 +169,9 @@ export const armorIdOf = (name: ArmorName): number =>
 
 export const relicIdOf = (name: RelicName): number =>
   Object.keys(RELICS).indexOf(name);
+
+export const questIdOf = (name: QuestName): number =>
+  Object.keys(QUESTS).indexOf(name);
 
 /** The account every mocked identity belongs to unless a test overrides the
  * account_identities table. */
@@ -213,6 +225,7 @@ export const stdbWrapper = (
       default_armaments_components: mockTable([]),
       queued_action_state_components: mockTable([]),
       entities_visited_locations: mockTable([]),
+      entities_quests_progress: mockTable([]),
       action_hotkeys_components: mockTable([]),
       appearance_features_components: mockTable([]),
       ...tables,

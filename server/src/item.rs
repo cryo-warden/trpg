@@ -1,12 +1,22 @@
 use spacetimedb::SpacetimeType;
 
-/// What an item entity IS: one reference into exactly one gear asset kind.
+/// One specific bit of one specific quest, carried by a physical item:
+/// eating the item sets the bit. Duplicates of an index may exist across
+/// maps and instances — supply is limited by BITS, not physical items.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestItemRef {
+    pub quest_id: u32,
+    pub index: u32,
+}
+
+/// What an item entity IS: one reference into exactly one asset kind.
 /// An explicit sum type, never inferred from names or table probing.
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ItemRef {
     Armament(u32),
     Armor(u32),
     Relic(u32),
+    QuestItem(QuestItemRef),
 }
 
 /// One stance's loadout inside a player's assignments. INTENT IS EXPLICIT

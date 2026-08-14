@@ -28,6 +28,7 @@ export const assetQueries = [
   "select * from action_rounds",
   "select * from appearance_features",
   "select * from stances",
+  "select * from quests",
 ];
 
 /** The subscribed stance rows (id + name), ordered by id. */

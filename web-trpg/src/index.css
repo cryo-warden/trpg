@@ -10,6 +10,11 @@ html {
   scrollbar-color: #333 #000;
 }
 
+/* A quest item whose bit the VIEWER already holds: visibly not a reward. */
+.stinky {
+  opacity: 0.55;
+}
+
 /* The ONE "more interesting" marker: a small gold dot in the top-right
  * corner of whatever carries it — paths to unvisited places, worn gear,
  * a stance's assigned armaments. */

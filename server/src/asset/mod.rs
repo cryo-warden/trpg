@@ -232,6 +232,12 @@ fn resolve_entity_blob(
                         ItemRefAsset::Relic(n) => {
                             ItemRef::Relic(resolve_name(&maps.relics, "relic", &n)?)
                         }
+                        ItemRefAsset::QuestItem(q) => {
+                            ItemRef::QuestItem(crate::item::QuestItemRef {
+                                quest_id: resolve_name(&maps.quests, "quest", &q.quest_name)?,
+                                index: q.index,
+                            })
+                        }
                     },
                 })
             })
@@ -364,6 +370,7 @@ fn resolve_action_effect(
         ActionEffectAsset::Drop => ActionEffect::Drop,
         ActionEffectAsset::Equip => ActionEffect::Equip,
         ActionEffectAsset::Unequip => ActionEffect::Unequip,
+        ActionEffectAsset::Eat => ActionEffect::Eat,
         ActionEffectAsset::Intimidate(magnitude) => ActionEffect::Intimidate(magnitude),
         ActionEffectAsset::Rally => ActionEffect::Rally,
         ActionEffectAsset::Dive(defense) => ActionEffect::Dive(defense),

@@ -13,6 +13,9 @@ pub enum ActionType {
     /// Targets a CARRIED item: wield/wear it or put it away. Equipping and
     /// unequipping mirror into the active stance's loadout configuration.
     Equip,
+    /// Targets a CARRIED consumable (quest items first): eating sets the
+    /// item's quest bit and destroys the item.
+    Eat,
     /// Targets self, or an item within reach to grab mid-dive.
     Dive,
     /// Targets a co-located checkpoint object (fortune-telling scenery) to
@@ -55,6 +58,7 @@ pub enum ActionEffect {
     Drop,
     Equip,
     Unequip,
+    Eat,
     /// AUTHORED extra intimidation (heavies put it on their telegraph
     /// rounds; a roar is nothing but this). Every round also carries an
     /// implicit size-delta intimidation against all enemies present; the

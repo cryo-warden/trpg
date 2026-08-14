@@ -26,7 +26,6 @@ pub struct EntitiesQuestsProgress {
 /// on first touch — and dirties the quest stat cache. Returns false when
 /// the bit was already set: nothing changed, nothing re-derives (and the
 /// caller's effect reads as refused — the cookie smelled off).
-#[allow(dead_code)] // First caller is the Eat effect, next slice.
 pub fn set_quest_bit(ecs: Ecs, entity_id: u64, quest_id: u32, index: u32) -> bool {
     let existing = ecs
         .db

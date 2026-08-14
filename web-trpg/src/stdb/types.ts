@@ -77,6 +77,7 @@ export const ActionEffect = __t.enum("ActionEffect", {
   Drop: __t.unit(),
   Equip: __t.unit(),
   Unequip: __t.unit(),
+  Eat: __t.unit(),
   Intimidate: __t.i16(),
   Rally: __t.unit(),
   Dive: __t.i16(),
@@ -97,6 +98,7 @@ export const ActionEffectAsset = __t.enum("ActionEffectAsset", {
   Drop: __t.unit(),
   Equip: __t.unit(),
   Unequip: __t.unit(),
+  Eat: __t.unit(),
   Intimidate: __t.i16(),
   Rally: __t.unit(),
   Dive: __t.i16(),
@@ -148,6 +150,7 @@ export const ActionType = __t.enum("ActionType", {
   Move: __t.unit(),
   Inventory: __t.unit(),
   Equip: __t.unit(),
+  Eat: __t.unit(),
   Dive: __t.unit(),
   Attune: __t.unit(),
   Posture: __t.unit(),
@@ -832,6 +835,9 @@ export const ItemRef = __t.enum("ItemRef", {
   Armament: __t.u32(),
   Armor: __t.u32(),
   Relic: __t.u32(),
+  get QuestItem() {
+    return QuestItemRef;
+  },
 });
 export type ItemRef = __Infer<typeof ItemRef>;
 
@@ -840,6 +846,9 @@ export const ItemRefAsset = __t.enum("ItemRefAsset", {
   Armament: __t.string(),
   Armor: __t.string(),
   Relic: __t.string(),
+  get QuestItem() {
+    return QuestItemRefAsset;
+  },
 });
 export type ItemRefAsset = __Infer<typeof ItemRefAsset>;
 
@@ -1213,6 +1222,18 @@ export const QuestAsset = __t.object("QuestAsset", {
   bitCount: __t.u32(),
 });
 export type QuestAsset = __Infer<typeof QuestAsset>;
+
+export const QuestItemRef = __t.object("QuestItemRef", {
+  questId: __t.u32(),
+  index: __t.u32(),
+});
+export type QuestItemRef = __Infer<typeof QuestItemRef>;
+
+export const QuestItemRefAsset = __t.object("QuestItemRefAsset", {
+  questName: __t.string(),
+  index: __t.u32(),
+});
+export type QuestItemRefAsset = __Infer<typeof QuestItemRefAsset>;
 
 export const Relic = __t.object("Relic", {
   id: __t.u32(),

@@ -83,6 +83,7 @@ test("getActionOptions offers attacks and moves against a hostile, reachable tar
       targetCarriedByPlayer: false,
       targetIsEquipped: false,
       targetHasCheckpointObject: false,
+      targetQuestItemFreshness: null,
     }),
   ).toEqual([attackId, moveId]);
 });
@@ -99,6 +100,7 @@ test("getActionOptions offers buffs against an ally with hp", () => {
       targetCarriedByPlayer: false,
       targetIsEquipped: false,
       targetHasCheckpointObject: false,
+      targetQuestItemFreshness: null,
     }),
   ).toEqual([buffId]);
 });
@@ -115,6 +117,7 @@ test("getActionOptions offers nothing when the target has no hp and no path", ()
       targetCarriedByPlayer: false,
       targetIsEquipped: false,
       targetHasCheckpointObject: false,
+      targetQuestItemFreshness: null,
     }),
   ).toEqual([]);
 });
@@ -133,6 +136,7 @@ test("an item beside you offers take, never drop", () => {
       targetCarriedByPlayer: false,
       targetIsEquipped: false,
       targetHasCheckpointObject: false,
+      targetQuestItemFreshness: null,
     }),
   ).toEqual([takeId]);
 });
@@ -151,6 +155,7 @@ test("a carried item offers drop, never take — decided by entity containment a
       targetCarriedByPlayer: true,
       targetIsEquipped: false,
       targetHasCheckpointObject: false,
+      targetQuestItemFreshness: null,
     }),
   ).toEqual([dropId]);
 });
@@ -167,6 +172,7 @@ test("a carried item offers equip when pocketed, unequip when equipped", () => {
     targetHasItem: true,
     targetCarriedByPlayer: true,
     targetHasCheckpointObject: false,
+    targetQuestItemFreshness: null,
   };
   expect(
     getActionOptions({ ...carriedItem, targetIsEquipped: false }),
@@ -197,8 +203,40 @@ test("getActionOptions offers attune against a checkpoint object", () => {
       targetCarriedByPlayer: false,
       targetIsEquipped: false,
       targetHasCheckpointObject: true,
+      targetQuestItemFreshness: null,
     }),
   ).toEqual([attuneId]);
+});
+
+test("only a FRESH carried quest item offers Eat; stinky never does", () => {
+  const eatId = actionIdOf("eat");
+  const carriedCookie = {
+    ...enemy,
+    actionIds: [eatId],
+    actionAssetOf,
+    targetHasHp: false,
+    targetHasPath: false,
+    targetHasItem: true,
+    targetCarriedByPlayer: true,
+    targetIsEquipped: false,
+    targetHasCheckpointObject: false,
+  };
+  expect(
+    getActionOptions({
+      ...carriedCookie,
+      targetQuestItemFreshness: "fresh" as const,
+    }),
+  ).toEqual([eatId]);
+  expect(
+    getActionOptions({
+      ...carriedCookie,
+      targetQuestItemFreshness: "stinky" as const,
+    }),
+  ).toEqual([]);
+  // Not a quest item at all: nothing to eat.
+  expect(
+    getActionOptions({ ...carriedCookie, targetQuestItemFreshness: null }),
+  ).toEqual([]);
 });
 
 test("getActionOptions drops unknown action ids", () => {
@@ -213,6 +251,7 @@ test("getActionOptions drops unknown action ids", () => {
       targetCarriedByPlayer: false,
       targetIsEquipped: false,
       targetHasCheckpointObject: false,
+      targetQuestItemFreshness: null,
     }),
   ).toEqual([]);
 });

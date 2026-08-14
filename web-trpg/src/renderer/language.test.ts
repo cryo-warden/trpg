@@ -89,6 +89,9 @@ for (const [label, language] of [
     expect(render(actionEffect({ tag: "Unequip" }))).toBe(
       "The goblin put away the hero.",
     );
+    expect(render(actionEffect({ tag: "Eat" }))).toBe(
+      "The goblin ate the hero.",
+    );
   });
 
   test(`${label}: does not narrate buff or unknown events`, () => {

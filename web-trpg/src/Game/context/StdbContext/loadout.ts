@@ -17,7 +17,9 @@ export type GearKind = "Armament" | "Armor" | "Relic";
 
 export type OwnedItem = {
   entityId: EntityId;
-  kind: GearKind;
+  kind: GearKind | "QuestItem";
+  /** Gear asset id — or the QUEST id for quest items (their instance
+   * identity is the quest bit, not a gear asset). */
   assetId: number;
   name: string;
 };
@@ -42,6 +44,11 @@ export const useOwnedItems = (): OwnedItem[] => {
   const armamentNames = useNameMap("armaments");
   const armorNames = useNameMap("armors");
   const relicNames = useNameMap("relics");
+  const questNames = useTableData(
+    "quests",
+    (t) => new Map<number, string>([...t.iter()].map((row) => [row.id, row.name])),
+    [],
+  );
 
   return useMemo(() => {
     if (playerEntity == null) {
@@ -56,6 +63,15 @@ export const useOwnedItems = (): OwnedItem[] => {
       .filter((row) => carried.has(row.entityId))
       .map((row) => {
         const ref = row.itemRef;
+        if (ref.tag === "QuestItem") {
+          const questId = ref.value.questId;
+          return {
+            entityId: row.entityId,
+            kind: "QuestItem" as const,
+            assetId: questId,
+            name: questNames.get(questId) ?? `#${questId}`,
+          };
+        }
         const names =
           ref.tag === "Armament"
             ? armamentNames
@@ -69,7 +85,15 @@ export const useOwnedItems = (): OwnedItem[] => {
           name: names.get(ref.value) ?? `#${ref.value}`,
         };
       });
-  }, [playerEntity, locationRows, itemRows, armamentNames, armorNames, relicNames]);
+  }, [
+    playerEntity,
+    locationRows,
+    itemRows,
+    armamentNames,
+    armorNames,
+    relicNames,
+    questNames,
+  ]);
 };
 
 export const useMyArmorId = (): number | null => {

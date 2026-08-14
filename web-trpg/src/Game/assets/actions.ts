@@ -23,6 +23,7 @@ const Take = { tag: "Take" } as const satisfies ActionEffectAsset;
 const Drop = { tag: "Drop" } as const satisfies ActionEffectAsset;
 const EquipEffect = { tag: "Equip" } as const satisfies ActionEffectAsset;
 const UnequipEffect = { tag: "Unequip" } as const satisfies ActionEffectAsset;
+const EatEffect = { tag: "Eat" } as const satisfies ActionEffectAsset;
 const Intimidate = (value: number) =>
   ({ tag: "Intimidate", value }) as const satisfies ActionEffectAsset;
 const Rally = { tag: "Rally" } as const satisfies ActionEffectAsset;
@@ -188,6 +189,13 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [round(UnequipEffect)],
   },
+  // Eating a carried quest consumable sets its quest bit (permanent
+  // progression through the ratchet) and destroys the item.
+  eat: {
+    actionType: { tag: "Eat" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(EatEffect)],
+  },
   // The cower stance's counterplay: spends EP dynamically — exactly the
   // deficit against the fear — for a courage status that overcomes it.
   rally: {
@@ -332,6 +340,10 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   unequip: {
     displayName: "Unequip",
     beginTemplate: "{0:sentence:subject} put away {1:object}.",
+  },
+  eat: {
+    displayName: "Eat",
+    beginTemplate: "{0:sentence:subject} bit into {1:object}.",
   },
   rally: {
     displayName: "Rally",

@@ -47,6 +47,10 @@ export type ActionOptionInputs = AllegianceInputs & {
   targetIsEquipped: boolean;
   /** The target is attunable fortune-telling scenery (a checkpoint). */
   targetHasCheckpointObject: boolean;
+  /** Quest-item freshness FOR THE VIEWER; null when not a quest item.
+   * Only a fresh, carried quest item offers Eat — a stinky one (its bit
+   * already held) never does. */
+  targetQuestItemFreshness: "fresh" | "stinky" | null;
 };
 
 /** The subset of the player's actions that are valid against the target. */
@@ -59,6 +63,7 @@ export const getActionOptions = ({
   targetCarriedByPlayer,
   targetIsEquipped,
   targetHasCheckpointObject,
+  targetQuestItemFreshness,
   ...allegiance
 }: ActionOptionInputs): ActionId[] => {
   const ally = isAlly(allegiance);
@@ -102,6 +107,14 @@ export const getActionOptions = ({
         }
         return false;
       }
+      // Only a FRESH, carried quest item is edible: a stinky one (the
+      // viewer already holds its bit) never offers the action at all.
+      case "Eat":
+        return (
+          targetHasItem &&
+          targetCarriedByPlayer &&
+          targetQuestItemFreshness === "fresh"
+        );
       // Hit the deck where you stand, or dive at an item BESIDE you to
       // grab it (never one already carried).
       case "Dive":

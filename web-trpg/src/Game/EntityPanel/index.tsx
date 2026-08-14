@@ -9,6 +9,7 @@ import {
   useMyVisitedLocationIds,
   usePathComponent,
   usePlayerEntity,
+  useQuestItemFreshness,
 } from "../context/StdbContext/components";
 import { EntityName } from "../EntityName";
 import { EntityId } from "../trpg";
@@ -38,6 +39,9 @@ export const EntityPanel = ({
   const visited = useMyVisitedLocationIds();
   const leadsSomewhereNew =
     path != null && !visited.has(path.destinationEntityId);
+  // Per-viewer quest-item freshness: a stinky duplicate reads as such
+  // EVERYWHERE — on the ground before pickup included.
+  const questFreshness = useQuestItemFreshness(entity);
   const focusThis = useCallback(() => {
     setFocus(entity);
   }, [entity, setFocus]);
@@ -66,11 +70,15 @@ export const EntityPanel = ({
         getClassName(entity),
         entity === focus ? "focused" : "",
         leadsSomewhereNew ? "interesting" : "",
+        questFreshness === "stinky" ? "stinky" : "",
       ].join(" ")}
       onClick={focusThis}
     >
       <div>
         <EntityName entityId={entity} />
+        {questFreshness === "stinky" && (
+          <span className="questFreshness"> (stinky)</span>
+        )}
         {actionPhase === "preparing" && (
           <span className="actionPhase"> — preparing…</span>
         )}

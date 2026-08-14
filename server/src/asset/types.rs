@@ -51,6 +51,7 @@ pub enum ActionEffectAsset {
     Drop,
     Equip,
     Unequip,
+    Eat,
     Intimidate(i16),
     Rally,
     Dive(i16),
@@ -135,6 +136,15 @@ pub enum ItemRefAsset {
     Armament(String),
     Armor(String),
     Relic(String),
+    QuestItem(QuestItemRefAsset),
+}
+
+/// A quest item authored by quest NAME plus bit index; push_assets
+/// resolves the name and validates the index against the quest's bitCount.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestItemRefAsset {
+    pub quest_name: String,
+    pub index: u32,
 }
 
 /// The authored form of an entity blob: components whose fields reference

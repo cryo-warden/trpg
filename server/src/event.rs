@@ -136,6 +136,8 @@ secador::secador!(
                     owner.upsert_new_relics(relic_ids);
                     true
                 }
+                // Quest items are eaten, never worn.
+                crate::item::ItemRef::QuestItem(_) => false,
             }
         }
 
@@ -193,6 +195,8 @@ secador::secador!(
                     owner.upsert_new_relics(relic_ids);
                     true
                 }
+                // Quest items are eaten, never worn.
+                crate::item::ItemRef::QuestItem(_) => false,
             }
         }
 
@@ -308,6 +312,46 @@ secador::secador!(
                         }
                         ActionEffect::Unequip => {
                             unequip_item(ecs, self.owner_entity_id, target_entity_id)
+                        }
+                        // Eating a CARRIED quest item sets its bit (the
+                        // quest cache re-derives; mhp/mep rise through the
+                        // ratchet) and destroys the item. A bit already
+                        // held refuses — that cookie smelled off for a
+                        // reason — and the item survives for whoever still
+                        // finds it fresh.
+                        ActionEffect::Eat => {
+                            let carried = ecs
+                                .db
+                                .location_components()
+                                .entity_id()
+                                .find(target_entity_id)
+                                .is_some_and(|l| {
+                                    l.location_entity_id == self.owner_entity_id
+                                });
+                            let item = ecs
+                                .db
+                                .item_components()
+                                .entity_id()
+                                .find(target_entity_id);
+                            match (carried, item.map(|i| i.item_ref)) {
+                                (true, Some(crate::item::ItemRef::QuestItem(q))) => {
+                                    if crate::quest::set_quest_bit(
+                                        ecs,
+                                        self.owner_entity_id,
+                                        q.quest_id,
+                                        q.index,
+                                    ) {
+                                        crate::system::delete_entity_with_joins(
+                                            ecs,
+                                            target_entity_id,
+                                        );
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                }
+                                _ => false,
+                            }
                         }
                         // Fear, resolved in the early phase so it lands
                         // before this tick's blows. Morale is RIGID; the

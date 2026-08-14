@@ -210,6 +210,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                     ItemRef::Relic(id) => {
                         ecs.db.relics().id().find(id).map(|r| r.stat_block.action_ids)
                     }
+                    // Quest items grant no actions; their worth is the bit.
+                    ItemRef::QuestItem(_) => None,
                 };
                 action_queue.extend(grants.unwrap_or_default());
             }
@@ -450,8 +452,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             match a.action_type {
                 ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),
-                // Equip/unequip target an item the actor CARRIES.
-                ActionType::Equip => {
+                // Equip/unequip and eat target an item the actor CARRIES.
+                ActionType::Equip | ActionType::Eat => {
                     o.item().is_some()
                         && { o.location() }
                             .is_some_and(|l| l.location_entity_id == e.entity_id())

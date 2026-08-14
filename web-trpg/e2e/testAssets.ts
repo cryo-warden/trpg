@@ -812,3 +812,75 @@ export const combatPack = ({
     }),
   ],
 });
+
+/**
+ * A quest world: one 3-bit cookie quest (+1 mhp per bit), an eater with
+ * take + eat, and three cookie items in the shared room — TWO carrying the
+ * SAME index (duplicates are expected under the spawn-window model; supply
+ * is limited by BITS) and one fresh second index.
+ */
+export const questPack = (): AssetPack => ({
+  ...emptyPack(),
+  quests: [
+    {
+      name: "test_red_cookies",
+      value: { perBitStatBlock: statBlock({ mhp: 1 }), bitCount: 3 },
+    },
+  ],
+  actions: [
+    {
+      name: "test_take",
+      value: {
+        actionType: { tag: "Inventory" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Take" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_eat",
+      value: {
+        actionType: { tag: "Eat" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Eat" }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_human",
+      value: statBlock({
+        mhp: 5,
+        hand: 2,
+        gait: 2,
+        actionNames: ["test_take", "test_eat"],
+      }),
+    },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_human",
+    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+  }),
+  instantiateEntityBlobs: [
+    blob({
+      item: {
+        tag: "QuestItem",
+        value: { questName: "test_red_cookies", index: 0 },
+      },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    blob({
+      item: {
+        tag: "QuestItem",
+        value: { questName: "test_red_cookies", index: 0 },
+      },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+    blob({
+      item: {
+        tag: "QuestItem",
+        value: { questName: "test_red_cookies", index: 1 },
+      },
+      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    }),
+  ],
+});

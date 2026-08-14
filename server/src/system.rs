@@ -360,7 +360,7 @@ pub fn action_system(ecs: Ecs) {
 /// locations, quest progress) die with it, then the entity itself. Every
 /// deletion site calls this — never `.delete()` directly — so a new join
 /// table has exactly one place to hook.
-fn delete_entity_with_joins(ecs: Ecs, entity_id: u64) {
+pub(crate) fn delete_entity_with_joins(ecs: Ecs, entity_id: u64) {
     crate::visited::cleanup_visited_rows(ecs, entity_id);
     crate::quest::cleanup_quest_rows(ecs, entity_id);
     ecs.find(entity_id).delete();
