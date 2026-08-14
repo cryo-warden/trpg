@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { getActionOptions } from "../../domain/actionOptions";
 import { ActionId, EntityId } from "../../trpg";
 import { useMyAccountId } from "./account";
-import { useActionAsset, useActionAssetOf } from "./assetLookup";
+import { useActionAssetOf } from "./assetLookup";
 import { RowType } from "./RowType";
 import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
@@ -42,8 +42,6 @@ export const componentQueries = [
   "select * from actions_components",
   "select * from active_stance_components",
   "select * from total_stat_block_components",
-  "select * from fear_status_components",
-  "select * from courage_status_components",
   "select * from item_components",
   "select * from checkpoint_object_components",
   "select * from armor_components",
@@ -54,7 +52,6 @@ export const componentQueries = [
   "select * from allegiance_components",
   "select * from enemy_controller_components",
   "select * from appearance_features_components",
-  "select * from attack_components",
   "select * from ep_components",
   "select * from hp_components",
   "select * from location_components",
@@ -71,17 +68,10 @@ export const useActionStateComponent = createUseComponent(
   "action_state_components",
 );
 export const useActionsComponent = createUseComponent("actions_components");
-export const useAttackComponent = createUseComponent("attack_components");
 /** The stored applied total: rigid stats (morale, size, properties) read
  * straight from here rather than per-stat components. */
 export const useTotalStatBlockComponent = createUseComponent(
   "total_stat_block_components",
-);
-export const useFearStatusComponent = createUseComponent(
-  "fear_status_components",
-);
-export const useCourageStatusComponent = createUseComponent(
-  "courage_status_components",
 );
 export const useEpComponent = createUseComponent("ep_components");
 export const useHpComponent = createUseComponent("hp_components");
@@ -341,5 +331,3 @@ export const usePlayerEntity = (): EntityId | null => {
 
   return playerControllerComponent.entityId;
 };
-
-export const useAction = (id: ActionId | null) => useActionAsset(id);

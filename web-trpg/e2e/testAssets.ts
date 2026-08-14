@@ -21,6 +21,23 @@ const blob = (partial: Partial<EntityBlobAsset>): EntityBlobAsset =>
  * need not correspond to a real room entity. */
 const SHARED_LOCATION_ID = 999n;
 
+/** A posture action: one round spent adopting the named stance. Stances
+ * have no "known" state, so every stance a test adopts or probes needs
+ * one of these making it REACHABLE. */
+const postureAction = (name: string, stanceName: string) => ({
+  name,
+  value: {
+    actionType: { tag: "Posture" } as const,
+    requirements: NO_REQUIREMENTS,
+    rounds: [
+      {
+        effects: [{ tag: "SetStance", value: stanceName } as const],
+        interruptible: false,
+      },
+    ],
+  },
+});
+
 const emptyPack = (): AssetPack => ({
   actions: [],
   appearanceFeatures: [],
@@ -199,48 +216,9 @@ export const stancePack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
       },
     },
-    {
-      name: "test_lie",
-      value: {
-        actionType: { tag: "Posture" },
-        requirements: NO_REQUIREMENTS,
-        rounds: [
-          {
-            effects: [{ tag: "SetStance", value: "test_prone" }],
-            interruptible: false,
-          },
-        ],
-      },
-    },
-    // Stances have no "known" state: each is REACHABLE exactly when some
-    // action (or item grant) adopts it — so every stance the tests adopt
-    // or probe gets a posture action.
-    {
-      name: "test_square",
-      value: {
-        actionType: { tag: "Posture" },
-        requirements: NO_REQUIREMENTS,
-        rounds: [
-          {
-            effects: [{ tag: "SetStance", value: "test_brawler" }],
-            interruptible: false,
-          },
-        ],
-      },
-    },
-    {
-      name: "test_reach_wide",
-      value: {
-        actionType: { tag: "Posture" },
-        requirements: NO_REQUIREMENTS,
-        rounds: [
-          {
-            effects: [{ tag: "SetStance", value: "test_four_arms" }],
-            interruptible: false,
-          },
-        ],
-      },
-    },
+    postureAction("test_lie", "test_prone"),
+    postureAction("test_square", "test_brawler"),
+    postureAction("test_reach_wide", "test_four_arms"),
   ],
   baselines: [
     {
@@ -315,32 +293,8 @@ export const loadoutPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Attack", value: 2 }], interruptible: false }],
       },
     },
-    {
-      name: "test_stand",
-      value: {
-        actionType: { tag: "Posture" },
-        requirements: NO_REQUIREMENTS,
-        rounds: [
-          {
-            effects: [{ tag: "SetStance", value: "test_standing" }],
-            interruptible: false,
-          },
-        ],
-      },
-    },
-    {
-      name: "test_duel",
-      value: {
-        actionType: { tag: "Posture" },
-        requirements: NO_REQUIREMENTS,
-        rounds: [
-          {
-            effects: [{ tag: "SetStance", value: "test_dueling" }],
-            interruptible: false,
-          },
-        ],
-      },
-    },
+    postureAction("test_stand", "test_standing"),
+    postureAction("test_duel", "test_dueling"),
   ],
   baselines: [
     {
@@ -440,19 +394,7 @@ export const moralePack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
       },
     },
-    {
-      name: "test_stand",
-      value: {
-        actionType: { tag: "Posture" },
-        requirements: NO_REQUIREMENTS,
-        rounds: [
-          {
-            effects: [{ tag: "SetStance", value: "test_standing" }],
-            interruptible: false,
-          },
-        ],
-      },
-    },
+    postureAction("test_stand", "test_standing"),
   ],
   stances: [
     {

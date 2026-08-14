@@ -182,8 +182,6 @@ secador::secador!(
                                 _ => false,
                             }
                         }
-                        ActionEffect::Equip => true,   // WIP
-                        ActionEffect::Unequip => true, // WIP
                         // Fear, resolved in the early phase so it lands
                         // before this tick's blows. Morale is RIGID; the
                         // fluid layer is the FEAR STATUS, which records the

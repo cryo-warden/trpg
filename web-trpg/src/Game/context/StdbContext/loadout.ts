@@ -151,7 +151,7 @@ export const useGearStatBlockOf = (): ((
 // Instance-level toggling over counted asset ids: among the owned items of
 // one asset, the first `count` render as on. Shared by every menu that
 // proposes a counted-multiset of gear.
-export const instanceIndex = (items: OwnedItem[], item: OwnedItem): number =>
+const instanceIndex = (items: OwnedItem[], item: OwnedItem): number =>
   items
     .filter((other) => other.assetId === item.assetId)
     .findIndex((other) => other.entityId === item.entityId);

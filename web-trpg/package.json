@@ -1,5 +1,4 @@
 {
-  "homepage": "http://cryo-warden.github.io/trpg",
   "name": "web-trpg",
   "private": true,
   "version": "0.0.0",
@@ -14,9 +13,7 @@
     "serve": "TRPG_STDB_PORT=3000 TRPG_AUTO_ENTRY=true vite",
     "serve-login": "TRPG_STDB_PORT=3000 vite",
     "build": "bun run check -b && vite build",
-    "preview": "vite preview",
-    "predeploy": "bun run build",
-    "deploy": "gh-pages -d ./dist"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

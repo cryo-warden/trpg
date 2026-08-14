@@ -49,8 +49,6 @@ pub enum ActionEffectAsset {
     Move,
     Take,
     Drop,
-    Equip,
-    Unequip,
     Intimidate(i16),
     Rally,
     Dive(i16),
@@ -101,7 +99,9 @@ pub struct StatBlockAsset {
     /// gating all compare DELTAS, so nothing is inherently gargantuan — a
     /// kaiju battle and a fairy battle are the same mechanics.
     pub size: i8,
-    /// Base (maximum) morale; current morale lives in MoraleComponent.
+    /// Morale is RIGID: it lives on the stat block like attack, never in a
+    /// fluid component. Fear/courage statuses contribute through the
+    /// status stat-block cache.
     pub morale: i8,
     pub action_names: Vec<String>,
     pub appearance_feature_names: Vec<String>,

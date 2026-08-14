@@ -2,13 +2,13 @@ import { test, expect } from "bun:test";
 import { renderHook, act } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
 import { ACTIONS } from "../../assets/actions";
+import { useActionAsset } from "./assetLookup";
 import {
   actionIdOf,
   mockTable,
   stdbWrapper,
 } from "../../../testSupport/mockConnection";
 import {
-  useAction,
   useActionOptions,
   useAllegianceComponents,
   useEntityPresentations,
@@ -112,16 +112,16 @@ test("usePinnedActions returns the player's ordered pinned action ids", () => {
   ).toEqual([attackId, moveId]);
 });
 
-test("useAction looks up an action asset by id through the actions table", () => {
+test("useActionAsset looks up an action asset by id through the actions table", () => {
   const wrapper = stdbWrapper({});
   expect(
-    renderHook(() => useAction(attackId), { wrapper }).result.current,
+    renderHook(() => useActionAsset(attackId), { wrapper }).result.current,
   ).toEqual({
     name: "bop",
     ...ACTIONS.bop,
   });
   expect(
-    renderHook(() => useAction(null), { wrapper }).result.current,
+    renderHook(() => useActionAsset(null), { wrapper }).result.current,
   ).toBeNull();
 });
 

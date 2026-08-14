@@ -418,7 +418,6 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             match a.action_type {
                 ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),
-                ActionType::Equip => true, // WIP
                 // An item is a valid inventory target when it is within
                 // reach: sharing the room (takeable) or carried (droppable).
                 // The effect itself enforces which of the two applies.

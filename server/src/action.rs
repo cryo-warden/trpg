@@ -10,7 +10,6 @@ pub enum ActionType {
     Attack,
     Move,
     Inventory,
-    Equip,
     /// Targets self, or an item within reach to grab mid-dive.
     Dive,
     /// Targets a co-located checkpoint object (fortune-telling scenery) to
@@ -51,8 +50,6 @@ pub enum ActionEffect {
     Move,
     Take,
     Drop,
-    Equip,
-    Unequip,
     /// AUTHORED extra intimidation (heavies put it on their telegraph
     /// rounds; a roar is nothing but this). Every round also carries an
     /// implicit size-delta intimidation against all enemies present; the
