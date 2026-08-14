@@ -1,6 +1,8 @@
 import { ReactNode } from "react";
+import { Panel } from "../structural/Panel";
 import { AccountPanel } from "./AccountPanel";
 import { AdminControls } from "./AdminControls";
+import { AutoEntryPanel, resolveAutoEntry } from "./AutoEntry";
 import { WithDynamicPanel } from "./context/WithDynamicPanel";
 import { WithStdb } from "./context/StdbContext";
 import { useMyAccount } from "./context/StdbContext/account";
@@ -19,8 +21,16 @@ import { FocusProvider } from "./context/FocusProvider";
  * attached account plays, and is prompted about pending logins. */
 const AccountGate = ({ children }: { children: ReactNode }) => {
   const account = useMyAccount();
+  const autoEntry = resolveAutoEntry();
+  if (autoEntry.configurationError != null) {
+    return (
+      <Panel className="account">
+        <div className="error">{autoEntry.configurationError}</div>
+      </Panel>
+    );
+  }
   if (account == null) {
-    return <AccountPanel />;
+    return autoEntry.enabled ? <AutoEntryPanel /> : <AccountPanel />;
   }
   if (account.requiresPasswordRotation) {
     return <RotatePasswordPanel />;
