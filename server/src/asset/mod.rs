@@ -894,6 +894,15 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 max_eligible_count: spawn.max_eligible_count,
             });
         }
+        let mut quest_room_claims: Vec<crate::quest::QuestRoomClaim> = Vec::new();
+        for claim in m.quest_room_claims {
+            quest_room_claims.push(crate::quest::QuestRoomClaim {
+                quest_id: resolve_name(&maps.quests, "quest", &claim.quest_name)?,
+                role: claim.role,
+                encounter_id: resolve_name(&encounter_ids, "encounter", &claim.encounter_name)?,
+                spawn_checkpoint_before: claim.spawn_checkpoint_before,
+            });
+        }
         let row = LocationMap {
             id,
             name,
@@ -921,6 +930,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             min_hidden_room_count: m.min_hidden_room_count,
             max_hidden_room_count: m.max_hidden_room_count,
             quest_spawns,
+            quest_room_claims,
         };
         if ctx.db.location_maps().id().find(id).is_some() {
             ctx.db.location_maps().id().update(row);

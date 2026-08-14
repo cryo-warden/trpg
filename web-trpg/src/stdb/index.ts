@@ -112,6 +112,7 @@ import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_co
 import QuestStatBlockCacheComponentsRow from "./quest_stat_block_cache_components_table";
 import QuestStatBlockDirtyFlagComponentsRow from "./quest_stat_block_dirty_flag_components_table";
 import QuestsRow from "./quests_table";
+import QuestsRoomsRolesRow from "./quests_rooms_roles_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
@@ -832,6 +833,23 @@ const tablesSchema = __schema({
       { name: 'quests_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, QuestsRow),
+  quests_rooms_roles: __table({
+    name: 'quests_rooms_roles',
+    indexes: [
+      { accessor: 'id', name: 'quests_rooms_roles_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'quest_id', name: 'quests_rooms_roles_quest_id_idx_btree', algorithm: 'btree', columns: [
+        'questId',
+      ] },
+      { accessor: 'room_entity_id', name: 'quests_rooms_roles_room_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'roomEntityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'quests_rooms_roles_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, QuestsRoomsRolesRow),
   queued_action_state_components: __table({
     name: 'queued_action_state_components',
     indexes: [

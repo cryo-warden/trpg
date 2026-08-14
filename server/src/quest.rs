@@ -4,8 +4,11 @@ use spacetimedb::{
     table, SpacetimeType, Table,
 };
 
+use crate::asset::encounter::encounters;
 use crate::asset::location_map::{LocationMap, MapGenerationResult, RoomRole};
+use crate::asset::location_map_theme::location_map_themes;
 use crate::asset::rng_range::RngRange;
+use crate::asset::weighted_sampler::WeightedSampler;
 use crate::bitset::Bitset;
 use crate::ecs_extension::EcsExtension;
 use crate::entity::*;
@@ -66,6 +69,62 @@ pub fn set_quest_bit(ecs: Ecs, entity_id: u64, quest_id: u32, index: u32) -> boo
         flags.insert(FlagComponent { entity_id });
     }
     true
+}
+
+/// The role a quest assigns to a generated room. Distinct from RoomRole —
+/// that is generation's SHAPE vocabulary (where the room sits); this is
+/// the quest layer's MEANING vocabulary (what the room is for).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, SpacetimeType)]
+pub enum QuestRoomRole {
+    /// Hosts the quest's authored boss encounter. The hook for
+    /// defeat-bits, completion-gated doors, and future teleports.
+    Boss,
+}
+
+/// A quest's claim on a generated room, written by the quest application
+/// layer whenever a claim resolves: the room now serves a role the quest
+/// declared. Public: the client may render a linked room's significance.
+/// (Join naming principle: sides joined — quests x rooms — then the
+/// relation's semantics: roles.)
+#[table(accessor = quests_rooms_roles, public)]
+pub struct QuestsRoomsRole {
+    #[primary_key]
+    #[auto_inc]
+    pub id: u64,
+    #[index(btree)]
+    pub quest_id: u32,
+    #[index(btree)]
+    pub room_entity_id: u64,
+    pub role: QuestRoomRole,
+}
+
+/// A room's quest-room link rows die with the room. Hooked into
+/// delete_entity_with_joins like every other join table.
+pub fn cleanup_quest_room_rows(ecs: Ecs, entity_id: u64) {
+    let row_ids: Vec<u64> = ecs
+        .db
+        .quests_rooms_roles()
+        .room_entity_id()
+        .filter(entity_id)
+        .map(|row| row.id)
+        .collect();
+    for row_id in row_ids {
+        ecs.db.quests_rooms_roles().id().delete(row_id);
+    }
+}
+
+/// One quest's room claim in one map (a column on LocationMap): every
+/// instance of the map gives one room to the quest for the declared role,
+/// spawning the claimed encounter there — and, when asked, a themed
+/// checkpoint object in the room just before it, so the boss is always
+/// approached from a save point.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestRoomClaim {
+    pub quest_id: u32,
+    pub role: QuestRoomRole,
+    /// The encounter populated into the claimed room (the boss).
+    pub encounter_id: u32,
+    pub spawn_checkpoint_before: bool,
 }
 
 /// One quest's spawn window in one map (a column on LocationMap): the bit
@@ -224,6 +283,115 @@ pub fn apply_quest_spawns(
     Ok(())
 }
 
+/// Distinguishes the room-claim layer's rng stream from generation's, the
+/// item layer's, and the encounter layer's: all derive from the map's
+/// seed, and sharing a stream would correlate the draws.
+const QUEST_ROOM_RNG_STREAM: u64 = u64::from_le_bytes(*b"questroo");
+
+/// The rooms a boss claim takes: the Ending room hosts the boss, and the
+/// last Main room — its neighbor on the chain — hosts the checkpoint
+/// placed before it. Pure selection over the role-tagged result.
+struct BossClaimRooms {
+    boss_room_entity_id: u64,
+    /// None when the chain has no Main room (a two-room map): the
+    /// entrance already carries the map's guaranteed checkpoint, so no
+    /// second one spawns.
+    before_room_entity_id: Option<u64>,
+}
+
+fn boss_claim_rooms(result: &MapGenerationResult) -> Option<BossClaimRooms> {
+    let boss_room_entity_id = result
+        .rooms
+        .iter()
+        .find(|room| room.role == RoomRole::Ending)
+        .map(|room| room.entity_id)?;
+    Some(BossClaimRooms {
+        boss_room_entity_id,
+        before_room_entity_id: result
+            .rooms
+            .iter()
+            .rfind(|room| room.role == RoomRole::Main)
+            .map(|room| room.entity_id),
+    })
+}
+
+/// The FIRST quest application stage, ahead of item spawns: each claim
+/// takes the map's Ending room for its declared role, populates the
+/// claimed encounter there, records the quests_rooms_roles link, and —
+/// when asked — places a themed checkpoint object in the room before it
+/// (registered on the instance like generation's entrance checkpoint, so
+/// respawn resolution finds it). Both rooms are consumed from the result:
+/// no item spawn or wandering encounter lands in the boss's lair or the
+/// save room at its door.
+pub fn apply_quest_room_claims(
+    ecs: Ecs,
+    map: &LocationMap,
+    result: &mut MapGenerationResult,
+) -> Result<(), String> {
+    if map.quest_room_claims.is_empty() {
+        return Ok(());
+    }
+    let mut rng =
+        StdRng::seed_from_u64(map.rng_seed.unwrap_or_default() ^ QUEST_ROOM_RNG_STREAM);
+    for claim in &map.quest_room_claims {
+        let Some(rooms) = boss_claim_rooms(result) else {
+            log::warn!(
+                "Map \"{}\" has no ending room left for quest {}'s boss claim.",
+                map.name,
+                claim.quest_id
+            );
+            continue;
+        };
+        if let Some(encounter) = ecs.db.encounters().id().find(claim.encounter_id) {
+            encounter.populate(&ecs.find(rooms.boss_room_entity_id))?;
+        }
+        ecs.db.quests_rooms_roles().insert(QuestsRoomsRole {
+            id: 0,
+            quest_id: claim.quest_id,
+            room_entity_id: rooms.boss_room_entity_id,
+            role: claim.role,
+        });
+        if claim.spawn_checkpoint_before {
+            if let Some(before_room_entity_id) = rooms.before_room_entity_id {
+                let checkpoint_blob = ecs
+                    .db
+                    .location_map_themes()
+                    .id()
+                    .find(map.theme_id)
+                    .and_then(|theme| theme.checkpoints_selector.sample(&mut rng).cloned());
+                let instance_entity_id = ecs
+                    .find(before_room_entity_id)
+                    .location_map()
+                    .map(|room_map| room_map.location_map_entity_id);
+                if let (Some(checkpoint_blob), Some(instance_entity_id)) =
+                    (checkpoint_blob, instance_entity_id)
+                {
+                    // Register the room on the instance first: the object's
+                    // binding index points into this list.
+                    let mut checkpoint_room_entity_ids = ecs
+                        .find(instance_entity_id)
+                        .map_checkpoints()
+                        .map(|checkpoints| checkpoints.checkpoint_room_entity_ids)
+                        .unwrap_or_default();
+                    let checkpoint_index = checkpoint_room_entity_ids.len() as u32;
+                    checkpoint_room_entity_ids.push(before_room_entity_id);
+                    ecs.find(instance_entity_id)
+                        .upsert_new_map_checkpoints(checkpoint_room_entity_ids);
+                    ecs.new()
+                        .instantiate_blob(checkpoint_blob, &ecs.instantiation_scope())?
+                        .upsert_new_location(before_room_entity_id)
+                        .into_handle()
+                        .upsert_new_checkpoint_binding(map.id, checkpoint_index);
+                    result.checkpoint_room_entity_ids.push(before_room_entity_id);
+                    consume_spot(result, before_room_entity_id);
+                }
+            }
+        }
+        consume_spot(result, rooms.boss_room_entity_id);
+    }
+    Ok(())
+}
+
 /// An entity ceasing to exist takes its quest progress with it. Called
 /// wherever entities are actually deleted, like visited-location rows.
 pub fn cleanup_quest_rows(ecs: Ecs, entity_id: u64) {
@@ -338,6 +506,32 @@ mod tests {
         assert_eq!(result.rooms[0].role, RoomRole::Entrance);
         // The last-resort floor: spots still resolve somewhere.
         assert_eq!(spawn_spots(&result), vec![1]);
+    }
+
+    #[test]
+    fn a_boss_claim_takes_the_ending_room_and_saves_before_it() {
+        let rooms = boss_claim_rooms(&four_room_result()).unwrap();
+        assert_eq!(rooms.boss_room_entity_id, 3);
+        assert_eq!(rooms.before_room_entity_id, Some(2));
+    }
+
+    #[test]
+    fn a_two_room_map_claims_the_ending_but_adds_no_checkpoint() {
+        let result = MapGenerationResult {
+            rooms: vec![room(1, RoomRole::Entrance), room(2, RoomRole::Ending)],
+            checkpoint_room_entity_ids: vec![1],
+            containers: vec![],
+        };
+        let rooms = boss_claim_rooms(&result).unwrap();
+        assert_eq!(rooms.boss_room_entity_id, 2);
+        assert_eq!(rooms.before_room_entity_id, None);
+    }
+
+    #[test]
+    fn no_ending_room_left_means_no_claim() {
+        let mut result = four_room_result();
+        consume_spot(&mut result, 3);
+        assert!(boss_claim_rooms(&result).is_none());
     }
 
     #[test]

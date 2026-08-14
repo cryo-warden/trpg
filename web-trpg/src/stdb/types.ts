@@ -909,6 +909,9 @@ export const LocationMap = __t.object("LocationMap", {
   get questSpawns() {
     return __t.array(QuestSpawn);
   },
+  get questRoomClaims() {
+    return __t.array(QuestRoomClaim);
+  },
 });
 export type LocationMap = __Infer<typeof LocationMap>;
 
@@ -933,6 +936,9 @@ export const LocationMapAsset = __t.object("LocationMapAsset", {
   maxHiddenRoomCount: __t.u8(),
   get questSpawns() {
     return __t.array(QuestSpawnAsset);
+  },
+  get questRoomClaims() {
+    return __t.array(QuestRoomClaimAsset);
   },
 });
 export type LocationMapAsset = __Infer<typeof LocationMapAsset>;
@@ -1293,6 +1299,32 @@ export const QuestItemRefAsset = __t.object("QuestItemRefAsset", {
 });
 export type QuestItemRefAsset = __Infer<typeof QuestItemRefAsset>;
 
+export const QuestRoomClaim = __t.object("QuestRoomClaim", {
+  questId: __t.u32(),
+  get role() {
+    return QuestRoomRole;
+  },
+  encounterId: __t.u32(),
+  spawnCheckpointBefore: __t.bool(),
+});
+export type QuestRoomClaim = __Infer<typeof QuestRoomClaim>;
+
+export const QuestRoomClaimAsset = __t.object("QuestRoomClaimAsset", {
+  questName: __t.string(),
+  get role() {
+    return QuestRoomRole;
+  },
+  encounterName: __t.string(),
+  spawnCheckpointBefore: __t.bool(),
+});
+export type QuestRoomClaimAsset = __Infer<typeof QuestRoomClaimAsset>;
+
+// The tagged union or sum type for the algebraic type `QuestRoomRole`.
+export const QuestRoomRole = __t.enum("QuestRoomRole", {
+  Boss: __t.unit(),
+});
+export type QuestRoomRole = __Infer<typeof QuestRoomRole>;
+
 export const QuestSpawn = __t.object("QuestSpawn", {
   questId: __t.u32(),
   get itemBlob() {
@@ -1320,6 +1352,16 @@ export const QuestSpawnAsset = __t.object("QuestSpawnAsset", {
   maxEligibleCount: __t.u8(),
 });
 export type QuestSpawnAsset = __Infer<typeof QuestSpawnAsset>;
+
+export const QuestsRoomsRole = __t.object("QuestsRoomsRole", {
+  id: __t.u64(),
+  questId: __t.u32(),
+  roomEntityId: __t.u64(),
+  get role() {
+    return QuestRoomRole;
+  },
+});
+export type QuestsRoomsRole = __Infer<typeof QuestsRoomsRole>;
 
 export const Relic = __t.object("Relic", {
   id: __t.u32(),

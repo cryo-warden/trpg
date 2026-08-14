@@ -414,6 +414,7 @@ pub(crate) fn delete_entity_with_joins(ecs: Ecs, entity_id: u64) {
     spill_contents(ecs, entity_id);
     crate::visited::cleanup_visited_rows(ecs, entity_id);
     crate::quest::cleanup_quest_rows(ecs, entity_id);
+    crate::quest::cleanup_quest_room_rows(ecs, entity_id);
     ecs.find(entity_id).delete();
 }
 

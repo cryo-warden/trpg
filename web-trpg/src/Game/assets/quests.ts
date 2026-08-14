@@ -15,6 +15,13 @@ export const QUESTS = {
     perBitStatBlock: statBlock({ mep: 1 }),
     bitCount: 10,
   },
+  // A boss quest: no spawn windows (the bit never lies in a jar) — its
+  // room claim in old_keep spawns the warden, and the defeat-bit wiring
+  // will grant the single bit when the warden falls.
+  warden_of_the_keep: {
+    perBitStatBlock: statBlock({ mhp: 2 }),
+    bitCount: 1,
+  },
 } satisfies Record<string, QuestAsset>;
 
 export type QuestName = keyof typeof QUESTS;

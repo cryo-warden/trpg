@@ -185,6 +185,7 @@ export const mapGenPack = (): AssetPack => ({
         minHiddenRoomCount: 0,
         maxHiddenRoomCount: 0,
         questSpawns: [],
+        questRoomClaims: [],
       },
     },
   ],
@@ -558,6 +559,7 @@ export const connectionsPack = (): AssetPack => ({
         minHiddenRoomCount: 0,
         maxHiddenRoomCount: 0,
         questSpawns: [],
+        questRoomClaims: [],
       },
     },
     {
@@ -576,6 +578,7 @@ export const connectionsPack = (): AssetPack => ({
         minHiddenRoomCount: 0,
         maxHiddenRoomCount: 0,
         questSpawns: [],
+        questRoomClaims: [],
       },
     },
   ],
@@ -641,6 +644,7 @@ export const deathPack = (): AssetPack => ({
         minHiddenRoomCount: 0,
         maxHiddenRoomCount: 0,
         questSpawns: [],
+        questRoomClaims: [],
       },
     },
   ],
@@ -1059,10 +1063,115 @@ export const spawnPack = (): AssetPack => ({
             maxEligibleCount: 2,
           },
         ],
+        questRoomClaims: [],
       },
     },
   ],
   newPlayerBlob: blob({}),
+});
+
+/**
+ * A boss-claim world: a three-room chain whose map gives its Ending room
+ * to a 1-bit conquest quest — the warden encounter spawns there, the link
+ * row records the claim, and a themed checkpoint object lands in the
+ * middle room (the boss approached from a save point). No wandering
+ * encounters and no item spawns: the only inhabitants are the claim's.
+ */
+export const bossPack = (): AssetPack => ({
+  ...emptyPack(),
+  quests: [
+    {
+      name: "test_conquest",
+      value: { perBitStatBlock: statBlock({ mhp: 2 }), bitCount: 1 },
+    },
+  ],
+  actions: [
+    {
+      name: "test_move",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: requirements({ gait: 1 }),
+        rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_challenger",
+      value: statBlock({ mhp: 10, gait: 2, actionNames: ["test_move"] }),
+    },
+    {
+      name: "test_warden_base",
+      value: statBlock({ mhp: 30 }),
+    },
+  ],
+  encounterBlobs: [
+    { name: "test_warden_categoric", value: blob({}) },
+    {
+      name: "test_warden",
+      value: blob({
+        baselineName: "test_warden_base",
+        enemyController: {},
+      }),
+    },
+  ],
+  encounters: [
+    {
+      name: "test_warden_lair",
+      value: {
+        categoricBlobName: "test_warden_categoric",
+        blobNames: ["test_warden"],
+      },
+    },
+  ],
+  locationMapThemes: [
+    {
+      name: "test_boss_theme",
+      value: {
+        decorationsSelector: { selections: [] },
+        minDecorationCount: 0,
+        maxDecorationCount: 0,
+        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        checkpointsSelector: {
+          selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
+        },
+        containersSelector: { selections: [] },
+        minContainerCount: 0,
+        maxContainerCount: 0,
+        blockersSelector: { selections: [] },
+      },
+    },
+  ],
+  locationMaps: [
+    {
+      name: "test_boss_map",
+      value: {
+        themeName: "test_boss_theme",
+        layout: { tag: "Path" },
+        zoneKind: { tag: "Private" },
+        rngSeed: 0n,
+        mainRoomCount: 3,
+        extraRoomCount: 0,
+        loopCount: 0,
+        encounterNamesSampler: [],
+        minEncounterCount: 0,
+        maxEncounterCount: 0,
+        minHiddenRoomCount: 0,
+        maxHiddenRoomCount: 0,
+        questSpawns: [],
+        questRoomClaims: [
+          {
+            questName: "test_conquest",
+            role: { tag: "Boss" },
+            encounterName: "test_warden_lair",
+            spawnCheckpointBefore: true,
+          },
+        ],
+      },
+    },
+  ],
+  newPlayerBlob: blob({ baselineName: "test_challenger" }),
 });
 
 /**
@@ -1159,6 +1268,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
         minHiddenRoomCount: 0,
         maxHiddenRoomCount: 0,
         questSpawns: [],
+        questRoomClaims: [],
       },
     },
   ],
@@ -1278,6 +1388,7 @@ export const guardedMapPack = ({
         minHiddenRoomCount: hiddenRoomCount,
         maxHiddenRoomCount: hiddenRoomCount,
         questSpawns: [],
+        questRoomClaims: [],
       },
     },
   ],

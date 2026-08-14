@@ -5,9 +5,11 @@
 //! from the result it passes forward:
 //!
 //!   1. generate_entities — shape only, no inhabitants
-//!   2. apply_quest_spawns — each quest in turn places its items and
+//!   2. apply_quest_room_claims — boss rooms first: the most constrained
+//!      placements (the Ending room, plus the save room before it)
+//!   3. apply_quest_spawns — each quest in turn places its items and
 //!      removes the rooms it consumed from the result
-//!   3. apply_encounters — last, drawing only from what remains
+//!   4. apply_encounters — last, drawing only from what remains
 //!
 //! Runtime demand for a map instance goes through materialize_map, never
 //! through generate_entities directly.
@@ -22,6 +24,7 @@ use spacetimedb::rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 
 pub fn materialize_map(ecs: Ecs, map: &LocationMap) -> Result<MapGenerationResult, String> {
     let mut result = map.generate_entities(ecs)?;
+    crate::quest::apply_quest_room_claims(ecs, map, &mut result)?;
     crate::quest::apply_quest_spawns(ecs, map, &mut result)?;
     apply_encounters(ecs, map, &result)?;
     Ok(result)

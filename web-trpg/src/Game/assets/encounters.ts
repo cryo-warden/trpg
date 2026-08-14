@@ -98,6 +98,14 @@ export const ENCOUNTER_BLOBS = {
     traitNames: ["ghost"],
     stanceName: "lightning_casting",
   }),
+  // The warden of the old keep: a boss, spawned only by its quest's room
+  // claim — never through the wandering-encounter sampler.
+  ogreKeepWarden: blob({
+    baselineName: "ogre",
+    traitNames: ["big"],
+    armamentNames: ["club", "shield"],
+    stanceName: "ready",
+  }),
 } satisfies Record<string, EntityBlobAsset>;
 
 export type EncounterBlobName = keyof typeof ENCOUNTER_BLOBS;
@@ -198,6 +206,10 @@ export const ENCOUNTERS = {
   elemental_trio: {
     categoricBlobName: "encounter_enemy",
     blobNames: ["fireImp", "iceSprite", "stormWisp"],
+  },
+  keep_warden: {
+    categoricBlobName: "encounter_enemy",
+    blobNames: ["ogreKeepWarden", "banditWarden"],
   },
 } satisfies Record<string, EncounterAsset>;
 

@@ -86,6 +86,10 @@ pub struct LocationMap {
     /// reads these — the quest application layer consumes them together
     /// with the role-tagged generation result (see materialize_map).
     pub quest_spawns: Vec<crate::quest::QuestSpawn>,
+    /// Rooms this map gives to quests (boss rooms first): applied ahead of
+    /// the item spawns, likewise over the generation result — never by
+    /// generation itself.
+    pub quest_room_claims: Vec<crate::quest::QuestRoomClaim>,
 }
 
 /// Where a connection attaches inside a generated map.

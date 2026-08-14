@@ -236,6 +236,19 @@ pub struct LocationMapThemeAsset {
     pub blockers_selector: EntityBlobsSamplerAsset,
 }
 
+/// One quest's room claim in one map, as authored: quest and encounter by
+/// NAME, resolved at push. Every instance of the map gives its Ending
+/// room to the quest for this role, spawning the encounter there — and,
+/// when spawn_checkpoint_before is set, a themed checkpoint object in the
+/// room just before it.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QuestRoomClaimAsset {
+    pub quest_name: String,
+    pub role: crate::quest::QuestRoomRole,
+    pub encounter_name: String,
+    pub spawn_checkpoint_before: bool,
+}
+
 /// One quest's spawn window in one map, as authored: the quest by NAME
 /// and the item's presentation blob inline (theme samplers author blobs
 /// the same way). Push validates every index against the quest's
@@ -269,6 +282,7 @@ pub struct LocationMapAsset {
     pub min_hidden_room_count: u8,
     pub max_hidden_room_count: u8,
     pub quest_spawns: Vec<QuestSpawnAsset>,
+    pub quest_room_claims: Vec<QuestRoomClaimAsset>,
 }
 
 /// A cross-map connection as authored: a JOIN row between two maps by name,

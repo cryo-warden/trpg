@@ -4,6 +4,7 @@ import {
   LocationMapAsset,
   LocationMapConnectionAsset,
   LocationMapThemeAsset,
+  QuestRoomRole,
   QuestSpawnAsset,
   ZoneKind,
 } from "../../stdb/types";
@@ -511,12 +512,16 @@ interface CookieWindow {
   maxEligibleCount: number;
 }
 
-const COOKIE_APPEARANCES: Record<QuestName, string[]> = {
+/** The window-spawned quests: only these hide in jars; boss quests link
+ * rooms instead. */
+type CookieQuestName = Extract<QuestName, "red_cookies" | "blue_cookies">;
+
+const COOKIE_APPEARANCES: Record<CookieQuestName, string[]> = {
   red_cookies: ["red_cookie"],
   blue_cookies: ["blue_cookie"],
 };
 
-const cookieBlob = (questName: QuestName): EntityBlobAsset =>
+const cookieBlob = (questName: CookieQuestName): EntityBlobAsset =>
   blob({ appearanceFeatureNames: COOKIE_APPEARANCES[questName] });
 
 /** Both cookie quests ride the same window in every map: red for mhp,
@@ -559,6 +564,7 @@ export const LOCATION_MAPS = {
       minEligibleCount: 1,
       maxEligibleCount: 3,
     }),
+    questRoomClaims: [],
   },
   beginner_cave: {
     themeName: "cave",
@@ -584,6 +590,7 @@ export const LOCATION_MAPS = {
       minEligibleCount: 1,
       maxEligibleCount: 4,
     }),
+    questRoomClaims: [],
   },
   verdant_meadow: {
     themeName: "meadow",
@@ -609,6 +616,7 @@ export const LOCATION_MAPS = {
       minEligibleCount: 1,
       maxEligibleCount: 4,
     }),
+    questRoomClaims: [],
   },
   whispering_forest: {
     themeName: "forest",
@@ -634,6 +642,7 @@ export const LOCATION_MAPS = {
       minEligibleCount: 1,
       maxEligibleCount: 4,
     }),
+    questRoomClaims: [],
   },
   old_keep: {
     themeName: "keep",
@@ -661,6 +670,17 @@ export const LOCATION_MAPS = {
       minEligibleCount: 1,
       maxEligibleCount: 4,
     }),
+    // The keep's far hall belongs to its warden — and the room at its door
+    // holds a fortune-teller's checkpoint, so the challenge is always
+    // approached from a save point.
+    questRoomClaims: [
+      {
+        questName: "warden_of_the_keep",
+        role: QuestRoomRole.Boss,
+        encounterName: "keep_warden",
+        spawnCheckpointBefore: true,
+      },
+    ],
   },
   elemental_sanctum: {
     themeName: "sanctum",
@@ -686,6 +706,7 @@ export const LOCATION_MAPS = {
       minEligibleCount: 2,
       maxEligibleCount: 5,
     }),
+    questRoomClaims: [],
   },
 } satisfies Record<string, LocationMapAsset>;
 
