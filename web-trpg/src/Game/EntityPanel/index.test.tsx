@@ -44,6 +44,22 @@ test("a path to a visited location does not", () => {
   );
 });
 
+test("re-rendering keeps the action bar's DOM node — no remount, scroll survives", () => {
+  // Regression: ActionBar was once defined INSIDE EntityPanel, making it
+  // a brand-new component type every render — React tore down and
+  // remounted the button strip (resetting its scroll) whenever anything
+  // re-rendered the panel, e.g. each incoming event message.
+  const wrapper = gameWrapper(tables([]), { identity: {} as Identity });
+  const { container, rerender } = render(
+    <EntityPanel entity={4n} detailed />,
+    { wrapper },
+  );
+  const before = container.querySelector(".ActionBar");
+  expect(before).not.toBeNull();
+  rerender(<EntityPanel entity={4n} detailed />);
+  expect(container.querySelector(".ActionBar")).toBe(before as Element);
+});
+
 test("a guarded path is invisible while its blocker stands, visible once smashed", () => {
   const guarded = (blockerHp: { entityId: bigint; hp: number; mhp: number }[]) => ({
     ...tables([]),

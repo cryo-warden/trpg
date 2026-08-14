@@ -19,6 +19,22 @@ import { HPBar } from "./HPBar";
 import "./index.css";
 import { useFocus, useSetFocus } from "../context/FocusContext";
 
+/** MODULE scope on purpose: a component type created inside a render is
+ * brand new every render, so React would tear down and remount the whole
+ * button strip — resetting its scroll and restarting animations — every
+ * time the panel re-renders (every incoming event). Element replacement
+ * is reserved for a genuinely new subject (the entity-id key). */
+const ActionBar = ({ entity }: { entity: EntityId }) => {
+  const actions = useActionOptions(entity);
+  return (
+    <div className="ActionBar">
+      {actions.map((action) => (
+        <ActionButton key={action} actionId={action} target={entity} />
+      ))}
+    </div>
+  );
+};
+
 export const EntityPanel = ({
   entity,
   hotkey,
@@ -56,17 +72,6 @@ export const EntityPanel = ({
     return null;
   }
 
-  const ActionBar = () => {
-    const actions = useActionOptions(entity);
-    return (
-      <div className="ActionBar">
-        {actions.map((action) => (
-          <ActionButton key={action} actionId={action} target={entity} />
-        ))}
-      </div>
-    );
-  };
-
   return (
     <Panel
       key={entity}
@@ -96,7 +101,7 @@ export const EntityPanel = ({
       </div>
       <HPBar entity={entity} />
       <EPBar entity={entity} />
-      {detailed && <ActionBar />}
+      {detailed && <ActionBar entity={entity} />}
       {hotkey != null && <div className="hotkey">{hotkey.toUpperCase()}</div>}
     </Panel>
   );
