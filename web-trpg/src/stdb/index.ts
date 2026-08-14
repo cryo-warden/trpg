@@ -78,6 +78,7 @@ import CheckpointComponentsRow from "./checkpoint_components_table";
 import CheckpointObjectComponentsRow from "./checkpoint_object_components_table";
 import CourageStatusComponentsRow from "./courage_status_components_table";
 import DefaultArmamentsComponentsRow from "./default_armaments_components_table";
+import DefeatBitComponentsRow from "./defeat_bit_components_table";
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
 import EntitiesQuestsProgressRow from "./entities_quests_progress_table";
@@ -422,6 +423,17 @@ const tablesSchema = __schema({
       { name: 'default_armaments_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, DefaultArmamentsComponentsRow),
+  defeat_bit_components: __table({
+    name: 'defeat_bit_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'defeat_bit_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'defeat_bit_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, DefeatBitComponentsRow),
   enemy_controller_components: __table({
     name: 'enemy_controller_components',
     indexes: [

@@ -29,14 +29,17 @@ pub struct Encounter {
 }
 
 impl Encounter {
-    pub fn populate(&self, room: &EntityHandle) -> Result<(), String> {
+    /// Spawns the encounter's blobs into the room and returns the spawned
+    /// entity ids, so callers (the quest room-claim layer) can stamp
+    /// claim-specific components onto exactly what was created.
+    pub fn populate(&self, room: &EntityHandle) -> Result<Vec<u64>, String> {
         let ecs: Ecs = room.ecs();
         // TODO Make it easier to grab a default empty EntityBlob.
         let categoric_blob =
             if let Some(c) = ecs.db.encounter_blobs().id().find(self.categoric_blob_id) {
                 c.blob
             } else {
-                return Ok(());
+                return Ok(Vec::new());
             };
         log::debug!(
             "Grabbed categoric_blob {} {:?}",
@@ -44,14 +47,17 @@ impl Encounter {
             categoric_blob
         );
         let scope = ecs.instantiation_scope();
+        let mut spawned_entity_ids: Vec<u64> = Vec::new();
         for id in &self.blob_ids {
             if let Some(e) = ecs.db.encounter_blobs().id().find(id) {
-                ecs.new()
+                let spawn = ecs
+                    .new()
                     .instantiate_blob(categoric_blob.clone(), &scope)?
-                    .instantiate_blob(e.blob, &scope)?
-                    .upsert_new_location(room.entity_id());
+                    .instantiate_blob(e.blob, &scope)?;
+                spawned_entity_ids.push(spawn.entity_id());
+                spawn.upsert_new_location(room.entity_id());
             }
         }
-        Ok(())
+        Ok(spawned_entity_ids)
     }
 }

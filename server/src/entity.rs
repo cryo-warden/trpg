@@ -213,6 +213,16 @@ entity!(
         pub checkpoint_index: u32,
     }
 
+    // On a boss-claim spawn: felling the LAST living carrier of this
+    // (quest, index) pair in the same map instance sets that quest bit
+    // for every player present. Consumed on death — the one-shot latch
+    // that keeps a lingering corpse from re-granting every tick.
+    #[component(defeat_bit in defeat_bit_components)]
+    struct DefeatBitComponent {
+        pub quest_id: u32,
+        pub index: u32,
+    }
+
     #[component(attack in attack_components)]
     struct AttackComponent {
         pub attack: i8,

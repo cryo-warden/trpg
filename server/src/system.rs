@@ -75,6 +75,12 @@ pub fn death_system(ecs: Ecs) {
         if handle.queued_action_state().is_some() {
             handle.delete_queued_action_state();
         }
+        // A fallen boss-claim spawn pays out its quest bit (the component
+        // is its own one-shot latch — consumed inside, so the lingering
+        // corpse never re-grants).
+        if handle.defeat_bit().is_some() {
+            crate::quest::grant_defeat_bit(ecs, handle.entity_id());
+        }
         if handle.player_controller().is_some() {
             handle.upsert_new_respawn_timer(
                 ecs.timestamp

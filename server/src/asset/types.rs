@@ -253,6 +253,10 @@ pub struct QuestRoomClaimAsset {
     pub role: crate::quest::QuestRoomRole,
     pub encounter_name: String,
     pub spawn_checkpoint_before: bool,
+    /// When set (validated against the quest's bit count), felling the
+    /// last of the claimed encounter's spawns grants this bit to every
+    /// player present.
+    pub defeat_bit_index: Option<u32>,
 }
 
 /// One quest's spawn window in one map, as authored: the quest by NAME

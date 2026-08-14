@@ -125,6 +125,10 @@ pub struct QuestRoomClaim {
     /// The encounter populated into the claimed room (the boss).
     pub encounter_id: u32,
     pub spawn_checkpoint_before: bool,
+    /// When set, every entity the claimed encounter spawns carries a
+    /// DefeatBitComponent for this bit: felling the last of them grants
+    /// it to every player present.
+    pub defeat_bit_index: Option<u32>,
 }
 
 /// One quest's spawn window in one map (a column on LocationMap): the bit
@@ -343,7 +347,14 @@ pub fn apply_quest_room_claims(
             continue;
         };
         if let Some(encounter) = ecs.db.encounters().id().find(claim.encounter_id) {
-            encounter.populate(&ecs.find(rooms.boss_room_entity_id))?;
+            let spawned_entity_ids =
+                encounter.populate(&ecs.find(rooms.boss_room_entity_id))?;
+            if let Some(index) = claim.defeat_bit_index {
+                for spawned_entity_id in spawned_entity_ids {
+                    ecs.find(spawned_entity_id)
+                        .upsert_new_defeat_bit(claim.quest_id, index);
+                }
+            }
         }
         ecs.db.quests_rooms_roles().insert(QuestsRoomsRole {
             id: 0,
@@ -390,6 +401,57 @@ pub fn apply_quest_room_claims(
         consume_spot(result, rooms.boss_room_entity_id);
     }
     Ok(())
+}
+
+/// The payoff of a boss claim, called by the death system on a fallen
+/// defeat-bit carrier: when no other LIVING carrier of the same (quest,
+/// index) pair remains in the same map instance — the bit falls with the
+/// last of the claim's spawn — every player standing in the room gets
+/// the bit (party-friendly; the fallen included, if they rise again).
+/// The carrier's component is consumed here: the one-shot latch, since a
+/// dead NPC lingers as a corpse and re-enters the death scan every tick.
+/// Instance-scoped on purpose: another player's instance of the same map
+/// keeps its own warden, and that one standing must not hold THIS grant.
+pub fn grant_defeat_bit(ecs: Ecs, entity_id: u64) {
+    let Some(defeat) = ecs.find(entity_id).defeat_bit() else {
+        return;
+    };
+    ecs.find(entity_id).delete_defeat_bit();
+    let instance = crate::turn::map_instance_id_of(ecs, entity_id);
+    let another_carrier_stands = ecs.iter_defeat_bit().any(|other| {
+        let other_defeat = other.defeat_bit();
+        let other_entity_id = other.entity_id();
+        other_entity_id != entity_id
+            && other_defeat.quest_id == defeat.quest_id
+            && other_defeat.index == defeat.index
+            && ecs
+                .find(other_entity_id)
+                .hp()
+                .is_some_and(|hp| hp.hp > 0)
+            && crate::turn::map_instance_id_of(ecs, other_entity_id) == instance
+    });
+    if another_carrier_stands {
+        return;
+    }
+    let Some(room_entity_id) = ecs
+        .find(entity_id)
+        .location()
+        .map(|location| location.location_entity_id)
+    else {
+        return;
+    };
+    let witness_entity_ids: Vec<u64> = ecs
+        .db
+        .location_components()
+        .location_entity_id()
+        .filter(room_entity_id)
+        .map(|row| row.entity_id)
+        .collect();
+    for witness_entity_id in witness_entity_ids {
+        if ecs.find(witness_entity_id).player_controller().is_some() {
+            set_quest_bit(ecs, witness_entity_id, defeat.quest_id, defeat.index);
+        }
+    }
 }
 
 /// An entity ceasing to exist takes its quest progress with it. Called

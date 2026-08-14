@@ -359,6 +359,8 @@ fn resolve_entity_blob(
         turn_paused: None,
         // Runtime state: a container is authored closed and opened in play.
         open: None,
+        // Stamped by the quest room-claim application, never authored.
+        defeat_bit: None,
         location_map: None,
     })
 }
@@ -911,11 +913,27 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
         let mut quest_room_claims: Vec<crate::quest::QuestRoomClaim> = Vec::new();
         for claim in m.quest_room_claims {
+            let quest_id = resolve_name(&maps.quests, "quest", &claim.quest_name)?;
+            if let Some(index) = claim.defeat_bit_index {
+                let quest = ctx
+                    .db
+                    .quests()
+                    .id()
+                    .find(quest_id)
+                    .ok_or_else(|| format!("Quest {} vanished during push.", claim.quest_name))?;
+                if index >= quest.bit_count {
+                    return Err(format!(
+                        "Map \"{}\" grants defeat bit {} of quest \"{}\", beyond its bit count {}.",
+                        name, index, claim.quest_name, quest.bit_count
+                    ));
+                }
+            }
             quest_room_claims.push(crate::quest::QuestRoomClaim {
-                quest_id: resolve_name(&maps.quests, "quest", &claim.quest_name)?,
+                quest_id,
                 role: claim.role,
                 encounter_id: resolve_name(&encounter_ids, "encounter", &claim.encounter_name)?,
                 spawn_checkpoint_before: claim.spawn_checkpoint_before,
+                defeat_bit_index: claim.defeat_bit_index,
             });
         }
         let row = LocationMap {

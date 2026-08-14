@@ -1197,15 +1197,28 @@ export const bossPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
       },
     },
+    {
+      name: "test_strike",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Attack", value: 5 }], interruptible: false }],
+      },
+    },
   ],
   baselines: [
     {
       name: "test_challenger",
-      value: statBlock({ mhp: 10, gait: 2, actionNames: ["test_move"] }),
+      value: statBlock({
+        mhp: 10,
+        gait: 2,
+        attack: 0,
+        actionNames: ["test_move", "test_strike"],
+      }),
     },
     {
       name: "test_warden_base",
-      value: statBlock({ mhp: 30 }),
+      value: statBlock({ mhp: 10 }),
     },
   ],
   encounterBlobs: [
@@ -1269,6 +1282,7 @@ export const bossPack = (): AssetPack => ({
             role: { tag: "Boss" },
             encounterName: "test_warden_lair",
             spawnCheckpointBefore: true,
+            defeatBitIndex: 0,
           },
         ],
       },

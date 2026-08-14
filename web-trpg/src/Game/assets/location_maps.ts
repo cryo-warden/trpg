@@ -678,13 +678,15 @@ export const LOCATION_MAPS = {
     }),
     // The keep's far hall belongs to its warden — and the room at its door
     // holds a fortune-teller's checkpoint, so the challenge is always
-    // approached from a save point.
+    // approached from a save point. Felling the warden's whole retinue
+    // grants the quest's single bit (+2 mhp) to everyone present.
     questRoomClaims: [
       {
         questName: "warden_of_the_keep",
         role: QuestRoomRole.Boss,
         encounterName: "keep_warden",
         spawnCheckpointBefore: true,
+        defeatBitIndex: 0,
       },
     ],
   },
