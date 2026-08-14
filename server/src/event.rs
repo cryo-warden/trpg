@@ -75,6 +75,160 @@ secador::secador!(
             }
         }
 
+        /// Mirrors an equip/unequip into the ACTIVE stance's armament
+        /// assignment: hands and configuration never disagree about the
+        /// stance you are in.
+        fn update_active_stance_armaments(
+            ecs: Ecs,
+            entity_id: u64,
+            mutate: impl FnOnce(&mut Vec<u32>),
+        ) {
+            let handle = ecs.find(entity_id);
+            let Some(active) = handle.active_stance() else {
+                return;
+            };
+            let mut assignments = handle
+                .stance_loadouts()
+                .map(|c| c.assignments)
+                .unwrap_or_default();
+            let mut loadout = assignments
+                .iter()
+                .find(|a| a.stance_id == active.stance_id)
+                .cloned()
+                .unwrap_or(crate::item::StanceLoadout {
+                    stance_id: active.stance_id,
+                    armament_ids: Vec::new(),
+                    action_ids: Vec::new(),
+                });
+            mutate(&mut loadout.armament_ids);
+            assignments.retain(|a| a.stance_id != active.stance_id);
+            assignments.push(loadout);
+            handle.upsert_new_stance_loadouts(assignments);
+        }
+
+        /// Equip a CARRIED item: wield an armament (grip permitting), wear
+        /// armor (replacing what is worn), or add a relic (cap 4).
+        /// Armaments also mirror into the active stance's configuration.
+        fn equip_item(ecs: Ecs, owner_entity_id: u64, item_entity_id: u64) -> bool {
+            let carried = ecs
+                .db
+                .location_components()
+                .entity_id()
+                .find(item_entity_id)
+                .is_some_and(|l| l.location_entity_id == owner_entity_id);
+            let Some(item) = ecs.db.item_components().entity_id().find(item_entity_id)
+            else {
+                return false;
+            };
+            if !carried {
+                return false;
+            }
+            let owner = ecs.find(owner_entity_id);
+            match item.item_ref {
+                crate::item::ItemRef::Armament(armament_id) => {
+                    let current_hand = owner
+                        .total_stat_block()
+                        .map_or(0, |t| i32::from(t.stat_block.hand));
+                    let armament_hand = ecs
+                        .db
+                        .armaments()
+                        .id()
+                        .find(armament_id)
+                        .map_or(0, |a| i32::from(a.stat_block.hand));
+                    if current_hand + armament_hand < 0 {
+                        return false;
+                    }
+                    let mut armament_ids = owner
+                        .equipment()
+                        .map(|c| c.armament_ids)
+                        .unwrap_or_default();
+                    armament_ids.push(armament_id);
+                    owner.upsert_new_equipment(armament_ids);
+                    update_active_stance_armaments(ecs, owner_entity_id, |ids| {
+                        ids.push(armament_id);
+                    });
+                    true
+                }
+                crate::item::ItemRef::Armor(armor_id) => {
+                    owner.upsert_new_armor(armor_id);
+                    true
+                }
+                crate::item::ItemRef::Relic(relic_id) => {
+                    let mut relic_ids =
+                        owner.relics().map(|c| c.relic_ids).unwrap_or_default();
+                    if relic_ids.len() >= 4 {
+                        return false;
+                    }
+                    relic_ids.push(relic_id);
+                    owner.upsert_new_relics(relic_ids);
+                    true
+                }
+            }
+        }
+
+        /// Unequip a CARRIED, currently equipped item: put the armament
+        /// away (mirroring into the active stance's configuration), shed
+        /// the worn armor, or remove the relic. The item stays owned.
+        fn unequip_item(ecs: Ecs, owner_entity_id: u64, item_entity_id: u64) -> bool {
+            let carried = ecs
+                .db
+                .location_components()
+                .entity_id()
+                .find(item_entity_id)
+                .is_some_and(|l| l.location_entity_id == owner_entity_id);
+            let Some(item) = ecs.db.item_components().entity_id().find(item_entity_id)
+            else {
+                return false;
+            };
+            if !carried {
+                return false;
+            }
+            let owner = ecs.find(owner_entity_id);
+            match item.item_ref {
+                crate::item::ItemRef::Armament(armament_id) => {
+                    let mut armament_ids = owner
+                        .equipment()
+                        .map(|c| c.armament_ids)
+                        .unwrap_or_default();
+                    let Some(position) =
+                        armament_ids.iter().position(|id| *id == armament_id)
+                    else {
+                        return false;
+                    };
+                    armament_ids.remove(position);
+                    owner.upsert_new_equipment(armament_ids);
+                    update_active_stance_armaments(ecs, owner_entity_id, |ids| {
+                        if let Some(position) =
+                            ids.iter().position(|id| *id == armament_id)
+                        {
+                            ids.remove(position);
+                        }
+                    });
+                    true
+                }
+                crate::item::ItemRef::Armor(armor_id) => {
+                    if { owner.armor() }.is_some_and(|c| c.armor_id == armor_id) {
+                        owner.delete_armor();
+                        true
+                    } else {
+                        false
+                    }
+                }
+                crate::item::ItemRef::Relic(relic_id) => {
+                    let mut relic_ids =
+                        owner.relics().map(|c| c.relic_ids).unwrap_or_default();
+                    let Some(position) =
+                        relic_ids.iter().position(|id| *id == relic_id)
+                    else {
+                        return false;
+                    };
+                    relic_ids.remove(position);
+                    owner.upsert_new_relics(relic_ids);
+                    true
+                }
+            }
+        }
+
         #[table(accessor = observable_events, public, event)]
         #[derive(Debug, Clone)]
         pub struct EntityEvent {
@@ -181,6 +335,12 @@ secador::secador!(
                                 }
                                 _ => false,
                             }
+                        }
+                        ActionEffect::Equip => {
+                            equip_item(ecs, self.owner_entity_id, target_entity_id)
+                        }
+                        ActionEffect::Unequip => {
+                            unequip_item(ecs, self.owner_entity_id, target_entity_id)
                         }
                         // Fear, resolved in the early phase so it lands
                         // before this tick's blows. Morale is RIGID; the

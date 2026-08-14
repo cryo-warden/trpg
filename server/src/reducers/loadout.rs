@@ -183,9 +183,9 @@ fn update_stance_loadout(
 /// validation happens HERE, where the player can read the outcome: the
 /// armaments must be owned, and the candidate context (base + gear + stance)
 /// must keep every counted property non-negative — two hands cannot hold
-/// three one-handed blades. CONFIGURATION ONLY: the loadout applies
-/// immediately as data, but the actual equipment changes solely through a
-/// stance change — which costs a round (the posture actions).
+/// three one-handed blades. Assigning the ACTIVE stance equips/unequips
+/// automatically; other stances' loadouts apply as data now and arm when
+/// a stance change adopts them (paying its round).
 #[reducer]
 pub fn assign_stance_armaments(
     ctx: &ReducerContext,
@@ -226,6 +226,14 @@ pub fn assign_stance_armaments(
         ));
     }
 
+    // Assigning the ACTIVE stance equips/unequips AUTOMATICALLY: hands and
+    // configuration never disagree about the stance you are in. Other
+    // stances arm when a stance change adopts them (paying its round).
+    let is_active =
+        { ecs.find(p.entity_id()).active_stance() }.is_some_and(|a| a.stance_id == stance_id);
+    if is_active {
+        ecs.find(p.entity_id()).upsert_new_equipment(armament_ids.clone());
+    }
     update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
         armament_ids,
         ..loadout

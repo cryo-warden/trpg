@@ -41,6 +41,10 @@ export type ActionOptionInputs = AllegianceInputs & {
    * (carried) from take (beside you); identically named items are separate
    * entities and never confuse this. */
   targetCarriedByPlayer: boolean;
+  /** This item INSTANCE currently counts as equipped/worn (the counted-
+   * multiset rule decides which instances of an asset are "on").
+   * Distinguishes unequip (equipped) from equip (pocketed). */
+  targetIsEquipped: boolean;
   /** The target is attunable fortune-telling scenery (a checkpoint). */
   targetHasCheckpointObject: boolean;
 };
@@ -53,6 +57,7 @@ export const getActionOptions = ({
   targetHasPath,
   targetHasItem,
   targetCarriedByPlayer,
+  targetIsEquipped,
   targetHasCheckpointObject,
   ...allegiance
 }: ActionOptionInputs): ActionId[] => {
@@ -80,6 +85,20 @@ export const getActionOptions = ({
         }
         if (effects.some((effect) => effect.tag === "Drop")) {
           return targetCarriedByPlayer;
+        }
+        return false;
+      }
+      // Equip targets a CARRIED, not-yet-equipped item; unequip a CARRIED,
+      // equipped one. Which verb an Equip action is comes from its effects,
+      // exactly like the Inventory verbs.
+      case "Equip": {
+        if (!targetHasItem || !targetCarriedByPlayer) return false;
+        const effects = action.rounds.flatMap((round) => round.effects);
+        if (effects.some((effect) => effect.tag === "Equip")) {
+          return !targetIsEquipped;
+        }
+        if (effects.some((effect) => effect.tag === "Unequip")) {
+          return targetIsEquipped;
         }
         return false;
       }

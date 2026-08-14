@@ -56,6 +56,7 @@ beforeAll(async () => {
       "SELECT * FROM active_stance_components",
       "SELECT * FROM equipment_components",
       "SELECT * FROM pinned_actions_components",
+      "SELECT * FROM stance_loadouts_components",
       "SELECT * FROM armor_components",
       "SELECT * FROM relics_components",
       "SELECT * FROM item_components",
@@ -156,15 +157,12 @@ test("loadout assignments re-arm on swap; a pocketed blade is not IN HAND", asyn
     player.reducers.setStance({ stanceId: duelingId }),
   ).rejects.toThrow(/requirements/);
 
-  // Assigning to the ACTIVE stance is CONFIGURATION ONLY — nothing changes
-  // in hand until a stance change pays the round. Re-entering standing
-  // re-arms from the fresh assignment.
+  // Assigning to the ACTIVE stance equips AUTOMATICALLY — hands and
+  // configuration never disagree about the stance you are in.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
     armamentIds: [swordId],
   });
-  expect(myActionNames()).not.toContain("test_slash");
-  await player.reducers.setStance({ stanceId: standingId });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
   await player.reducers.setStance({ stanceId: duelingId });
   await waitFor(
@@ -201,6 +199,40 @@ test("a stance's assigned ACTIONS become the pinned bar when it re-arms", async 
     );
     return row != null && [...row.actionIds].join(",") === `${takeId}`;
   }, 30000);
+}, 60000);
+
+test("unequip/equip actions on a carried item mirror into the active stance's config", async () => {
+  const swordId = idByName(player.db.armaments, "test_sword");
+  const standingId = idByName(player.db.stances, "test_standing");
+  const swordItemId = [...player.db.item_components.iter()].find(
+    (row) => row.itemRef.tag === "Armament",
+  )!.entityId;
+  const standingArmaments = () =>
+    [...player.db.stance_loadouts_components.iter()]
+      .find((row) => row.entityId === playerEntityId)
+      ?.assignments.find((a) => a.stanceId === standingId)?.armamentIds;
+
+  // We stand with the sword in hand (previous tests). Unequipping the
+  // ITEM puts it away AND clears it from standing's configuration.
+  const unequipId = idByName(player.db.actions, "test_unequip");
+  await player.reducers.act({
+    actionId: unequipId,
+    targetEntityId: swordItemId,
+  });
+  await waitFor(() => !myActionNames().includes("test_slash"), 30000);
+  await waitFor(() => [...(standingArmaments() ?? [])].length === 0, 30000);
+
+  // Equipping the ITEM wields it AND writes it back into the config.
+  const equipId = idByName(player.db.actions, "test_equip");
+  await player.reducers.act({
+    actionId: equipId,
+    targetEntityId: swordItemId,
+  });
+  await waitFor(() => myActionNames().includes("test_slash"), 30000);
+  await waitFor(
+    () => [...(standingArmaments() ?? [])].join(",") === `${swordId}`,
+    30000,
+  );
 }, 60000);
 
 test("the four-relic cap is enforced", async () => {

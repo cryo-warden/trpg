@@ -73,7 +73,7 @@ for (const [label, language] of [
     );
   });
 
-  test(`${label}: narrates move/take/drop`, () => {
+  test(`${label}: narrates move/take/drop/equip/unequip`, () => {
     expect(render(actionEffect({ tag: "Move" }))).toBe(
       "The goblin moved through the hero.",
     );
@@ -82,6 +82,12 @@ for (const [label, language] of [
     );
     expect(render(actionEffect({ tag: "Drop" }))).toBe(
       "The goblin dropped the hero.",
+    );
+    expect(render(actionEffect({ tag: "Equip" }))).toBe(
+      "The goblin readied the hero.",
+    );
+    expect(render(actionEffect({ tag: "Unequip" }))).toBe(
+      "The goblin put away the hero.",
     );
   });
 

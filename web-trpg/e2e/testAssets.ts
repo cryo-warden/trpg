@@ -295,6 +295,22 @@ export const loadoutPack = (): AssetPack => ({
     },
     postureAction("test_stand", "test_standing"),
     postureAction("test_duel", "test_dueling"),
+    {
+      name: "test_equip",
+      value: {
+        actionType: { tag: "Equip" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Equip" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_unequip",
+      value: {
+        actionType: { tag: "Equip" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Unequip" }], interruptible: false }],
+      },
+    },
   ],
   baselines: [
     {
@@ -303,7 +319,14 @@ export const loadoutPack = (): AssetPack => ({
         mhp: 5,
         hand: 2,
         gait: 2,
-        actionNames: ["test_take", "test_slash", "test_stand", "test_duel"],
+        actionNames: [
+          "test_take",
+          "test_slash",
+          "test_stand",
+          "test_duel",
+          "test_equip",
+          "test_unequip",
+        ],
       }),
     },
   ],

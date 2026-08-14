@@ -148,43 +148,6 @@ export const useGearStatBlockOf = (): ((
   );
 };
 
-// Instance-level toggling over counted asset ids: among the owned items of
-// one asset, the first `count` render as on. Shared by every menu that
-// proposes a counted-multiset of gear.
-const instanceIndex = (items: OwnedItem[], item: OwnedItem): number =>
-  items
-    .filter((other) => other.assetId === item.assetId)
-    .findIndex((other) => other.entityId === item.entityId);
-
-export const assetInstanceIsOn = ({
-  ids,
-  item,
-  items,
-}: {
-  ids: number[];
-  item: OwnedItem;
-  items: OwnedItem[];
-}): boolean =>
-  instanceIndex(items, item) <
-  ids.filter((id) => id === item.assetId).length;
-
-export const toggledAssetIds = ({
-  ids,
-  item,
-  items,
-}: {
-  ids: number[];
-  item: OwnedItem;
-  items: OwnedItem[];
-}): number[] => {
-  if (assetInstanceIsOn({ ids, item, items })) {
-    const next = [...ids];
-    next.splice(next.indexOf(item.assetId), 1);
-    return next;
-  }
-  return [...ids, item.assetId];
-};
-
 export type StanceAssignment = {
   stanceId: number;
   armamentIds: number[];

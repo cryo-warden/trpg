@@ -27,10 +27,9 @@ import {
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "./context/StdbContext/components";
+import { assetInstanceIsOn, toggledAssetIds } from "./domain/countedAssets";
 import {
-  assetInstanceIsOn,
   OwnedItem,
-  toggledAssetIds,
   useArmamentStatBlocks,
   useGearStatBlockOf,
   useMyEquipmentArmamentIds,
@@ -207,8 +206,10 @@ const StanceActionsBar = ({
  * each free to scroll vertically on its own. A card leads with the FULL
  * stat totals the player would have in that stance with its assigned
  * loadout, then assigns its armaments — the actions the stance will fight
- * with. Assignments are CONFIGURATION and apply immediately; the actual
- * equipment only changes when a stance change pays its round.
+ * with. Armament assignments to the ACTIVE stance equip and unequip
+ * automatically (hands and configuration never disagree about the stance
+ * you are in); other stances' assignments — and every ACTION assignment —
+ * take effect when a stance change pays its round.
  */
 export const StancesMenu = () => {
   const connection = useStdbConnection();

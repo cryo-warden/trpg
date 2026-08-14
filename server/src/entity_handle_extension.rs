@@ -418,6 +418,12 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             match a.action_type {
                 ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),
+                // Equip/unequip target an item the actor CARRIES.
+                ActionType::Equip => {
+                    o.item().is_some()
+                        && { o.location() }
+                            .is_some_and(|l| l.location_entity_id == e.entity_id())
+                }
                 // An item is a valid inventory target when it is within
                 // reach: sharing the room (takeable) or carried (droppable).
                 // The effect itself enforces which of the two applies.

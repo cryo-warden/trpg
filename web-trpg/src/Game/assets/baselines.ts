@@ -20,6 +20,8 @@ export const BASELINES = {
     actionNames: [
       "take",
       "drop",
+      "equip",
+      "unequip",
       "attune",
       "stand",
       "sit",
@@ -68,6 +70,8 @@ export const BASELINES = {
     actionNames: [
       "take",
       "drop",
+      "equip",
+      "unequip",
       "attune",
       "stand",
       "sit",

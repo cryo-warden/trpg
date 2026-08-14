@@ -1,7 +1,6 @@
 import { Button } from "../structural/Button";
+import { assetInstanceIsOn, toggledAssetIds } from "./domain/countedAssets";
 import {
-  assetInstanceIsOn,
-  toggledAssetIds,
   useMyArmorId,
   useMyRelicIds,
   useOwnedItems,

@@ -354,6 +354,8 @@ fn resolve_action_effect(
         ActionEffectAsset::Move => ActionEffect::Move,
         ActionEffectAsset::Take => ActionEffect::Take,
         ActionEffectAsset::Drop => ActionEffect::Drop,
+        ActionEffectAsset::Equip => ActionEffect::Equip,
+        ActionEffectAsset::Unequip => ActionEffect::Unequip,
         ActionEffectAsset::Intimidate(magnitude) => ActionEffect::Intimidate(magnitude),
         ActionEffectAsset::Rally => ActionEffect::Rally,
         ActionEffectAsset::Dive(defense) => ActionEffect::Dive(defense),

@@ -49,6 +49,8 @@ pub enum ActionEffectAsset {
     Move,
     Take,
     Drop,
+    Equip,
+    Unequip,
     Intimidate(i16),
     Rally,
     Dive(i16),

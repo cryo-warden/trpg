@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { getActionOptions } from "../../domain/actionOptions";
+import { assetInstanceIsOn } from "../../domain/countedAssets";
 import { ActionId, EntityId } from "../../trpg";
 import { useMyAccountId } from "./account";
 import { useActionAssetOf } from "./assetLookup";
@@ -121,6 +122,76 @@ export const useLocation = (entityId: EntityId | null) => {
   return component.locationEntityId;
 };
 
+/** This carried item INSTANCE counts as equipped/worn: the same counted-
+ * multiset rule the menus use, so an item's Equip/Unequip options can
+ * never disagree with its highlight anywhere else. */
+const useTargetIsEquipped = (focus: Focus): boolean => {
+  const playerEntity = usePlayerEntity();
+  const targetItem = useItemComponent(focus);
+  const locationRows = useTableData(
+    "location_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  const itemRows = useTableData("item_components", (table) => [...table.iter()], []);
+  const equipment = useTableData(
+    "equipment_components",
+    (table) =>
+      playerEntity == null
+        ? null
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((table.entityId as any).find(playerEntity) ?? null),
+    [playerEntity],
+  );
+  const armor = useTableData(
+    "armor_components",
+    (table) =>
+      playerEntity == null
+        ? null
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((table.entityId as any).find(playerEntity) ?? null),
+    [playerEntity],
+  );
+  const relics = useTableData(
+    "relics_components",
+    (table) =>
+      playerEntity == null
+        ? null
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ((table.entityId as any).find(playerEntity) ?? null),
+    [playerEntity],
+  );
+
+  return useMemo(() => {
+    if (focus == null || playerEntity == null || targetItem == null) {
+      return false;
+    }
+    const ref = targetItem.itemRef;
+    if (ref.tag === "Armor") {
+      return armor?.armorId === ref.value;
+    }
+    // Counted kinds: which instances of this asset the player carries, in
+    // stable row order, decides whether THIS instance is on.
+    const carried = new Set(
+      locationRows
+        .filter((row) => row.locationEntityId === playerEntity)
+        .map((row) => row.entityId),
+    );
+    const carriedSameKind = itemRows
+      .filter((row) => carried.has(row.entityId) && row.itemRef.tag === ref.tag)
+      .map((row) => ({ entityId: row.entityId, assetId: row.itemRef.value }));
+    const onIds: number[] =
+      ref.tag === "Armament"
+        ? [...(equipment?.armamentIds ?? [])]
+        : [...(relics?.relicIds ?? [])];
+    return assetInstanceIsOn({
+      ids: onIds,
+      item: { entityId: focus, assetId: ref.value },
+      items: carriedSameKind,
+    });
+  }, [focus, playerEntity, targetItem, locationRows, itemRows, equipment, armor, relics]);
+};
+
 /** Actions valid with the focused entity as their would-be target. */
 export const useActionOptions = (focus: Focus): ActionId[] => {
   const playerEntity = usePlayerEntity();
@@ -134,6 +205,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   const targetItem = useItemComponent(focus);
   const targetLocation = useLocationComponent(focus);
   const targetCheckpointObject = useCheckpointObjectComponent(focus);
+  const targetIsEquipped = useTargetIsEquipped(focus);
 
   return useMemo(
     () =>
@@ -146,6 +218,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
         targetCarriedByPlayer:
           playerEntity != null &&
           targetLocation?.locationEntityId === playerEntity,
+        targetIsEquipped,
         targetHasCheckpointObject: !!targetCheckpointObject,
         playerEntity,
         target: focus,
@@ -163,6 +236,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
       targetItem,
       targetLocation,
       targetCheckpointObject,
+      targetIsEquipped,
       focus,
     ],
   );

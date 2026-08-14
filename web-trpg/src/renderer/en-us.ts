@@ -69,6 +69,16 @@ export const createEnUs: CreateLanguage<NarrationContext> = ({
             template: "{0:sentence:subject} dropped {1:object}.",
             values: [owner, target],
           };
+        case "Equip":
+          return {
+            template: "{0:sentence:subject} readied {1:object}.",
+            values: [owner, target],
+          };
+        case "Unequip":
+          return {
+            template: "{0:sentence:subject} put away {1:object}.",
+            values: [owner, target],
+          };
         default:
           // Buff and any future effect kinds are not narrated yet.
           return null;

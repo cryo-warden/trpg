@@ -81,6 +81,7 @@ test("getActionOptions offers attacks and moves against a hostile, reachable tar
       targetHasPath: true,
       targetHasItem: false,
       targetCarriedByPlayer: false,
+      targetIsEquipped: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([attackId, moveId]);
@@ -96,6 +97,7 @@ test("getActionOptions offers buffs against an ally with hp", () => {
       targetHasPath: false,
       targetHasItem: false,
       targetCarriedByPlayer: false,
+      targetIsEquipped: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([buffId]);
@@ -111,6 +113,7 @@ test("getActionOptions offers nothing when the target has no hp and no path", ()
       targetHasPath: false,
       targetHasItem: false,
       targetCarriedByPlayer: false,
+      targetIsEquipped: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([]);
@@ -128,6 +131,7 @@ test("an item beside you offers take, never drop", () => {
       targetHasPath: false,
       targetHasItem: true,
       targetCarriedByPlayer: false,
+      targetIsEquipped: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([takeId]);
@@ -145,9 +149,39 @@ test("a carried item offers drop, never take — decided by entity containment a
       targetHasPath: false,
       targetHasItem: true,
       targetCarriedByPlayer: true,
+      targetIsEquipped: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([dropId]);
+});
+
+test("a carried item offers equip when pocketed, unequip when equipped", () => {
+  const equipId = actionIdOf("equip");
+  const unequipId = actionIdOf("unequip");
+  const carriedItem = {
+    ...enemy,
+    actionIds: [equipId, unequipId],
+    actionAssetOf,
+    targetHasHp: false,
+    targetHasPath: false,
+    targetHasItem: true,
+    targetCarriedByPlayer: true,
+    targetHasCheckpointObject: false,
+  };
+  expect(
+    getActionOptions({ ...carriedItem, targetIsEquipped: false }),
+  ).toEqual([equipId]);
+  expect(
+    getActionOptions({ ...carriedItem, targetIsEquipped: true }),
+  ).toEqual([unequipId]);
+  // An item on the ground offers neither.
+  expect(
+    getActionOptions({
+      ...carriedItem,
+      targetCarriedByPlayer: false,
+      targetIsEquipped: false,
+    }),
+  ).toEqual([]);
 });
 
 test("getActionOptions offers attune against a checkpoint object", () => {
@@ -161,6 +195,7 @@ test("getActionOptions offers attune against a checkpoint object", () => {
       targetHasPath: false,
       targetHasItem: false,
       targetCarriedByPlayer: false,
+      targetIsEquipped: false,
       targetHasCheckpointObject: true,
     }),
   ).toEqual([attuneId]);
@@ -176,6 +211,7 @@ test("getActionOptions drops unknown action ids", () => {
       targetHasPath: true,
       targetHasItem: false,
       targetCarriedByPlayer: false,
+      targetIsEquipped: false,
       targetHasCheckpointObject: false,
     }),
   ).toEqual([]);

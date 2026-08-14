@@ -21,6 +21,8 @@ const Guard = (value: number) =>
   }) as const satisfies ActionEffectAsset;
 const Take = { tag: "Take" } as const satisfies ActionEffectAsset;
 const Drop = { tag: "Drop" } as const satisfies ActionEffectAsset;
+const EquipEffect = { tag: "Equip" } as const satisfies ActionEffectAsset;
+const UnequipEffect = { tag: "Unequip" } as const satisfies ActionEffectAsset;
 const Intimidate = (value: number) =>
   ({ tag: "Intimidate", value }) as const satisfies ActionEffectAsset;
 const Rally = { tag: "Rally" } as const satisfies ActionEffectAsset;
@@ -174,6 +176,18 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [round(Drop)],
   },
+  // Equip/unequip act on CARRIED items and mirror into the active stance's
+  // loadout configuration — hands and configuration never disagree.
+  equip: {
+    actionType: { tag: "Equip" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(EquipEffect)],
+  },
+  unequip: {
+    actionType: { tag: "Equip" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(UnequipEffect)],
+  },
   // The cower stance's counterplay: spends EP dynamically — exactly the
   // deficit against the fear — for a courage status that overcomes it.
   rally: {
@@ -310,6 +324,14 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   drop: {
     displayName: "Drop",
     beginTemplate: "{0:sentence:subject} set down {1:object}.",
+  },
+  equip: {
+    displayName: "Equip",
+    beginTemplate: "{0:sentence:subject} readied {1:object}.",
+  },
+  unequip: {
+    displayName: "Unequip",
+    beginTemplate: "{0:sentence:subject} put away {1:object}.",
   },
   rally: {
     displayName: "Rally",
