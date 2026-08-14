@@ -1,0 +1,1 @@
+"Generation writes quest_room_links {quest_id, room_entity_id, role} for roles the quest declares (boss room spawns the quest's authored boss encounter there). The hook for defeat-bits, completion-gated doors, and future teleport/quest logic -- across ALL maps a quest links to."

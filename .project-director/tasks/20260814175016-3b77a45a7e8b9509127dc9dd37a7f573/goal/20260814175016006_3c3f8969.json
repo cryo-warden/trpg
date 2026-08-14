@@ -1,0 +1,1 @@
+"A new consumable item kind (explicit in ItemRef, never inferred): an Eat/Consume action on a carried consumable applies its stat block through the ratchet (red cookie +mhp, blue +mep), narrates, and destroys the item. Limited supply comes from authored placement, not from the mechanic."

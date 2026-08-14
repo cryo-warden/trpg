@@ -12,6 +12,8 @@
 
 mod account;
 mod action;
+mod bitset;
+mod quest;
 mod appearance;
 mod asset;
 mod ecs_extension;

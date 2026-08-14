@@ -1,0 +1,1 @@
+"An item entity carries an explicit quest-item reference {quest_id, index}. Eat: bit unset -> set bit, dirty quest cache, destroy the item; bit set -> effect refuses, and the client never offers Eat (the cookie renders 'smells off' -- per-VIEWER, since it reads the viewer's own bits; a companion can still eat it)."

@@ -105,6 +105,7 @@ import PendingConnectionsComponentsRow from "./pending_connections_components_ta
 import PinnedActionsComponentsRow from "./pinned_actions_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
+import QuestProgressRow from "./quest_progress_table";
 import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
@@ -728,6 +729,23 @@ const tablesSchema = __schema({
       { name: 'player_deactivation_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, PlayerDeactivationTimerComponentsRow),
+  quest_progress: __table({
+    name: 'quest_progress',
+    indexes: [
+      { accessor: 'entity_id', name: 'quest_progress_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+      { accessor: 'id', name: 'quest_progress_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+      { accessor: 'quest_id', name: 'quest_progress_quest_id_idx_btree', algorithm: 'btree', columns: [
+        'questId',
+      ] },
+    ],
+    constraints: [
+      { name: 'quest_progress_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, QuestProgressRow),
   queued_action_state_components: __table({
     name: 'queued_action_state_components',
     indexes: [

@@ -1,0 +1,1 @@
+"When an entity with contents is destroyed, its contents move OUT to its location instead of being stranded/deleted (the entity_deletion path currently logs 'contents are stranded'). One shared spill routine on every deletion path. Foundation for all loot."

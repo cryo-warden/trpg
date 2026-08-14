@@ -1,0 +1,1 @@
+"QUESTS asset record {name, perBitStatBlock, bitCount}; computed contribution = perBitStatBlock x popcount; a fourth stat source: quest_stat_block_cache + quest_stat_block_dirty_flag folded by the stats system exactly like traits/equipment/status. ONE quest asset spans MULTIPLE maps: bitCount is the global supply across the whole world."

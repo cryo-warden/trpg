@@ -354,6 +354,16 @@ pub fn action_system(ecs: Ecs) {
     queue.resolve(ecs);
 }
 
+/// THE way an entity actually ceases to exist: its join rows (visited
+/// locations, quest progress) die with it, then the entity itself. Every
+/// deletion site calls this — never `.delete()` directly — so a new join
+/// table has exactly one place to hook.
+fn delete_entity_with_joins(ecs: Ecs, entity_id: u64) {
+    crate::visited::cleanup_visited_rows(ecs, entity_id);
+    crate::quest::cleanup_quest_rows(ecs, entity_id);
+    ecs.find(entity_id).delete();
+}
+
 pub fn entity_deletion_timer_system(ecs: Ecs) {
     for t in ecs.iter_entity_deletion_timer() {
         if t.entity_deletion_timer().timestamp <= ecs.timestamp {
@@ -386,8 +396,7 @@ pub fn entity_deletion_timer_system(ecs: Ecs) {
                     }
                 }
             }
-            crate::visited::cleanup_visited_rows(ecs, t.entity_id());
-            t.delete();
+            delete_entity_with_joins(ecs, t.entity_id());
         }
     }
 }
@@ -781,8 +790,7 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
             .map(|p| p.entity_id)
             .collect();
         for path_entity_id in inbound {
-            crate::visited::cleanup_visited_rows(ecs, path_entity_id);
-            ecs.find(path_entity_id).delete();
+            delete_entity_with_joins(ecs, path_entity_id);
         }
         // Contents, recursively.
         let mut stack = vec![*room_id];
@@ -799,14 +807,11 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
             }
         }
         for entity_id in contents {
-            crate::visited::cleanup_visited_rows(ecs, entity_id);
-            ecs.find(entity_id).delete();
+            delete_entity_with_joins(ecs, entity_id);
         }
-        crate::visited::cleanup_visited_rows(ecs, *room_id);
-        ecs.find(*room_id).delete();
+        delete_entity_with_joins(ecs, *room_id);
     }
-    crate::visited::cleanup_visited_rows(ecs, map_entity_id);
-    ecs.find(map_entity_id).delete();
+    delete_entity_with_joins(ecs, map_entity_id);
 }
 
 /// Visits derive from PRESENCE: any player-controlled entity standing in a

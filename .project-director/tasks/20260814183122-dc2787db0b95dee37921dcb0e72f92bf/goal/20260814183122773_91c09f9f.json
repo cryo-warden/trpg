@@ -1,0 +1,1 @@
+"quest_progress {entity_id (indexed), quest_id (indexed), bits: Vec<u8>} with pure set_bit / bit_is_set / popcount helpers -- the stdb-implemented bitset. Bits only turn ON: progress is monotonic, matching the max-pool ratchet by construction."

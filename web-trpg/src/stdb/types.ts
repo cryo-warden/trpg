@@ -341,6 +341,11 @@ export const BaselineComponentBlob = __t.object("BaselineComponentBlob", {
 });
 export type BaselineComponentBlob = __Infer<typeof BaselineComponentBlob>;
 
+export const Bitset = __t.object("Bitset", {
+  bytes: __t.byteArray(),
+});
+export type Bitset = __Infer<typeof Bitset>;
+
 export const BracedStatusComponent = __t.object("BracedStatusComponent", {
   entityId: __t.u64(),
   defense: __t.i16(),
@@ -1156,6 +1161,16 @@ export const PlayerControllerComponentBlob = __t.object("PlayerControllerCompone
   accountId: __t.u64(),
 });
 export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerComponentBlob>;
+
+export const QuestProgress = __t.object("QuestProgress", {
+  id: __t.u64(),
+  entityId: __t.u64(),
+  questId: __t.u32(),
+  get bits() {
+    return Bitset;
+  },
+});
+export type QuestProgress = __Infer<typeof QuestProgress>;
 
 export const Relic = __t.object("Relic", {
   id: __t.u32(),

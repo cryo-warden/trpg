@@ -1,0 +1,1 @@
+"A path can be gated by a blocker entity with hp: hidden until the blocker is destroyed. A shortcut variant is authored one-way -- breakable only from one side, two-way once open. Requires map-generation support for authored intra-map connections beyond chain+loop."
