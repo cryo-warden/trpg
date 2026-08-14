@@ -192,6 +192,9 @@ export default __t.row({
   get mapCleanupTimer() {
     return __t.option(TimerComponentBlob).name("map_cleanup_timer");
   },
+  get actionlessSince() {
+    return __t.option(TimerComponentBlob).name("actionless_since");
+  },
   get locationMap() {
     return __t.option(LocationMapComponentBlob).name("location_map");
   },

@@ -640,6 +640,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get mapCleanupTimer() {
     return __t.option(TimerComponentBlob);
   },
+  get actionlessSince() {
+    return __t.option(TimerComponentBlob);
+  },
   get locationMap() {
     return __t.option(LocationMapComponentBlob);
   },
@@ -883,6 +886,9 @@ export const LocationMap = __t.object("LocationMap", {
   get layout() {
     return Layout;
   },
+  get zoneKind() {
+    return ZoneKind;
+  },
   rngSeed: __t.option(__t.u64()),
   extraRoomCount: __t.u8(),
   mainRoomCount: __t.u8(),
@@ -902,6 +908,9 @@ export const LocationMapAsset = __t.object("LocationMapAsset", {
   themeName: __t.string(),
   get layout() {
     return Layout;
+  },
+  get zoneKind() {
+    return ZoneKind;
   },
   rngSeed: __t.option(__t.u64()),
   extraRoomCount: __t.u8(),
@@ -1531,4 +1540,11 @@ export const WeightedNameAsset = __t.object("WeightedNameAsset", {
   name: __t.string(),
 });
 export type WeightedNameAsset = __Infer<typeof WeightedNameAsset>;
+
+// The tagged union or sum type for the algebraic type `ZoneKind`.
+export const ZoneKind = __t.enum("ZoneKind", {
+  Private: __t.unit(),
+  Common: __t.unit(),
+});
+export type ZoneKind = __Infer<typeof ZoneKind>;
 

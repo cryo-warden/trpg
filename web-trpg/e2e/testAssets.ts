@@ -173,6 +173,7 @@ export const mapGenPack = (): AssetPack => ({
       value: {
         themeName: "test_theme",
         layout: { tag: "Path" },
+        zoneKind: { tag: "Private" },
         rngSeed: 0n,
         extraRoomCount: 0,
         mainRoomCount: 3,
@@ -542,6 +543,7 @@ export const connectionsPack = (): AssetPack => ({
       value: {
         themeName: "test_link_theme",
         layout: { tag: "Path" },
+        zoneKind: { tag: "Private" },
         rngSeed: 0n,
         mainRoomCount: 2,
         extraRoomCount: 0,
@@ -557,6 +559,7 @@ export const connectionsPack = (): AssetPack => ({
       value: {
         themeName: "test_link_theme",
         layout: { tag: "Path" },
+        zoneKind: { tag: "Private" },
         rngSeed: 0n,
         mainRoomCount: 1,
         extraRoomCount: 0,
@@ -618,6 +621,7 @@ export const deathPack = (): AssetPack => ({
       value: {
         themeName: "test_haven_theme",
         layout: { tag: "Path" },
+        zoneKind: { tag: "Private" },
         rngSeed: 0n,
         mainRoomCount: 1,
         extraRoomCount: 0,
@@ -1023,6 +1027,7 @@ export const spawnPack = (): AssetPack => ({
       value: {
         themeName: "test_spawn_theme",
         layout: { tag: "Path" },
+        zoneKind: { tag: "Private" },
         rngSeed: 0n,
         mainRoomCount: 3,
         extraRoomCount: 2,
@@ -1044,4 +1049,101 @@ export const spawnPack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({}),
+});
+
+/**
+ * A two-room arena for the turn guard: the player wakes in the entrance,
+ * one lurker waits in the far room (encounter count locked to 1, and the
+ * encounter layer never uses the entrance). zoneKind decides the pacing
+ * under test: Private is turn-guarded, Common is realtime.
+ */
+export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
+  ...emptyPack(),
+  actions: [
+    {
+      name: "test_move",
+      value: {
+        actionType: { tag: "Move" },
+        requirements: requirements({ gait: 1 }),
+        rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
+      },
+    },
+    {
+      name: "test_strike",
+      value: {
+        actionType: { tag: "Attack" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Attack", value: 2 }], interruptible: false }],
+      },
+    },
+  ],
+  baselines: [
+    {
+      name: "test_hero",
+      value: statBlock({
+        mhp: 20,
+        gait: 2,
+        attack: 1,
+        actionNames: ["test_move", "test_strike"],
+      }),
+    },
+    {
+      name: "test_lurker_base",
+      value: statBlock({ mhp: 10, attack: 1, actionNames: ["test_strike"] }),
+    },
+  ],
+  encounterBlobs: [
+    { name: "test_lurker_categoric", value: blob({}) },
+    {
+      name: "test_lurker",
+      value: blob({
+        baselineName: "test_lurker_base",
+        enemyController: {},
+      }),
+    },
+  ],
+  encounters: [
+    {
+      name: "test_ambush",
+      value: {
+        categoricBlobName: "test_lurker_categoric",
+        blobNames: ["test_lurker"],
+      },
+    },
+  ],
+  locationMapThemes: [
+    {
+      name: "test_arena_theme",
+      value: {
+        decorationsSelector: { selections: [] },
+        minDecorationCount: 0,
+        maxDecorationCount: 0,
+        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        checkpointsSelector: { selections: [] },
+        containersSelector: { selections: [] },
+        minContainerCount: 0,
+        maxContainerCount: 0,
+      },
+    },
+  ],
+  locationMaps: [
+    {
+      name: "test_arena",
+      value: {
+        themeName: "test_arena_theme",
+        layout: { tag: "Path" },
+        zoneKind: { tag: zoneKind },
+        rngSeed: 0n,
+        mainRoomCount: 2,
+        extraRoomCount: 0,
+        loopCount: 0,
+        encounterNamesSampler: [{ weight: 1, name: "test_ambush" }],
+        minEncounterCount: 1,
+        maxEncounterCount: 1,
+        questSpawns: [],
+      },
+    },
+  ],
+  newPlayerBlob: blob({ baselineName: "test_hero" }),
 });

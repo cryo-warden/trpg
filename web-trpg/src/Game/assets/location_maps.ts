@@ -5,6 +5,7 @@ import {
   LocationMapConnectionAsset,
   LocationMapThemeAsset,
   QuestSpawnAsset,
+  ZoneKind,
 } from "../../stdb/types";
 import { blob } from "./entity_blobs";
 import { QuestName } from "./quests";
@@ -514,6 +515,7 @@ export const LOCATION_MAPS = {
   start_zone: {
     themeName: "encampment",
     layout: Layout.Hub,
+    zoneKind: ZoneKind.Private,
     rngSeed: 0n,
     mainRoomCount: 10,
     extraRoomCount: 0,
@@ -541,6 +543,7 @@ export const LOCATION_MAPS = {
   beginner_cave: {
     themeName: "cave",
     layout: Layout.Path,
+    zoneKind: ZoneKind.Private,
     rngSeed: 0n,
     mainRoomCount: 10,
     extraRoomCount: 10,
@@ -563,6 +566,7 @@ export const LOCATION_MAPS = {
   verdant_meadow: {
     themeName: "meadow",
     layout: Layout.Hub,
+    zoneKind: ZoneKind.Private,
     rngSeed: 0n,
     mainRoomCount: 8,
     extraRoomCount: 4,
@@ -585,6 +589,7 @@ export const LOCATION_MAPS = {
   whispering_forest: {
     themeName: "forest",
     layout: Layout.Path,
+    zoneKind: ZoneKind.Private,
     rngSeed: 0n,
     mainRoomCount: 10,
     extraRoomCount: 6,
@@ -607,6 +612,7 @@ export const LOCATION_MAPS = {
   old_keep: {
     themeName: "keep",
     layout: Layout.Hub,
+    zoneKind: ZoneKind.Private,
     rngSeed: 0n,
     mainRoomCount: 9,
     extraRoomCount: 5,
@@ -631,6 +637,7 @@ export const LOCATION_MAPS = {
   elemental_sanctum: {
     themeName: "sanctum",
     layout: Layout.Path,
+    zoneKind: ZoneKind.Private,
     rngSeed: 0n,
     mainRoomCount: 7,
     extraRoomCount: 3,

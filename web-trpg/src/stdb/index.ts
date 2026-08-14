@@ -60,6 +60,7 @@ import AccountRolesRow from "./account_roles_table";
 import AccountsRow from "./accounts_table";
 import ActionRoundsRow from "./action_rounds_table";
 import ActionStateComponentsRow from "./action_state_components_table";
+import ActionlessSinceComponentsRow from "./actionless_since_components_table";
 import ActionsRow from "./actions_table";
 import ActionsComponentsRow from "./actions_components_table";
 import ActiveStanceComponentsRow from "./active_stance_components_table";
@@ -199,6 +200,17 @@ const tablesSchema = __schema({
       { name: 'action_state_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, ActionStateComponentsRow),
+  actionless_since_components: __table({
+    name: 'actionless_since_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'actionless_since_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'actionless_since_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ActionlessSinceComponentsRow),
   actions: __table({
     name: 'actions',
     indexes: [

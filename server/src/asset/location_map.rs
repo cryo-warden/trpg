@@ -19,6 +19,18 @@ pub enum Layout {
     Hub,
 }
 
+/// How instances of a map are shared and paced. (The recorded per-player
+/// instancing design keys off the same distinction: Private maps belong
+/// to one player/party; Common zones are shared hubs like towns.)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, SpacetimeType)]
+pub enum ZoneKind {
+    /// Turn-based: actions in an instance advance only while every
+    /// non-idle player there has an assigned action (see turn.rs).
+    Private,
+    /// A shared hub (towns): always realtime, never turn-guarded.
+    Common,
+}
+
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EncounterIdSample {
     pub weight: u8,
@@ -56,6 +68,7 @@ pub struct LocationMap {
     pub name: String,
     pub theme_id: u32,
     pub layout: Layout,
+    pub zone_kind: ZoneKind,
     pub rng_seed: Option<u64>,
     pub extra_room_count: u8,
     pub main_room_count: u8,

@@ -183,8 +183,34 @@ fn resolve_checkpoint_room(
         })
 }
 
+/// Stamps each player's actionless_since the moment they have neither an
+/// active nor a queued action, and clears it the moment they do. The turn
+/// guard reads the stamp's age to decide who counts as idle.
+pub fn actionless_stamp_system(ecs: Ecs) {
+    for p in ecs.iter_player_controller() {
+        let handle = p.into_handle();
+        let has_assigned_action =
+            handle.action_state().is_some() || handle.queued_action_state().is_some();
+        if has_assigned_action {
+            if handle.actionless_since().is_some() {
+                handle.delete_actionless_since();
+            }
+        } else if handle.actionless_since().is_none() {
+            handle.upsert_new_actionless_since(ecs.timestamp);
+        }
+    }
+}
+
 pub fn shift_queued_action_system(ecs: Ecs) {
+    let blocked = crate::turn::blocked_map_instance_ids(ecs);
     for e in ecs.iter_queued_action_state() {
+        // A turn-guarded instance freezes even the queued->active shift:
+        // its time simply does not pass.
+        if crate::turn::map_instance_id_of(ecs, e.queued_action_state().entity_id)
+            .is_some_and(|instance_id| blocked.contains(&instance_id))
+        {
+            continue;
+        }
         // A queued action normally waits the active one out — but while the
         // active action's CURRENT round is interruptible, queuing cancels it
         // immediately.
@@ -221,10 +247,18 @@ pub fn shift_queued_action_system(ecs: Ecs) {
 }
 
 pub fn action_system(ecs: Ecs) {
+    let blocked = crate::turn::blocked_map_instance_ids(ecs);
     let mut queue = EventQueue::new();
     for mut e in ecs.iter_action_state() {
         let action_state = e.action_state();
         let entity_id = action_state.entity_id;
+        // Turn guard: while the entity's instance waits on a player's
+        // choice, its active actions hold mid-round.
+        if crate::turn::map_instance_id_of(ecs, entity_id)
+            .is_some_and(|instance_id| blocked.contains(&instance_id))
+        {
+            continue;
+        }
         let action_handle = ActionHandle::from_id(&ecs, action_state.action_id);
         let effects = match action_handle.round(action_state.sequence_index).map(|r| r.effects) {
             Some(effects) => effects,
@@ -912,6 +946,7 @@ pub fn enemy_control_system(ecs: Ecs) {
 }
 
 pub fn execute_all_systems(ecs: Ecs) {
+    actionless_stamp_system(ecs);
     action_system(ecs);
     hp_system(ecs);
     death_system(ecs);

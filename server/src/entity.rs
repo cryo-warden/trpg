@@ -291,6 +291,10 @@ entity!(
       player_deactivation_timer in player_deactivation_timer_components,
       respawn_timer in respawn_timer_components,
       map_cleanup_timer in map_cleanup_timer_components,
+      // When a PLAYER last became actionless (no active or queued action);
+      // present only while actionless. 30+ seconds marks the player idle
+      // for the turn guard (see turn.rs).
+      actionless_since in actionless_since_components,
     )]
     struct TimerComponent {
         pub timestamp: Timestamp,

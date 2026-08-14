@@ -342,6 +342,7 @@ fn resolve_entity_blob(
         queued_action_state: None,
         entity_deletion_timer: None,
         player_deactivation_timer: None,
+        actionless_since: None,
         location_map: None,
     })
 }
@@ -891,6 +892,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             name,
             theme_id: resolve_name(&theme_ids, "location map theme", &m.theme_name)?,
             layout: m.layout,
+            zone_kind: m.zone_kind,
             rng_seed: m.rng_seed,
             extra_room_count: m.extra_room_count,
             main_room_count: m.main_room_count,

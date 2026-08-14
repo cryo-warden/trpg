@@ -16,7 +16,7 @@ use spacetimedb::SpacetimeType;
 use crate::{
     action::ActionType,
     appearance::AppearanceFeatureType,
-    asset::location_map::{ConnectionAnchor, Layout},
+    asset::location_map::{ConnectionAnchor, Layout, ZoneKind},
     asset::stat_block::StatRequirements,
     entity::{
         AllegianceComponentBlob, AttackComponentBlob, EnemyControllerComponentBlob,
@@ -252,6 +252,7 @@ pub struct QuestSpawnAsset {
 pub struct LocationMapAsset {
     pub theme_name: String,
     pub layout: Layout,
+    pub zone_kind: ZoneKind,
     pub rng_seed: Option<u64>,
     pub extra_room_count: u8,
     pub main_room_count: u8,
