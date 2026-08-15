@@ -944,6 +944,26 @@ export const combatPack = ({
   enemyHp = 10,
 }: { attackDamage?: number; enemyHp?: number } = {}): AssetPack => ({
   ...emptyPack(),
+  // A zero-stat trait + a marker feature: an entity carrying only this is
+  // routed through the stat pipeline (it resolves appearance) but sums to
+  // zero mhp/mep, so it must end up with NO HP component — never attackable.
+  appearanceFeatures: [
+    {
+      name: "test_inert_mark",
+      value: {
+        text: "inert",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 5000,
+        exclusionGroup: undefined,
+      },
+    },
+  ],
+  traits: [
+    {
+      name: "test_inert",
+      value: statBlock({ appearanceFeatureNames: ["test_inert_mark"] }),
+    },
+  ],
   actions: [
     {
       name: "test_attack",
@@ -982,6 +1002,15 @@ export const combatPack = ({
         accumulatedHealing: 0,
       },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+    }),
+    // Stat-less: a trait but no positive mhp/mep. Shares the room so it's
+    // easy to find; must come out HP-less.
+    blob({
+      traitNames: ["test_inert"],
+      location: {
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
+      },
     }),
   ],
 });
