@@ -246,6 +246,7 @@ export const mapGenPack = (): AssetPack => ({
     { name: "allegiance2", value: blob({}) },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_human",
     allegiance: { allegianceEntityId: { tag: "Named", value: "allegiance1" } },
   }),
@@ -323,6 +324,7 @@ export const stancePack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_human",
     stanceName: "test_brawler",
     location: {
@@ -438,6 +440,7 @@ export const loadoutPack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_human",
     stanceName: "test_standing",
     location: {
@@ -560,6 +563,7 @@ export const moralePack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_mouse",
     stanceName: "test_standing",
     location: {
@@ -571,6 +575,7 @@ export const moralePack = (): AssetPack => ({
   instantiateEntityBlobs: [
     blob({
       enemyController: {},
+      appliesStatBlock: {},
       baselineName: "test_giant",
       location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -699,6 +704,7 @@ export const connectionsPack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_walker",
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
   }),
@@ -814,6 +820,7 @@ export const deathPack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_hero",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -843,6 +850,7 @@ export const deathPack = (): AssetPack => ({
     }),
     blob({
       enemyController: {},
+      appliesStatBlock: {},
       baselineName: "test_brute",
       location: {
         locationEntityId: { tag: "Literal", value: 1000n },
@@ -852,6 +860,7 @@ export const deathPack = (): AssetPack => ({
     }),
     blob({
       enemyController: {},
+      appliesStatBlock: {},
       baselineName: "test_vermin",
       location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -915,6 +924,7 @@ export const divePack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_human",
     stanceName: "test_standing",
     location: {
@@ -958,10 +968,12 @@ export const combatPack = ({
       },
     },
   ],
+  // A trait with a real mhp: an entity carrying it WOULD get HP — unless it
+  // lacks the applies_stat_block opt-in, which is exactly what the test checks.
   traits: [
     {
       name: "test_inert",
-      value: statBlock({ appearanceFeatureNames: ["test_inert_mark"] }),
+      value: statBlock({ mhp: 5 }),
     },
   ],
   actions: [
@@ -1003,10 +1015,13 @@ export const combatPack = ({
       },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
-    // Stat-less: a trait but no positive mhp/mep. Shares the room so it's
-    // easy to find; must come out HP-less.
+    // A trait that WOULD grant HP, but NO applies_stat_block opt-in: the
+    // stat pipeline must skip it, so it stays HP-less and un-attackable. Its
+    // marker feature is authored directly (not via the gated pipeline) so the
+    // test can still find it.
     blob({
       traitNames: ["test_inert"],
+      appearanceFeatureNames: ["test_inert_mark"],
       location: {
         locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
         kind: { tag: "Interior" },
@@ -1107,6 +1122,7 @@ export const questPack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_human",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -1254,6 +1270,7 @@ export const interactionsPack = (): AssetPack => ({
     },
   ],
   newPlayerBlob: blob({
+    appliesStatBlock: {},
     baselineName: "test_looter",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -1472,7 +1489,7 @@ export const bossPack = (): AssetPack => ({
     },
   ],
   encounterBlobs: [
-    { name: "test_warden_categoric", value: blob({}) },
+    { name: "test_warden_categoric", value: blob({ appliesStatBlock: {} }) },
     {
       name: "test_warden",
       value: blob({
@@ -1555,7 +1572,7 @@ export const bossPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({ baselineName: "test_challenger" }),
+  newPlayerBlob: blob({ appliesStatBlock: {}, baselineName: "test_challenger" }),
 });
 
 /**
@@ -1600,7 +1617,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
     },
   ],
   encounterBlobs: [
-    { name: "test_lurker_categoric", value: blob({}) },
+    { name: "test_lurker_categoric", value: blob({ appliesStatBlock: {} }) },
     {
       name: "test_lurker",
       value: blob({
@@ -1669,7 +1686,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({ baselineName: "test_hero" }),
+  newPlayerBlob: blob({ appliesStatBlock: {}, baselineName: "test_hero" }),
 });
 
 /**
@@ -1804,5 +1821,5 @@ export const guardedMapPack = ({
       },
     },
   ],
-  newPlayerBlob: blob({ baselineName: "test_scout" }),
+  newPlayerBlob: blob({ appliesStatBlock: {}, baselineName: "test_scout" }),
 });

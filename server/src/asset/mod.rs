@@ -416,6 +416,10 @@ fn resolve_entity_blob(
         action_queue_dirty: None,
         // Runtime state: the death system's one-shot latch.
         perished: None,
+        // Authored opt-in: only entities carrying this get a mechanical stat
+        // block applied (HP/EP/attack/actions). Baseline/trait-bearing
+        // scenery without it stays inert.
+        applies_stat_block: author.applies_stat_block,
         // Stamped by the quest room-claim application, never authored.
         defeat_drop: None,
         location_map: None,

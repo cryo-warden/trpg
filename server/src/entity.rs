@@ -210,6 +210,13 @@ entity!(
       // gate on their respawn timer instead (revival must not be
       // blocked by a permanent flag).
       perished in perished_components,
+      // OPT-IN to a mechanical stat block. Baselines and traits describe any
+      // physical object (a "crumbling" "stair"), but only entities carrying
+      // this flag get their stat block APPLIED — the HP/EP/attack/actions
+      // pools computed and created. Without it, a baseline/trait-bearing
+      // object stays inert: no pools, never attackable, no accident. An
+      // invisible gate — no other system reads it.
+      applies_stat_block in applies_stat_block_components,
     )]
     struct FlagComponent {}
 

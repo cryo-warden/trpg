@@ -187,6 +187,10 @@ pub struct EntityBlobAsset {
     pub attack: Option<AttackComponentBlob>,
     pub player_controller: Option<PlayerControllerComponentBlob>,
     pub enemy_controller: Option<EnemyControllerComponentBlob>,
+    /// Opt-in to a mechanical stat block: only entities carrying this get
+    /// their HP/EP/attack/actions applied by the stat pipeline. Baseline/
+    /// trait-bearing scenery without it stays inert (see FlagComponent).
+    pub applies_stat_block: Option<FlagComponentBlob>,
     /// Marks the entity as attunable fortune-telling scenery.
     pub checkpoint_object: Option<FlagComponentBlob>,
     /// The abstract destination attuning to this object binds: a map by

@@ -136,13 +136,10 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     // not swappable gear (each swappable source is a one-time permanent
     // boost under this rule).
     //
-    // A pool is only ever FABRICATED for a positive maximum: an entity whose
-    // summed mhp/mep is zero is not a pool-haver and gets no HP/EP component
-    // at all (a stat-less path or decoration must not become attackable just
-    // by passing through the stat pipeline). Deliberately breakable scenery
-    // still works — author it a positive mhp and it gets its HP like any
-    // combatant. An EXISTING pool is still updated freely (the ratchet), so a
-    // recompute can never be blocked from raising a real combatant's max.
+    // These writers fabricate pools freely; the gate against giving a
+    // stat-less object a pool lives one level up — apply_stat_block only runs
+    // for entities carrying the applies_stat_block flag (see
+    // entity_stats_system), so nothing without that opt-in ever reaches here.
     fn set_mhp(self, mhp: i16) -> Self {
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {
@@ -151,21 +148,19 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                 hp.mhp = mhp;
                 e.update_hp_row(hp);
             }
-        } else if mhp > 0 {
+        } else {
             e.insert_new_hp(mhp, mhp, 0, 0, 0);
         }
         self
     }
 
-    // Defense is meaningless without a pool to protect, so it only ever
-    // UPDATES an existing HP component — it never fabricates one. (An entity
-    // with a real pool gets its HP from set_mhp first, in apply order, so the
-    // row is already present by the time defense lands.)
     fn set_defense(self, defense: i8) -> Self {
         let e = self.to_handle();
         if let Some(mut hp_component) = e.hp() {
             hp_component.defense = defense;
             e.update_hp_row(hp_component);
+        } else {
+            e.insert_new_hp(0, 0, defense, 0, 0);
         }
         self
     }
@@ -178,7 +173,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                 ep_component.mep = mep;
                 e.update_ep_row(ep_component);
             }
-        } else if mep > 0 {
+        } else {
             e.insert_new_ep(mep, mep);
         }
         self

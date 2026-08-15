@@ -602,6 +602,14 @@ pub fn entity_stats_system(ecs: Ecs) {
     }
 
     for f in ecs.iter_total_stat_block_dirty_flag() {
+        // Only entities that OPTED IN get a mechanical stat block. A
+        // baseline/trait-bearing object without the flag (a decoration, a
+        // path) is inert: clear the flag and skip, so it never gains HP/EP or
+        // becomes attackable by accident.
+        if f.applies_stat_block().is_none() {
+            f.delete_total_stat_block_dirty_flag();
+            continue;
+        }
         log::debug!("Entity {} is computing total stat block.", f.entity_id());
         let mut stat_block = f.base_stat_block();
 
