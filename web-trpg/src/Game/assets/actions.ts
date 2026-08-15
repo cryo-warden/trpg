@@ -80,6 +80,18 @@ export const ACTIONS = {
     // telegraph round.
     rounds: [interruptibleRound(Intimidate(1)), round(Attack(1), Attack(1))],
   },
+  // Path-offered move verbs: slower crossings pay extra wait rounds.
+  // The path decides which of these it offers; no body knows them.
+  squeeze: {
+    actionType: { tag: "Move" },
+    requirements: requirements({ gait: 1 }),
+    rounds: [interruptibleRound(), interruptibleRound(), round(Move)],
+  },
+  climb_down: {
+    actionType: { tag: "Move" },
+    requirements: requirements({ gait: 1 }),
+    rounds: [interruptibleRound(), interruptibleRound(), round(Move)],
+  },
   // The plain heal: restores 1 + the healer's focus (healing scales by
   // focus exactly as attacks scale by attack).
   heal: {
@@ -285,6 +297,14 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   heal: {
     displayName: "Heal",
     beginTemplate: "{0:sentence:subject} gathered mending light over {1:object}.",
+  },
+  squeeze: {
+    displayName: "Squeeze",
+    beginTemplate: "{0:sentence:subject} began squeezing into {1:object}.",
+  },
+  climb_down: {
+    displayName: "Climb Down",
+    beginTemplate: "{0:sentence:subject} started a careful climb down {1:object}.",
   },
   slime_spray: {
     displayName: "Slime Spray",

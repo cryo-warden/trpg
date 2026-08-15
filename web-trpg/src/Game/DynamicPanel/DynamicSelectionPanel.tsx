@@ -21,20 +21,22 @@ export const DynamicSelectionPanel = (
     setMode("stances");
   }, [setMode]);
 
-  // TODO Add hotkeys and refactor ActionButton to create a Button component in structures directory.
+  // DIGITS for the menu modes: the home row belongs to targeting (left)
+  // and actions (right), and the number row is free since the bar left
+  // its numeric hotkeys behind.
   return (
     <Panel {...props}>
       <Scroller>
-        <Button hotkey="r" onClick={setLocationMode}>
+        <Button hotkey="1" onClick={setLocationMode}>
           Room
         </Button>
-        <Button hotkey="i" onClick={setInventoryMode}>
+        <Button hotkey="2" onClick={setInventoryMode}>
           Items
         </Button>
-        <Button hotkey="e" onClick={setEquipmentMode}>
+        <Button hotkey="3" onClick={setEquipmentMode}>
           Equipment
         </Button>
-        <Button hotkey="s" onClick={setStancesMode}>
+        <Button hotkey="4" onClick={setStancesMode}>
           Stances
         </Button>
       </Scroller>

@@ -179,17 +179,22 @@ test("smashing the jar spills its cookie and leaves ceramic shards", async () =>
       (row) => row.entityId === entityId,
     )?.locationEntityId;
   await waitFor(() => roomOf(hidden.entityId) === roomOf(playerEntityId), 30000);
-  // ...and the jar became its authored remains.
+  // ...and the remains arrive as a NEW entity (the jar itself is gone —
+  // it keeps its name in the narration that way).
   const shardsIndex = [...player.db.appearance_features.iter()].find(
     (row) => row.name === "test_shards",
   )!.index;
   await waitFor(
     () =>
-      [...player.db.appearance_features_components.iter()]
-        .find((row) => row.entityId === jarId)
-        ?.appearanceFeatureIndexes.join(",") === `${shardsIndex}`,
+      [...player.db.appearance_features_components.iter()].some(
+        (row) =>
+          row.entityId !== jarId &&
+          row.appearanceFeatureIndexes.join(",") === `${shardsIndex}` &&
+          roomOf(row.entityId) === roomOf(playerEntityId),
+      ),
     30000,
   );
+  expect(roomOf(jarId)).toBeUndefined();
 
   // The payoff: take and eat the spilled cookie.
   await player.reducers.act({ actionId: takeId, targetEntityId: hidden.entityId });

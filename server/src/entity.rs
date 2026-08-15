@@ -181,6 +181,11 @@ entity!(
       // every ActionStateComponent mutation (see its dirties), consumed
       // by action_validation_system.
       action_queue_dirty in action_queue_dirty_components,
+      // An NPC corpse already processed by the death system: its Died
+      // narration fired and its states were shed exactly once. Players
+      // gate on their respawn timer instead (revival must not be
+      // blocked by a permanent flag).
+      perished in perished_components,
     )]
     struct FlagComponent {}
 

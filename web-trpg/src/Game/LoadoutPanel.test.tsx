@@ -237,6 +237,38 @@ test("the DEFAULT action bar proposes set_default_actions from its pool", () => 
   });
 });
 
+test("pool clicks STACK onto the default bar, never replace it", () => {
+  // Regression: default_actions_components was never subscribed, so the
+  // client list read empty and every click proposed a one-element
+  // replacement.
+  const setDefaultActions = mock(() => {});
+  const withBar = {
+    ...tables(),
+    total_stat_block_components: mockTable([
+      {
+        entityId: 1n,
+        statBlock: { hand: 2, actionIds: [actionIdOf("take"), actionIdOf("heal")] },
+      },
+    ]),
+    default_actions_components: mockTable([
+      { entityId: 1n, actionIds: [actionIdOf("take")] },
+    ]),
+  };
+  const { container } = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(withBar, {
+      identity: {} as Identity,
+      reducers: { setDefaultActions },
+    }),
+  });
+  const healButton = [
+    ...container.querySelectorAll(".defaultActions button"),
+  ].find((button) => button.textContent === "Heal")!;
+  fireEvent.click(healButton);
+  expect(setDefaultActions).toHaveBeenCalledWith({
+    actionIds: [actionIdOf("take"), actionIdOf("heal")],
+  });
+});
+
 test("owned items render in stable ENTITY order regardless of row order", () => {
   // Regression: raw table iteration order fed both button order and the
   // counted first-instance rule, so a click could light a DIFFERENT

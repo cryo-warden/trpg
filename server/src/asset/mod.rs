@@ -410,6 +410,8 @@ fn resolve_entity_blob(
         stance_forced: None,
         // Runtime state: queue mutations set it.
         action_queue_dirty: None,
+        // Runtime state: the death system's one-shot latch.
+        perished: None,
         // Stamped by the quest room-claim application, never authored.
         defeat_drop: None,
         location_map: None,

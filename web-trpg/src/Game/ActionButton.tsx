@@ -2,6 +2,7 @@ import { ComponentPropsWithoutRef, useCallback } from "react";
 import { Button } from "../structural/Button";
 import "./ActionButton.css";
 import {
+  useActionOptions,
   useActionStateComponent,
   usePlayerEntity,
   useActionQueueComponent,
@@ -37,6 +38,11 @@ export const ActionButton = ({
   const actionName = useActionName(actionId);
   const actionStateComponent = useActionStateComponent(playerEntity);
   const actionQueue = useActionQueueComponent(playerEntity);
+  // A bar slot HOLDS its position and hotkey; when the action is not
+  // valid against the current focus it renders visibly disabled, never
+  // hidden — stable keys over shifting lists.
+  const validOptions = useActionOptions(finalTarget);
+  const isValid = validOptions.includes(actionId);
 
   const isActive = actionStateComponent?.actionId === actionId;
   const isQueued = (actionQueue?.entries ?? []).some(
@@ -52,6 +58,7 @@ export const ActionButton = ({
         isActive ? "active" : "",
       ].join(" ")}
       hotkey={hotkey}
+      disabled={!isValid}
       onClick={queueAction}
     >
       {actionName}

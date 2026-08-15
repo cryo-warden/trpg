@@ -5,6 +5,7 @@ import "./index.css";
 import { useDynamicPanelMode } from "../context/DynamicPanelContext";
 import { sortByProminenceDescending } from "../domain/prominence";
 import {
+  useBlockedPathIds,
   useEntityPresentations,
   useHostiles,
   useLocation,
@@ -34,7 +35,13 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
   const playerEntity = usePlayerEntity();
   const location = useLocation(playerEntity);
-  const locationEntities = useLocationEntities(location);
+  const allLocationEntities = useLocationEntities(location);
+  // A guarded path renders as NOTHING: it must not hold a list slot or a
+  // target hotkey either.
+  const blockedPathIds = useBlockedPathIds();
+  const locationEntities = allLocationEntities.filter(
+    (entity) => !blockedPathIds.has(entity),
+  );
   // An opened container's contents show beside it — revealed, intact,
   // takeable in place.
   const revealedContents = useOpenContainerContents(locationEntities);

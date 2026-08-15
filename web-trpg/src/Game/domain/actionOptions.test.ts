@@ -101,8 +101,40 @@ test("getActionOptions offers attacks and moves against a hostile, reachable tar
       targetIsEquipped: false,
       targetHasCheckpointObject: false,
       targetQuestItemFreshness: null,
+      // Movement is offered by the path itself.
+      targetOfferedActionIds: [moveId],
+      targetCoLocatedWithPlayer: true,
     }),
   ).toEqual([attackId, moveId]);
+});
+
+test("a path offers its crossing verb: no knowledge needed, and knowledge alone is not enough", () => {
+  const path = {
+    ...enemy,
+    actionIds: [],
+    actionAssetOf,
+    targetHasHp: false,
+    targetHasPath: true,
+    targetHasItem: false,
+    targetCarriedByPlayer: false,
+    targetIsEquipped: false,
+    targetHasCheckpointObject: false,
+    targetQuestItemFreshness: null,
+    targetOfferedActionIds: [moveId],
+    targetCoLocatedWithPlayer: true,
+    // The requirements mirror applies to offers: move wants gait 1.
+    actorStats: { gait: 2 },
+  };
+  // The player knows NOTHING; the path offers move.
+  expect(getActionOptions(path)).toEqual([moveId]);
+  // KNOWN but not offered: this crossing does not take plain move.
+  expect(
+    getActionOptions({
+      ...path,
+      actionIds: [moveId],
+      targetOfferedActionIds: [],
+    }),
+  ).toEqual([]);
 });
 
 test("getActionOptions offers buffs against an ally with hp", () => {

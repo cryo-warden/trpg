@@ -18,6 +18,9 @@ let myRoomIds: Set<bigint>;
 let blockedPathId: bigint;
 let hiddenRoomId: bigint;
 let wallEntityId: bigint;
+// Captured while the wall stands: smashing DELETES it (remains are new
+// entities), so its room is unreadable afterwards.
+let wallRoomId: bigint;
 
 const roomOf = (entityId: bigint): bigint | undefined =>
   [...player.db.location_components.iter()].find(
@@ -138,6 +141,7 @@ beforeAll(async () => {
   )!;
   blockedPathId = blockerRow.entityId;
   wallEntityId = blockerRow.blockerEntityId;
+  wallRoomId = roomOf(wallEntityId)!;
   hiddenRoomId = [...player.db.path_components.iter()].find(
     (row) => row.entityId === blockedPathId,
   )!.destinationEntityId;
@@ -176,9 +180,9 @@ test("smashing the boulder opens the way in — and the way out was never blocke
 
   // The return path is open (and always was): walk straight back out.
   const returnPath = openPathsIn(hiddenRoomId).find(
-    (path) => path.destinationEntityId === roomOf(wallEntityId),
+    (path) => path.destinationEntityId === wallRoomId,
   )!;
   expect(returnPath).toBeDefined();
   await moveThrough(returnPath.entityId);
-  expect(roomOf(playerEntityId)).toBe(roomOf(wallEntityId));
+  expect(roomOf(playerEntityId)).toBe(wallRoomId);
 }, 60000);

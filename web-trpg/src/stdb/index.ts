@@ -114,6 +114,7 @@ import OpenComponentsRow from "./open_components_table";
 import PathBlockerComponentsRow from "./path_blocker_components_table";
 import PathComponentsRow from "./path_components_table";
 import PendingConnectionsComponentsRow from "./pending_connections_components_table";
+import PerishedComponentsRow from "./perished_components_table";
 import PinnedActionsComponentsRow from "./pinned_actions_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
@@ -834,6 +835,17 @@ const tablesSchema = __schema({
       { name: 'pending_connections_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, PendingConnectionsComponentsRow),
+  perished_components: __table({
+    name: 'perished_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'perished_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'perished_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, PerishedComponentsRow),
   pinned_actions_components: __table({
     name: 'pinned_actions_components',
     indexes: [

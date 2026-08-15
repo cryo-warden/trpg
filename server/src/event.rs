@@ -34,6 +34,14 @@ secador::secador!(
             /// A QUEUED action was dropped at its turn because its target
             /// stopped being valid (it moved, died, or vanished).
             TargetLost(ActionId),
+            /// The owner fell — a creature at zero hp becoming a corpse.
+            Died,
+            /// The owner broke apart — a breakable at zero hp, replaced
+            /// by its remains.
+            Shattered,
+            /// An item (the target) tumbled out of the owner — a
+            /// destroyed or dumped container spilling its contents.
+            Spilled,
         }
 
         /// The free hand of the DEFAULT configuration: the stored total
@@ -300,8 +308,12 @@ secador::secador!(
                 log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
                 let is_observable = match self.event_type {
                     EventType::StartAction(_) => true,
-                    // Pre-formed failure events pass straight through.
-                    EventType::ActionFailed(_) | EventType::TargetLost(_) => true,
+                    // Pre-formed narration events pass straight through.
+                    EventType::ActionFailed(_)
+                    | EventType::TargetLost(_)
+                    | EventType::Died
+                    | EventType::Shattered
+                    | EventType::Spilled => true,
                     EventType::ActionEffect(ref action_effect) => match action_effect {
                         ActionEffect::Buff(_) => true,
                         ActionEffect::Move => {

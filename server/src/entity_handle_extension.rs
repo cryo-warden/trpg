@@ -631,7 +631,23 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                         carried || co_located || in_open_container_here
                     }
                 }
-                ActionType::Move => o.path().is_some() && o.path_is_open(),
+                // Movement is OFFERED BY THE PATH, like any interaction:
+                // the path names which move verbs cross it (a crack
+                // offers squeeze, a chasm climb_down), and no body knows
+                // "move" innately. Open, co-located, and offering — all
+                // three, or no crossing.
+                ActionType::Move => {
+                    o.path().is_some()
+                        && o.path_is_open()
+                        && { o.offered_actions() }
+                            .is_some_and(|offered| offered.action_ids.contains(&action_id))
+                        && match (e.location(), o.location()) {
+                            (Some(mine), Some(theirs)) => {
+                                mine.location_entity_id == theirs.location_entity_id
+                            }
+                            _ => false,
+                        }
+                }
                 // Deliberate stance changes act on yourself alone.
                 ActionType::Posture => other_entity_id == e.entity_id(),
                 // System-forced and self-targeted: the reconciliation

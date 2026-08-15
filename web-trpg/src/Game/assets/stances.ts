@@ -55,7 +55,8 @@ export const STANCES = {
     statBlock: statBlock({
       gait: 1,
       upright: 2,
-      actionNames: ["move"],
+      // Movement is offered by paths, never granted by stances.
+      actionNames: [],
     }),
   },
   perched: {
@@ -67,7 +68,8 @@ export const STANCES = {
     statBlock: statBlock({
       gait: 2,
       upright: 2,
-      actionNames: ["move"],
+      // Movement is offered by paths, never granted by stances.
+      actionNames: [],
     }),
   },
   // General magic; the elemental specializations trade breadth for a

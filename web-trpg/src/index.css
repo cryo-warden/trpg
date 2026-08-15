@@ -15,22 +15,13 @@ html {
   opacity: 0.55;
 }
 
-/* The ONE "more interesting" marker: a small gold dot in the top-right
- * corner of whatever carries it — paths to unvisited places, worn gear,
- * a stance's assigned armaments. */
+/* The ONE "more interesting" marker: a golden INNER border on whatever
+ * carries it — paths to unvisited places, worn gear, a stance's
+ * assigned armaments. Pure CSS (an inset shadow), so it needs no
+ * wrapper element, shifts no layout, and never collides with the
+ * hotkey label in the top-right corner (which the old dot did). */
 .interesting {
-  position: relative;
-}
-.interesting::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #d9a521;
-  pointer-events: none;
+  box-shadow: inset 0 0 0 2px #d9a521;
 }
 
 #root,

@@ -162,7 +162,12 @@ export const mapGenPack = (): AssetPack => ({
         decorationsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         minDecorationCount: 0,
         maxDecorationCount: 1,
-        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        // Paths OFFER their crossing verb; no body knows moves innately.
+        pathsSelector: {
+          selections: [
+            { weight: 1, blob: blob({ offeredActionNames: ["test_action"] }) },
+          ],
+        },
         roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         checkpointsSelector: {
           selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
@@ -512,6 +517,7 @@ export const moralePack = (): AssetPack => ({
     }),
     blob({
       path: { destinationEntityId: { tag: "Literal", value: 1000n } },
+      offeredActionNames: ["test_move"],
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
     }),
   ],
@@ -549,7 +555,11 @@ export const connectionsPack = (): AssetPack => ({
         decorationsSelector: { selections: [] },
         minDecorationCount: 0,
         maxDecorationCount: 0,
-        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        pathsSelector: {
+          selections: [
+            { weight: 1, blob: blob({ offeredActionNames: ["test_move"] }) },
+          ],
+        },
         roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         checkpointsSelector: { selections: [] },
         containersSelector: { selections: [] },
@@ -733,6 +743,7 @@ export const deathPack = (): AssetPack => ({
     }),
     blob({
       path: { destinationEntityId: { tag: "Literal", value: 1000n } },
+      offeredActionNames: ["test_move"],
       location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
     }),
     blob({
@@ -1297,7 +1308,11 @@ export const bossPack = (): AssetPack => ({
         decorationsSelector: { selections: [] },
         minDecorationCount: 0,
         maxDecorationCount: 0,
-        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        pathsSelector: {
+          selections: [
+            { weight: 1, blob: blob({ offeredActionNames: ["test_move"] }) },
+          ],
+        },
         roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         checkpointsSelector: {
           selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
@@ -1412,7 +1427,11 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
         decorationsSelector: { selections: [] },
         minDecorationCount: 0,
         maxDecorationCount: 0,
-        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        pathsSelector: {
+          selections: [
+            { weight: 1, blob: blob({ offeredActionNames: ["test_move"] }) },
+          ],
+        },
         roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         checkpointsSelector: { selections: [] },
         containersSelector: { selections: [] },
@@ -1515,7 +1534,11 @@ export const guardedMapPack = ({
         decorationsSelector: { selections: [] },
         minDecorationCount: 0,
         maxDecorationCount: 0,
-        pathsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        pathsSelector: {
+          selections: [
+            { weight: 1, blob: blob({ offeredActionNames: ["test_move"] }) },
+          ],
+        },
         roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
         checkpointsSelector: { selections: [] },
         containersSelector: { selections: [] },

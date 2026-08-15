@@ -153,10 +153,21 @@ export const getActionOptions = ({
         return true;
       }
       // Otherwise the id is a candidate only as the target's AUTHORED
-      // offer, and those carry Interact actions alone — a stray
-      // non-Interact id in an offered list never leaks in.
-      if (action.actionType.tag !== "Interact") {
+      // offer, and those carry Interact actions — or MOVE verbs, which
+      // paths offer (squeeze, climb down, plain move). Anything else in
+      // an offered list never leaks in.
+      if (
+        action.actionType.tag !== "Interact" &&
+        action.actionType.tag !== "Move"
+      ) {
         return false;
+      }
+      if (action.actionType.tag === "Move") {
+        return (
+          targetHasPath &&
+          targetOfferedActionIds.includes(id) &&
+          targetCoLocatedWithPlayer
+        );
       }
     }
 
@@ -165,8 +176,13 @@ export const getActionOptions = ({
         return targetHasHp && !ally;
       case "Buff":
         return targetHasHp && ally;
+      // Even a KNOWN move verb crosses only paths that OFFER it.
       case "Move":
-        return targetHasPath;
+        return (
+          targetHasPath &&
+          targetOfferedActionIds.includes(id) &&
+          targetCoLocatedWithPlayer
+        );
       // Take applies to items BESIDE you, drop to items you CARRY — decided
       // per entity id via containment, never by anything the item looks
       // like. Which verb an Inventory action is comes from its effects.

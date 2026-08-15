@@ -17,6 +17,15 @@ test("ActionButton shows the action name and queues the action on click", () => 
       action_state_components: mockTable([]),
       action_queue_components: mockTable([]),
       action_hotkeys_components: mockTable([]),
+      // The button disables when the action is invalid against the
+      // focus, so the fixture makes bop VALID: known, hostile target
+      // with hp.
+      actions_components: mockTable([{ entityId: 1n, actionIds: [bopId] }]),
+      hp_components: mockTable([{ entityId: 2n, hp: 5, mhp: 5 }]),
+      allegiance_components: mockTable([
+        { entityId: 1n, allegianceEntityId: 10n },
+        { entityId: 2n, allegianceEntityId: 20n },
+      ]),
     },
     { identity, reducers: { act: (arg: unknown) => calls.push(arg) } },
   );

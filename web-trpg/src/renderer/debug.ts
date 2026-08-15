@@ -73,6 +73,21 @@ export const createDebug: CreateLanguage<NarrationContext> = ({
           "{0:sentence:subject} hesitated — {0:possessive} target was gone.",
         values: [event.ownerEntityId],
       };
+    case "Died":
+      return {
+        template: "{0:sentence:subject} fell.",
+        values: [event.ownerEntityId],
+      };
+    case "Shattered":
+      return {
+        template: "{0:sentence:subject} broke apart.",
+        values: [event.ownerEntityId],
+      };
+    case "Spilled":
+      return {
+        template: "{1:sentence:subject} spilled out of {0:object}.",
+        values: [event.ownerEntityId, event.targetEntityId],
+      };
     case "ActionEffect": {
       const owner = event.ownerEntityId;
       const target = event.targetEntityId;

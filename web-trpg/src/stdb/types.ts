@@ -628,6 +628,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get actionQueueDirty() {
     return __t.option(FlagComponentBlob);
   },
+  get perished() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -859,6 +862,9 @@ export const EventType = __t.enum("EventType", {
     return ActionEffect;
   },
   TargetLost: __t.u32(),
+  Died: __t.unit(),
+  Shattered: __t.unit(),
+  Spilled: __t.unit(),
 });
 export type EventType = __Infer<typeof EventType>;
 

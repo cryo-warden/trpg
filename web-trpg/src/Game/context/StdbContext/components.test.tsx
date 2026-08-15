@@ -143,6 +143,18 @@ test("useActionOptions keeps only actions valid against the target", () => {
         { entityId: target, allegianceEntityId: 20n },
       ]),
       path_components: mockTable([{ entityId: target }]),
+      // Movement is OFFERED by the path; the offer reaches only the
+      // co-located, and its gait requirement reads the player's total.
+      offered_actions_components: mockTable([
+        { entityId: target, actionIds: [moveId] },
+      ]),
+      location_components: mockTable([
+        { entityId: player, locationEntityId: 100n },
+        { entityId: target, locationEntityId: 100n },
+      ]),
+      total_stat_block_components: mockTable([
+        { entityId: player, statBlock: { gait: 2 } },
+      ]),
     },
     identity,
   );

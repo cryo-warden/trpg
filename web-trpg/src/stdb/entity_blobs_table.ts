@@ -141,6 +141,9 @@ export default __t.row({
   get actionQueueDirty() {
     return __t.option(FlagComponentBlob).name("action_queue_dirty");
   },
+  get perished() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },

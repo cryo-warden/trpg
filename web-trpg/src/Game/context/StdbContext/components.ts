@@ -51,6 +51,7 @@ export const componentQueries = [
   "select * from stance_loadouts_components",
   "select * from equipment_components",
   "select * from default_armaments_components",
+  "select * from default_actions_components",
   "select * from action_state_components",
   "select * from allegiance_components",
   "select * from enemy_controller_components",
@@ -174,6 +175,26 @@ const useCheckpointObjectComponent = createUseComponent(
 const useOfferedActionsComponent = createUseComponent(
   "offered_actions_components",
 );
+
+/** Path entities whose blocker still stands: they render as nothing (no
+ * panel), so they must also CONSUME nothing — no target hotkey, no list
+ * slot. One derivation for every surface that lays entities out. */
+export const useBlockedPathIds = (): Set<EntityId> => {
+  const blockerRows = useTableData(
+    "path_blocker_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  const hpRows = useTableData("hp_components", (table) => [...table.iter()], []);
+  return useMemo(() => {
+    const standing = new Set(hpRows.map((row) => row.entityId));
+    return new Set(
+      blockerRows
+        .filter((row) => standing.has(row.blockerEntityId))
+        .map((row) => row.entityId),
+    );
+  }, [blockerRows, hpRows]);
+};
 
 /** The revealed insides of OPEN containers among the given co-located
  * entities: their contents stay where they are, intact, but render (and

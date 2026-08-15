@@ -71,6 +71,12 @@ pub fn death_system(ecs: Ecs) {
             // Already dead and waiting; the respawn system handles the rest.
             continue;
         }
+        // An NPC corpse is processed exactly once (the flag is its latch:
+        // narration and state-shedding never repeat while it lingers).
+        if handle.perished().is_some() {
+            continue;
+        }
+        let entity_id = handle.entity_id();
         if handle.action_state().is_some() {
             handle.delete_action_state();
         }
@@ -81,38 +87,53 @@ pub fn death_system(ecs: Ecs) {
         // its own one-shot latch — consumed inside, so the lingering
         // corpse never re-drops).
         if handle.defeat_drop().is_some() {
-            crate::quest::drop_defeat_reward(ecs, handle.entity_id());
+            crate::quest::drop_defeat_reward(ecs, entity_id);
         }
         if handle.player_controller().is_some() {
             handle.upsert_new_respawn_timer(
                 ecs.timestamp
                     + spacetimedb::TimeDuration::from_micros(RESPAWN_DELAY_MICROS),
             );
+            ecs.db
+                .observable_events()
+                .insert(ecs.new_event(entity_id, EventType::Died, entity_id));
         } else if handle.enemy_controller().is_none() && handle.remains().is_some() {
             // A BREAKABLE (scenery with authored remains) shatters.
-            shattered.push(handle.entity_id());
+            shattered.push(entity_id);
+        } else {
+            // A dead NPC becomes a CORPSE, never a deletion: the entity
+            // remains — its name stays in every message — and the body is
+            // there to see (and to target). The enemy controller also
+            // REMAINS, dormant, so the threat panel keeps the fallen where
+            // they fell. Map cleanup eventually sweeps corpse and
+            // controller with the room. (Inventory stays INSIDE the
+            // corpse — loot is a future feature; only breakables spill.)
+            ecs.db
+                .observable_events()
+                .insert(ecs.new_event(entity_id, EventType::Died, entity_id));
+            ecs.find(entity_id).upsert_new_perished();
         }
-        // A dead NPC becomes a CORPSE, never a deletion: the entity remains
-        // — its name stays in every message about what happened, and the
-        // body is there to see (and to target). The enemy controller also
-        // REMAINS, dormant: it marks "combatant, not scenery", so the
-        // client's threat panel keeps the fallen where they fell instead of
-        // reshuffling mid-fight. enemy_control_system skips the dead.
-        // Map-instance cleanup eventually sweeps corpse and controller with
-        // the room. (A dead NPC's inventory stays INSIDE the corpse — loot
-        // is a future feature; only breakables spill.)
     }
     for entity_id in shattered {
-        // The break: contents spill into the room, the entity becomes its
-        // authored remains (decoration for now), and the hp component goes
-        // — debris is not attackable. Like a corpse it is never deleted
-        // here, so its name survives in narration; map cleanup sweeps it.
+        // The break narrates BEFORE anything changes, so the message
+        // names the jar — never the shards.
+        ecs.db
+            .observable_events()
+            .insert(ecs.new_event(entity_id, EventType::Shattered, entity_id));
         spill_contents(ecs, entity_id);
         let handle = ecs.find(entity_id);
         if let Some(remains) = handle.remains() {
-            handle.upsert_new_appearance_features(remains.appearance_feature_ids);
-            ecs.find(entity_id).delete_remains();
-            ecs.find(entity_id).delete_hp();
+            // REMAINS ARE NEW ENTITIES: the broken thing keeps its own
+            // name in every baked message (the last-known cache never
+            // sees a rename), and the debris arrives as fresh decoration.
+            let location = handle.location().map(|l| l.location_entity_id);
+            if let Some(location_entity_id) = location {
+                ecs.new()
+                    .upsert_new_location(location_entity_id)
+                    .into_handle()
+                    .upsert_new_appearance_features(remains.appearance_feature_ids);
+            }
+            delete_entity_with_joins(ecs, entity_id);
         }
     }
 }
@@ -458,6 +479,13 @@ pub(crate) fn spill_contents(ecs: Ecs, entity_id: u64) {
         if let Some(mut row) = ecs.db.location_components().entity_id().find(contained_id) {
             row.location_entity_id = destination;
             ecs.db.location_components().entity_id().update(row);
+            // Every spill narrates, whatever caused it — a dumped sack, a
+            // shattered jar, a destroyed carrier.
+            ecs.db.observable_events().insert(ecs.new_event(
+                entity_id,
+                EventType::Spilled,
+                contained_id,
+            ));
         }
     }
 }

@@ -66,6 +66,14 @@ const sack = container(["sack"], ["torn_cloth"], ["dump"]);
 const hollowStump = container(["hollow", "stump"], ["scrap_wood"]);
 const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
 
+/** A path presentation, OFFERING its crossing verbs: movement belongs to
+ * the path, not the walker — a crack offers squeeze, a chasm climb_down,
+ * everything else the plain move. No body knows "move" innately. */
+const pathBlob = (
+  appearanceFeatureNames: string[],
+  offeredActionNames: string[] = ["move"],
+): EntityBlobAsset => blob({ appearanceFeatureNames, offeredActionNames });
+
 // Path guards: the same breakable shape, standing in for a blocked way.
 const boulderGuard = container(["boulder"], ["rubble"]);
 const barricadeGuard = container(["barricade"], ["scrap_wood"]);
@@ -171,8 +179,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 7,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["trail"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["path"] }) },
+        { weight: 5, blob: pathBlob(["trail"]) },
+        { weight: 4, blob: pathBlob(["path"]) },
       ],
     },
     roomsSelector: {
@@ -209,10 +217,12 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 4,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["opening"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["hole"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["chasm"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["crack"] }) },
+        { weight: 5, blob: pathBlob(["opening"]) },
+        { weight: 4, blob: pathBlob(["hole"]) },
+        // The verbs the user squeezes and climbs by: different paths,
+        // different crossings, different messages.
+        { weight: 2, blob: pathBlob(["chasm"], ["climb_down"]) },
+        { weight: 2, blob: pathBlob(["crack"], ["squeeze"]) },
       ],
     },
     roomsSelector: {
@@ -249,8 +259,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 5,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["trail"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["opening"] }) },
+        { weight: 5, blob: pathBlob(["trail"]) },
+        { weight: 3, blob: pathBlob(["opening"]) },
       ],
     },
     roomsSelector: {
@@ -286,8 +296,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 6,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["trail"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["opening"] }) },
+        { weight: 5, blob: pathBlob(["trail"]) },
+        { weight: 3, blob: pathBlob(["opening"]) },
       ],
     },
     roomsSelector: {
@@ -389,10 +399,10 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 6,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["archway"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["gate"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["corridor"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["crumbling", "stair"] }) },
+        { weight: 5, blob: pathBlob(["archway"]) },
+        { weight: 3, blob: pathBlob(["gate"]) },
+        { weight: 3, blob: pathBlob(["corridor"]) },
+        { weight: 2, blob: pathBlob(["crumbling", "stair"], ["climb_down"]) },
       ],
     },
     roomsSelector: {
@@ -475,8 +485,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 5,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["archway"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["stair"] }) },
+        { weight: 5, blob: pathBlob(["archway"]) },
+        { weight: 3, blob: pathBlob(["stair"]) },
       ],
     },
     roomsSelector: {
