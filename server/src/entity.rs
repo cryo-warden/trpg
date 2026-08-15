@@ -312,19 +312,28 @@ entity!(
         // TODO Add calibration properties?
     }
 
-    // Every queue change flows through these generated methods — the ONE
+    // The ACTIVE action alone; what waits lives in ActionQueueComponent.
+    // Every mutation flows through these generated methods — the ONE
     // fixed path — and each dirties the validation flag, so the
     // action-validation system only examines entities whose queue
     // actually changed.
     #[component(
       action_state in action_state_components,
-      queued_action_state in queued_action_state_components,
       dirties(action_queue_dirty),
     )]
     struct ActionStateComponent {
         pub target_entity_id: EntityId,
         pub action_id: ActionId,
         pub sequence_index: i32,
+    }
+
+    // The ORDERED action queue: automatic (system-forced) entries at the
+    // front, then at most one manual entry (see QueuedAction). Mutations
+    // flow through the enqueue/shift extension methods and dirty the
+    // validation flag like the active state does.
+    #[component(action_queue in action_queue_components, dirties(action_queue_dirty))]
+    struct ActionQueueComponent {
+        pub entries: Vec<crate::action::QueuedAction>,
     }
 
     #[component(

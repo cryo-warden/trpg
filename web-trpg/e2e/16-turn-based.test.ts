@@ -52,7 +52,7 @@ beforeAll(async () => {
       "SELECT * FROM hp_components",
       "SELECT * FROM enemy_controller_components",
       "SELECT * FROM action_state_components",
-      "SELECT * FROM queued_action_state_components",
+      "SELECT * FROM action_queue_components",
       "SELECT * FROM turn_paused_components",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM accounts",
@@ -121,8 +121,8 @@ test("the world holds while the player has no assigned action", async () => {
   // The lurker notices the player and queues its strike...
   await waitFor(
     () =>
-      [...player.db.queued_action_state_components.iter()].some(
-        (row) => row.entityId === enemyEntityId,
+      [...player.db.action_queue_components.iter()].some(
+        (row) => row.entityId === enemyEntityId && row.entries.length > 0,
       ),
     30000,
   );

@@ -544,8 +544,8 @@ secador::secador!(
                                         if victim.action_state().is_some() {
                                             victim.delete_action_state();
                                         }
-                                        if victim.queued_action_state().is_some() {
-                                            victim.delete_queued_action_state();
+                                        if victim.action_queue().is_some() {
+                                            victim.delete_action_queue();
                                         }
                                         // FORCED entry: the stance changes
                                         // but the hands DON'T — the

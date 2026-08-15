@@ -13,7 +13,7 @@ pub fn act(ctx: &ReducerContext, action_id: ActionId, target_entity_id: u64) -> 
             return Err("You are dead; nothing acts until the respawn.".to_string());
         }
         if p.can_target_other(target_entity_id, action_id) {
-            p.set_queued_action_state(action_id, target_entity_id);
+            p.enqueue_manual_action(action_id, target_entity_id);
             Ok(())
         } else {
             Err("Invalid target for the given action.".to_string())

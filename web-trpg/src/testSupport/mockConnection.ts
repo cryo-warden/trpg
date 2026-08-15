@@ -223,7 +223,7 @@ export const stdbWrapper = (
       stance_loadouts_components: mockTable([]),
       equipment_components: mockTable([]),
       default_armaments_components: mockTable([]),
-      queued_action_state_components: mockTable([]),
+      action_queue_components: mockTable([]),
       entities_visited_locations: mockTable([]),
       entities_quests_progress: mockTable([]),
       location_map_components: mockTable([]),

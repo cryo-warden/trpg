@@ -60,7 +60,7 @@ export const componentQueries = [
   "select * from location_components",
   "select * from path_components",
   "select * from player_controller_components",
-  "select * from queued_action_state_components",
+  "select * from action_queue_components",
   "select * from entities_visited_locations",
   "select * from entities_quests_progress",
   "select * from location_map_components",
@@ -85,8 +85,10 @@ export const useTotalStatBlockComponent = createUseComponent(
 export const useEpComponent = createUseComponent("ep_components");
 export const useHpComponent = createUseComponent("hp_components");
 const useLocationComponent = createUseComponent("location_components");
-export const useQueuedActionStateComponent = createUseComponent(
-  "queued_action_state_components",
+/** The ordered action queue (automatic entries first, then at most one
+ * manual). */
+export const useActionQueueComponent = createUseComponent(
+  "action_queue_components",
 );
 
 export const useAllegianceComponents = createUseTable("allegiance_components");

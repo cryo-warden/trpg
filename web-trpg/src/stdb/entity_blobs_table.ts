@@ -44,6 +44,7 @@ import {
   PlayerControllerComponentBlob,
   EnemyControllerComponentBlob,
   ActionStateComponentBlob,
+  ActionQueueComponentBlob,
   ActionsComponentBlob,
   PinnedActionsComponentBlob,
   TimerComponentBlob,
@@ -191,8 +192,8 @@ export default __t.row({
   get actionState() {
     return __t.option(ActionStateComponentBlob).name("action_state");
   },
-  get queuedActionState() {
-    return __t.option(ActionStateComponentBlob).name("queued_action_state");
+  get actionQueue() {
+    return __t.option(ActionQueueComponentBlob).name("action_queue");
   },
   get actions() {
     return __t.option(ActionsComponentBlob);

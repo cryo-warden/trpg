@@ -58,6 +58,18 @@ pub struct SpecialAction {
     pub action_id: ActionId,
 }
 
+/// One entry of an entity's ordered action queue. At most ONE manual
+/// entry sits in a queue at a time (a new manual enqueue replaces it);
+/// AUTOMATIC entries — system-forced, like the re-arm — are exempt from
+/// that cap and insert at the FRONT, so a forced action never clobbers
+/// the player's queued intent.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct QueuedAction {
+    pub action_id: ActionId,
+    pub target_entity_id: u64,
+    pub automatic: bool,
+}
+
 #[table(accessor = actions, public)]
 #[derive(Debug, Clone)]
 pub struct Action {

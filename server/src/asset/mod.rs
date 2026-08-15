@@ -37,7 +37,7 @@ use crate::{
         traits_stat_block_dirty_flag_components,
         ActionsComponentBlob, ActiveStanceComponentBlob,
         AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
-        CheckpointBindingComponentBlob, DefaultArmamentsComponentBlob, EntityBlob,
+        CheckpointBindingComponentBlob, EntityBlob,
         EquipmentComponentBlob, FindEntityHandle, FlagComponent, InstantiateEntityBlob,
         ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
         RemainsComponentBlob, TraitsComponentBlob,
@@ -243,20 +243,10 @@ fn resolve_entity_blob(
                 })
             }
         },
-        // The matching armament CONFIGURATION: authored hands are also the
-        // authored default set, so intent equals reality at birth.
-        default_armaments: author
-            .armament_names
-            .as_ref()
-            .map(|names| {
-                Ok::<_, String>(DefaultArmamentsComponentBlob {
-                    armament_ids: names
-                        .iter()
-                        .map(|n| resolve_name(&maps.armaments, "armament", n))
-                        .collect::<Result<_, _>>()?,
-                })
-            })
-            .transpose()?,
+        // NO configuration from blobs: non-player entities operate fully
+        // on the canonical equipment alone; configurations exist only
+        // where something reconfigures (players, via menus and acts).
+        default_armaments: None,
         armor: author
             .armor_name
             .map(|n| {
@@ -409,7 +399,7 @@ fn resolve_entity_blob(
         equipment_stat_block_dirty_flag: None,
         total_stat_block_dirty_flag: None,
         action_state: None,
-        queued_action_state: None,
+        action_queue: None,
         entity_deletion_timer: None,
         player_deactivation_timer: None,
         actionless_since: None,

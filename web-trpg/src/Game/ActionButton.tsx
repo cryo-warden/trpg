@@ -4,7 +4,7 @@ import "./ActionButton.css";
 import {
   useActionStateComponent,
   usePlayerEntity,
-  useQueuedActionStateComponent,
+  useActionQueueComponent,
 } from "./context/StdbContext/components";
 import { useActionName } from "./context/StdbContext/rendering";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
@@ -36,11 +36,12 @@ export const ActionButton = ({
 
   const actionName = useActionName(actionId);
   const actionStateComponent = useActionStateComponent(playerEntity);
-  const queuedActionStateComponent =
-    useQueuedActionStateComponent(playerEntity);
+  const actionQueue = useActionQueueComponent(playerEntity);
 
   const isActive = actionStateComponent?.actionId === actionId;
-  const isQueued = queuedActionStateComponent?.actionId === actionId;
+  const isQueued = (actionQueue?.entries ?? []).some(
+    (entry) => entry.actionId === actionId,
+  );
 
   return (
     <Button

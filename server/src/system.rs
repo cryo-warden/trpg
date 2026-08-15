@@ -74,8 +74,8 @@ pub fn death_system(ecs: Ecs) {
         if handle.action_state().is_some() {
             handle.delete_action_state();
         }
-        if handle.queued_action_state().is_some() {
-            handle.delete_queued_action_state();
+        if handle.action_queue().is_some() {
+            handle.delete_action_queue();
         }
         // A fallen boss-claim spawn pays out its drop (the component is
         // its own one-shot latch — consumed inside, so the lingering
@@ -197,8 +197,8 @@ fn resolve_checkpoint_room(
 pub fn actionless_stamp_system(ecs: Ecs) {
     for p in ecs.iter_player_controller() {
         let handle = p.into_handle();
-        let has_assigned_action =
-            handle.action_state().is_some() || handle.queued_action_state().is_some();
+        let has_assigned_action = handle.action_state().is_some()
+            || { handle.action_queue() }.is_some_and(|q| !q.entries.is_empty());
         if has_assigned_action {
             if handle.actionless_since().is_some() {
                 handle.delete_actionless_since();
@@ -210,10 +210,13 @@ pub fn actionless_stamp_system(ecs: Ecs) {
 }
 
 pub fn shift_queued_action_system(ecs: Ecs) {
-    for e in ecs.iter_queued_action_state() {
+    for e in ecs.iter_action_queue() {
+        if e.action_queue().entries.is_empty() {
+            continue;
+        }
         // A turn-guarded instance freezes even the queued->active shift:
         // its time simply does not pass.
-        if crate::turn::instance_is_paused(ecs, e.queued_action_state().entity_id) {
+        if crate::turn::instance_is_paused(ecs, e.action_queue().entity_id) {
             continue;
         }
         // A queued action normally waits the active one out — but while the
@@ -970,14 +973,27 @@ pub fn action_validation_system(ecs: Ecs) {
             }
         }
         let handle = ecs.find(entity_id);
-        if let Some(a) = handle.queued_action_state() {
-            if !handle.can_target_other(a.target_entity_id, a.action_id) {
+        if let Some(queue) = handle.action_queue() {
+            let (valid, invalid): (Vec<_>, Vec<_>) =
+                queue.entries.into_iter().partition(|entry| {
+                    ecs.find(entity_id)
+                        .can_target_other(entry.target_entity_id, entry.action_id)
+                });
+            for entry in invalid {
                 ecs.db.observable_events().insert(ecs.new_event(
                     entity_id,
-                    EventType::TargetLost(a.action_id),
-                    a.target_entity_id,
+                    EventType::TargetLost(entry.action_id),
+                    entry.target_entity_id,
                 ));
-                ecs.find(entity_id).delete_queued_action_state();
+            }
+            if valid.len() != { ecs.find(entity_id).action_queue() }
+                .map_or(0, |q| q.entries.len())
+            {
+                if valid.is_empty() {
+                    ecs.find(entity_id).delete_action_queue();
+                } else {
+                    ecs.find(entity_id).upsert_new_action_queue(valid);
+                }
             }
         }
         // The sweep consumes the flag (the deletions above re-dirty it;
@@ -1097,7 +1113,15 @@ pub fn equipment_reconciliation_system(ecs: Ecs) {
         if !has_configuration {
             continue;
         }
-        let intent_armaments = handle.resolved_armament_ids();
+        // PER KIND, mirroring apply_resolved_equipment: a kind with no
+        // configuration keeps its current canonical state.
+        let has_armament_config =
+            handle.stance_loadouts().is_some() || handle.default_armaments().is_some();
+        let intent_armaments = if has_armament_config {
+            handle.resolved_armament_ids()
+        } else {
+            equipment.armament_ids.clone()
+        };
         let intent_armor = handle.armor().map(|a| a.armor_id);
         let intent_relics = handle.relics().map(|r| r.relic_ids).unwrap_or_default();
         if armament_multisets_match(&equipment.armament_ids, &intent_armaments)
@@ -1106,18 +1130,18 @@ pub fn equipment_reconciliation_system(ecs: Ecs) {
         {
             continue;
         }
-        // Already converging? One matching action suffices.
-        let already_queued = { handle.action_state() }
-            .is_some_and(|a| a.action_id == rearm.action_id)
-            || { handle.queued_action_state() }
-                .is_some_and(|a| a.action_id == rearm.action_id);
-        if already_queued {
+        // Already converging? One matching action suffices (the enqueue
+        // below also deduplicates by action id).
+        let already_active = { handle.action_state() }
+            .is_some_and(|a| a.action_id == rearm.action_id);
+        if already_active {
             continue;
         }
-        // The FRONT of the queue: the re-arm takes the queued slot (the
-        // in-progress action still finishes first).
+        // AUTOMATIC entry at the FRONT of the queue: it cuts ahead of the
+        // manual entry without displacing it, and the in-progress action
+        // still finishes first.
         ecs.find(entity_id)
-            .set_queued_action_state(rearm.action_id, entity_id);
+            .enqueue_automatic_action(rearm.action_id, entity_id);
     }
 }
 
@@ -1164,7 +1188,7 @@ pub fn enemy_control_system(ecs: Ecs) {
         };
 
         e.clone()
-            .set_queued_action_state(*action_id, target_entity_id);
+            .enqueue_manual_action(*action_id, target_entity_id);
     }
 }
 

@@ -87,8 +87,8 @@ fn blocked_map_instance_ids(ecs: Ecs) -> HashSet<u64> {
         let Some(instance_id) = map_instance_id_of(ecs, handle.entity_id()) else {
             continue;
         };
-        let has_assigned_action =
-            handle.action_state().is_some() || handle.queued_action_state().is_some();
+        let has_assigned_action = handle.action_state().is_some()
+            || { handle.action_queue() }.is_some_and(|q| !q.entries.is_empty());
         let is_idle = !has_assigned_action
             && handle.actionless_since().is_some_and(|since| {
                 since.timestamp + TimeDuration::from_micros(ACTIONLESS_IDLE_MICROS)

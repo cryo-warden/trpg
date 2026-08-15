@@ -65,7 +65,13 @@ pub trait EntityHandleExtension {
     /// contributions are already folded in through the stat caches). Your
     /// buddies keep you brave.
     fn effective_morale(&self) -> i32;
-    fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self;
+    /// Queue a MANUAL action: replaces any existing manual entry, never
+    /// the automatic ones ahead of it (one manual at a time).
+    fn enqueue_manual_action(self, action_id: ActionId, target_entity_id: u64) -> Self;
+    /// Queue a SYSTEM-forced action at the FRONT, exempt from the manual
+    /// cap; deduplicated by action id.
+    fn enqueue_automatic_action(self, action_id: ActionId, target_entity_id: u64) -> Self;
+    /// Pop the queue's front into the active action state.
     fn shift_queued_action_state(self) -> Self;
     fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool;
     /// A path is open when nothing blocks it, or its blocker has been
@@ -285,7 +291,17 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         if !has_configuration {
             return;
         }
-        let armament_ids = self.resolved_armament_ids();
+        // PER KIND: a kind with no configuration keeps its current
+        // canonical state — an entity wielding authored gear does not
+        // lose it to an unrelated config (wearing a relic must not strip
+        // authored hands).
+        let has_armament_config =
+            e.stance_loadouts().is_some() || e.default_armaments().is_some();
+        let armament_ids = if has_armament_config {
+            self.resolved_armament_ids()
+        } else {
+            { e.equipment() }.map(|q| q.armament_ids).unwrap_or_default()
+        };
         let worn_armor_id = e.armor().map(|a| a.armor_id);
         let worn_relic_ids = e.relics().map(|r| r.relic_ids).unwrap_or_default();
         e.clone()
@@ -446,23 +462,69 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .fold(own, i32::max)
     }
 
-    fn set_queued_action_state(self, action_id: ActionId, target_entity_id: u64) -> Self {
+    fn enqueue_manual_action(self, action_id: ActionId, target_entity_id: u64) -> Self {
         let e = self.to_handle();
-        e.delete_queued_action_state();
-        e.insert_queued_action_state_row(ActionStateComponent {
-            entity_id: e.entity_id(),
+        // At most ONE manual entry: a new manual enqueue replaces it,
+        // never the automatic entries ahead of it.
+        let mut entries: Vec<crate::action::QueuedAction> = { e.action_queue() }
+            .map(|q| q.entries)
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|entry| entry.automatic)
+            .collect();
+        entries.push(crate::action::QueuedAction {
             action_id,
-            sequence_index: 0,
             target_entity_id,
+            automatic: false,
         });
+        e.clone().upsert_new_action_queue(entries);
+        self
+    }
+
+    fn enqueue_automatic_action(self, action_id: ActionId, target_entity_id: u64) -> Self {
+        let e = self.to_handle();
+        let mut entries: Vec<crate::action::QueuedAction> =
+            { e.action_queue() }.map(|q| q.entries).unwrap_or_default();
+        // One matching automatic suffices; the front is where forced
+        // actions cut in.
+        if !entries
+            .iter()
+            .any(|entry| entry.automatic && entry.action_id == action_id)
+        {
+            entries.insert(
+                0,
+                crate::action::QueuedAction {
+                    action_id,
+                    target_entity_id,
+                    automatic: true,
+                },
+            );
+            e.clone().upsert_new_action_queue(entries);
+        }
         self
     }
 
     fn shift_queued_action_state(self) -> Self {
         let e = self.to_handle();
-        if let Some(queued_action_state) = e.queued_action_state() {
-            e.delete_queued_action_state();
-            e.insert_action_state_row(queued_action_state);
+        if let Some(queue) = e.action_queue() {
+            let mut entries = queue.entries;
+            if entries.is_empty() {
+                e.clone().delete_action_queue();
+            } else {
+                let next = entries.remove(0);
+                let entity_id = e.entity_id();
+                if entries.is_empty() {
+                    e.clone().delete_action_queue();
+                } else {
+                    e.clone().upsert_new_action_queue(entries);
+                }
+                self.to_handle().insert_action_state_row(ActionStateComponent {
+                    entity_id,
+                    action_id: next.action_id,
+                    sequence_index: 0,
+                    target_entity_id: next.target_entity_id,
+                });
+            }
         }
         self
     }

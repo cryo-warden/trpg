@@ -20,7 +20,7 @@ const tables = () => ({
   allegiance_components: mockTable([]),
   actions_components: mockTable([{ entityId: 1n, actionIds: [] }]),
   action_state_components: mockTable([]),
-  queued_action_state_components: mockTable([]),
+  action_queue_components: mockTable([]),
   action_hotkeys_components: mockTable([]),
   path_components: mockTable([]),
 });

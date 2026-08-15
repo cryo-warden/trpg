@@ -113,6 +113,21 @@ export const ActionEffectAsset = __t.enum("ActionEffectAsset", {
 });
 export type ActionEffectAsset = __Infer<typeof ActionEffectAsset>;
 
+export const ActionQueueComponent = __t.object("ActionQueueComponent", {
+  entityId: __t.u64(),
+  get entries() {
+    return __t.array(QueuedAction);
+  },
+});
+export type ActionQueueComponent = __Infer<typeof ActionQueueComponent>;
+
+export const ActionQueueComponentBlob = __t.object("ActionQueueComponentBlob", {
+  get entries() {
+    return __t.array(QueuedAction);
+  },
+});
+export type ActionQueueComponentBlob = __Infer<typeof ActionQueueComponentBlob>;
+
 export const ActionRound = __t.object("ActionRound", {
   id: __t.u64(),
   actionId: __t.u32(),
@@ -664,8 +679,8 @@ export const EntityBlob = __t.object("EntityBlob", {
   get actionState() {
     return __t.option(ActionStateComponentBlob);
   },
-  get queuedActionState() {
-    return __t.option(ActionStateComponentBlob);
+  get actionQueue() {
+    return __t.option(ActionQueueComponentBlob);
   },
   get actions() {
     return __t.option(ActionsComponentBlob);
@@ -1443,6 +1458,13 @@ export const QuestsRoomsRole = __t.object("QuestsRoomsRole", {
   },
 });
 export type QuestsRoomsRole = __Infer<typeof QuestsRoomsRole>;
+
+export const QueuedAction = __t.object("QueuedAction", {
+  actionId: __t.u32(),
+  targetEntityId: __t.u64(),
+  automatic: __t.bool(),
+});
+export type QueuedAction = __Infer<typeof QueuedAction>;
 
 export const Relic = __t.object("Relic", {
   id: __t.u32(),

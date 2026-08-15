@@ -9,10 +9,14 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  QueuedAction,
+} from "./types";
+
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  targetEntityId: __t.u64().name("target_entity_id"),
-  actionId: __t.u32().name("action_id"),
-  sequenceIndex: __t.i32().name("sequence_index"),
+  get entries() {
+    return __t.array(QueuedAction);
+  },
 });

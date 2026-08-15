@@ -60,6 +60,7 @@ import SetStanceReducer from "./set_stance_reducer";
 import AccountIdentitiesRow from "./account_identities_table";
 import AccountRolesRow from "./account_roles_table";
 import AccountsRow from "./accounts_table";
+import ActionQueueComponentsRow from "./action_queue_components_table";
 import ActionQueueDirtyComponentsRow from "./action_queue_dirty_components_table";
 import ActionRoundsRow from "./action_rounds_table";
 import ActionStateComponentsRow from "./action_state_components_table";
@@ -120,7 +121,6 @@ import QuestStatBlockCacheComponentsRow from "./quest_stat_block_cache_component
 import QuestStatBlockDirtyFlagComponentsRow from "./quest_stat_block_dirty_flag_components_table";
 import QuestsRow from "./quests_table";
 import QuestsRoomsRolesRow from "./quests_rooms_roles_table";
-import QueuedActionStateComponentsRow from "./queued_action_state_components_table";
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
 import RemainsComponentsRow from "./remains_components_table";
@@ -186,6 +186,17 @@ const tablesSchema = __schema({
       { name: 'accounts_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, AccountsRow),
+  action_queue_components: __table({
+    name: 'action_queue_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'action_queue_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'action_queue_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ActionQueueComponentsRow),
   action_queue_dirty_components: __table({
     name: 'action_queue_dirty_components',
     indexes: [
@@ -914,17 +925,6 @@ const tablesSchema = __schema({
       { name: 'quests_rooms_roles_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, QuestsRoomsRolesRow),
-  queued_action_state_components: __table({
-    name: 'queued_action_state_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'queued_action_state_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'queued_action_state_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, QueuedActionStateComponentsRow),
   relics: __table({
     name: 'relics',
     indexes: [
