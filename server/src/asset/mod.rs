@@ -416,7 +416,6 @@ fn resolve_entity_blob(
         action_queue_dirty: None,
         // Runtime state: the death system's one-shot latch.
         perished: None,
-        surface: author.surface,
         // Stamped by the quest room-claim application, never authored.
         defeat_drop: None,
         location_map: None,
@@ -1104,6 +1103,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             max_hidden_room_count: m.max_hidden_room_count,
             quest_spawns,
             quest_room_claims,
+            room_location: m.room_location,
         };
         if ctx.db.location_maps().id().find(id).is_some() {
             ctx.db.location_maps().id().update(row);

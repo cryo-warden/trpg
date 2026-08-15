@@ -133,7 +133,6 @@ import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import StatusStatBlockDirtyFlagComponentsRow from "./status_stat_block_dirty_flag_components_table";
-import SurfaceComponentsRow from "./surface_components_table";
 import TotalStatBlockComponentsRow from "./total_stat_block_components_table";
 import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
 import TraitsComponentsRow from "./traits_components_table";
@@ -1071,17 +1070,6 @@ const tablesSchema = __schema({
       { name: 'status_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, StatusStatBlockDirtyFlagComponentsRow),
-  surface_components: __table({
-    name: 'surface_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'surface_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'surface_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, SurfaceComponentsRow),
   total_stat_block_components: __table({
     name: 'total_stat_block_components',
     indexes: [

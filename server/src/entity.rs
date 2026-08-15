@@ -6,6 +6,20 @@ use crate::{
 use ecs::entity;
 use spacetimedb::Timestamp;
 
+/// How something occupies its location: on its EXTERIOR — the visible
+/// surface, where outdoor rooms sit on the world and wielded gear rides
+/// a body — or in its INTERIOR (room occupants, pocketed items,
+/// container contents). (id, Exterior) and (id, Interior) are DIFFERENT
+/// locations to every co-location comparison; inventory checks match
+/// the id alone. Visibility recurses upward through Exterior edges (the
+/// sky shows outdoors), and weather will reach exactly what the sky
+/// sees.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, spacetimedb::SpacetimeType)]
+pub enum LocationKind {
+    Exterior,
+    Interior,
+}
+
 entity!(
     #[struct_attrs]
     #[derive(Debug, Clone)]
@@ -30,16 +44,26 @@ entity!(
         pub name: String,
     }
 
+    // A location is a VALUE PAIR, not a bare pointer: the target entity
+    // plus HOW it is occupied (see LocationKind). Same id, different
+    // kind = different location.
     #[component(location in location_components)]
     struct LocationComponent {
         #[index(btree)]
         pub location_entity_id: EntityId,
+        pub kind: crate::entity::LocationKind,
     }
 
+    // The destination is a LOCATION PAIR, field-mirroring
+    // LocationComponent (the btree over the raw id keeps containment
+    // and cleanup queries indexable): crossing a path copies this pair
+    // verbatim into the traveler's location — the path decides where
+    // AND how you arrive.
     #[component(path in path_components)]
     struct PathComponent {
         #[index(btree)]
         pub destination_entity_id: EntityId,
+        pub destination_kind: crate::entity::LocationKind,
     }
 
     // On a PATH entity: impassable while the referenced breakable still
@@ -186,12 +210,6 @@ entity!(
       // gate on their respawn timer instead (revival must not be
       // blocked by a permanent flag).
       perished in perished_components,
-      // A SURFACE location: standing in it, you see (and are seen from)
-      // whatever shares its own location, recursively through surface
-      // parents — outdoor rooms nest into the outdoors, and one sky
-      // entity shows from everywhere outside. Absent = INSIDE: the
-      // visibility chain cuts at caves and buildings.
-      surface in surface_components,
     )]
     struct FlagComponent {}
 

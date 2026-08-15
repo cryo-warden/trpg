@@ -632,9 +632,6 @@ export const EntityBlob = __t.object("EntityBlob", {
   get perished() {
     return __t.option(FlagComponentBlob);
   },
-  get surface() {
-    return __t.option(FlagComponentBlob);
-  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -768,9 +765,6 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
     return __t.option(EnemyControllerComponentBlob);
   },
   get checkpointObject() {
-    return __t.option(FlagComponentBlob);
-  },
-  get surface() {
     return __t.option(FlagComponentBlob);
   },
   get checkpointBinding() {
@@ -960,6 +954,9 @@ export type Layout = __Infer<typeof Layout>;
 export const LocationComponent = __t.object("LocationComponent", {
   entityId: __t.u64(),
   locationEntityId: __t.u64(),
+  get kind() {
+    return LocationKind;
+  },
 });
 export type LocationComponent = __Infer<typeof LocationComponent>;
 
@@ -967,8 +964,18 @@ export const LocationComponentBlob = __t.object("LocationComponentBlob", {
   get locationEntityId() {
     return EntityIdSelector;
   },
+  get kind() {
+    return LocationKind;
+  },
 });
 export type LocationComponentBlob = __Infer<typeof LocationComponentBlob>;
+
+// The tagged union or sum type for the algebraic type `LocationKind`.
+export const LocationKind = __t.enum("LocationKind", {
+  Exterior: __t.unit(),
+  Interior: __t.unit(),
+});
+export type LocationKind = __Infer<typeof LocationKind>;
 
 export const LocationMap = __t.object("LocationMap", {
   id: __t.u32(),
@@ -997,6 +1004,9 @@ export const LocationMap = __t.object("LocationMap", {
   get questRoomClaims() {
     return __t.array(QuestRoomClaim);
   },
+  get roomLocation() {
+    return __t.option(RoomLocationAsset);
+  },
 });
 export type LocationMap = __Infer<typeof LocationMap>;
 
@@ -1024,6 +1034,9 @@ export const LocationMapAsset = __t.object("LocationMapAsset", {
   },
   get questRoomClaims() {
     return __t.array(QuestRoomClaimAsset);
+  },
+  get roomLocation() {
+    return __t.option(RoomLocationAsset);
   },
 });
 export type LocationMapAsset = __Infer<typeof LocationMapAsset>;
@@ -1367,12 +1380,18 @@ export type PathBlockerComponentBlob = __Infer<typeof PathBlockerComponentBlob>;
 export const PathComponent = __t.object("PathComponent", {
   entityId: __t.u64(),
   destinationEntityId: __t.u64(),
+  get destinationKind() {
+    return LocationKind;
+  },
 });
 export type PathComponent = __Infer<typeof PathComponent>;
 
 export const PathComponentBlob = __t.object("PathComponentBlob", {
   get destinationEntityId() {
     return EntityIdSelector;
+  },
+  get destinationKind() {
+    return LocationKind;
   },
 });
 export type PathComponentBlob = __Infer<typeof PathComponentBlob>;
@@ -1571,6 +1590,14 @@ export const Role = __t.object("Role", {
   name: __t.string(),
 });
 export type Role = __Infer<typeof Role>;
+
+export const RoomLocationAsset = __t.object("RoomLocationAsset", {
+  locationName: __t.string(),
+  get kind() {
+    return LocationKind;
+  },
+});
+export type RoomLocationAsset = __Infer<typeof RoomLocationAsset>;
 
 export const SpecialAction = __t.object("SpecialAction", {
   get key() {

@@ -614,6 +614,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                         let co_located = match (e.location(), o.location()) {
                             (Some(mine), Some(theirs)) => {
                                 mine.location_entity_id == theirs.location_entity_id
+                                    && mine.kind == theirs.kind
                             }
                             _ => false,
                         };
@@ -644,6 +645,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                         && match (e.location(), o.location()) {
                             (Some(mine), Some(theirs)) => {
                                 mine.location_entity_id == theirs.location_entity_id
+                                    && mine.kind == theirs.kind
                             }
                             _ => false,
                         }
@@ -663,6 +665,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                         && match (e.location(), o.location()) {
                             (Some(mine), Some(theirs)) => {
                                 mine.location_entity_id == theirs.location_entity_id
+                                    && mine.kind == theirs.kind
                             }
                             _ => false,
                         }
@@ -673,6 +676,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                         && match (e.location(), o.location()) {
                             (Some(mine), Some(theirs)) => {
                                 mine.location_entity_id == theirs.location_entity_id
+                                    && mine.kind == theirs.kind
                             }
                             _ => false,
                         }
@@ -685,6 +689,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                             match (e.location(), o.location()) {
                                 (Some(mine), Some(theirs)) => {
                                     mine.location_entity_id == theirs.location_entity_id
+                                    && mine.kind == theirs.kind
                                 }
                                 _ => false,
                             }

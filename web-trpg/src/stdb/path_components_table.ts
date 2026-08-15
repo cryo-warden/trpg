@@ -9,8 +9,15 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  LocationKind,
+} from "./types";
+
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
   destinationEntityId: __t.u64().name("destination_entity_id"),
+  get destinationKind() {
+    return LocationKind.name("destination_kind");
+  },
 });

@@ -94,7 +94,10 @@ export const minimalPack = (): AssetPack => ({
 export const playerPack = (): AssetPack => ({
   ...emptyPack(),
   newPlayerBlob: blob({
-    location: { locationEntityId: { tag: "Literal", value: 999n } },
+    location: {
+      locationEntityId: { tag: "Literal", value: 999n },
+      kind: { tag: "Interior" },
+    },
     hp: {
       hp: 5,
       mhp: 5,
@@ -115,15 +118,27 @@ export const graphPack = (): AssetPack => ({
   instantiateEntityBlobs: [
     blob({
       name: { name: "occupant_a" },
-      location: { locationEntityId: { tag: "Literal", value: 1n } },
+      location: {
+        locationEntityId: { tag: "Literal", value: 1n },
+        kind: { tag: "Interior" },
+      },
     }),
     blob({
       name: { name: "occupant_b" },
-      location: { locationEntityId: { tag: "Literal", value: 1n } },
+      location: {
+        locationEntityId: { tag: "Literal", value: 1n },
+        kind: { tag: "Interior" },
+      },
     }),
     blob({
-      path: { destinationEntityId: { tag: "Literal", value: 2n } },
-      location: { locationEntityId: { tag: "Literal", value: 1n } },
+      path: {
+        destinationEntityId: { tag: "Literal", value: 2n },
+        destinationKind: { tag: "Interior" },
+      },
+      location: {
+        locationEntityId: { tag: "Literal", value: 1n },
+        kind: { tag: "Interior" },
+      },
     }),
   ],
 });
@@ -205,6 +220,7 @@ export const mapGenPack = (): AssetPack => ({
         maxHiddenRoomCount: 0,
         questSpawns: [],
         questRoomClaims: [],
+        roomLocation: undefined,
       },
     },
   ],
@@ -294,7 +310,10 @@ export const stancePack = (): AssetPack => ({
   newPlayerBlob: blob({
     baselineName: "test_human",
     stanceName: "test_brawler",
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
   }),
 });
 
@@ -406,24 +425,39 @@ export const loadoutPack = (): AssetPack => ({
   newPlayerBlob: blob({
     baselineName: "test_human",
     stanceName: "test_standing",
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
   }),
   instantiateEntityBlobs: [
     blob({
       item: { tag: "Armament", value: "test_sword" },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     blob({
       item: { tag: "Armament", value: "test_club" },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     blob({
       item: { tag: "Armor", value: "test_jerkin" },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     blob({
       item: { tag: "Relic", value: "test_charm" },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
   ],
 });
@@ -513,20 +547,32 @@ export const moralePack = (): AssetPack => ({
   newPlayerBlob: blob({
     baselineName: "test_mouse",
     stanceName: "test_standing",
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
   }),
   instantiateEntityBlobs: [
     blob({
       enemyController: {},
       baselineName: "test_giant",
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
     blob({
-      path: { destinationEntityId: { tag: "Literal", value: 1000n } },
+      path: {
+        destinationEntityId: { tag: "Literal", value: 1000n },
+        destinationKind: { tag: "Interior" },
+      },
       offeredActionNames: ["test_move"],
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
   ],
 });
@@ -601,6 +647,7 @@ export const connectionsPack = (): AssetPack => ({
         maxHiddenRoomCount: 0,
         questSpawns: [],
         questRoomClaims: [],
+        roomLocation: undefined,
       },
     },
     {
@@ -620,6 +667,7 @@ export const connectionsPack = (): AssetPack => ({
         maxHiddenRoomCount: 0,
         questSpawns: [],
         questRoomClaims: [],
+        roomLocation: undefined,
       },
     },
   ],
@@ -687,6 +735,7 @@ export const deathPack = (): AssetPack => ({
         maxHiddenRoomCount: 0,
         questSpawns: [],
         questRoomClaims: [],
+        roomLocation: undefined,
       },
     },
   ],
@@ -747,30 +796,48 @@ export const deathPack = (): AssetPack => ({
   ],
   newPlayerBlob: blob({
     baselineName: "test_hero",
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
   }),
   instantiateEntityBlobs: [
     blob({
       checkpointObject: {},
       checkpointBinding: { locationMapName: "test_haven", checkpointIndex: 0 },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     blob({
-      path: { destinationEntityId: { tag: "Literal", value: 1000n } },
+      path: {
+        destinationEntityId: { tag: "Literal", value: 1000n },
+        destinationKind: { tag: "Interior" },
+      },
       offeredActionNames: ["test_move"],
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     blob({
       enemyController: {},
       baselineName: "test_brute",
-      location: { locationEntityId: { tag: "Literal", value: 1000n } },
+      location: {
+        locationEntityId: { tag: "Literal", value: 1000n },
+        kind: { tag: "Interior" },
+      },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
     blob({
       enemyController: {},
       baselineName: "test_vermin",
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
   ],
@@ -831,12 +898,18 @@ export const divePack = (): AssetPack => ({
   newPlayerBlob: blob({
     baselineName: "test_human",
     stanceName: "test_standing",
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
   }),
   instantiateEntityBlobs: [
     blob({
       item: { tag: "Armament", value: "test_brave_sword" },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
   ],
 });
@@ -868,14 +941,20 @@ export const combatPack = ({
     },
   ],
   newPlayerBlob: blob({
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     actionNames: ["test_attack"],
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
   }),
   instantiateEntityBlobs: [
     blob({
       enemyController: {},
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
       hp: {
         hp: enemyHp,
         mhp: enemyHp,
@@ -968,13 +1047,17 @@ export const questPack = (): AssetPack => ({
         },
         location: {
           locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
         },
       }),
     },
   ],
   newPlayerBlob: blob({
     baselineName: "test_human",
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
   }),
   instantiateEntityBlobs: [
     blob({
@@ -982,21 +1065,30 @@ export const questPack = (): AssetPack => ({
         tag: "QuestItem",
         value: { questName: "test_red_cookies", index: 0 },
       },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     blob({
       item: {
         tag: "QuestItem",
         value: { questName: "test_red_cookies", index: 0 },
       },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     blob({
       item: {
         tag: "QuestItem",
         value: { questName: "test_red_cookies", index: 1 },
       },
-      location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
     }),
     // The payoff cookie hides INSIDE the jar: smashing it spills this out.
     blob({
@@ -1004,7 +1096,10 @@ export const questPack = (): AssetPack => ({
         tag: "QuestItem",
         value: { questName: "test_red_cookies", index: 2 },
       },
-      location: { locationEntityId: { tag: "Named", value: "test_cookie_jar" } },
+      location: {
+        locationEntityId: { tag: "Named", value: "test_cookie_jar" },
+        kind: { tag: "Interior" },
+      },
     }),
   ],
 });
@@ -1082,6 +1177,7 @@ export const interactionsPack = (): AssetPack => ({
         },
         location: {
           locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
         },
       }),
     },
@@ -1098,13 +1194,17 @@ export const interactionsPack = (): AssetPack => ({
         },
         location: {
           locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
         },
       }),
     },
   ],
   newPlayerBlob: blob({
     baselineName: "test_looter",
-    location: { locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID } },
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
   }),
   instantiateEntityBlobs: [
     blob({
@@ -1112,14 +1212,20 @@ export const interactionsPack = (): AssetPack => ({
         tag: "QuestItem",
         value: { questName: "test_hidden_cookies", index: 0 },
       },
-      location: { locationEntityId: { tag: "Named", value: "test_chest" } },
+      location: {
+        locationEntityId: { tag: "Named", value: "test_chest" },
+        kind: { tag: "Interior" },
+      },
     }),
     blob({
       item: {
         tag: "QuestItem",
         value: { questName: "test_hidden_cookies", index: 1 },
       },
-      location: { locationEntityId: { tag: "Named", value: "test_sack" } },
+      location: {
+        locationEntityId: { tag: "Named", value: "test_sack" },
+        kind: { tag: "Interior" },
+      },
     }),
   ],
 });
@@ -1226,6 +1332,7 @@ export const spawnPack = (): AssetPack => ({
           },
         ],
         questRoomClaims: [],
+        roomLocation: undefined,
       },
     },
   ],
@@ -1379,6 +1486,7 @@ export const bossPack = (): AssetPack => ({
             },
           },
         ],
+        roomLocation: undefined,
       },
     },
   ],
@@ -1490,6 +1598,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
         maxHiddenRoomCount: 0,
         questSpawns: [],
         questRoomClaims: [],
+        roomLocation: undefined,
       },
     },
   ],
@@ -1620,6 +1729,7 @@ export const guardedMapPack = ({
         maxHiddenRoomCount: hiddenRoomCount,
         questSpawns: [],
         questRoomClaims: [],
+        roomLocation: undefined,
       },
     },
   ],

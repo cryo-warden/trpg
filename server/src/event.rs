@@ -107,7 +107,10 @@ secador::secador!(
                         taker_location.location_entity_id,
                     ) =>
                 {
+                    // Pocketed: the carrier's INTERIOR. The gear-location
+                    // system exteriorizes it if it ends up worn.
                     item_location.location_entity_id = taker_entity_id;
+                    item_location.kind = LocationKind::Interior;
                     ecs.db.location_components().entity_id().update(item_location);
                     if let crate::item::ItemRef::Armament(armament_id) = item.item_ref {
                         let taker = ecs.find(taker_entity_id);
@@ -331,8 +334,12 @@ secador::secador!(
                                     {
                                         None => {}
                                         Some(mut location_component) => {
+                                            // Arrival copies the path's
+                                            // destination pair verbatim.
                                             location_component.location_entity_id =
                                                 path_component.destination_entity_id;
+                                            location_component.kind =
+                                                path_component.destination_kind;
                                             ecs.db
                                                 .location_components()
                                                 .entity_id()
@@ -395,8 +402,11 @@ secador::secador!(
                                     if target_location.location_entity_id
                                         == self.owner_entity_id =>
                                 {
+                                    // Dropped WHERE the owner stands: the
+                                    // full location pair, kind included.
                                     target_location.location_entity_id =
                                         owner_location.location_entity_id;
+                                    target_location.kind = owner_location.kind;
                                     ecs.db
                                         .location_components()
                                         .entity_id()
@@ -415,6 +425,7 @@ secador::secador!(
                             let co_located = match (owner.location(), target.location()) {
                                 (Some(mine), Some(theirs)) => {
                                     mine.location_entity_id == theirs.location_entity_id
+                                        && mine.kind == theirs.kind
                                 }
                                 _ => false,
                             };
@@ -434,6 +445,7 @@ secador::secador!(
                             let co_located = match (owner.location(), target.location()) {
                                 (Some(mine), Some(theirs)) => {
                                     mine.location_entity_id == theirs.location_entity_id
+                                        && mine.kind == theirs.kind
                                 }
                                 _ => false,
                             };

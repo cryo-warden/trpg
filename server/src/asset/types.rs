@@ -186,11 +186,6 @@ pub struct EntityBlobAsset {
     pub enemy_controller: Option<EnemyControllerComponentBlob>,
     /// Marks the entity as attunable fortune-telling scenery.
     pub checkpoint_object: Option<FlagComponentBlob>,
-    /// Marks a SURFACE location: its occupants see through it to
-    /// whatever shares ITS location, recursively while parents stay
-    /// surface. Authored on outdoor room blobs and outdoor containers
-    /// like the world surface itself.
-    pub surface: Option<FlagComponentBlob>,
     /// The abstract destination attuning to this object binds: a map by
     /// NAME plus which of its generated checkpoints. Never a room entity —
     /// the room may not exist until the binding is cashed in.
@@ -310,6 +305,17 @@ pub struct QuestSpawnAsset {
     pub max_eligible_count: u8,
 }
 
+/// Where a map's ROOMS live, and how: every generated room receives this
+/// location pair — a NAMED world entity plus Exterior or Interior.
+/// Exterior rooms see their outer location's entities (the sky),
+/// recursively while edges stay exterior; Interior rooms cut the chain
+/// while still nesting somewhere.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct RoomLocationAsset {
+    pub location_name: String,
+    pub kind: crate::entity::LocationKind,
+}
+
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct LocationMapAsset {
     pub theme_name: String,
@@ -329,6 +335,9 @@ pub struct LocationMapAsset {
     pub max_hidden_room_count: u8,
     pub quest_spawns: Vec<QuestSpawnAsset>,
     pub quest_room_claims: Vec<QuestRoomClaimAsset>,
+    /// ALL of this map's rooms gain this location; None leaves rooms
+    /// unnested (legacy/test worlds).
+    pub room_location: Option<RoomLocationAsset>,
 }
 
 /// A cross-map connection as authored: a JOIN row between two maps by name,

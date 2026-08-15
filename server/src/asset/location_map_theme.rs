@@ -114,7 +114,7 @@ impl LocationMapTheme {
                 room.ecs()
                     .new()
                     .instantiate_blob(d.to_owned(), &room.ecs().instantiation_scope())?
-                    .insert_new_location(room.entity_id());
+                    .insert_new_location(room.entity_id(), LocationKind::Interior);
             }
         }
         Ok(())

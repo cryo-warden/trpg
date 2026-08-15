@@ -129,7 +129,7 @@ pub fn death_system(ecs: Ecs) {
             let location = handle.location().map(|l| l.location_entity_id);
             if let Some(location_entity_id) = location {
                 ecs.new()
-                    .upsert_new_location(location_entity_id)
+                    .upsert_new_location(location_entity_id, LocationKind::Interior)
                     .into_handle()
                     .upsert_new_appearance_features(remains.appearance_feature_ids);
             }
@@ -166,7 +166,9 @@ pub fn respawn_system(ecs: Ecs) {
                     );
                 }
                 Ok(room_entity_id) => {
-                    handle.clone().upsert_new_location(room_entity_id);
+                    handle
+                        .clone()
+                        .upsert_new_location(room_entity_id, LocationKind::Interior);
                 }
             },
         }
@@ -459,13 +461,9 @@ pub(crate) fn delete_entity_with_joins(ecs: Ecs, entity_id: u64) {
 /// own location. A carrier with no location (map/room teardown) leaves
 /// this to the recursive cleanup that is already deleting its contents.
 pub(crate) fn spill_contents(ecs: Ecs, entity_id: u64) {
-    let Some(destination) = ecs
-        .db
-        .location_components()
-        .entity_id()
-        .find(entity_id)
-        .map(|l| l.location_entity_id)
-    else {
+    // The carrier's FULL location pair: spilled contents land exactly
+    // where it stood, kind included.
+    let Some(destination) = ecs.db.location_components().entity_id().find(entity_id) else {
         return;
     };
     let contained: Vec<u64> = ecs
@@ -477,7 +475,8 @@ pub(crate) fn spill_contents(ecs: Ecs, entity_id: u64) {
         .collect();
     for contained_id in contained {
         if let Some(mut row) = ecs.db.location_components().entity_id().find(contained_id) {
-            row.location_entity_id = destination;
+            row.location_entity_id = destination.location_entity_id;
+            row.kind = destination.kind;
             ecs.db.location_components().entity_id().update(row);
             // Every spill narrates, whatever caused it — a dumped sack, a
             // shattered jar, a destroyed carrier.
@@ -701,7 +700,7 @@ pub fn player_activation_system(ecs: Ecs) {
                         if let Some(location_entity_id) =
                             map_generation_result.entrance_room_id()
                         {
-                            p.insert_new_location(location_entity_id);
+                            p.insert_new_location(location_entity_id, LocationKind::Interior);
                             // A new player's checkpoint: the starting map's
                             // first generated checkpoint, automatically —
                             // an ABSTRACT destination (map + index), never
@@ -891,9 +890,9 @@ fn materialize_connection(
         // featureless.
         None => {
             ecs.new()
-                .upsert_new_location(room_entity_id)
+                .upsert_new_location(room_entity_id, LocationKind::Interior)
                 .into_handle()
-                .upsert_new_path(destination_room);
+                .upsert_new_path(destination_room, LocationKind::Interior);
         }
     }
     Ok(destination_instance_id)
@@ -1047,6 +1046,69 @@ pub fn action_validation_system(ecs: Ecs) {
         // The sweep consumes the flag (the deletions above re-dirty it;
         // clearing LAST keeps one sweep per change).
         ecs.find(entity_id).delete_action_queue_dirty();
+    }
+}
+
+/// EQUIPPED GEAR RIDES THE BODY'S EXTERIOR: worn and wielded items sit
+/// at (carrier, Exterior) — the visible surface — while pocketed gear
+/// stays at (carrier, Interior). SYSTEM-IMPOSED, watching the same
+/// dirty flag every equipment change already raises (and running
+/// BEFORE the stats derivation consumes it): the counted-first-N
+/// instances of each worn asset, in stable entity order, go exterior;
+/// the rest interior. Inventory checks match the id alone, so both
+/// kinds count as carried.
+pub fn gear_location_system(ecs: Ecs) {
+    for f in ecs.iter_equipment_stat_block_dirty_flag() {
+        let handle = f.into_handle();
+        let owner_entity_id = handle.entity_id();
+        let Some(equipment) = handle.equipment() else {
+            continue;
+        };
+        // The worn multiset, keyed by gear kind + asset id.
+        let mut worn: std::collections::HashMap<(u8, u32), usize> =
+            std::collections::HashMap::new();
+        for id in &equipment.armament_ids {
+            *worn.entry((0, *id)).or_insert(0) += 1;
+        }
+        if let Some(armor_id) = equipment.worn_armor_id {
+            *worn.entry((1, armor_id)).or_insert(0) += 1;
+        }
+        for id in &equipment.worn_relic_ids {
+            *worn.entry((2, *id)).or_insert(0) += 1;
+        }
+        // Carried gear in stable entity order — the same counted order
+        // every menu highlight uses.
+        let mut carried: Vec<_> = ecs
+            .db
+            .location_components()
+            .location_entity_id()
+            .filter(owner_entity_id)
+            .collect();
+        carried.sort_unstable_by_key(|row| row.entity_id);
+        for mut row in carried {
+            let Some(item) = ecs.db.item_components().entity_id().find(row.entity_id)
+            else {
+                continue;
+            };
+            let key = match item.item_ref {
+                crate::item::ItemRef::Armament(id) => (0u8, id),
+                crate::item::ItemRef::Armor(id) => (1u8, id),
+                crate::item::ItemRef::Relic(id) => (2u8, id),
+                crate::item::ItemRef::QuestItem(_) => continue,
+            };
+            let remaining = worn.get_mut(&key);
+            let kind = match remaining {
+                Some(count) if *count > 0 => {
+                    *count -= 1;
+                    LocationKind::Exterior
+                }
+                _ => LocationKind::Interior,
+            };
+            if row.kind != kind {
+                row.kind = kind;
+                ecs.db.location_components().entity_id().update(row);
+            }
+        }
     }
 }
 
@@ -1218,7 +1280,9 @@ pub fn enemy_control_system(ecs: Ecs) {
         let mut p = None;
         players.shuffle(&mut player_shuffle_rng);
         for t in &players {
-            if t.location().location_entity_id == e.location().location_entity_id {
+            if t.location().location_entity_id == e.location().location_entity_id
+                && t.location().kind == e.location().kind
+            {
                 p = Some(t);
                 break;
             }
@@ -1247,6 +1311,7 @@ pub fn execute_all_systems(ecs: Ecs) {
     // the exact timing control system ordering buys us.
     configuration_sanitation_system(ecs);
     equipment_reconciliation_system(ecs);
+    gear_location_system(ecs);
     action_validation_system(ecs);
     actionless_stamp_system(ecs);
     crate::turn::turn_pause_system(ecs);

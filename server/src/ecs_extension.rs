@@ -62,8 +62,8 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         Ok(self
             .new()
             .instantiate_blob(blob, &self.instantiation_scope())?
-            .upsert_new_location(location_entity_id)
-            .upsert_new_path(destination_entity_id)
+            .upsert_new_location(location_entity_id, crate::entity::LocationKind::Interior)
+            .upsert_new_path(destination_entity_id, crate::entity::LocationKind::Interior)
             .into_handle())
     }
     fn from_player_account(

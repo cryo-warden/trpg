@@ -166,33 +166,38 @@ test("useActionOptions keeps only actions valid against the target", () => {
   ).toEqual([attackId, moveId]);
 });
 
-test("a surface room sees the sky through the surface chain; inside cuts it", () => {
+test("an exterior room sees the sky through the edge chain; interior cuts it", () => {
   const identity = {} as Identity;
-  // Room 10 (surface) sits in the outdoors 50 (surface), which sits on
-  // the world 60. The sky 51 hangs in the outdoors, a star 61 in the
-  // world; sibling room 11 also sits in the outdoors but is a MAP room.
+  // The KIND rides the location EDGE. Room 10 sits (50, Exterior) in
+  // the outdoors; the outdoors sits (60, Exterior) on the world. The
+  // sky 51 hangs in the outdoors, a star 61 on the world. Sibling map
+  // room 11 also sits in the outdoors; room 12 sits (50, Interior) —
+  // a cellar under the field.
+  const exterior = { tag: "Exterior" };
+  const interior = { tag: "Interior" };
   const tables = {
-    surface_components: mockTable([{ entityId: 10n }, { entityId: 50n }]),
     location_components: mockTable([
-      { entityId: 10n, locationEntityId: 50n },
-      { entityId: 11n, locationEntityId: 50n },
-      { entityId: 51n, locationEntityId: 50n },
-      { entityId: 50n, locationEntityId: 60n },
-      { entityId: 61n, locationEntityId: 60n },
+      { entityId: 10n, locationEntityId: 50n, kind: exterior },
+      { entityId: 11n, locationEntityId: 50n, kind: exterior },
+      { entityId: 12n, locationEntityId: 50n, kind: interior },
+      { entityId: 51n, locationEntityId: 50n, kind: exterior },
+      { entityId: 50n, locationEntityId: 60n, kind: exterior },
+      { entityId: 61n, locationEntityId: 60n, kind: exterior },
     ]),
     location_map_components: mockTable([
       { entityId: 10n, locationMapEntityId: 99n },
       { entityId: 11n, locationMapEntityId: 99n },
+      { entityId: 12n, locationMapEntityId: 99n },
     ]),
   };
   const outdoors = renderHook(() => useVisibleOuterEntities(10n), {
     wrapper: stdbWrapper(tables, identity),
   });
-  // The sky and the star show; the sibling map room does not.
+  // The sky and the star show; the sibling map rooms do not.
   expect(outdoors.result.current).toEqual([51n, 61n]);
 
-  // An INSIDE room (no surface flag) sees nothing beyond itself.
-  const inside = renderHook(() => useVisibleOuterEntities(11n), {
+  // An INTERIOR edge sees nothing beyond itself.
+  const inside = renderHook(() => useVisibleOuterEntities(12n), {
     wrapper: stdbWrapper(tables, identity),
   });
   expect(inside.result.current).toEqual([]);

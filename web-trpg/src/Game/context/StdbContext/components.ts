@@ -69,7 +69,6 @@ export const componentQueries = [
   "select * from path_blocker_components",
   "select * from offered_actions_components",
   "select * from open_components",
-  "select * from surface_components",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -186,11 +185,6 @@ const useOfferedActionsComponent = createUseComponent(
 export const useVisibleOuterEntities = (
   roomEntityId: EntityId | null,
 ): EntityId[] => {
-  const surfaceRows = useTableData(
-    "surface_components",
-    (table) => [...table.iter()],
-    [],
-  );
   const locationRows = useTableData(
     "location_components",
     (table) => [...table.iter()],
@@ -205,21 +199,20 @@ export const useVisibleOuterEntities = (
     if (roomEntityId == null) {
       return [];
     }
-    const surfaces = new Set(surfaceRows.map((row) => row.entityId));
-    const locationOf = new Map(
-      locationRows.map((row) => [row.entityId, row.locationEntityId]),
-    );
+    const edgeOf = new Map(locationRows.map((row) => [row.entityId, row]));
     const mapRooms = new Set(roomRows.map((row) => row.entityId));
     const visible: EntityId[] = [];
     const chain = new Set<EntityId>([roomEntityId]);
     let current = roomEntityId;
-    // Bounded walk: a containment cycle must not hang the client.
+    // Bounded walk: a containment cycle must not hang the client. The
+    // KIND rides the location EDGE: only Exterior edges see through.
     for (let depth = 0; depth < 8; depth++) {
-      if (!surfaces.has(current)) {
+      const edge = edgeOf.get(current);
+      if (edge == null || edge.kind.tag !== "Exterior") {
         break;
       }
-      const parent = locationOf.get(current);
-      if (parent == null || chain.has(parent)) {
+      const parent = edge.locationEntityId;
+      if (chain.has(parent)) {
         break;
       }
       chain.add(parent);
@@ -235,7 +228,7 @@ export const useVisibleOuterEntities = (
       current = parent;
     }
     return visible;
-  }, [roomEntityId, surfaceRows, locationRows, roomRows]);
+  }, [roomEntityId, locationRows, roomRows]);
 };
 
 /** The AUTHORED offers of an entity (its offered_actions component) —

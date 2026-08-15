@@ -11,14 +11,17 @@ export const blob = (partial: Partial<EntityBlobAsset>): EntityBlobAsset =>
 export const NAMED_ENTITY_BLOBS = {
   allegiance1: blob({}),
   allegiance2: blob({}),
-  // The world's open air: a SURFACE location outdoor rooms nest into
-  // (their blobs author location: Named world_surface). Never rendered
-  // itself — only its contents show, through the surface chain.
-  world_surface: blob({ surface: {} }),
-  // ONE sky, visible from every outdoor room through the surface chain.
+  // The world's open air: the location every map's rooms nest into (via
+  // each map's roomLocation field — Exterior for outdoor maps). Never
+  // rendered itself; only its contents show, through Exterior edges.
+  world_surface: blob({}),
+  // ONE sky, visible from every exterior room through the edge chain.
   sky: blob({
     appearanceFeatureNames: ["sky"],
-    location: { locationEntityId: { tag: "Named", value: "world_surface" } },
+    location: {
+      locationEntityId: { tag: "Named", value: "world_surface" },
+      kind: { tag: "Exterior" },
+    },
   }),
 } satisfies Record<string, EntityBlobAsset>;
 

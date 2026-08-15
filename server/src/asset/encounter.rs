@@ -4,8 +4,8 @@ use spacetimedb::table;
 use crate::{
     ecs_extension::EcsExtension,
     entity::{
-        EntityBlob, EntityHandle, InstantiateEntityBlob, NewEntityHandle, WithEntityHandle,
-        __location__Option,
+        EntityBlob, EntityHandle, InstantiateEntityBlob, LocationKind, NewEntityHandle,
+        WithEntityHandle, __location__Option,
     },
 };
 
@@ -55,7 +55,7 @@ impl Encounter {
                     .instantiate_blob(categoric_blob.clone(), &scope)?
                     .instantiate_blob(e.blob, &scope)?;
                 spawned_entity_ids.push(spawn.entity_id());
-                spawn.upsert_new_location(room.entity_id());
+                spawn.upsert_new_location(room.entity_id(), LocationKind::Interior);
             }
         }
         Ok(spawned_entity_ids)

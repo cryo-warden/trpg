@@ -90,6 +90,9 @@ pub struct LocationMap {
     /// the item spawns, likewise over the generation result — never by
     /// generation itself.
     pub quest_room_claims: Vec<crate::quest::QuestRoomClaim>,
+    /// Where ALL of this map's rooms live (a named world entity + kind),
+    /// resolved at materialization: exterior rooms see the sky.
+    pub room_location: Option<crate::asset::types::RoomLocationAsset>,
 }
 
 /// Where a connection attaches inside a generated map.
@@ -319,7 +322,7 @@ impl LocationMap {
                             &ecs.instantiation_scope(),
                         )?;
                         let wall_entity_id = wall.entity_id();
-                        wall.insert_new_location(b);
+                        wall.insert_new_location(b, LocationKind::Interior);
                         forward.upsert_new_path_blocker(wall_entity_id);
                         backward.upsert_new_path_blocker(wall_entity_id);
                     }
@@ -351,7 +354,7 @@ impl LocationMap {
                         checkpoint_blob.to_owned(),
                         &ecs.instantiation_scope(),
                     )?
-                    .upsert_new_location(entrance.entity_id())
+                    .upsert_new_location(entrance.entity_id(), LocationKind::Interior)
                     .into_handle()
                     .upsert_new_checkpoint_binding(
                         self.id,
@@ -359,6 +362,23 @@ impl LocationMap {
                     );
             }
         }
+        // ALL rooms gain the map's authored location pair: exterior rooms
+        // see their outer location's entities (the sky), interior rooms
+        // nest without the view. Resolved through the named registry.
+        if let Some(room_location) = &self.room_location {
+            if let Some(outer) = ecs
+                .db
+                .named_entities()
+                .name()
+                .find(room_location.location_name.to_owned())
+            {
+                for r in &room_handles {
+                    r.clone()
+                        .upsert_new_location(outer.entity_id, room_location.kind);
+                }
+            }
+        }
+
         // Role-tag every room: the shape vocabulary downstream layers key
         // placement on. Entrance wins over Ending when the chain is one
         // room long — safety beats reward.
@@ -405,7 +425,7 @@ impl LocationMap {
                         &ecs.instantiation_scope(),
                     )?;
                     let container_entity_id = container.entity_id();
-                    container.insert_new_location(room.entity_id);
+                    container.insert_new_location(room.entity_id, LocationKind::Interior);
                     containers.push(GeneratedContainer {
                         entity_id: container_entity_id,
                         room_entity_id: room.entity_id,
@@ -427,7 +447,10 @@ impl LocationMap {
                     .new()
                     .instantiate_blob(wall_blob.to_owned(), &ecs.instantiation_scope())?;
                 let wall_entity_id = wall.entity_id();
-                wall.insert_new_location(attachment.attach_room_entity_id);
+                wall.insert_new_location(
+                    attachment.attach_room_entity_id,
+                    LocationKind::Interior,
+                );
                 ecs.find(attachment.outbound_path_entity_id)
                     .upsert_new_path_blocker(wall_entity_id);
             }

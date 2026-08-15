@@ -295,7 +295,7 @@ pub fn apply_quest_spawns(
             });
             ecs.new()
                 .instantiate_blob(blob, &ecs.instantiation_scope())?
-                .insert_new_location(spot);
+                .insert_new_location(spot, LocationKind::Interior);
             consume_spot(result, spot);
         }
     }
@@ -405,7 +405,7 @@ pub fn apply_quest_room_claims(
                         .upsert_new_map_checkpoints(checkpoint_room_entity_ids);
                     ecs.new()
                         .instantiate_blob(checkpoint_blob, &ecs.instantiation_scope())?
-                        .upsert_new_location(before_room_entity_id)
+                        .upsert_new_location(before_room_entity_id, LocationKind::Interior)
                         .into_handle()
                         .upsert_new_checkpoint_binding(map.id, checkpoint_index);
                     result.checkpoint_room_entity_ids.push(before_room_entity_id);
@@ -498,7 +498,7 @@ pub fn drop_defeat_reward(ecs: Ecs, entity_id: u64) {
         });
         match ecs.new().instantiate_blob(blob, &ecs.instantiation_scope()) {
             Ok(item) => {
-                item.insert_new_location(room_entity_id);
+                item.insert_new_location(room_entity_id, LocationKind::Interior);
             }
             Err(error) => {
                 log::error!("Defeat drop failed to instantiate: {}", error);
