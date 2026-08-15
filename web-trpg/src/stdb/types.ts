@@ -1113,6 +1113,8 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
   get blockersSelector() {
     return EntityBlobsSampler;
   },
+  pathVariations: __t.array(__t.u32()),
+  pathVariationCountWeights: __t.byteArray(),
 });
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
 
@@ -1139,6 +1141,8 @@ export const LocationMapThemeAsset = __t.object("LocationMapThemeAsset", {
   get blockersSelector() {
     return EntityBlobsSamplerAsset;
   },
+  pathVariationNames: __t.array(__t.string()),
+  pathVariationCountWeights: __t.byteArray(),
 });
 export type LocationMapThemeAsset = __Infer<typeof LocationMapThemeAsset>;
 

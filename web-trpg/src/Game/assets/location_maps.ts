@@ -102,6 +102,23 @@ const thicketGuard = container(["thicket"], ["scrap_wood"]);
 const crumblingWallGuard = container(["crumbling", "wall"], ["rubble"]);
 const crumblingPillarGuard = container(["crumbling", "pillar"], ["rubble"]);
 
+/** The shared pool of optional path-variation adjectives merged into paths at
+ * generation, with a weighted count: mostly one, rarely two, almost never
+ * three, occasionally none. Global for now — every theme draws the same pool;
+ * a theme (or map) can override later. Exclusion groups on the features keep
+ * a roll from pairing opposites/redundants (wide+narrow, dim+dark). */
+const PATH_VARIATION_NAMES = [
+  "winding",
+  "wide",
+  "narrow",
+  "large",
+  "bright",
+  "dim",
+  "dark",
+  "hazy",
+];
+const PATH_VARIATION_COUNT_WEIGHTS = new Uint8Array([10, 75, 12, 3]);
+
 export const LOCATION_MAP_THEMES = {
   encampment: {
     // The training ground: dummies to hit (hp makes scenery attackable) and
@@ -225,6 +242,8 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: barricadeGuard }] },
+    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   cave: {
     decorationsSelector: {
@@ -273,6 +292,8 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: boulderGuard }] },
+    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   meadow: {
     decorationsSelector: {
@@ -310,6 +331,8 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
+    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   forest: {
     decorationsSelector: {
@@ -349,6 +372,8 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
+    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   keep: {
     // The armory of a fallen garrison: the gear here is REAL — every
@@ -466,6 +491,8 @@ export const LOCATION_MAP_THEMES = {
     blockersSelector: {
       selections: [{ weight: 1, blob: crumblingWallGuard }],
     },
+    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   sanctum: {
     decorationsSelector: {
@@ -548,6 +575,8 @@ export const LOCATION_MAP_THEMES = {
     blockersSelector: {
       selections: [{ weight: 1, blob: crumblingPillarGuard }],
     },
+    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
 } satisfies Record<string, LocationMapThemeAsset>;
 

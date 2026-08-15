@@ -264,6 +264,11 @@ pub struct LocationMapThemeAsset {
     /// Themed breakable walls blocking hidden paths and shortcuts until
     /// smashed; authored with hp and remains like any breakable.
     pub blockers_selector: EntityBlobsSamplerAsset,
+    /// Optional path-variation appearance features, authored by name and
+    /// resolved to ids at push: adjectives rolled into paths at generation.
+    pub path_variation_names: Vec<String>,
+    /// Weighted count distribution for path variations (index = count).
+    pub path_variation_count_weights: Vec<u8>,
 }
 
 /// One quest's room claim in one map, as authored: quest and encounter by

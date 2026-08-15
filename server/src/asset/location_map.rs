@@ -127,6 +127,25 @@ pub struct LocationMapConnection {
     pub path_blob: Option<crate::entity::EntityBlob>,
 }
 
+/// Merge rolled path-variation appearance features onto a freshly created
+/// path, on top of its blob-authored look. A no-op for an empty set, so
+/// variation-free themes leave paths exactly as authored.
+fn merge_path_variations(path: &EntityHandle, variation_ids: &[u32]) {
+    if variation_ids.is_empty() {
+        return;
+    }
+    let mut ids = path
+        .appearance_features()
+        .map(|c| c.appearance_feature_indexes)
+        .unwrap_or_default();
+    for id in variation_ids {
+        if !ids.contains(id) {
+            ids.push(*id);
+        }
+    }
+    path.clone().upsert_new_appearance_features(ids);
+}
+
 /// The room a ConnectionAnchor selects within a generated (or recorded)
 /// room layout, or None for an empty map.
 pub fn resolve_anchor_room(
@@ -268,8 +287,13 @@ impl LocationMap {
         for i in 0..main_room_count.saturating_sub(1) {
             if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                 let (a, b) = (room_handles[i].entity_id(), room_handles[i + 1].entity_id());
-                ecs.new_path(pair.forward.clone(), a, b)?;
-                ecs.new_path(pair.backward.clone(), b, a)?;
+                let forward = pair.forward.clone();
+                let backward = pair.backward.clone();
+                // One roll per pair, applied to both directions: a crossing
+                // reads the same coming and going.
+                let variations = theme.roll_path_variations(ecs, &mut rng);
+                merge_path_variations(&ecs.new_path(forward, a, b)?, &variations);
+                merge_path_variations(&ecs.new_path(backward, b, a)?, &variations);
             }
         }
 
@@ -286,11 +310,15 @@ impl LocationMap {
             if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                 let a = room_handles[i].entity_id();
                 let b = room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
+                let backward = pair.backward.clone();
+                let forward = pair.forward.clone();
+                let variations = theme.roll_path_variations(ecs, &mut rng);
                 // The OUTBOUND direction (into the side room) is the
                 // pair's forward — the exploring direction; the way back
                 // wears its matched backward.
-                ecs.new_path(pair.backward.clone(), a, b)?;
-                let outbound = ecs.new_path(pair.forward.clone(), b, a)?;
+                merge_path_variations(&ecs.new_path(backward, a, b)?, &variations);
+                let outbound = ecs.new_path(forward, b, a)?;
+                merge_path_variations(&outbound, &variations);
                 side_attachments.push(SideAttachment {
                     attach_room_entity_id: b,
                     outbound_path_entity_id: outbound.entity_id(),
@@ -314,8 +342,13 @@ impl LocationMap {
                 if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                     let a = room_handles[a_index].entity_id();
                     let b = room_handles[a_index + 2].entity_id();
-                    let forward = ecs.new_path(pair.forward.clone(), a, b)?;
-                    let backward = ecs.new_path(pair.backward.clone(), b, a)?;
+                    let forward_blob = pair.forward.clone();
+                    let backward_blob = pair.backward.clone();
+                    let variations = theme.roll_path_variations(ecs, &mut rng);
+                    let forward = ecs.new_path(forward_blob, a, b)?;
+                    merge_path_variations(&forward, &variations);
+                    let backward = ecs.new_path(backward_blob, b, a)?;
+                    merge_path_variations(&backward, &variations);
                     if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
                         let wall = ecs.new().instantiate_blob(
                             wall_blob.to_owned(),

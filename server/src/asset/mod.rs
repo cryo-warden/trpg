@@ -926,6 +926,13 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 t.value.blockers_selector,
                 &maps,
             )?,
+            path_variations: t
+                .value
+                .path_variation_names
+                .iter()
+                .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
+                .collect::<Result<_, _>>()?,
+            path_variation_count_weights: t.value.path_variation_count_weights,
         };
         if ctx.db.location_map_themes().id().find(id).is_some() {
             ctx.db.location_map_themes().id().update(row);

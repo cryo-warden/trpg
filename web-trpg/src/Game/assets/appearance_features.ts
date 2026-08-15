@@ -133,8 +133,18 @@ export const APPEARANCE_FEATURES = {
   hollow: adjective("hollow", 1000),
   // Boss drops sparkle: the reward that anticipation promised.
   sparkling: adjective("sparkling", 1000),
-  dark: adjective("dark", 1000),
-  bright: adjective("bright", 1000),
+  // Brightness shares one exclusion group so a path never reads as both
+  // "bright" and "dark" (or the redundant "dim, dark").
+  dark: adjective("dark", 1000, "brightness"),
+  bright: adjective("bright", 1000, "brightness"),
+  dim: adjective("dim", 1000, "brightness"),
+  // Path-variation adjectives merged into paths at generation. Width is an
+  // exclusion group (wide vs narrow); winding/large/hazy stand alone.
+  winding: adjective("winding", 1000),
+  wide: adjective("wide", 1000, "width"),
+  narrow: adjective("narrow", 1000, "width"),
+  large: adjective("large", 1000),
+  hazy: adjective("hazy", 1000),
   tiny: adjective("tiny", 1000),
   small: adjective("small", 900),
   big: adjective("big", 900),

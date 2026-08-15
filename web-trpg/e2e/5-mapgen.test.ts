@@ -32,6 +32,8 @@ beforeAll(async () => {
       "SELECT * FROM path_components",
       "SELECT * FROM allegiance_components",
       "SELECT * FROM named_entities",
+      "SELECT * FROM appearance_features",
+      "SELECT * FROM appearance_features_components",
     ]);
   await player.reducers.createAccount({ name: "explorer" });
 }, 60000);
@@ -58,6 +60,30 @@ test("new_player + map generation builds a room/path graph and places the player
   );
 
   expect(player.db.path_components.count()).toBeGreaterThan(0);
+}, 40000);
+
+test("generated paths receive a rolled variation feature", async () => {
+  // The theme's pool forces exactly one variation (test_winding) onto every
+  // path, so every generated path must carry that feature index.
+  await waitFor(() => player.db.appearance_features.count() > 0, 30000);
+  const windingIndex = [...player.db.appearance_features.iter()].find(
+    (row) => row.name === "test_winding",
+  )?.index;
+  expect(windingIndex).toBeDefined();
+
+  await waitFor(() => player.db.path_components.count() > 0, 30000);
+  const pathEntityIds = new Set(
+    [...player.db.path_components.iter()].map((row) => row.entityId),
+  );
+
+  const pathCarriesWinding = () =>
+    [...player.db.appearance_features_components.iter()].some(
+      (row) =>
+        pathEntityIds.has(row.entityId) &&
+        [...row.appearanceFeatureIndexes].includes(windingIndex!),
+    );
+  await waitFor(pathCarriesWinding, 30000);
+  expect(pathCarriesWinding()).toBe(true);
 }, 40000);
 
 test("the new player's allegiance resolved through the Named selector", async () => {
