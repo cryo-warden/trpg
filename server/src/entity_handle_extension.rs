@@ -458,6 +458,19 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     fn can_target_other(&self, other_entity_id: u64, action_id: ActionId) -> bool {
         let e = self.to_handle();
         if let Some(a) = e.ecs().db.actions().id().find(action_id) {
+            // Actor-side requirements gate EVERY act — essential for the
+            // offered and derived actions, which never pass through the
+            // known-actions derivation that used to filter on them (a
+            // small taker can be denied a huge chest by a size floor).
+            // Checked only once the total has DERIVED: an entity whose
+            // stats pipeline has not run yet (act can arrive before the
+            // first tick) must not read as all-zero and refuse its
+            // opening move.
+            if let Some(total) = e.total_stat_block() {
+                if !total.stat_block.meets(&a.requirements) {
+                    return false;
+                }
+            }
             let o = e.ecs().find(other_entity_id);
             // TODO Add same-location check as a separate function, which is also used to validate individual effects before they're resolved.
             match a.action_type {

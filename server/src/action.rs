@@ -29,6 +29,28 @@ pub enum ActionType {
     Interact,
 }
 
+/// Item-verb actions the ENGINE must find (never by name-sniffing): the
+/// DERIVED offers — take, drop, equip, unequip, eat are computed from a
+/// target's components rather than known by actors. The push resolves
+/// each registered name and stores the id here, mirroring
+/// SpecialStanceKey. Public: the client derives the same offers per
+/// target from the same registry.
+#[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
+pub enum SpecialActionKey {
+    Take,
+    Drop,
+    Equip,
+    Unequip,
+    Eat,
+}
+
+#[table(accessor = special_actions, public)]
+pub struct SpecialAction {
+    #[primary_key]
+    pub key: SpecialActionKey,
+    pub action_id: ActionId,
+}
+
 #[table(accessor = actions, public)]
 #[derive(Debug, Clone)]
 pub struct Action {

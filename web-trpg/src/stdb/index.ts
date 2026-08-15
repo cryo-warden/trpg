@@ -122,6 +122,7 @@ import RelicsComponentsRow from "./relics_components_table";
 import RemainsComponentsRow from "./remains_components_table";
 import RespawnTimerComponentsRow from "./respawn_timer_components_table";
 import RolesRow from "./roles_table";
+import SpecialActionsRow from "./special_actions_table";
 import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
@@ -960,6 +961,17 @@ const tablesSchema = __schema({
       { name: 'roles_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, RolesRow),
+  special_actions: __table({
+    name: 'special_actions',
+    indexes: [
+      { accessor: 'key', name: 'special_actions_key_idx_btree', algorithm: 'btree', columns: [
+        'key',
+      ] },
+    ],
+    constraints: [
+      { name: 'special_actions_key_key', constraint: 'unique', columns: ['key'] },
+    ],
+  }, SpecialActionsRow),
   stance_loadouts_components: __table({
     name: 'stance_loadouts_components',
     indexes: [

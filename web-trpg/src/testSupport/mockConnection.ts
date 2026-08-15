@@ -231,6 +231,7 @@ export const stdbWrapper = (
       path_blocker_components: mockTable([]),
       offered_actions_components: mockTable([]),
       open_components: mockTable([]),
+      special_actions: mockTable([]),
       action_hotkeys_components: mockTable([]),
       appearance_features_components: mockTable([]),
       ...tables,

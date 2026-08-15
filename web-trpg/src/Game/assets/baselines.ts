@@ -17,12 +17,10 @@ export const BASELINES = {
     reach: 1,
     size: 0,
     morale: 5,
+    // The item verbs (take/drop/equip/unequip/eat) are NOT here: they
+    // are derived offers, computed from the target's components against
+    // the special-action registry — no body innately "knows" them.
     actionNames: [
-      "take",
-      "drop",
-      "equip",
-      "unequip",
-      "eat",
       "attune",
       "stand",
       "sit",
@@ -68,12 +66,10 @@ export const BASELINES = {
     reach: 1,
     size: 0,
     morale: 4,
+    // The item verbs (take/drop/equip/unequip/eat) are NOT here: they
+    // are derived offers, computed from the target's components against
+    // the special-action registry — no body innately "knows" them.
     actionNames: [
-      "take",
-      "drop",
-      "equip",
-      "unequip",
-      "eat",
       "attune",
       "stand",
       "sit",

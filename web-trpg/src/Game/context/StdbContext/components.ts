@@ -4,7 +4,7 @@ import { bitIsSet } from "../../domain/bitset";
 import { assetInstanceIsOn } from "../../domain/countedAssets";
 import { ActionId, EntityId } from "../../trpg";
 import { useMyAccountId } from "./account";
-import { useActionAssetOf } from "./assetLookup";
+import { useActionAssetOf, useSpecialActionIds } from "./assetLookup";
 import { RowType } from "./RowType";
 import { createUseTable } from "./useTable";
 import { RemoteTables, useTableData } from "./useTableData";
@@ -333,49 +333,78 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   const targetQuestItemFreshness = useQuestItemFreshness(focus);
   const targetOfferedActions = useOfferedActionsComponent(focus);
   const playerLocation = useLocationComponent(playerEntity);
-
-  return useMemo(
-    () =>
-      getActionOptions({
-        actionIds: actionsComponent?.actionIds ?? [],
-        actionAssetOf,
-        targetHasHp: !!targetHp,
-        targetHasPath: !!targetPath,
-        targetHasItem: !!targetItem,
-        targetCarriedByPlayer:
-          playerEntity != null &&
-          targetLocation?.locationEntityId === playerEntity,
-        targetIsEquipped,
-        targetHasCheckpointObject: !!targetCheckpointObject,
-        targetQuestItemFreshness,
-        targetOfferedActionIds: targetOfferedActions?.actionIds ?? [],
-        targetCoLocatedWithPlayer:
-          playerLocation != null &&
-          targetLocation != null &&
-          playerLocation.locationEntityId === targetLocation.locationEntityId,
-        playerEntity,
-        target: focus,
-        playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
-        targetAllegianceId: targetAllegiance?.allegianceEntityId ?? null,
-      }),
-    [
-      actionsComponent,
-      actionAssetOf,
-      playerEntity,
-      targetHp,
-      playerAllegiance,
-      targetAllegiance,
-      targetPath,
-      targetItem,
-      targetLocation,
-      targetCheckpointObject,
-      targetIsEquipped,
-      targetQuestItemFreshness,
-      targetOfferedActions,
-      playerLocation,
-      focus,
-    ],
+  const specialActionIds = useSpecialActionIds();
+  const actorTotal = useTotalStatBlockComponent(playerEntity);
+  // Take reach: the target's own container, when it has one, must be
+  // the player's room — or an OPEN container standing in it.
+  const targetHolder = useLocationComponent(
+    targetLocation?.locationEntityId ?? null,
   );
+  const targetHolderOpen = useTableData(
+    "open_components",
+    (table) =>
+      targetLocation == null
+        ? false
+        : [...table.iter()].some(
+            (row) => row.entityId === targetLocation.locationEntityId,
+          ),
+    [targetLocation],
+  );
+
+  return useMemo(() => {
+    const targetCoLocatedWithPlayer =
+      playerLocation != null &&
+      targetLocation != null &&
+      playerLocation.locationEntityId === targetLocation.locationEntityId;
+    const targetInOpenContainerHere =
+      targetHolderOpen &&
+      playerLocation != null &&
+      targetHolder != null &&
+      targetHolder.locationEntityId === playerLocation.locationEntityId;
+    return getActionOptions({
+      actionIds: actionsComponent?.actionIds ?? [],
+      actionAssetOf,
+      targetHasHp: !!targetHp,
+      targetHasPath: !!targetPath,
+      targetHasItem: !!targetItem,
+      targetCarriedByPlayer:
+        playerEntity != null &&
+        targetLocation?.locationEntityId === playerEntity,
+      targetIsEquipped,
+      targetHasCheckpointObject: !!targetCheckpointObject,
+      targetQuestItemFreshness,
+      targetOfferedActionIds: targetOfferedActions?.actionIds ?? [],
+      targetCoLocatedWithPlayer,
+      specialActionIds,
+      targetWithinTakeReach:
+        targetCoLocatedWithPlayer || targetInOpenContainerHere,
+      actorStats: actorTotal?.statBlock ?? null,
+      playerEntity,
+      target: focus,
+      playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
+      targetAllegianceId: targetAllegiance?.allegianceEntityId ?? null,
+    });
+  }, [
+    actionsComponent,
+    actionAssetOf,
+    playerEntity,
+    targetHp,
+    playerAllegiance,
+    targetAllegiance,
+    targetPath,
+    targetItem,
+    targetLocation,
+    targetCheckpointObject,
+    targetIsEquipped,
+    targetQuestItemFreshness,
+    targetOfferedActions,
+    playerLocation,
+    specialActionIds,
+    actorTotal,
+    targetHolder,
+    targetHolderOpen,
+    focus,
+  ]);
 };
 
 const useThreatInputs = () => {

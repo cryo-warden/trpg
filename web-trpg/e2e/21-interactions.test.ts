@@ -7,10 +7,12 @@ import { claimAdmin } from "./admin";
 import { interactionsPack } from "./testAssets";
 
 // Phase 21: offered interactions. Containers offer their own verbs to
-// anyone beside them — the player knows only take, yet opens the chest
+// anyone beside them — the player knows NO item verbs at all (take
+// derives from the special-action registry), yet opens the chest
 // (contents revealed, takeable in place, intact) and dumps the sack
 // (contents spill to the floor, container unharmed). An interaction a
-// container does NOT offer is refused at queue time.
+// container does NOT offer is refused at queue time — and so is an
+// offer whose actor-side requirements the player cannot meet.
 
 let admin: DbConnection;
 let player: DbConnection;
@@ -57,6 +59,7 @@ beforeAll(async () => {
       "SELECT * FROM open_components",
       "SELECT * FROM offered_actions_components",
       "SELECT * FROM player_controller_components",
+      "SELECT * FROM total_stat_block_components",
       "SELECT * FROM accounts",
     ]);
   await player.reducers.createAccount({ name: "looter" });
@@ -106,6 +109,26 @@ test("a closed container keeps take out of reach", async () => {
     player.reducers.act({
       actionId: actionIdByName("test_take"),
       targetEntityId: chestCookieId,
+    }),
+  ).rejects.toThrow(/Invalid target/);
+});
+
+test("an offer beyond the actor's strength is refused: requirements gate acts too", async () => {
+  // The gate reads the DERIVED total, so wait for the stats pipeline
+  // first (before it derives, requirements deliberately go unchecked).
+  await waitFor(
+    () =>
+      [...player.db.total_stat_block_components.iter()].some(
+        (row) => row.entityId === playerEntityId,
+      ),
+    30000,
+  );
+  // The chest OFFERS test_heave, but its size-5 requirement is beyond
+  // any looter: offered does not mean able.
+  await expect(
+    player.reducers.act({
+      actionId: actionIdByName("test_heave"),
+      targetEntityId: chestEntityId,
     }),
   ).rejects.toThrow(/Invalid target/);
 });

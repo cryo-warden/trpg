@@ -4,7 +4,7 @@ use ecs::WithEcs;
 use spacetimedb::{reducer, table, ReducerContext, SpacetimeType, Table};
 
 use crate::{
-    action::{action_rounds, actions, Action, ActionRound},
+    action::{action_rounds, actions, special_actions, Action, ActionRound},
     appearance::{appearance_features, AppearanceFeature},
     asset::{
         types::{
@@ -91,6 +91,15 @@ pub struct AssetPack {
     cowering_stance_name: Option<String>,
     /// Which stance a dive lands in; same omission semantics.
     prone_stance_name: Option<String>,
+    /// The DERIVED item verbs: which authored action serves each role
+    /// (take/drop/equip/unequip/eat). Registered, never sniffed from
+    /// effects; a pack without item interaction may omit any of them
+    /// (the offer then simply never derives).
+    take_action_name: Option<String>,
+    drop_action_name: Option<String>,
+    equip_action_name: Option<String>,
+    unequip_action_name: Option<String>,
+    eat_action_name: Option<String>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
@@ -723,6 +732,42 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 ctx.db.special_stances().key().update(row);
             } else {
                 ctx.db.special_stances().insert(row);
+            }
+        }
+    }
+
+    let special_action_entries = [
+        (
+            crate::action::SpecialActionKey::Take,
+            asset_pack.take_action_name,
+        ),
+        (
+            crate::action::SpecialActionKey::Drop,
+            asset_pack.drop_action_name,
+        ),
+        (
+            crate::action::SpecialActionKey::Equip,
+            asset_pack.equip_action_name,
+        ),
+        (
+            crate::action::SpecialActionKey::Unequip,
+            asset_pack.unequip_action_name,
+        ),
+        (
+            crate::action::SpecialActionKey::Eat,
+            asset_pack.eat_action_name,
+        ),
+    ];
+    for (key, name) in special_action_entries {
+        if let Some(name) = name {
+            let row = crate::action::SpecialAction {
+                key: key.clone(),
+                action_id: resolve_name(&maps.actions, "action", &name)?,
+            };
+            if ctx.db.special_actions().key().find(key).is_some() {
+                ctx.db.special_actions().key().update(row);
+            } else {
+                ctx.db.special_actions().insert(row);
             }
         }
     }

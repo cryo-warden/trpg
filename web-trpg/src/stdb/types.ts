@@ -294,6 +294,11 @@ export const AssetPack = __t.object("AssetPack", {
   },
   coweringStanceName: __t.option(__t.string()),
   proneStanceName: __t.option(__t.string()),
+  takeActionName: __t.option(__t.string()),
+  dropActionName: __t.option(__t.string()),
+  equipActionName: __t.option(__t.string()),
+  unequipActionName: __t.option(__t.string()),
+  eatActionName: __t.option(__t.string()),
   get encounterBlobs() {
     return __t.array(NamedEntityBlobAsset);
   },
@@ -1454,6 +1459,24 @@ export const Role = __t.object("Role", {
   name: __t.string(),
 });
 export type Role = __Infer<typeof Role>;
+
+export const SpecialAction = __t.object("SpecialAction", {
+  get key() {
+    return SpecialActionKey;
+  },
+  actionId: __t.u32(),
+});
+export type SpecialAction = __Infer<typeof SpecialAction>;
+
+// The tagged union or sum type for the algebraic type `SpecialActionKey`.
+export const SpecialActionKey = __t.enum("SpecialActionKey", {
+  Take: __t.unit(),
+  Drop: __t.unit(),
+  Equip: __t.unit(),
+  Unequip: __t.unit(),
+  Eat: __t.unit(),
+});
+export type SpecialActionKey = __Infer<typeof SpecialActionKey>;
 
 export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
   get key() {

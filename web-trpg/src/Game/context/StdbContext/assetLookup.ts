@@ -29,7 +29,37 @@ export const assetQueries = [
   "select * from appearance_features",
   "select * from stances",
   "select * from quests",
+  "select * from special_actions",
 ];
+
+/** The special-action registry: which authored action serves each derived
+ * item-verb role (take/drop/equip/unequip/eat). Null when a pack never
+ * registered the role — that offer simply never derives. */
+export type SpecialActionIds = {
+  take: ActionId | null;
+  drop: ActionId | null;
+  equip: ActionId | null;
+  unequip: ActionId | null;
+  eat: ActionId | null;
+};
+
+export const useSpecialActionIds = (): SpecialActionIds =>
+  useTableData(
+    "special_actions",
+    (table) => {
+      const byKey = new Map(
+        [...table.iter()].map((row) => [row.key.tag, row.actionId]),
+      );
+      return {
+        take: byKey.get("Take") ?? null,
+        drop: byKey.get("Drop") ?? null,
+        equip: byKey.get("Equip") ?? null,
+        unequip: byKey.get("Unequip") ?? null,
+        eat: byKey.get("Eat") ?? null,
+      };
+    },
+    [],
+  );
 
 /** The subscribed stance rows (id + name), ordered by id. */
 export const useStanceRows = (): { id: number; name: string }[] =>

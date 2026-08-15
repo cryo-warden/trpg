@@ -55,6 +55,23 @@ export const totalStatSummary = (block: IntStats): string =>
     .map(({ key, value }) => `${key} ${value}`)
     .join(", ");
 
+/** Explicitly named minimum thresholds over the int stats — the client
+ * mirror of the server's StatRequirements semantics: an absent entry
+ * means "this stat is not checked", never inferred from zero. */
+export type IntStatRequirements = Partial<Record<StatKey, number | undefined>>;
+
+/** Does the actor's stat context meet every NAMED threshold? Mirrors the
+ * server's act-time gate so offered and derived options never show an
+ * action the server would refuse (null stats read as all-zero). */
+export const meetsRequirements = (
+  stats: IntStats | null,
+  requirements: IntStatRequirements,
+): boolean =>
+  STAT_KEYS.every((key) => {
+    const threshold = requirements[key];
+    return threshold == null || (stats?.[key] ?? 0) >= threshold;
+  });
+
 /** Sum blocks into one plain int-stat record (id vecs ignored): the
  * combined contribution of a gear set. */
 export const summedStats = (blocks: readonly IntStats[]): IntStats => {

@@ -1,5 +1,16 @@
 import { ActionAsset } from "../../stdb/types";
 import { ActionId, EntityId } from "../trpg";
+import { IntStats, meetsRequirements } from "./statSummary";
+
+/** The special-action registry roles (see assetLookup.useSpecialActionIds):
+ * null roles never derive an offer. */
+export type SpecialActionIdsInput = {
+  take: ActionId | null;
+  drop: ActionId | null;
+  equip: ActionId | null;
+  unequip: ActionId | null;
+  eat: ActionId | null;
+};
 
 /**
  * Pure, framework-free client logic for deciding which actions a player may
@@ -58,11 +69,25 @@ export type ActionOptionInputs = AllegianceInputs & {
   /** The target stands in the player's room (offered actions reach no
    * further than arm's length). */
   targetCoLocatedWithPlayer: boolean;
+  /** The derived item verbs: take/drop/equip/unequip/eat are OFFERS
+   * computed from the target's components against this registry — no
+   * actor knows them innately. */
+  specialActionIds: SpecialActionIdsInput;
+  /** The target is takeable from here: in the player's room, or inside
+   * an OPEN container standing in it (never something already carried). */
+  targetWithinTakeReach: boolean;
+  /** The player's total stats, for the requirements mirror on offered
+   * and derived options (the server enforces the same gate at act time).
+   * Null reads as all-zero. */
+  actorStats: IntStats | null;
 };
 
 /** The player's actions valid against the target, plus whatever the
- * target itself offers: interactions come from the OBJECT, so the player
- * needs no knowledge of them — only to stand beside it. */
+ * target offers: authored offers (its offered_actions component) and the
+ * DERIVED item verbs (take/drop/equip/unequip/eat, computed from the
+ * target's components against the special-action registry). Offers come
+ * from the OBJECT — the player needs no knowledge of them — but the
+ * actor-side requirements gate mirrors the server's act-time check. */
 export const getActionOptions = ({
   actionIds,
   actionAssetOf,
@@ -75,22 +100,64 @@ export const getActionOptions = ({
   targetQuestItemFreshness,
   targetOfferedActionIds,
   targetCoLocatedWithPlayer,
+  specialActionIds,
+  targetWithinTakeReach,
+  actorStats,
   ...allegiance
 }: ActionOptionInputs): ActionId[] => {
   const ally = isAlly(allegiance);
 
+  // The derived offers: which item verbs THIS target extends to the
+  // player right now. The same predicates the server's targeting arms
+  // validate — duplicated here on purpose, so options and act agree.
+  const derived: (ActionId | null)[] = [];
+  if (targetHasItem) {
+    const carriedGear =
+      targetCarriedByPlayer && targetQuestItemFreshness == null;
+    if (!targetCarriedByPlayer && targetWithinTakeReach) {
+      derived.push(specialActionIds.take);
+    }
+    if (targetCarriedByPlayer) {
+      derived.push(specialActionIds.drop);
+    }
+    if (carriedGear) {
+      derived.push(
+        targetIsEquipped ? specialActionIds.unequip : specialActionIds.equip,
+      );
+    }
+    if (targetCarriedByPlayer && targetQuestItemFreshness === "fresh") {
+      derived.push(specialActionIds.eat);
+    }
+  }
+  const derivedSet = new Set(
+    derived.filter((id): id is ActionId => id != null),
+  );
+
   const candidates = [
     ...actionIds,
-    ...targetOfferedActionIds.filter((id) => !actionIds.includes(id)),
+    ...[...new Set([...targetOfferedActionIds, ...derivedSet])].filter(
+      (id) => !actionIds.includes(id),
+    ),
   ];
   return candidates.filter((id) => {
     const action = actionAssetOf(id);
     if (!action) return false;
-    // An id the player doesn't know is a candidate only as the target's
-    // offer, and offers carry Interact actions alone — a stray non-
-    // Interact id in an offered list never leaks into the options.
-    if (!actionIds.includes(id) && action.actionType.tag !== "Interact") {
-      return false;
+    if (!actionIds.includes(id)) {
+      // An offer the actor cannot meet never shows (the server refuses
+      // it at act time with the same rule).
+      if (!meetsRequirements(actorStats, action.requirements)) {
+        return false;
+      }
+      // A derived offer's predicate already held above.
+      if (derivedSet.has(id)) {
+        return true;
+      }
+      // Otherwise the id is a candidate only as the target's AUTHORED
+      // offer, and those carry Interact actions alone — a stray
+      // non-Interact id in an offered list never leaks in.
+      if (action.actionType.tag !== "Interact") {
+        return false;
+      }
     }
 
     switch (action.actionType.tag) {

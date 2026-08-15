@@ -50,6 +50,11 @@ const emptyPack = (): AssetPack => ({
   quests: [],
   coweringStanceName: undefined,
   proneStanceName: undefined,
+  takeActionName: undefined,
+  dropActionName: undefined,
+  equipActionName: undefined,
+  unequipActionName: undefined,
+  eatActionName: undefined,
   encounterBlobs: [],
   encounters: [],
   locationMapThemes: [],
@@ -1006,18 +1011,30 @@ export const interactionsPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Dump" }], interruptible: false }],
       },
     },
+    // Offered by the chest but beyond any looter: the actor-requirements
+    // gate refuses it at queue time (size 5 against a size-0 body).
+    {
+      name: "test_heave",
+      value: {
+        actionType: { tag: "Interact" },
+        requirements: requirements({ size: 5 }),
+        rounds: [{ effects: [{ tag: "Open" }], interruptible: false }],
+      },
+    },
   ],
+  // The looter KNOWS no item verbs: take derives from the registry.
+  takeActionName: "test_take",
   baselines: [
     {
       name: "test_looter",
-      value: statBlock({ mhp: 5, hand: 2, actionNames: ["test_take"] }),
+      value: statBlock({ mhp: 5, hand: 2 }),
     },
   ],
   namedInstantiateEntityBlobs: [
     {
       name: "test_chest",
       value: blob({
-        offeredActionNames: ["test_open"],
+        offeredActionNames: ["test_open", "test_heave"],
         hp: {
           hp: 2,
           mhp: 2,
@@ -1223,6 +1240,10 @@ export const bossPack = (): AssetPack => ({
       },
     },
   ],
+  // The item verbs derive from the registry — the challenger knows only
+  // how to walk and fight.
+  takeActionName: "test_take",
+  eatActionName: "test_eat",
   baselines: [
     {
       name: "test_challenger",
@@ -1230,7 +1251,7 @@ export const bossPack = (): AssetPack => ({
         mhp: 10,
         gait: 2,
         attack: 0,
-        actionNames: ["test_move", "test_strike", "test_take", "test_eat"],
+        actionNames: ["test_move", "test_strike"],
       }),
     },
     {

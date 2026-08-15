@@ -36,6 +36,14 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       quests: namedPairs(QUESTS),
       coweringStanceName: "cowering",
       proneStanceName: "prone",
+      // The derived item verbs: which authored action serves each role.
+      // No baseline grants these — targets offer them (see the
+      // special-action registry and the client's option derivation).
+      takeActionName: "take",
+      dropActionName: "drop",
+      equipActionName: "equip",
+      unequipActionName: "unequip",
+      eatActionName: "eat",
       encounterBlobs: namedPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),
       locationMapThemes: namedPairs(LOCATION_MAP_THEMES),

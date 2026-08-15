@@ -58,6 +58,13 @@ const attackId = actionIdOf("bop");
 const buffId = actionIdOf("divine_heal");
 const moveId = actionIdOf("move");
 const allIds = [attackId, buffId, moveId];
+const NO_SPECIAL_ACTIONS = {
+  take: null,
+  drop: null,
+  equip: null,
+  unequip: null,
+  eat: null,
+};
 const enemy = {
   playerEntity: 1n,
   target: 2n,
@@ -65,6 +72,9 @@ const enemy = {
   targetAllegianceId: 20n,
   targetOfferedActionIds: [],
   targetCoLocatedWithPlayer: false,
+  specialActionIds: NO_SPECIAL_ACTIONS,
+  targetWithinTakeReach: false,
+  actorStats: null,
 };
 const ally = {
   playerEntity: 1n,
@@ -73,6 +83,9 @@ const ally = {
   targetAllegianceId: 10n,
   targetOfferedActionIds: [],
   targetCoLocatedWithPlayer: false,
+  specialActionIds: NO_SPECIAL_ACTIONS,
+  targetWithinTakeReach: false,
+  actorStats: null,
 };
 
 test("getActionOptions offers attacks and moves against a hostile, reachable target", () => {
@@ -305,6 +318,106 @@ test("a stray non-Interact id in an offered list never leaks into the options", 
       targetCoLocatedWithPlayer: true,
     }),
   ).toEqual([]);
+});
+
+const SPECIAL_ACTIONS = {
+  take: actionIdOf("take"),
+  drop: actionIdOf("drop"),
+  equip: actionIdOf("equip"),
+  unequip: actionIdOf("unequip"),
+  eat: actionIdOf("eat"),
+};
+
+test("item verbs DERIVE from the target: no actor knowledge required", () => {
+  const floorItem = {
+    ...enemy,
+    // The player knows NOTHING.
+    actionIds: [],
+    actionAssetOf,
+    targetHasHp: false,
+    targetHasPath: false,
+    targetHasItem: true,
+    targetCarriedByPlayer: false,
+    targetIsEquipped: false,
+    targetHasCheckpointObject: false,
+    targetQuestItemFreshness: null,
+    specialActionIds: SPECIAL_ACTIONS,
+    targetWithinTakeReach: true,
+    targetCoLocatedWithPlayer: true,
+  };
+  // On the floor within reach: take, nothing else.
+  expect(getActionOptions(floorItem)).toEqual([SPECIAL_ACTIONS.take]);
+  // Out of reach (a closed container's insides): nothing.
+  expect(
+    getActionOptions({ ...floorItem, targetWithinTakeReach: false }),
+  ).toEqual([]);
+  // Carried gear, pocketed: drop + equip.
+  expect(
+    getActionOptions({
+      ...floorItem,
+      targetCarriedByPlayer: true,
+      targetCoLocatedWithPlayer: false,
+      targetWithinTakeReach: false,
+    }),
+  ).toEqual([SPECIAL_ACTIONS.drop, SPECIAL_ACTIONS.equip]);
+  // Carried gear, equipped: drop + unequip.
+  expect(
+    getActionOptions({
+      ...floorItem,
+      targetCarriedByPlayer: true,
+      targetIsEquipped: true,
+      targetCoLocatedWithPlayer: false,
+      targetWithinTakeReach: false,
+    }),
+  ).toEqual([SPECIAL_ACTIONS.drop, SPECIAL_ACTIONS.unequip]);
+  // A carried FRESH cookie: drop + eat (food, never equip).
+  expect(
+    getActionOptions({
+      ...floorItem,
+      targetCarriedByPlayer: true,
+      targetQuestItemFreshness: "fresh" as const,
+      targetCoLocatedWithPlayer: false,
+      targetWithinTakeReach: false,
+    }),
+  ).toEqual([SPECIAL_ACTIONS.drop, SPECIAL_ACTIONS.eat]);
+  // A stinky one: drop alone.
+  expect(
+    getActionOptions({
+      ...floorItem,
+      targetCarriedByPlayer: true,
+      targetQuestItemFreshness: "stinky" as const,
+      targetCoLocatedWithPlayer: false,
+      targetWithinTakeReach: false,
+    }),
+  ).toEqual([SPECIAL_ACTIONS.drop]);
+});
+
+test("an unmet actor requirement hides a derived or offered option", () => {
+  // A requirements-carrying asset stands in as the registered take: move
+  // requires gait 1.
+  const gatedTake = actionIdOf("move");
+  const floorItem = {
+    ...enemy,
+    actionIds: [],
+    actionAssetOf,
+    targetHasHp: false,
+    targetHasPath: false,
+    targetHasItem: true,
+    targetCarriedByPlayer: false,
+    targetIsEquipped: false,
+    targetHasCheckpointObject: false,
+    targetQuestItemFreshness: null,
+    specialActionIds: { ...NO_SPECIAL_ACTIONS, take: gatedTake },
+    targetWithinTakeReach: true,
+    targetCoLocatedWithPlayer: true,
+  };
+  // gait 0 fails the shuffle's gait 1 requirement; gait 1 meets it.
+  expect(getActionOptions({ ...floorItem, actorStats: { gait: 0 } })).toEqual(
+    [],
+  );
+  expect(getActionOptions({ ...floorItem, actorStats: { gait: 1 } })).toEqual([
+    gatedTake,
+  ]);
 });
 
 test("getActionOptions drops unknown action ids", () => {
