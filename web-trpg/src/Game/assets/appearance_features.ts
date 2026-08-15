@@ -99,6 +99,10 @@ export const APPEARANCE_FEATURES = {
   room: noun("room", 10000),
   enclosure: noun("enclosure", 10000),
   tent: noun("tent", 10000),
+  // Encampment scenery: a training camp reads as a camp, not a rockfall.
+  campfire: noun("campfire", 10000),
+  bedroll: noun("bedroll", 10000),
+  banner: noun("banner", 10000),
   chamber: noun("chamber", 10000),
   dome: noun("dome", 10000),
   cavern: noun("cavern", 10000),

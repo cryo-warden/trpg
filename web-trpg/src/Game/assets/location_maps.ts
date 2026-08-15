@@ -126,8 +126,11 @@ export const LOCATION_MAP_THEMES = {
     // loadout menu.
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["rock"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["stone"] }) },
+        // Camp scenery, not cave rubble: the exterior training ground reads
+        // as a camp.
+        { weight: 5, blob: blob({ appearanceFeatureNames: ["campfire"] }) },
+        { weight: 3, blob: blob({ appearanceFeatureNames: ["bedroll"] }) },
+        { weight: 2, blob: blob({ appearanceFeatureNames: ["banner"] }) },
         {
           weight: 4,
           blob: blob({
