@@ -92,6 +92,13 @@ export const ACTIONS = {
     requirements: requirements({ gait: 1 }),
     rounds: [interruptibleRound(), interruptibleRound(), round(Move)],
   },
+  // The chasm's far side: a rock wall you climb back UP. Same cost as the
+  // descent — the opposite verb for the opposite direction.
+  climb_up: {
+    actionType: { tag: "Move" },
+    requirements: requirements({ gait: 1 }),
+    rounds: [interruptibleRound(), interruptibleRound(), round(Move)],
+  },
   // The plain heal: restores 1 + the healer's focus (healing scales by
   // focus exactly as attacks scale by attack).
   heal: {
@@ -305,6 +312,10 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   climb_down: {
     displayName: "Climb Down",
     beginTemplate: "{0:sentence:subject} started a careful climb down {1:object}.",
+  },
+  climb_up: {
+    displayName: "Climb Up",
+    beginTemplate: "{0:sentence:subject} started a careful climb up {1:object}.",
   },
   slime_spray: {
     displayName: "Slime Spray",

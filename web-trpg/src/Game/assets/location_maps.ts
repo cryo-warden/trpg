@@ -247,7 +247,7 @@ export const LOCATION_MAP_THEMES = {
           weight: 2,
           pair: pathPair(
             pathBlob(["chasm"], ["climb_down"]),
-            pathBlob(["rock_wall"], ["climb_down"]),
+            pathBlob(["rock_wall"], ["climb_up"]),
           ),
         },
         { weight: 2, pair: pathPair(pathBlob(["crack"], ["squeeze"])) },
