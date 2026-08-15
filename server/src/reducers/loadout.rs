@@ -116,10 +116,10 @@ pub fn set_relics(ctx: &ReducerContext, relic_ids: Vec<u32>) -> Result<(), Strin
     Ok(())
 }
 
-/// The GEARED context: base parts rebuilt explicitly (baseline + traits
-/// + worn armor/relics + the given armaments) — never the current
-/// equipment cache, and no stance: the base every stance compares to.
-/// Its action_ids are the DEFAULT bar's candidate pool.
+/// The GEARED context: base parts rebuilt explicitly (baseline plus
+/// traits, worn armor/relics, and the given armaments) — never the
+/// current equipment cache, and no stance: the base every stance
+/// compares to. Its action_ids are the DEFAULT bar's candidate pool.
 fn geared_stat_block(
     ctx: &ReducerContext,
     player_entity_id: u64,
