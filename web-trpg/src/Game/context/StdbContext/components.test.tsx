@@ -17,6 +17,7 @@ import {
   useLocation,
   useLocationEntities,
   usePlayerEntity,
+  useVisibleOuterEntities,
 } from "./components";
 
 const attackId = actionIdOf("bop");
@@ -163,6 +164,38 @@ test("useActionOptions keeps only actions valid against the target", () => {
   expect(
     renderHook(() => useActionOptions(target), { wrapper }).result.current,
   ).toEqual([attackId, moveId]);
+});
+
+test("a surface room sees the sky through the surface chain; inside cuts it", () => {
+  const identity = {} as Identity;
+  // Room 10 (surface) sits in the outdoors 50 (surface), which sits on
+  // the world 60. The sky 51 hangs in the outdoors, a star 61 in the
+  // world; sibling room 11 also sits in the outdoors but is a MAP room.
+  const tables = {
+    surface_components: mockTable([{ entityId: 10n }, { entityId: 50n }]),
+    location_components: mockTable([
+      { entityId: 10n, locationEntityId: 50n },
+      { entityId: 11n, locationEntityId: 50n },
+      { entityId: 51n, locationEntityId: 50n },
+      { entityId: 50n, locationEntityId: 60n },
+      { entityId: 61n, locationEntityId: 60n },
+    ]),
+    location_map_components: mockTable([
+      { entityId: 10n, locationMapEntityId: 99n },
+      { entityId: 11n, locationMapEntityId: 99n },
+    ]),
+  };
+  const outdoors = renderHook(() => useVisibleOuterEntities(10n), {
+    wrapper: stdbWrapper(tables, identity),
+  });
+  // The sky and the star show; the sibling map room does not.
+  expect(outdoors.result.current).toEqual([51n, 61n]);
+
+  // An INSIDE room (no surface flag) sees nothing beyond itself.
+  const inside = renderHook(() => useVisibleOuterEntities(11n), {
+    wrapper: stdbWrapper(tables, identity),
+  });
+  expect(inside.result.current).toEqual([]);
 });
 
 test("createUseTable hooks expose every row of a table", () => {

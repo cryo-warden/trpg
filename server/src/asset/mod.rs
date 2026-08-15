@@ -416,6 +416,7 @@ fn resolve_entity_blob(
         action_queue_dirty: None,
         // Runtime state: the death system's one-shot latch.
         perished: None,
+        surface: author.surface,
         // Stamped by the quest room-claim application, never authored.
         defeat_drop: None,
         location_map: None,

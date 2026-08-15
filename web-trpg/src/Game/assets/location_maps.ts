@@ -83,6 +83,17 @@ const pathPair = (
   backward: EntityBlobAsset = forward,
 ) => ({ forward, backward });
 
+/** An OUTDOOR room: a surface location nested into the world's open air,
+ * so the sky (and anything else out there) shows through the surface
+ * chain. Tents, caves, halls, and crypts stay plain — inside cuts the
+ * chain. */
+const outdoorRoom = (appearanceFeatureNames: string[]): EntityBlobAsset =>
+  blob({
+    appearanceFeatureNames,
+    surface: {},
+    location: { locationEntityId: { tag: "Named", value: "world_surface" } },
+  });
+
 // Path guards: the same breakable shape, standing in for a blocked way.
 const boulderGuard = container(["boulder"], ["rubble"]);
 const barricadeGuard = container(["barricade"], ["scrap_wood"]);
@@ -194,7 +205,7 @@ export const LOCATION_MAP_THEMES = {
     },
     roomsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["enclosure"] }) },
+        { weight: 5, blob: outdoorRoom(["enclosure"]) },
         { weight: 4, blob: blob({ appearanceFeatureNames: ["tent"] }) },
       ],
     },
@@ -281,8 +292,8 @@ export const LOCATION_MAP_THEMES = {
     },
     roomsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["clearing"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["grove"] }) },
+        { weight: 5, blob: outdoorRoom(["clearing"]) },
+        { weight: 3, blob: outdoorRoom(["grove"]) },
       ],
     },
     checkpointsSelector: {
@@ -318,9 +329,9 @@ export const LOCATION_MAP_THEMES = {
     },
     roomsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["grove"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["thicket"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["clearing"] }) },
+        { weight: 5, blob: outdoorRoom(["grove"]) },
+        { weight: 4, blob: outdoorRoom(["thicket"]) },
+        { weight: 2, blob: outdoorRoom(["clearing"]) },
       ],
     },
     checkpointsSelector: {
@@ -424,7 +435,7 @@ export const LOCATION_MAP_THEMES = {
     roomsSelector: {
       selections: [
         { weight: 5, blob: blob({ appearanceFeatureNames: ["hall"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["courtyard"] }) },
+        { weight: 3, blob: outdoorRoom(["courtyard"]) },
         { weight: 2, blob: blob({ appearanceFeatureNames: ["crypt"] }) },
       ],
     },

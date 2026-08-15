@@ -186,6 +186,12 @@ entity!(
       // gate on their respawn timer instead (revival must not be
       // blocked by a permanent flag).
       perished in perished_components,
+      // A SURFACE location: standing in it, you see (and are seen from)
+      // whatever shares its own location, recursively through surface
+      // parents — outdoor rooms nest into the outdoors, and one sky
+      // entity shows from everywhere outside. Absent = INSIDE: the
+      // visibility chain cuts at caves and buildings.
+      surface in surface_components,
     )]
     struct FlagComponent {}
 

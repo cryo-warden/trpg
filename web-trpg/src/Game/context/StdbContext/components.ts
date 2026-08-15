@@ -69,6 +69,7 @@ export const componentQueries = [
   "select * from path_blocker_components",
   "select * from offered_actions_components",
   "select * from open_components",
+  "select * from surface_components",
 ];
 
 const usePinnedActionsComponent = createUseComponent(
@@ -175,6 +176,67 @@ const useCheckpointObjectComponent = createUseComponent(
 const useOfferedActionsComponent = createUseComponent(
   "offered_actions_components",
 );
+
+/** What a SURFACE location's occupants see beyond their room: entities
+ * sharing the location OF the location, recursively while each parent
+ * carries the surface flag — the outdoors, and the one sky over it.
+ * INSIDE locations (no flag) cut the chain immediately. Sibling ROOMS
+ * (location_map carriers) and the chain's own containers are excluded:
+ * this surfaces the sky, not the whole map. */
+export const useVisibleOuterEntities = (
+  roomEntityId: EntityId | null,
+): EntityId[] => {
+  const surfaceRows = useTableData(
+    "surface_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  const locationRows = useTableData(
+    "location_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  const roomRows = useTableData(
+    "location_map_components",
+    (table) => [...table.iter()],
+    [],
+  );
+  return useMemo(() => {
+    if (roomEntityId == null) {
+      return [];
+    }
+    const surfaces = new Set(surfaceRows.map((row) => row.entityId));
+    const locationOf = new Map(
+      locationRows.map((row) => [row.entityId, row.locationEntityId]),
+    );
+    const mapRooms = new Set(roomRows.map((row) => row.entityId));
+    const visible: EntityId[] = [];
+    const chain = new Set<EntityId>([roomEntityId]);
+    let current = roomEntityId;
+    // Bounded walk: a containment cycle must not hang the client.
+    for (let depth = 0; depth < 8; depth++) {
+      if (!surfaces.has(current)) {
+        break;
+      }
+      const parent = locationOf.get(current);
+      if (parent == null || chain.has(parent)) {
+        break;
+      }
+      chain.add(parent);
+      for (const row of locationRows) {
+        if (
+          row.locationEntityId === parent &&
+          !chain.has(row.entityId) &&
+          !mapRooms.has(row.entityId)
+        ) {
+          visible.push(row.entityId);
+        }
+      }
+      current = parent;
+    }
+    return visible;
+  }, [roomEntityId, surfaceRows, locationRows, roomRows]);
+};
 
 /** The AUTHORED offers of an entity (its offered_actions component) —
  * what the Activate pseudo-slot fires for the focus. */

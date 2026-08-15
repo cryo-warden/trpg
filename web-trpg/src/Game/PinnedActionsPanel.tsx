@@ -7,19 +7,25 @@ import {
   useOfferedActionIdsOf,
   usePinnedActions,
 } from "./context/StdbContext/components";
+import {
+  useActionAssetOf,
+  useSpecialActionIds,
+} from "./context/StdbContext/assetLookup";
 import { useFocus } from "./context/FocusContext";
 import { ACTION_HOTKEYS, actionHotkeyFor } from "./domain/hotkeys";
 import "./PinnedActionsPanel.css";
 
 /**
- * THE action bar. Slot 0 is ACTIVATE — a pseudo-action that fires the
- * focus's own custom offer (a chest's open, a crack's squeeze, a path's
- * move verb), disabled when the focus offers nothing valid. Then the
- * CONFIGURED slots: every pinned action holds its position and hotkey
- * even while invalid (visibly disabled — stable keys over shifting
- * lists). Then every OTHER currently-valid action against the focus,
- * offered and derived verbs included, in option order. Hotkeys run down
- * this final rendered list on the right home row.
+ * THE action bar. Slot 0 is ACTIVATE — a pseudo-action resolving to the
+ * focus's most natural verb: its own authored offer first (a chest's
+ * open, a crack's squeeze), then by precedence Attune, Equip, Eat,
+ * Take, Unequip, Drop; disabled when nothing applies. Then the
+ * CONFIGURED slots, keyed from the row's start: every pinned action
+ * holds its position and hotkey even while invalid (visibly disabled —
+ * stable keys over shifting lists). DYNAMIC actions — every other
+ * currently-valid option, offered and movement verbs included — fill
+ * from the row's END backwards, so each keeps its key regardless of
+ * how many configured actions occupy the start.
  */
 export const PinnedActionsPanel = (
   props: ComponentPropsWithRef<typeof Panel>,
@@ -28,21 +34,36 @@ export const PinnedActionsPanel = (
   const focus = useFocus();
   const validOptions = useActionOptions(focus);
   const focusOfferedIds = useOfferedActionIdsOf(focus);
+  const specialActionIds = useSpecialActionIds();
+  const actionAssetOf = useActionAssetOf();
 
-  // The focus's CUSTOM offer: its first authored offered action that is
-  // valid right now (derived verbs live in the registry, not here).
-  const activateActionId = useMemo(
-    () => focusOfferedIds.find((id) => validOptions.includes(id)) ?? null,
-    [focusOfferedIds, validOptions],
-  );
+  const activateActionId = useMemo(() => {
+    // The focus's own authored offers lead; then the common verbs by
+    // the fixed precedence. First valid wins.
+    const attuneByType = validOptions.find(
+      (id) => actionAssetOf(id)?.actionType.tag === "Attune",
+    );
+    const candidates = [
+      ...focusOfferedIds,
+      attuneByType,
+      specialActionIds.equip,
+      specialActionIds.eat,
+      specialActionIds.take,
+      specialActionIds.unequip,
+      specialActionIds.drop,
+    ];
+    return (
+      candidates.find((id) => id != null && validOptions.includes(id)) ?? null
+    );
+  }, [focusOfferedIds, validOptions, specialActionIds, actionAssetOf]);
 
-  const extras = validOptions.filter(
-    (id) => !pinnedActions.includes(id) && id !== activateActionId,
-  );
   const configured = pinnedActions.slice(
     0,
     Math.max(0, ACTION_HOTKEYS.length - 1),
   );
+  const extras = validOptions
+    .filter((id) => !pinnedActions.includes(id) && id !== activateActionId)
+    .slice(0, Math.max(0, ACTION_HOTKEYS.length - 1 - configured.length));
 
   return (
     <Panel {...props}>
@@ -64,15 +85,16 @@ export const PinnedActionsPanel = (
             hotkey={actionHotkeyFor(index + 1)}
           />
         ))}
-        {extras
-          .slice(0, Math.max(0, ACTION_HOTKEYS.length - 1 - configured.length))
-          .map((actionId, index) => (
-            <ActionButton
-              key={actionId}
-              actionId={actionId}
-              hotkey={actionHotkeyFor(configured.length + 1 + index)}
-            />
-          ))}
+        {extras.map((actionId, index) => (
+          <ActionButton
+            key={actionId}
+            actionId={actionId}
+            // END-ALIGNED: the first dynamic action always takes the
+            // row's last key, the next the one before it — consistent
+            // keys no matter what's configured up front.
+            hotkey={actionHotkeyFor(ACTION_HOTKEYS.length - 1 - index)}
+          />
+        ))}
       </div>
     </Panel>
   );

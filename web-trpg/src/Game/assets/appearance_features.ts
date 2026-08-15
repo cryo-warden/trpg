@@ -104,6 +104,8 @@ export const APPEARANCE_FEATURES = {
   // cross-map crossings.
   rock_wall: noun("rock wall", 10000),
   cave_mouth: noun("cave mouth", 10000),
+  // The one sky, seen from every outdoor room through the surface chain.
+  sky: noun("sky", 10000),
   bones: noun("bones", 10000),
   brazier: noun("brazier", 10000),
   altar: noun("altar", 10000),

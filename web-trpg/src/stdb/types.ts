@@ -632,6 +632,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get perished() {
     return __t.option(FlagComponentBlob);
   },
+  get surface() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -765,6 +768,9 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
     return __t.option(EnemyControllerComponentBlob);
   },
   get checkpointObject() {
+    return __t.option(FlagComponentBlob);
+  },
+  get surface() {
     return __t.option(FlagComponentBlob);
   },
   get checkpointBinding() {

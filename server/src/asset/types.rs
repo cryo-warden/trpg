@@ -186,6 +186,11 @@ pub struct EntityBlobAsset {
     pub enemy_controller: Option<EnemyControllerComponentBlob>,
     /// Marks the entity as attunable fortune-telling scenery.
     pub checkpoint_object: Option<FlagComponentBlob>,
+    /// Marks a SURFACE location: its occupants see through it to
+    /// whatever shares ITS location, recursively while parents stay
+    /// surface. Authored on outdoor room blobs and outdoor containers
+    /// like the world surface itself.
+    pub surface: Option<FlagComponentBlob>,
     /// The abstract destination attuning to this object binds: a map by
     /// NAME plus which of its generated checkpoints. Never a room entity —
     /// the room may not exist until the binding is cashed in.

@@ -12,6 +12,7 @@ import {
   useLocationEntities,
   useOpenContainerContents,
   usePlayerEntity,
+  useVisibleOuterEntities,
 } from "../context/StdbContext/components";
 import { LoadoutPanel } from "../LoadoutPanel";
 import { StancesMenu } from "../StancesMenu";
@@ -45,10 +46,13 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   // An opened container's contents show beside it — revealed, intact,
   // takeable in place.
   const revealedContents = useOpenContainerContents(locationEntities);
+  // A SURFACE room sees beyond itself: the outdoors' occupants — the sky
+  // above all — join the view, recursively while parents stay surface.
+  const outerEntities = useVisibleOuterEntities(location);
   const playerContents = useLocationEntities(playerEntity);
   const entities: EntityId[] =
     mode === "location"
-      ? [...locationEntities, ...revealedContents]
+      ? [...locationEntities, ...revealedContents, ...outerEntities]
       : mode === "inventory"
       ? playerContents
       : [];
