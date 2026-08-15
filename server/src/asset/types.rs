@@ -60,6 +60,7 @@ pub enum ActionEffectAsset {
     SetStance(String),
     Open,
     Dump,
+    Rearm,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

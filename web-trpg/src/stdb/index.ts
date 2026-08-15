@@ -60,6 +60,7 @@ import SetStanceReducer from "./set_stance_reducer";
 import AccountIdentitiesRow from "./account_identities_table";
 import AccountRolesRow from "./account_roles_table";
 import AccountsRow from "./accounts_table";
+import ActionQueueDirtyComponentsRow from "./action_queue_dirty_components_table";
 import ActionRoundsRow from "./action_rounds_table";
 import ActionStateComponentsRow from "./action_state_components_table";
 import ActionlessSinceComponentsRow from "./actionless_since_components_table";
@@ -126,6 +127,7 @@ import RemainsComponentsRow from "./remains_components_table";
 import RespawnTimerComponentsRow from "./respawn_timer_components_table";
 import RolesRow from "./roles_table";
 import SpecialActionsRow from "./special_actions_table";
+import StanceForcedComponentsRow from "./stance_forced_components_table";
 import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
@@ -184,6 +186,17 @@ const tablesSchema = __schema({
       { name: 'accounts_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, AccountsRow),
+  action_queue_dirty_components: __table({
+    name: 'action_queue_dirty_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'action_queue_dirty_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'action_queue_dirty_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ActionQueueDirtyComponentsRow),
   action_rounds: __table({
     name: 'action_rounds',
     indexes: [
@@ -986,6 +999,17 @@ const tablesSchema = __schema({
       { name: 'special_actions_key_key', constraint: 'unique', columns: ['key'] },
     ],
   }, SpecialActionsRow),
+  stance_forced_components: __table({
+    name: 'stance_forced_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'stance_forced_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'stance_forced_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, StanceForcedComponentsRow),
   stance_loadouts_components: __table({
     name: 'stance_loadouts_components',
     indexes: [

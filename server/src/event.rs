@@ -25,6 +25,15 @@ secador::secador!(
         pub enum EventType {
             StartAction(ActionId),
             ActionEffect(ActionEffect),
+            /// The effect resolved against an invalid or refusing target:
+            /// published INSTEAD of the effect (never silently dropped),
+            /// so the client can narrate the failure. Carried only by the
+            /// deliberate item/interaction verbs — combat refusals (a
+            /// non-breaking intimidation) stay unnarrated.
+            ActionFailed(ActionEffect),
+            /// A QUEUED action was dropped at its turn because its target
+            /// stopped being valid (it moved, died, or vanished).
+            TargetLost(ActionId),
         }
 
         /// The free hand of the DEFAULT configuration: the stored total
@@ -112,7 +121,11 @@ secador::secador!(
                                 .unwrap_or_default();
                             armament_ids.push(armament_id);
                             taker.upsert_new_default_armaments(armament_ids);
-                            ecs.find(taker_entity_id).apply_resolved_armaments();
+                            // An intentional act converges immediately —
+                            // its own round was the cost; the
+                            // reconciliation system then finds no
+                            // mismatch and skips.
+                            ecs.find(taker_entity_id).apply_resolved_equipment();
                         }
                     }
                     true
@@ -159,7 +172,8 @@ secador::secador!(
                         .unwrap_or_default();
                     armament_ids.push(armament_id);
                     owner.upsert_new_default_armaments(armament_ids);
-                    ecs.find(owner_entity_id).apply_resolved_armaments();
+                    // An intentional act converges immediately.
+                    ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
                 crate::item::ItemRef::Armor(armor_id) => {
@@ -212,7 +226,8 @@ secador::secador!(
                     };
                     armament_ids.remove(position);
                     owner.upsert_new_default_armaments(armament_ids);
-                    ecs.find(owner_entity_id).apply_resolved_armaments();
+                    // An intentional act converges immediately.
+                    ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
                 crate::item::ItemRef::Armor(armor_id) => {
@@ -285,6 +300,8 @@ secador::secador!(
                 log::debug!("resolve event {} of type {:?}", self.id, self.event_type);
                 let is_observable = match self.event_type {
                     EventType::StartAction(_) => true,
+                    // Pre-formed failure events pass straight through.
+                    EventType::ActionFailed(_) | EventType::TargetLost(_) => true,
                     EventType::ActionEffect(ref action_effect) => match action_effect {
                         ActionEffect::Buff(_) => true,
                         ActionEffect::Move => {
@@ -415,6 +432,14 @@ secador::secador!(
                                 false
                             }
                         }
+                        // The reconciliation system's forced round: the
+                        // canonical equipment converges to configuration.
+                        // Self-targeted; the ONLY equipment writer after
+                        // creation besides the intentional acts.
+                        ActionEffect::Rearm => {
+                            ecs.find(self.owner_entity_id).apply_resolved_equipment();
+                            true
+                        }
                         ActionEffect::Equip => {
                             let stat_block = item_asset_stat_block(ecs, target_entity_id);
                             let done =
@@ -523,14 +548,18 @@ secador::secador!(
                                             victim.delete_queued_action_state();
                                         }
                                         // FORCED entry: the stance changes
-                                        // but the hands DON'T — a forced
-                                        // stance's loadout applies only
-                                        // when entered deliberately,
-                                        // through an action (try_adopt).
-                                        // Whatever was wielded stays.
+                                        // but the hands DON'T — the
+                                        // forced-stance flag makes the
+                                        // reconciliation system skip this
+                                        // entity until a deliberate
+                                        // change clears it. Whatever was
+                                        // wielded stays.
                                         victim
                                             .clone()
                                             .upsert_new_active_stance(cowering.stance_id)
+                                            .into_handle()
+                                            .clone()
+                                            .upsert_new_stance_forced()
                                             .into_handle()
                                             .insert_new_fear_status(*magnitude);
                                         true
@@ -568,6 +597,9 @@ secador::secador!(
                                     owner
                                         .clone()
                                         .upsert_new_active_stance(prone.stance_id)
+                                        .into_handle()
+                                        .clone()
+                                        .upsert_new_stance_forced()
                                         .into_handle()
                                         .upsert_new_braced_status(*defense);
                                     // The grab IS a take — same code, same
@@ -668,6 +700,29 @@ secador::secador!(
                 if is_observable {
                     self.id = 0;
                     ecs.db.observable_events().insert(self);
+                } else if let EventType::ActionEffect(effect) = &self.event_type {
+                    // A deliberate item/interaction verb that came to
+                    // nothing is REPLACED by a renderable failure event,
+                    // never silently dropped. Combat refusals (a
+                    // non-breaking intimidation, a spent rally) stay
+                    // quiet — narrating every one would be spam.
+                    let narrate_failure = matches!(
+                        effect,
+                        ActionEffect::Take
+                            | ActionEffect::Drop
+                            | ActionEffect::Equip
+                            | ActionEffect::Unequip
+                            | ActionEffect::Eat
+                            | ActionEffect::Open
+                            | ActionEffect::Dump
+                            | ActionEffect::Attune
+                    );
+                    if narrate_failure {
+                        let failed = effect.clone();
+                        self.event_type = EventType::ActionFailed(failed);
+                        self.id = 0;
+                        ecs.db.observable_events().insert(self);
+                    }
                 }
             }
         }

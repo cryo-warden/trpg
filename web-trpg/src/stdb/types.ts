@@ -85,6 +85,7 @@ export const ActionEffect = __t.enum("ActionEffect", {
   SetStance: __t.u32(),
   Open: __t.unit(),
   Dump: __t.unit(),
+  Rearm: __t.unit(),
 });
 export type ActionEffect = __Infer<typeof ActionEffect>;
 
@@ -108,6 +109,7 @@ export const ActionEffectAsset = __t.enum("ActionEffectAsset", {
   SetStance: __t.string(),
   Open: __t.unit(),
   Dump: __t.unit(),
+  Rearm: __t.unit(),
 });
 export type ActionEffectAsset = __Infer<typeof ActionEffectAsset>;
 
@@ -159,6 +161,7 @@ export const ActionType = __t.enum("ActionType", {
   Attune: __t.unit(),
   Posture: __t.unit(),
   Interact: __t.unit(),
+  Rearm: __t.unit(),
 });
 export type ActionType = __Infer<typeof ActionType>;
 
@@ -299,6 +302,7 @@ export const AssetPack = __t.object("AssetPack", {
   equipActionName: __t.option(__t.string()),
   unequipActionName: __t.option(__t.string()),
   eatActionName: __t.option(__t.string()),
+  rearmActionName: __t.option(__t.string()),
   get encounterBlobs() {
     return __t.array(NamedEntityBlobAsset);
   },
@@ -603,6 +607,12 @@ export const EntityBlob = __t.object("EntityBlob", {
   get open() {
     return __t.option(FlagComponentBlob);
   },
+  get stanceForced() {
+    return __t.option(FlagComponentBlob);
+  },
+  get actionQueueDirty() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -812,11 +822,15 @@ export type EpComponentBlob = __Infer<typeof EpComponentBlob>;
 export const EquipmentComponent = __t.object("EquipmentComponent", {
   entityId: __t.u64(),
   armamentIds: __t.array(__t.u32()),
+  wornArmorId: __t.option(__t.u32()),
+  wornRelicIds: __t.array(__t.u32()),
 });
 export type EquipmentComponent = __Infer<typeof EquipmentComponent>;
 
 export const EquipmentComponentBlob = __t.object("EquipmentComponentBlob", {
   armamentIds: __t.array(__t.u32()),
+  wornArmorId: __t.option(__t.u32()),
+  wornRelicIds: __t.array(__t.u32()),
 });
 export type EquipmentComponentBlob = __Infer<typeof EquipmentComponentBlob>;
 
@@ -826,6 +840,10 @@ export const EventType = __t.enum("EventType", {
   get ActionEffect() {
     return ActionEffect;
   },
+  get ActionFailed() {
+    return ActionEffect;
+  },
+  TargetLost: __t.u32(),
 });
 export type EventType = __Infer<typeof EventType>;
 
@@ -1478,6 +1496,7 @@ export const SpecialActionKey = __t.enum("SpecialActionKey", {
   Equip: __t.unit(),
   Unequip: __t.unit(),
   Eat: __t.unit(),
+  Rearm: __t.unit(),
 });
 export type SpecialActionKey = __Infer<typeof SpecialActionKey>;
 

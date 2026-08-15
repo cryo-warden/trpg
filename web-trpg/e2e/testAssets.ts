@@ -55,6 +55,7 @@ const emptyPack = (): AssetPack => ({
   equipActionName: undefined,
   unequipActionName: undefined,
   eatActionName: undefined,
+  rearmActionName: undefined,
   encounterBlobs: [],
   encounters: [],
   locationMapThemes: [],
@@ -291,6 +292,9 @@ export const stancePack = (): AssetPack => ({
  */
 export const loadoutPack = (): AssetPack => ({
   ...emptyPack(),
+  // Menu-driven configuration changes converge through the forced
+  // re-arm round; without this registration they would never land.
+  rearmActionName: "test_rearm",
   actions: [
     {
       name: "test_take",
@@ -318,6 +322,14 @@ export const loadoutPack = (): AssetPack => ({
     },
     postureAction("test_stand", "test_standing"),
     postureAction("test_duel", "test_dueling"),
+    {
+      name: "test_rearm",
+      value: {
+        actionType: { tag: "Rearm" },
+        requirements: NO_REQUIREMENTS,
+        rounds: [{ effects: [{ tag: "Rearm" }], interruptible: false }],
+      },
+    },
     {
       name: "test_equip",
       value: {

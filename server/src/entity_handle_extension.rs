@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    action::{action_rounds, actions, ActionEffect, ActionId, ActionType},
+    action::{action_rounds, actions, special_actions, ActionEffect, ActionId, ActionType},
     asset::{
         armament::armaments, armor::armors, baseline::baselines, relic::relics,
         stance::stances, stat_block::StatBlock,
@@ -31,10 +31,14 @@ pub trait EntityHandleExtension {
     /// the equip menu built). A stance assignment overrides the default —
     /// it is never a requirement.
     fn resolved_armament_ids(&self) -> Vec<u32>;
-    /// Rewrites the equipment from the resolution above. Gated on the
-    /// player-side components existing: blob-equipped NPCs keep their flat
-    /// equipment untouched.
-    fn apply_resolved_armaments(&self);
+    /// Rewrites the CANONICAL equipment (armaments in hand, worn armor,
+    /// worn relics) from the configurations. Called by the paths that
+    /// converge IMMEDIATELY — the Rearm effect, intentional stance
+    /// changes, the equip/unequip/take acts; menu reducers never call it
+    /// (the reconciliation system forces the re-arm round instead).
+    /// Gated on configuration components existing: blob-equipped
+    /// config-less entities keep their flat equipment untouched.
+    fn apply_resolved_equipment(&self);
     /// There is NO concept of known stances: a stance is available exactly
     /// when it is REACHABLE — the closure seeded by the entity's granted
     /// actions and every carried item's grants, over two edges (an action
@@ -270,13 +274,22 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .unwrap_or_default()
     }
 
-    fn apply_resolved_armaments(&self) {
+    fn apply_resolved_equipment(&self) {
         let e = self.to_handle();
-        if e.stance_loadouts().is_none() && e.default_armaments().is_none() {
+        // Only CONFIGURATION carriers converge; an entity with flat
+        // authored equipment and no config keeps it untouched.
+        let has_configuration = e.stance_loadouts().is_some()
+            || e.default_armaments().is_some()
+            || e.armor().is_some()
+            || e.relics().is_some();
+        if !has_configuration {
             return;
         }
-        let resolved = self.resolved_armament_ids();
-        e.clone().upsert_new_equipment(resolved);
+        let armament_ids = self.resolved_armament_ids();
+        let worn_armor_id = e.armor().map(|a| a.armor_id);
+        let worn_relic_ids = e.relics().map(|r| r.relic_ids).unwrap_or_default();
+        e.clone()
+            .upsert_new_equipment(armament_ids, worn_armor_id, worn_relic_ids);
     }
 
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
@@ -362,12 +375,17 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         }
         let handle = e.clone().upsert_new_active_stance(stance_id).into_handle();
 
-        // Re-arm on swap: hands resolve to the new stance's OVERRIDE when
-        // it assigns armaments, else the DEFAULT set; the bar mirrors the
-        // same rule — a bar assignment (Some, even empty) pins, else the
-        // DEFAULT action bar pins when one is configured. Entities with
-        // neither keep their flat equipment and bar.
-        self.apply_resolved_armaments();
+        // An INTENTIONAL stance change re-arms immediately — the change
+        // already paid its round, so the reconciliation system will find
+        // no mismatch and skip. It also clears the forced-stance flag: a
+        // deliberate posture ends the forced one's no-re-arm carve-out.
+        if handle.stance_forced().is_some() {
+            handle.delete_stance_forced();
+        }
+        self.apply_resolved_equipment();
+        // The bar: a bar assignment (Some, even empty) pins, else the
+        // DEFAULT action bar pins when one is configured; entities with
+        // neither keep their bar.
         let stance_bar = { handle.stance_loadouts() }.and_then(|loadouts| {
             loadouts
                 .assignments
@@ -479,12 +497,42 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                 ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),
                 // Equip/unequip target CARRIED gear — an item whose ref is
-                // actually wearable/wieldable, never a quest item.
+                // actually wearable/wieldable, never a quest item. The
+                // UNEQUIP role additionally requires the item's asset to
+                // be currently CONFIGURED (in the default set, the worn
+                // armor, or the relics): you can only put away what is on.
                 ActionType::Equip => {
-                    { o.item() }.is_some_and(|item| {
-                        !matches!(item.item_ref, crate::item::ItemRef::QuestItem(_))
-                    }) && { o.location() }
-                        .is_some_and(|l| l.location_entity_id == e.entity_id())
+                    let carried = { o.location() }
+                        .is_some_and(|l| l.location_entity_id == e.entity_id());
+                    let gear_ref = { o.item() }.map(|item| item.item_ref);
+                    let Some(gear_ref) = gear_ref else {
+                        return false;
+                    };
+                    if matches!(gear_ref, crate::item::ItemRef::QuestItem(_)) {
+                        return false;
+                    }
+                    let is_unequip_role = e
+                        .ecs()
+                        .db
+                        .special_actions()
+                        .key()
+                        .find(crate::action::SpecialActionKey::Unequip)
+                        .is_some_and(|s| s.action_id == action_id);
+                    if !is_unequip_role {
+                        return carried;
+                    }
+                    carried
+                        && match gear_ref {
+                            crate::item::ItemRef::Armament(id) => { e.default_armaments() }
+                                .is_some_and(|d| d.armament_ids.contains(&id)),
+                            crate::item::ItemRef::Armor(id) => {
+                                { e.armor() }.is_some_and(|a| a.armor_id == id)
+                            }
+                            crate::item::ItemRef::Relic(id) => {
+                                { e.relics() }.is_some_and(|r| r.relic_ids.contains(&id))
+                            }
+                            crate::item::ItemRef::QuestItem(_) => false,
+                        }
                 }
                 // Eat targets a CARRIED consumable: quest items only.
                 ActionType::Eat => {
@@ -524,6 +572,10 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                 ActionType::Move => o.path().is_some() && o.path_is_open(),
                 // Deliberate stance changes act on yourself alone.
                 ActionType::Posture => other_entity_id == e.entity_id(),
+                // System-forced and self-targeted: the reconciliation
+                // system queues it; a client proposing it against anything
+                // but the actor is refused.
+                ActionType::Rearm => other_entity_id == e.entity_id(),
                 // Offered BY the target: the co-located object must list
                 // this very action among its offered_actions — the actor
                 // never needs to know it.

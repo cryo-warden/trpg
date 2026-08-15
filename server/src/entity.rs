@@ -76,12 +76,19 @@ entity!(
     }
 
     // Wielded armaments; their stat blocks merge through the equipment cache
-    // exactly as traits merge through theirs. For a player with stance
-    // loadouts this is DERIVED (rewritten on stance swap or assignment);
-    // NPCs author it directly via blobs.
+    // exactly as traits merge through theirs. THE CANONICAL worn/wielded
+    // reality — the one representation stats derive from. The various
+    // CONFIGURATIONS (default armaments, stance loadouts, the armor and
+    // relics choices) are intent; the reconciliation system detects
+    // divergence and forces the re-arm action, while intentional acts
+    // (stance changes, equip/unequip) converge immediately themselves.
+    // Authored entities are born converged (blobs fill this alongside
+    // their configs).
     #[component(equipment in equipment_components, dirties(equipment_stat_block_dirty_flag))]
     struct EquipmentComponent {
         pub armament_ids: Vec<u32>,
+        pub worn_armor_id: Option<u32>,
+        pub worn_relic_ids: Vec<u32>,
     }
 
     // What a breakable leaves behind: on destruction (hp exhausted,
@@ -106,15 +113,17 @@ entity!(
         pub armament_ids: Vec<u32>,
     }
 
-    // The single global clothing/armor slot, applied across every stance.
-    #[component(armor in armor_components, dirties(equipment_stat_block_dirty_flag))]
+    // CONFIGURATION: the chosen clothing/armor slot, applied across every
+    // stance. Stats never read this — the worn reality lives on
+    // EquipmentComponent, converged by the reconciliation system.
+    #[component(armor in armor_components)]
     struct ArmorComponent {
         pub armor_id: u32,
     }
 
-    // Up to four relics (enforced at the reducer), applied across every
-    // stance.
-    #[component(relics in relics_components, dirties(equipment_stat_block_dirty_flag))]
+    // CONFIGURATION: up to four chosen relics (enforced at the reducer),
+    // applied across every stance. Same convergence as armor.
+    #[component(relics in relics_components)]
     struct RelicsComponent {
         pub relic_ids: Vec<u32>,
     }
@@ -163,6 +172,15 @@ entity!(
       // and takeable while they stay inside, intact. Set by the Open
       // effect; there is no closing (yet).
       open in open_components,
+      // The active stance was FORCED (intimidation's cower, dive's
+      // prone): the equipment reconciliation system skips auto-equip
+      // while this stands — a forced posture never re-arms the hands.
+      // Intentional stance changes remove it (and re-arm immediately).
+      stance_forced in stance_forced_components,
+      // The action queue changed since the last validation sweep: set by
+      // every ActionStateComponent mutation (see its dirties), consumed
+      // by action_validation_system.
+      action_queue_dirty in action_queue_dirty_components,
     )]
     struct FlagComponent {}
 
@@ -294,9 +312,14 @@ entity!(
         // TODO Add calibration properties?
     }
 
+    // Every queue change flows through these generated methods — the ONE
+    // fixed path — and each dirties the validation flag, so the
+    // action-validation system only examines entities whose queue
+    // actually changed.
     #[component(
       action_state in action_state_components,
       queued_action_state in queued_action_state_components,
+      dirties(action_queue_dirty),
     )]
     struct ActionStateComponent {
         pub target_entity_id: EntityId,

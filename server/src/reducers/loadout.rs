@@ -9,7 +9,6 @@ use crate::{
     },
     ecs_extension::EcsExtension,
     entity::*,
-    entity_handle_extension::EntityHandleExtension,
     item::{ItemRef, StanceLoadout},
 };
 
@@ -244,18 +243,14 @@ pub fn assign_stance_armaments(
         }
     }
 
+    // Configuration only — applied immediately. When this stance is the
+    // ACTIVE one, the reconciliation system sees the divergence and
+    // forces the re-arm round; other stances arm when a change adopts
+    // them. Consistency is system-imposed, never per-mutator.
     update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
         armament_ids,
         ..loadout
     });
-    // Assigning the ACTIVE stance takes effect IMMEDIATELY: the hands
-    // re-resolve (this override when non-empty, else the default set —
-    // clearing an active override falls back to the default). Other
-    // stances arm when a stance change adopts them.
-    let entity = ecs.find(p.entity_id());
-    if { entity.active_stance() }.is_some_and(|a| a.stance_id == stance_id) {
-        entity.apply_resolved_armaments();
-    }
     Ok(())
 }
 
@@ -298,10 +293,11 @@ pub fn set_default_armaments(
             -i32::from(geared.hand)
         ));
     }
+    // Configuration only — applied immediately; the reconciliation
+    // system converges the hands (forcing the re-arm round when the
+    // active stance rides the defaults). Consistency is system-imposed.
     ecs.find(player_entity_id)
         .upsert_new_default_armaments(armament_ids);
-    // Hands re-resolve now (an active stance override keeps winning).
-    ecs.find(player_entity_id).apply_resolved_armaments();
     Ok(())
 }
 

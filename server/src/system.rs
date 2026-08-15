@@ -1,6 +1,8 @@
 use crate::{
     account::accounts,
-    action::{action_rounds, actions, ActionEffect, ActionHandle},
+    action::{
+        action_rounds, actions, special_actions, ActionEffect, ActionHandle, SpecialActionKey,
+    },
     asset::ReducerContextExtension,
     asset::{
         armament::armaments,
@@ -227,23 +229,16 @@ pub fn shift_queued_action_system(ecs: Ecs) {
             if e.action_state().is_some() {
                 e.delete_action_state();
             }
+            // Validity is the action-validation system's business (it
+            // sweeps dirty queues before the next progression); the
+            // shift only starts what the queue holds.
             let e = e.into_handle().shift_queued_action_state();
             if let Some(a) = e.action_state() {
-                if e.can_target_other(a.target_entity_id, a.action_id) {
-                    ecs.db.observable_events().insert(ecs.new_event(
-                        a.entity_id,
-                        EventType::StartAction(a.action_id),
-                        a.target_entity_id,
-                    ));
-                } else {
-                    log::warn!(
-                        "Entity {} has invalid queued action target {} for action {}",
-                        e.entity_id(),
-                        a.target_entity_id,
-                        a.action_id
-                    );
-                    e.delete_action_state();
-                }
+                ecs.db.observable_events().insert(ecs.new_event(
+                    a.entity_id,
+                    EventType::StartAction(a.action_id),
+                    a.target_entity_id,
+                ));
             }
         }
     }
@@ -495,20 +490,21 @@ pub fn entity_stats_system(ecs: Ecs) {
     for f in ecs.iter_equipment_stat_block_dirty_flag() {
         let e = ecs.find(f.entity_id());
         let mut stat_block = StatBlock::default();
+        // Stats derive from the CANONICAL equipment alone — the worn
+        // reality. The armor/relics CONFIGURATION components never feed
+        // stats; the reconciliation system converges reality to them.
         if let Some(c) = e.equipment() {
             for id in &c.armament_ids {
                 if let Some(a) = ecs.db.armaments().id().find(id) {
                     stat_block += &a.stat_block;
                 }
             }
-        }
-        if let Some(c) = e.armor() {
-            if let Some(a) = ecs.db.armors().id().find(c.armor_id) {
-                stat_block += &a.stat_block;
+            if let Some(armor_id) = c.worn_armor_id {
+                if let Some(a) = ecs.db.armors().id().find(armor_id) {
+                    stat_block += &a.stat_block;
+                }
             }
-        }
-        if let Some(c) = e.relics() {
-            for id in &c.relic_ids {
+            for id in &c.worn_relic_ids {
                 if let Some(r) = ecs.db.relics().id().find(id) {
                     stat_block += &r.stat_block;
                 }
@@ -899,6 +895,232 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
     delete_entity_with_joins(ecs, map_entity_id);
 }
 
+/// How many carried items of the given gear kind+asset the entity owns
+/// (carrying IS location): the counted-multiset supply configurations
+/// must stay within.
+fn owned_gear_count(ecs: Ecs, owner_entity_id: u64, wanted: &crate::item::ItemRef) -> usize {
+    ecs.db
+        .location_components()
+        .location_entity_id()
+        .filter(owner_entity_id)
+        .filter(|carried| {
+            ecs.db
+                .item_components()
+                .entity_id()
+                .find(carried.entity_id)
+                .is_some_and(|item| match (&item.item_ref, wanted) {
+                    (crate::item::ItemRef::Armament(a), crate::item::ItemRef::Armament(b)) => {
+                        a == b
+                    }
+                    (crate::item::ItemRef::Armor(a), crate::item::ItemRef::Armor(b)) => a == b,
+                    (crate::item::ItemRef::Relic(a), crate::item::ItemRef::Relic(b)) => a == b,
+                    _ => false,
+                })
+        })
+        .count()
+}
+
+/// The id list trimmed to what ownership can cover, counted: the first
+/// N configured copies of an asset survive when N are owned. None when
+/// nothing changed.
+fn trim_to_owned(ids: &[u32], mut owned_of: impl FnMut(u32) -> usize) -> Option<Vec<u32>> {
+    let mut used: std::collections::HashMap<u32, usize> = std::collections::HashMap::new();
+    let trimmed: Vec<u32> = ids
+        .iter()
+        .filter(|id| {
+            let seen = used.entry(**id).or_insert(0);
+            if *seen < owned_of(**id) {
+                *seen += 1;
+                true
+            } else {
+                false
+            }
+        })
+        .copied()
+        .collect();
+    if trimmed.len() == ids.len() {
+        None
+    } else {
+        Some(trimmed)
+    }
+}
+
+/// INVALID ACTIONS LEAVE THE QUEUE before they progress — and only
+/// where the queue CHANGED: every queue mutation flows through the
+/// generated ActionStateComponent methods, which dirty the flag this
+/// system consumes, so quiet entities cost nothing. An invalid active
+/// or queued action is replaced by a renderable TargetLost event, never
+/// silently dropped. (Late invalidation — a target dying after the last
+/// queue change — is caught at resolution instead, as ActionFailed.)
+pub fn action_validation_system(ecs: Ecs) {
+    let dirty_entity_ids: Vec<u64> = ecs
+        .iter_action_queue_dirty()
+        .map(|f| f.entity_id())
+        .collect();
+    for entity_id in dirty_entity_ids {
+        let handle = ecs.find(entity_id);
+        if let Some(a) = handle.action_state() {
+            if !handle.can_target_other(a.target_entity_id, a.action_id) {
+                ecs.db.observable_events().insert(ecs.new_event(
+                    entity_id,
+                    EventType::TargetLost(a.action_id),
+                    a.target_entity_id,
+                ));
+                ecs.find(entity_id).delete_action_state();
+            }
+        }
+        let handle = ecs.find(entity_id);
+        if let Some(a) = handle.queued_action_state() {
+            if !handle.can_target_other(a.target_entity_id, a.action_id) {
+                ecs.db.observable_events().insert(ecs.new_event(
+                    entity_id,
+                    EventType::TargetLost(a.action_id),
+                    a.target_entity_id,
+                ));
+                ecs.find(entity_id).delete_queued_action_state();
+            }
+        }
+        // The sweep consumes the flag (the deletions above re-dirty it;
+        // clearing LAST keeps one sweep per change).
+        ecs.find(entity_id).delete_action_queue_dirty();
+    }
+}
+
+/// CONFIGURATIONS FOLLOW THE INVENTORY: gear that leaves the bags leaves
+/// every configuration naming it, trimmed by the counted rule (two
+/// configured clubs need two owned clubs). Runs BEFORE reconciliation,
+/// so the auto-equip only ever converges toward a satisfiable intent.
+/// PLAYERS only: NPC gear is authored as pure asset references with no
+/// item entities behind it — their configurations are their supply.
+pub fn configuration_sanitation_system(ecs: Ecs) {
+    for p in ecs.iter_player_controller() {
+        let handle = p.into_handle();
+        let entity_id = handle.entity_id();
+        let owned_armament =
+            |id: u32| owned_gear_count(ecs, entity_id, &crate::item::ItemRef::Armament(id));
+        if let Some(defaults) = handle.default_armaments() {
+            if let Some(trimmed) = trim_to_owned(&defaults.armament_ids, owned_armament) {
+                ecs.find(entity_id).upsert_new_default_armaments(trimmed);
+            }
+        }
+        if let Some(loadouts) = handle.stance_loadouts() {
+            let mut assignments = loadouts.assignments;
+            let mut changed = false;
+            for assignment in &mut assignments {
+                if let Some(override_ids) = &assignment.armament_ids {
+                    if let Some(trimmed) = trim_to_owned(override_ids, owned_armament) {
+                        assignment.armament_ids = Some(trimmed);
+                        changed = true;
+                    }
+                }
+            }
+            if changed {
+                ecs.find(entity_id).upsert_new_stance_loadouts(assignments);
+            }
+        }
+        if let Some(armor) = handle.armor() {
+            if owned_gear_count(ecs, entity_id, &crate::item::ItemRef::Armor(armor.armor_id))
+                == 0
+            {
+                ecs.find(entity_id).delete_armor();
+            }
+        }
+        if let Some(relics) = handle.relics() {
+            let owned_relic =
+                |id: u32| owned_gear_count(ecs, entity_id, &crate::item::ItemRef::Relic(id));
+            if let Some(trimmed) = trim_to_owned(&relics.relic_ids, owned_relic) {
+                ecs.find(entity_id).upsert_new_relics(trimmed);
+            }
+        }
+    }
+}
+
+/// Order-insensitive multiset equality over asset id lists: two id lists
+/// hold the same gear regardless of ordering.
+fn armament_multisets_match(a: &[u32], b: &[u32]) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    let mut left = a.to_vec();
+    let mut right = b.to_vec();
+    left.sort_unstable();
+    right.sort_unstable();
+    left == right
+}
+
+/// CONSISTENCY IS SYSTEM-IMPOSED: equipment (the canonical worn/wielded
+/// reality) converges to the configurations here, never inside every
+/// mutator. Entities with an equipment component and an action
+/// controller whose reality diverges from their resolved configuration
+/// get the registered RE-ARM action forced into their queue slot — IFF
+/// no matching action is already queued or in progress; an in-progress
+/// action finishes first. Intentional paths (stance changes, the
+/// equip/unequip acts) converge immediately themselves, so this fires
+/// only for menu-driven configuration changes. A FORCED stance
+/// (intimidation, dive) carries the stance_forced flag and is skipped:
+/// a forced posture never re-arms the hands.
+pub fn equipment_reconciliation_system(ecs: Ecs) {
+    let Some(rearm) = ecs
+        .db
+        .special_actions()
+        .key()
+        .find(SpecialActionKey::Rearm)
+    else {
+        // No registered re-arm: configurations still apply, and the
+        // intentional paths still converge — only the forced round is
+        // unavailable.
+        return;
+    };
+    for e in ecs.iter_equipment() {
+        let handle = e.into_handle();
+        let entity_id = handle.entity_id();
+        let Some(equipment) = handle.equipment() else {
+            continue;
+        };
+        if handle.player_controller().is_none() && handle.enemy_controller().is_none() {
+            continue;
+        }
+        // The dead do not re-arm; a forced posture holds the hands as
+        // they were.
+        if handle.hp().is_some_and(|hp| hp.hp <= 0) {
+            continue;
+        }
+        if handle.stance_forced().is_some() {
+            continue;
+        }
+        // Only CONFIGURATION carriers: flat authored equipment with no
+        // config is not a divergence.
+        let has_configuration = handle.stance_loadouts().is_some()
+            || handle.default_armaments().is_some()
+            || handle.armor().is_some()
+            || handle.relics().is_some();
+        if !has_configuration {
+            continue;
+        }
+        let intent_armaments = handle.resolved_armament_ids();
+        let intent_armor = handle.armor().map(|a| a.armor_id);
+        let intent_relics = handle.relics().map(|r| r.relic_ids).unwrap_or_default();
+        if armament_multisets_match(&equipment.armament_ids, &intent_armaments)
+            && equipment.worn_armor_id == intent_armor
+            && armament_multisets_match(&equipment.worn_relic_ids, &intent_relics)
+        {
+            continue;
+        }
+        // Already converging? One matching action suffices.
+        let already_queued = { handle.action_state() }
+            .is_some_and(|a| a.action_id == rearm.action_id)
+            || { handle.queued_action_state() }
+                .is_some_and(|a| a.action_id == rearm.action_id);
+        if already_queued {
+            continue;
+        }
+        // The FRONT of the queue: the re-arm takes the queued slot (the
+        // in-progress action still finishes first).
+        ecs.find(entity_id)
+            .set_queued_action_state(rearm.action_id, entity_id);
+    }
+}
+
 /// Visits derive from PRESENCE: any player-controlled entity standing in a
 /// location is recorded as having visited it — one predicate covering every
 /// way of arriving (moves, dives, respawns, future teleports), forever.
@@ -947,6 +1169,13 @@ pub fn enemy_control_system(ecs: Ecs) {
 }
 
 pub fn execute_all_systems(ecs: Ecs) {
+    // Configurations are sanitized against the inventory FIRST, then
+    // reconciliation converges equipment toward the (now satisfiable)
+    // intent, claiming the queue slot before this tick's actions shift —
+    // the exact timing control system ordering buys us.
+    configuration_sanitation_system(ecs);
+    equipment_reconciliation_system(ecs);
+    action_validation_system(ecs);
     actionless_stamp_system(ecs);
     crate::turn::turn_pause_system(ecs);
     action_system(ecs);
@@ -963,4 +1192,30 @@ pub fn execute_all_systems(ecs: Ecs) {
     player_activation_system(ecs);
     map_demand_system(ecs);
     enemy_control_system(ecs);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{armament_multisets_match, trim_to_owned};
+
+    #[test]
+    fn multisets_match_regardless_of_order_never_of_count() {
+        assert!(armament_multisets_match(&[1, 2, 2], &[2, 1, 2]));
+        assert!(armament_multisets_match(&[], &[]));
+        assert!(!armament_multisets_match(&[1, 2], &[1, 2, 2]));
+        assert!(!armament_multisets_match(&[1], &[2]));
+    }
+
+    #[test]
+    fn trimming_keeps_the_first_owned_copies_and_reports_no_change() {
+        // Two clubs configured, one owned: the first survives.
+        assert_eq!(
+            trim_to_owned(&[7, 7, 9], |id| if id == 7 { 1 } else { 1 }),
+            Some(vec![7, 9])
+        );
+        // Fully covered: no change proposed at all.
+        assert_eq!(trim_to_owned(&[7, 9], |_| 2), None);
+        // Nothing owned: everything trims away.
+        assert_eq!(trim_to_owned(&[7, 9], |_| 0), Some(vec![]));
+    }
 }

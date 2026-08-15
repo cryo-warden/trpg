@@ -27,6 +27,10 @@ pub enum ActionType {
     /// the co-located target's offered_actions lists this very action
     /// (opening a chest, dumping a sack; later doors and levers).
     Interact,
+    /// SYSTEM-forced, self-targeted, never offered or known: the round
+    /// spent bringing the hands in line with the configuration (see
+    /// equipment_reconciliation_system). Clients never propose it.
+    Rearm,
 }
 
 /// Item-verb actions the ENGINE must find (never by name-sniffing): the
@@ -42,6 +46,9 @@ pub enum SpecialActionKey {
     Equip,
     Unequip,
     Eat,
+    /// The reconciliation system's forced action (never offered): the
+    /// round spent re-arming when equipment diverges from configuration.
+    Rearm,
 }
 
 #[table(accessor = special_actions, public)]
@@ -116,6 +123,11 @@ pub enum ActionEffect {
     /// Tip the targeted container over: its contents spill onto the floor
     /// of its room, the container itself unharmed.
     Dump,
+    /// The hands come in line with the configuration: equipment := the
+    /// resolved set (stance override else defaults). The ONLY writer of
+    /// the equipment cache after creation — every configuration path
+    /// converges through the reconciliation system forcing this.
+    Rearm,
 }
 
 /// One round of an action, with its effects denormalized into the row: every

@@ -53,6 +53,20 @@ export const createEnUs: CreateLanguage<NarrationContext> = ({
             values: [event.ownerEntityId, event.targetEntityId],
           };
     }
+    // A deliberate act that came to nothing narrates its failure — never
+    // a silent drop.
+    case "ActionFailed":
+      return {
+        template: "{0:sentence:subject} tried, but nothing came of it.",
+        values: [event.ownerEntityId],
+      };
+    // A queued action dropped because its target stopped being valid.
+    case "TargetLost":
+      return {
+        template:
+          "{0:sentence:subject} hesitated — {0:possessive} target was gone.",
+        values: [event.ownerEntityId],
+      };
     case "ActionEffect": {
       const owner = event.ownerEntityId;
       const target = event.targetEntityId;
@@ -75,6 +89,11 @@ export const createEnUs: CreateLanguage<NarrationContext> = ({
           return {
             template: "{0:sentence:subject} moved through {1:object}.",
             values: [owner, target],
+          };
+        case "Rearm":
+          return {
+            template: "{0:sentence:subject} shifted {0:possessive} grips.",
+            values: [owner],
           };
         case "Take":
           return {

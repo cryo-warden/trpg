@@ -30,6 +30,7 @@ const Rally = { tag: "Rally" } as const satisfies ActionEffectAsset;
 const Attune = { tag: "Attune" } as const satisfies ActionEffectAsset;
 const OpenEffect = { tag: "Open" } as const satisfies ActionEffectAsset;
 const DumpEffect = { tag: "Dump" } as const satisfies ActionEffectAsset;
+const RearmEffect = { tag: "Rearm" } as const satisfies ActionEffectAsset;
 const SetStance = (stanceName: string) =>
   ({ tag: "SetStance", value: stanceName }) as const satisfies ActionEffectAsset;
 
@@ -225,6 +226,14 @@ export const ACTIONS = {
     requirements: NO_REQUIREMENTS,
     rounds: [round(DumpEffect)],
   },
+  // SYSTEM-forced only (the equipment reconciliation), never offered or
+  // known: the round spent bringing the hands in line with the
+  // configuration.
+  re_arm: {
+    actionType: { tag: "Rearm" },
+    requirements: NO_REQUIREMENTS,
+    rounds: [round(RearmEffect)],
+  },
   // Stance changes ARE actions — a round spent shifting posture, no
   // separate UI. Each goes through the shared adoption gates (known stance,
   // requirements, the fear gate).
@@ -382,6 +391,10 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   dump: {
     displayName: "Dump",
     beginTemplate: "{0:sentence:subject} tipped {1:object} over.",
+  },
+  // Instant deed: narrates at the effect, silent at start.
+  re_arm: {
+    displayName: "Re-arm",
   },
   stand: {
     displayName: "Stand",

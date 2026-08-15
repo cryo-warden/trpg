@@ -134,6 +134,12 @@ export default __t.row({
   get open() {
     return __t.option(FlagComponentBlob);
   },
+  get stanceForced() {
+    return __t.option(FlagComponentBlob).name("stance_forced");
+  },
+  get actionQueueDirty() {
+    return __t.option(FlagComponentBlob).name("action_queue_dirty");
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },

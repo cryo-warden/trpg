@@ -37,7 +37,7 @@ use crate::{
         traits_stat_block_dirty_flag_components,
         ActionsComponentBlob, ActiveStanceComponentBlob,
         AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
-        CheckpointBindingComponentBlob, EntityBlob,
+        CheckpointBindingComponentBlob, DefaultArmamentsComponentBlob, EntityBlob,
         EquipmentComponentBlob, FindEntityHandle, FlagComponent, InstantiateEntityBlob,
         ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
         RemainsComponentBlob, TraitsComponentBlob,
@@ -100,6 +100,10 @@ pub struct AssetPack {
     equip_action_name: Option<String>,
     unequip_action_name: Option<String>,
     eat_action_name: Option<String>,
+    /// The reconciliation system's forced re-arm (never offered to
+    /// anyone); a pack without equipment reconfiguration may omit it —
+    /// equipment then simply never diverges from configuration.
+    rearm_action_name: Option<String>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
@@ -199,10 +203,53 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        equipment: author
+        // Authored gear lands as CONFIGURATION *and* born-converged
+        // CANONICAL equipment: the reconciliation system then finds no
+        // mismatch at birth, and every later divergence is a real one.
+        equipment: {
+            let armament_ids: Option<Vec<u32>> = author
+                .armament_names
+                .as_ref()
+                .map(|names| {
+                    names
+                        .iter()
+                        .map(|n| resolve_name(&maps.armaments, "armament", n))
+                        .collect::<Result<_, _>>()
+                })
+                .transpose()?;
+            let worn_armor_id: Option<u32> = author
+                .armor_name
+                .as_ref()
+                .map(|n| resolve_name(&maps.armors, "armor", n))
+                .transpose()?;
+            let worn_relic_ids: Option<Vec<u32>> = author
+                .relic_names
+                .as_ref()
+                .map(|names| {
+                    names
+                        .iter()
+                        .map(|n| resolve_name(&maps.relics, "relic", n))
+                        .collect::<Result<_, _>>()
+                })
+                .transpose()?;
+            if armament_ids.is_none() && worn_armor_id.is_none() && worn_relic_ids.is_none()
+            {
+                None
+            } else {
+                Some(EquipmentComponentBlob {
+                    armament_ids: armament_ids.clone().unwrap_or_default(),
+                    worn_armor_id,
+                    worn_relic_ids: worn_relic_ids.unwrap_or_default(),
+                })
+            }
+        },
+        // The matching armament CONFIGURATION: authored hands are also the
+        // authored default set, so intent equals reality at birth.
+        default_armaments: author
             .armament_names
+            .as_ref()
             .map(|names| {
-                Ok::<_, String>(EquipmentComponentBlob {
+                Ok::<_, String>(DefaultArmamentsComponentBlob {
                     armament_ids: names
                         .iter()
                         .map(|n| resolve_name(&maps.armaments, "armament", n))
@@ -254,7 +301,6 @@ fn resolve_entity_blob(
             })
             .transpose()?,
         stance_loadouts: None,
-        default_armaments: None,
         checkpoint_object: author.checkpoint_object,
         checkpoint_binding: author
             .checkpoint_binding
@@ -370,6 +416,10 @@ fn resolve_entity_blob(
         turn_paused: None,
         // Runtime state: a container is authored closed and opened in play.
         open: None,
+        // Runtime state: only forced transitions set it.
+        stance_forced: None,
+        // Runtime state: queue mutations set it.
+        action_queue_dirty: None,
         // Stamped by the quest room-claim application, never authored.
         defeat_drop: None,
         location_map: None,
@@ -421,6 +471,7 @@ fn resolve_action_effect(
         }
         ActionEffectAsset::Open => ActionEffect::Open,
         ActionEffectAsset::Dump => ActionEffect::Dump,
+        ActionEffectAsset::Rearm => ActionEffect::Rearm,
     })
 }
 
@@ -758,6 +809,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         (
             crate::action::SpecialActionKey::Eat,
             asset_pack.eat_action_name,
+        ),
+        (
+            crate::action::SpecialActionKey::Rearm,
+            asset_pack.rearm_action_name,
         ),
     ];
     for (key, name) in special_action_entries {
