@@ -48,6 +48,7 @@ import PushAssetsReducer from "./push_assets_reducer";
 import RefuseLoginRequestReducer from "./refuse_login_request_reducer";
 import RequestLoginReducer from "./request_login_reducer";
 import SetArmorReducer from "./set_armor_reducer";
+import SetDefaultActionsReducer from "./set_default_actions_reducer";
 import SetPasswordReducer from "./set_password_reducer";
 import SetRelicsReducer from "./set_relics_reducer";
 import SetStanceReducer from "./set_stance_reducer";
@@ -77,6 +78,7 @@ import CheckpointBindingComponentsRow from "./checkpoint_binding_components_tabl
 import CheckpointComponentsRow from "./checkpoint_components_table";
 import CheckpointObjectComponentsRow from "./checkpoint_object_components_table";
 import CourageStatusComponentsRow from "./courage_status_components_table";
+import DefaultActionsComponentsRow from "./default_actions_components_table";
 import DefaultArmamentsComponentsRow from "./default_armaments_components_table";
 import DefeatDropComponentsRow from "./defeat_drop_components_table";
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
@@ -413,6 +415,17 @@ const tablesSchema = __schema({
       { name: 'courage_status_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, CourageStatusComponentsRow),
+  default_actions_components: __table({
+    name: 'default_actions_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'default_actions_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'default_actions_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, DefaultActionsComponentsRow),
   default_armaments_components: __table({
     name: 'default_armaments_components',
     indexes: [
@@ -1104,6 +1117,7 @@ const reducersSchema = __reducers(
   __reducerSchema("refuse_login_request", RefuseLoginRequestReducer),
   __reducerSchema("request_login", RequestLoginReducer),
   __reducerSchema("set_armor", SetArmorReducer),
+  __reducerSchema("set_default_actions", SetDefaultActionsReducer),
   __reducerSchema("set_password", SetPasswordReducer),
   __reducerSchema("set_relics", SetRelicsReducer),
   __reducerSchema("set_stance", SetStanceReducer),

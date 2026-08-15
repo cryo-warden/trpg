@@ -312,6 +312,10 @@ entity!(
       // Which interactions a thing supports is explicit data here, never
       // inferred from its appearance.
       offered_actions in offered_actions_components,
+      // The DEFAULT action bar, mirroring the default armament slot:
+      // what a stance change pins when the adopted stance carries no bar
+      // assignment of its own. Configured in the equip menu.
+      default_actions in default_actions_components,
     )]
     struct ActionsComponent {
         pub action_ids: Vec<ActionId>,

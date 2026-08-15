@@ -1,27 +1,13 @@
-import {
-  closestCenter,
-  DndContext,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  rectSortingStrategy,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useRef, useState } from "react";
-import type { StatBlock } from "../stdb/types";
 import { Button } from "../structural/Button";
 import "./StancesMenu.css";
+import { ActionsBarEditor } from "./ActionsBarEditor";
 import {
+  useActionDisplayNameOf,
   useStanceDetailRows,
   useStanceReachabilityGraph,
 } from "./context/StdbContext/assetLookup";
+import { useStanceFreeBase } from "./context/StdbContext/baseStats";
 import {
   useMyActiveStanceId,
   usePlayerEntity,
@@ -32,175 +18,21 @@ import {
   OwnedItem,
   useArmamentStatBlocks,
   useGearStatBlockOf,
+  useMyDefaultActionIds,
   useMyDefaultArmamentIds,
-  useMyEquipmentArmamentIds,
   useMyStanceAssignments,
   useOwnedItems,
 } from "./context/StdbContext/loadout";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
-import { useTableData } from "./context/StdbContext/useTableData";
 import { reachableStanceIds } from "./domain/stanceReachability";
-import { ACTION_APPEARANCES, ActionName } from "./assets/actions";
 import { signedStatSummary } from "./domain/statSummary";
+import {
+  ALL_STATS,
+  IntStatKey,
+  STAT_GROUPS,
+  statWithDelta,
+} from "./statGroups";
 import { StatBlockSummary } from "./StatBlockSummary";
-
-/** Every int stat of the block (the id-vec grants are not numbers). */
-type IntStatKey = Exclude<keyof StatBlock, "actionIds" | "appearanceFeatureIds">;
-
-type StatEntry = readonly [IntStatKey, string];
-
-type StatGroup = { label: string; stats: readonly StatEntry[] };
-
-const STAT_GROUPS: readonly StatGroup[] = [
-  {
-    label: "Combat",
-    stats: [
-      ["attack", "Attack"],
-      ["defense", "Defense"],
-      ["morale", "Morale"],
-    ],
-  },
-  {
-    label: "Pools",
-    stats: [
-      ["mhp", "Max HP"],
-      ["mep", "Max EP"],
-    ],
-  },
-  {
-    label: "Body",
-    stats: [
-      ["hand", "Hand"],
-      ["gait", "Gait"],
-      ["reach", "Reach"],
-      ["wing", "Wing"],
-      ["upright", "Upright"],
-      ["size", "Size"],
-    ],
-  },
-  {
-    label: "Armament",
-    stats: [
-      ["blunt", "Blunt"],
-      ["bladed", "Bladed"],
-      ["pole", "Pole"],
-      ["ward", "Ward"],
-      ["focus", "Focus"],
-    ],
-  },
-];
-
-const ALL_STATS: readonly StatEntry[] = STAT_GROUPS.flatMap(
-  (group) => group.stats,
-);
-
-/** The parenthesized delta against the no-stance value: always shown, so
- * like-for-like reads at a glance ("Hand 1 (-1)"). */
-const deltaText = (delta: number): string =>
-  delta > 0 ? `+${delta}` : `${delta}`;
-
-/** One assigned action in the bar: draggable to reorder (position is the
- * hotkey), a plain tap removes it. A raw button reusing the Button styles
- * — the structural Button's own click handling would fight the drag
- * listeners. */
-const SortableActionChip = ({
-  id,
-  label,
-  onRemove,
-}: {
-  id: string;
-  label: string;
-  onRemove: () => void;
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
-  return (
-    <button
-      ref={setNodeRef}
-      type="button"
-      className={[
-        "Button",
-        "active",
-        "interesting",
-        "actionChip",
-        isDragging ? "dragging" : "",
-      ].join(" ")}
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        touchAction: "none",
-      }}
-      onClick={onRemove}
-      {...attributes}
-      {...listeners}
-    >
-      {label}
-    </button>
-  );
-};
-
-/** The stance's bar: its assigned actions in hotkey order. dnd-kit's
- * PointerSensor covers mouse AND touch through one path; the 8px
- * activation distance keeps plain taps registering as clicks (remove). */
-const StanceActionsBar = ({
-  assignedActionIds,
-  nameOf,
-  onAssign,
-}: {
-  assignedActionIds: number[];
-  nameOf: (actionId: number) => string;
-  onAssign: (actionIds: number[]) => void;
-}) => {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
-  );
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragEnd={({ active, over }) => {
-        if (over == null || active.id === over.id) {
-          return;
-        }
-        const from = assignedActionIds.findIndex(
-          (id) => String(id) === active.id,
-        );
-        const to = assignedActionIds.findIndex((id) => String(id) === over.id);
-        if (from < 0 || to < 0) {
-          return;
-        }
-        onAssign(arrayMove(assignedActionIds, from, to));
-      }}
-    >
-      <SortableContext
-        items={assignedActionIds.map(String)}
-        strategy={rectSortingStrategy}
-      >
-        <div className="actionBar">
-          {assignedActionIds.map((actionId, index) => (
-            <SortableActionChip
-              key={actionId}
-              id={String(actionId)}
-              label={`${(index + 1) % 10} ${nameOf(actionId)}`}
-              onRemove={() =>
-                onAssign(assignedActionIds.filter((id) => id !== actionId))
-              }
-            />
-          ))}
-        </div>
-      </SortableContext>
-    </DndContext>
-  );
-};
 
 /**
  * The standalone stances menu: one card per REACHABLE stance. There is no
@@ -225,26 +57,11 @@ export const StancesMenu = () => {
   const assignments = useMyStanceAssignments();
   const owned = useOwnedItems();
   const gearStatBlockOf = useGearStatBlockOf();
-  const equippedArmamentIds = useMyEquipmentArmamentIds();
   const defaultArmamentIds = useMyDefaultArmamentIds();
+  const defaultActionIds = useMyDefaultActionIds();
   const armamentStats = useArmamentStatBlocks();
-  const actionNames = useTableData(
-    "actions",
-    (table) =>
-      new Map<number, string>([...table.iter()].map((row) => [row.id, row.name])),
-    [],
-  );
-  // Buttons render PROPER names, never the internal underscored key: the
-  // subscribed table's raw name resolves through the client vocabulary.
-  const actionDisplayName = (actionId: number): string => {
-    const raw = actionNames.get(actionId);
-    if (raw == null) {
-      return `#${actionId}`;
-    }
-    return raw in ACTION_APPEARANCES
-      ? ACTION_APPEARANCES[raw as ActionName].displayName
-      : raw;
-  };
+  // Buttons render PROPER names, never the internal underscored key.
+  const actionDisplayName = useActionDisplayNameOf();
 
   const totalStatBlock = total?.statBlock ?? null;
   const reachable = useMemo(() => {
@@ -262,41 +79,16 @@ export const StancesMenu = () => {
   }, [totalStatBlock, owned, gearStatBlockOf, graph, activeStanceId]);
   const shown = stanceRows.filter((row) => reachable.has(row.id));
 
-  // The stance-free, armament-free base of EVERY stat: the total includes
-  // the active stance and the equipment actually in hand, so peel both
-  // back off. Each card then shows the FULL TOTALS the player would have
-  // in that stance with its assigned loadout. (The server revalidates
-  // against the true base on every assignment; these numbers only inform.)
-  const activeStanceBlock =
-    stanceRows.find((row) => row.id === activeStanceId)?.statBlock ?? null;
+  // The stance-free, armament-free base of every stat and grant — the
+  // shared derivation the equip menu builds on too, so the two menus can
+  // never show different bases. Each card shows the FULL TOTALS the
+  // player would have in that stance with its assigned loadout.
+  const { baseStats, baseActionIds } = useStanceFreeBase();
   const armamentStatSum = (armamentIds: number[], key: IntStatKey): number =>
     armamentIds.reduce(
       (sum, id) => sum + (armamentStats.get(id)?.[key] ?? 0),
       0,
     );
-  const baseStats = Object.fromEntries(
-    ALL_STATS.map(([key]) => [
-      key,
-      (totalStatBlock?.[key] ?? 0) -
-        (activeStanceBlock?.[key] ?? 0) -
-        armamentStatSum(equippedArmamentIds, key),
-    ]),
-  ) as Record<IntStatKey, number>;
-
-  // The base ACTION grants, mirroring baseStats: the published total minus
-  // the active stance's grants and the in-hand armaments' grants.
-  const baseActionIds = (() => {
-    const ids = new Set(totalStatBlock?.actionIds ?? []);
-    for (const id of activeStanceBlock?.actionIds ?? []) {
-      ids.delete(id);
-    }
-    for (const armamentId of equippedArmamentIds) {
-      for (const id of armamentStats.get(armamentId)?.actionIds ?? []) {
-        ids.delete(id);
-      }
-    }
-    return [...ids];
-  })();
 
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
 
@@ -345,8 +137,11 @@ export const StancesMenu = () => {
         const armamentOverride = loadout?.armamentIds ?? null;
         const barAssignment = loadout?.actionIds ?? null;
         const usesDefault = armamentOverride == null;
+        const usesDefaultBar = barAssignment == null;
         const resolvedArmaments = armamentOverride ?? defaultArmamentIds;
-        const assignedActions = barAssignment ?? [];
+        // The bar mirrors the armament rule: no assignment = the DEFAULT
+        // action bar rides in.
+        const assignedActions = barAssignment ?? defaultActionIds;
         const candidate = Object.fromEntries(
           ALL_STATS.map(([key]) => [
             key,
@@ -398,8 +193,11 @@ export const StancesMenu = () => {
                 <div className="totals">
                   {group.stats.map(([key, label]) => (
                     <div key={key}>
-                      {label} {candidate[key]} (
-                      {deltaText(candidate[key] - baseStats[key])})
+                      {label}{" "}
+                      {statWithDelta(
+                        candidate[key],
+                        candidate[key] - baseStats[key],
+                      )}
                     </div>
                   ))}
                 </div>
@@ -450,14 +248,29 @@ export const StancesMenu = () => {
               );
             })}
             {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
-            <h4>
-              Actions ({assignedActions.length}/10)
-              {barAssignment == null && " — bar unchanged on entry"}
-            </h4>
-            <StanceActionsBar
+            <h4>Actions ({assignedActions.length}/10)</h4>
+            <Button
+              className={usesDefaultBar ? "active" : ""}
+              interesting={usesDefaultBar}
+              onClick={() =>
+                // The same toggle the armaments have: on defaults,
+                // clicking moves to a CUSTOM bar with nothing assigned
+                // yet; on an override, clicking returns to the default
+                // bar.
+                connection.reducers.assignStanceActions({
+                  stanceId: stance.id,
+                  actionIds: usesDefaultBar ? [] : undefined,
+                })
+              }
+            >
+              use default
+            </Button>
+            <ActionsBarEditor
               assignedActionIds={assignedActions}
               nameOf={actionDisplayName}
               onAssign={(actionIds) =>
+                // Editing while on defaults copy-on-writes the visible
+                // bar into a new override, like the armament buttons.
                 connection.reducers.assignStanceActions({
                   stanceId: stance.id,
                   actionIds,

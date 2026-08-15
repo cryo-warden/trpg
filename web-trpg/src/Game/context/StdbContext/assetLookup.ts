@@ -61,6 +61,32 @@ export const useSpecialActionIds = (): SpecialActionIds =>
     [],
   );
 
+/** Resolves a runtime action id to its PROPER display name (through the
+ * client vocabulary), never the internal underscored key. Unknown ids
+ * render as their raw name or #id. */
+export const useActionDisplayNameOf = (): ((actionId: ActionId) => string) => {
+  const names = useTableData(
+    "actions",
+    (table) =>
+      new Map<number, string>(
+        [...table.iter()].map((row) => [row.id, row.name]),
+      ),
+    [],
+  );
+  return useMemo(
+    () => (actionId: ActionId) => {
+      const raw = names.get(actionId);
+      if (raw == null) {
+        return `#${actionId}`;
+      }
+      return raw in ACTION_APPEARANCES
+        ? ACTION_APPEARANCES[raw as ActionName].displayName
+        : raw;
+    },
+    [names],
+  );
+};
+
 /** The subscribed stance rows (id + name), ordered by id. */
 export const useStanceRows = (): { id: number; name: string }[] =>
   useTableData(

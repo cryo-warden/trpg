@@ -194,6 +194,9 @@ export default __t.row({
   get offeredActions() {
     return __t.option(ActionsComponentBlob).name("offered_actions");
   },
+  get defaultActions() {
+    return __t.option(ActionsComponentBlob).name("default_actions");
+  },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob).name("pinned_actions");
   },

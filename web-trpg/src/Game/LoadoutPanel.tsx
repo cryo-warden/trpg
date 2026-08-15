@@ -4,6 +4,7 @@ import { summedStats } from "./domain/statSummary";
 import {
   useGearStatBlocks,
   useMyArmorId,
+  useMyDefaultActionIds,
   useMyDefaultArmamentIds,
   useMyEquipmentArmamentIds,
   useMyRelicIds,
@@ -13,20 +14,28 @@ import {
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "./context/StdbContext/components";
-import { useSpecialActionIds } from "./context/StdbContext/assetLookup";
+import {
+  useActionDisplayNameOf,
+  useSpecialActionIds,
+} from "./context/StdbContext/assetLookup";
+import { useStanceFreeBase } from "./context/StdbContext/baseStats";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
+import { ActionsBarEditor } from "./ActionsBarEditor";
+import { IntStatKey, STAT_GROUPS } from "./statGroups";
 import { StatBlockSummary } from "./StatBlockSummary";
 
 /**
- * The worn-gear menu: ONE clothing/armor slot, up to FOUR relics, and the
- * DEFAULT armament slot (what the hands hold when the active stance
- * assigns no override). Everything visible here toggles here: armament
- * buttons queue the registered equip/unequip ACTION against the item
- * entity — a round like any act, hands re-resolving server-side — and a
- * button that cannot be used right now renders visibly disabled (an
- * armament past the free hand, a relic past the cap), re-enabling live
- * as gear changes. Above the slots: the player's TOTAL stats and the
- * combined contribution of everything worn and default-wielded. All
+ * The equip menu: the SAME card shape as a single stance card — the
+ * categorized detailed stats, the armament buttons, the action bar —
+ * plus the armor and relics sections only worn gear has. Its numbers
+ * are the DEFAULT configuration (base + worn gear + default armaments,
+ * no stance): the base every stance card's deltas compare against, so
+ * no deltas render here at all. Everything visible here toggles here:
+ * armament buttons queue the registered equip/unequip ACTION against
+ * the item entity — a round like any act — the DEFAULT action bar
+ * proposes set_default_actions (what a stance change pins when the
+ * stance has no bar of its own), and a button that cannot be used right
+ * now renders visibly disabled, re-enabling live as gear changes. All
  * rules are enforced server-side; this menu only proposes.
  */
 export const LoadoutPanel = () => {
@@ -35,10 +44,13 @@ export const LoadoutPanel = () => {
   const armorId = useMyArmorId();
   const relicIds = useMyRelicIds();
   const defaultArmamentIds = useMyDefaultArmamentIds();
+  const defaultActionIds = useMyDefaultActionIds();
   const gearStats = useGearStatBlocks();
   const playerEntity = usePlayerEntity();
   const total = useTotalStatBlockComponent(playerEntity);
   const specialActionIds = useSpecialActionIds();
+  const { baseStats, baseActionIds } = useStanceFreeBase();
+  const actionDisplayName = useActionDisplayNameOf();
 
   const ownedArmors = owned.filter((item) => item.kind === "Armor");
   const ownedRelics = owned.filter((item) => item.kind === "Relic");
@@ -60,6 +72,26 @@ export const LoadoutPanel = () => {
     (total?.statBlock.hand ?? 0) -
     equipmentArmamentIds.reduce((sum, id) => sum + armamentHandOf(id), 0) +
     defaultArmamentIds.reduce((sum, id) => sum + armamentHandOf(id), 0);
+
+  // The DEFAULT configuration's stats: the stance-free base (worn gear
+  // included) plus the default armaments — the values the detailed view
+  // shows, with no deltas: this IS the base stances compare to.
+  const defaultConfigStat = (key: IntStatKey): number =>
+    baseStats[key] +
+    defaultArmamentIds.reduce(
+      (sum, id) => sum + (gearStats.armaments.get(id)?.[key] ?? 0),
+      0,
+    );
+  // The default bar's candidate pool: the base grants plus the default
+  // armaments' grants — no stance.
+  const defaultPoolActionIds = [
+    ...new Set([
+      ...baseActionIds,
+      ...defaultArmamentIds.flatMap((id) => [
+        ...(gearStats.armaments.get(id)?.actionIds ?? []),
+      ]),
+    ]),
+  ];
 
   // What the current gear set adds up to: worn armor + worn relics + the
   // default wielded set, summed from the ASSET blocks.
@@ -94,14 +126,23 @@ export const LoadoutPanel = () => {
   };
 
   return (
-    <div className="Loadout">
-      <section className="totals">
-        <h3>Totals</h3>
-        {total != null && (
-          <div>
-            <StatBlockSummary statBlock={total.statBlock} totals />
+    <div className="Loadout stanceCard">
+      <h3>Loadout</h3>
+      {/* The stance card's detailed stats view — DEFAULT configuration
+          values, no deltas: this is the base the deltas compare to. */}
+      {STAT_GROUPS.map((group) => (
+        <div className="statGroup" key={group.label}>
+          <h4>{group.label}</h4>
+          <div className="totals">
+            {group.stats.map(([key, label]) => (
+              <div key={key}>
+                {label} {defaultConfigStat(key)}
+              </div>
+            ))}
           </div>
-        )}
+        </div>
+      ))}
+      <section className="totals">
         <div>
           Equipped: <StatBlockSummary statBlock={equippedContribution} />
         </div>
@@ -170,7 +211,9 @@ export const LoadoutPanel = () => {
         ))}
       </section>
       <section className="defaultArmaments">
-        <h3>Default armaments</h3>
+        <h4>
+          Default armaments (free hand: {defaultConfigurationHand})
+        </h4>
         {ownedArmaments.map((item) => {
           const on = assetInstanceIsOn({
             ids: defaultArmamentIds,
@@ -208,6 +251,31 @@ export const LoadoutPanel = () => {
         {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
         <div>Toggling queues the equip or unequip action — a round like
         any act.</div>
+      </section>
+      <section className="defaultActions">
+        <h4>Default actions ({defaultActionIds.length}/10)</h4>
+        <ActionsBarEditor
+          assignedActionIds={defaultActionIds}
+          nameOf={actionDisplayName}
+          onAssign={(actionIds) =>
+            connection.reducers.setDefaultActions({ actionIds })
+          }
+        />
+        {defaultPoolActionIds
+          .filter((actionId) => !defaultActionIds.includes(actionId))
+          .map((actionId) => (
+            <Button
+              key={actionId}
+              disabled={defaultActionIds.length >= 10}
+              onClick={() =>
+                connection.reducers.setDefaultActions({
+                  actionIds: [...defaultActionIds, actionId],
+                })
+              }
+            >
+              {actionDisplayName(actionId)}
+            </Button>
+          ))}
       </section>
     </div>
   );

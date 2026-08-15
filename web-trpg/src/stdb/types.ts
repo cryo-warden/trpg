@@ -663,6 +663,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get offeredActions() {
     return __t.option(ActionsComponentBlob);
   },
+  get defaultActions() {
+    return __t.option(ActionsComponentBlob);
+  },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob);
   },

@@ -270,6 +270,35 @@ test("unequip/equip actions edit the DEFAULT slot; hands re-resolve", async () =
   expect(myDefaults()).toEqual([clubId, swordId]);
 }, 60000);
 
+test("the DEFAULT action bar: pool-validated, pinned by stances without a bar of their own", async () => {
+  const takeId = idByName(player.db.actions, "test_take");
+  const slashId = idByName(player.db.actions, "test_slash");
+  const duelingId = idByName(player.db.stances, "test_dueling");
+  const myBar = () =>
+    [...player.db.pinned_actions_components.iter()].find(
+      (r) => r.entityId === playerEntityId,
+    );
+
+  // Outside the DEFAULT configuration's candidate pool: rejected.
+  await expect(
+    player.reducers.setDefaultActions({ actionIds: [999999] }),
+  ).rejects.toThrow(/pool/);
+
+  // A valid default bar (test_slash rides the default sword's grant).
+  // The ACTIVE stance (standing) holds its own bar override, so the
+  // pinned bar stays put for now.
+  await player.reducers.setDefaultActions({ actionIds: [takeId, slashId] });
+
+  // Adopting a stance with NO bar assignment of its own pins the
+  // DEFAULT bar — the same fallback rule the armaments follow.
+  await player.reducers.setStance({ stanceId: duelingId });
+  await waitFor(
+    () =>
+      [...(myBar()?.actionIds ?? [])].join(",") === `${takeId},${slashId}`,
+    30000,
+  );
+}, 60000);
+
 test("the four-relic cap is enforced", async () => {
   const charmId = idByName(player.db.relics, "test_charm");
   await expect(

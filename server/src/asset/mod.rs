@@ -305,6 +305,8 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
+        // Configured in play (the equip menu), never authored.
+        default_actions: None,
         offered_actions: author
             .offered_action_names
             .map(|names| {

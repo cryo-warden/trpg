@@ -88,10 +88,10 @@ test("the menu shows totals, the equipped contribution, and the default armament
 
   // The worn jerkin (+1 defense) and default sword (+1 bladed, -1 hand)
   // fold into one signed contribution line.
-  expect(container.querySelector(".totals")?.textContent).toContain(
+  expect(container.querySelector("section.totals")?.textContent).toContain(
     "+1 defense",
   );
-  expect(container.querySelector(".totals")?.textContent).toContain(
+  expect(container.querySelector("section.totals")?.textContent).toContain(
     "+1 bladed",
   );
   // The default slot lists the sword as held.
@@ -196,6 +196,53 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
   // A disabled button proposes nothing.
   fireEvent.click(staff);
   expect(act).not.toHaveBeenCalled();
+});
+
+test("the equip menu lays the stance card's detailed stats out — deltaless", () => {
+  const withTotals = {
+    ...tables(),
+    total_stat_block_components: mockTable([
+      { entityId: 1n, statBlock: { attack: 1, hand: 2 } },
+    ]),
+  };
+  const { container } = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(withTotals, { identity: {} as Identity }),
+  });
+  const groupsText = [...container.querySelectorAll(".statGroup")]
+    .map((group) => group.textContent)
+    .join(" ");
+  // The categorized groups a stance card shows...
+  expect(groupsText).toContain("Combat");
+  expect(groupsText).toContain("Attack 1");
+  expect(groupsText).toContain("Hand 2");
+  // ...but NO deltas anywhere: this is the base stances compare to.
+  expect(groupsText).not.toContain("(");
+});
+
+test("the DEFAULT action bar proposes set_default_actions from its pool", () => {
+  const setDefaultActions = mock(() => {});
+  const withPool = {
+    ...tables(),
+    total_stat_block_components: mockTable([
+      {
+        entityId: 1n,
+        statBlock: { hand: 2, actionIds: [actionIdOf("take")] },
+      },
+    ]),
+  };
+  const { container } = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(withPool, {
+      identity: {} as Identity,
+      reducers: { setDefaultActions },
+    }),
+  });
+  const takeButton = [
+    ...container.querySelectorAll(".defaultActions button"),
+  ].find((button) => button.textContent === "Take")!;
+  fireEvent.click(takeButton);
+  expect(setDefaultActions).toHaveBeenCalledWith({
+    actionIds: [actionIdOf("take")],
+  });
 });
 
 test("owned items render in stable ENTITY order regardless of row order", () => {

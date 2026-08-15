@@ -363,18 +363,20 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let handle = e.clone().upsert_new_active_stance(stance_id).into_handle();
 
         // Re-arm on swap: hands resolve to the new stance's OVERRIDE when
-        // it assigns armaments, else the DEFAULT set; a bar assignment
-        // (Some, even empty) becomes the pinned bar, while None leaves the
-        // bar alone. Entities without loadouts or defaults keep their flat
-        // equipment.
+        // it assigns armaments, else the DEFAULT set; the bar mirrors the
+        // same rule — a bar assignment (Some, even empty) pins, else the
+        // DEFAULT action bar pins when one is configured. Entities with
+        // neither keep their flat equipment and bar.
         self.apply_resolved_armaments();
-        if let Some(action_ids) = { handle.stance_loadouts() }.and_then(|loadouts| {
+        let stance_bar = { handle.stance_loadouts() }.and_then(|loadouts| {
             loadouts
                 .assignments
                 .iter()
                 .find(|a| a.stance_id == stance_id)
                 .and_then(|a| a.action_ids.clone())
-        }) {
+        });
+        let default_bar = { handle.default_actions() }.map(|d| d.action_ids);
+        if let Some(action_ids) = stance_bar.or(default_bar) {
             handle.upsert_new_pinned_actions(action_ids);
         }
         Ok(())

@@ -116,41 +116,53 @@ pub fn set_relics(ctx: &ReducerContext, relic_ids: Vec<u32>) -> Result<(), Strin
     Ok(())
 }
 
-/// The candidate context a stance loadout would produce: base parts
-/// rebuilt explicitly (baseline + traits + worn armor/relics + the
-/// CANDIDATE armaments + the stance) — never the current equipment cache.
-/// Its action_ids are the stance's full candidate action pool.
+/// The GEARED context: base parts rebuilt explicitly (baseline + traits
+/// + worn armor/relics + the given armaments) — never the current
+/// equipment cache, and no stance: the base every stance compares to.
+/// Its action_ids are the DEFAULT bar's candidate pool.
+fn geared_stat_block(
+    ctx: &ReducerContext,
+    player_entity_id: u64,
+    armament_ids: &[u32],
+) -> StatBlock {
+    let ecs = ctx.ecs();
+    let handle = ecs.find(player_entity_id);
+    let mut geared = { handle.baseline() }
+        .and_then(|b| ctx.db.baselines().id().find(b.baseline_id))
+        .map_or_else(StatBlock::default, |b| b.stat_block);
+    if let Some(c) = handle.traits_stat_block_cache() {
+        geared += &c.stat_block;
+    }
+    if let Some(c) = handle.armor() {
+        if let Some(a) = ctx.db.armors().id().find(c.armor_id) {
+            geared += &a.stat_block;
+        }
+    }
+    if let Some(c) = handle.relics() {
+        for id in &c.relic_ids {
+            if let Some(r) = ctx.db.relics().id().find(id) {
+                geared += &r.stat_block;
+            }
+        }
+    }
+    for id in armament_ids {
+        if let Some(a) = ctx.db.armaments().id().find(id) {
+            geared += &a.stat_block;
+        }
+    }
+    geared
+}
+
+/// The candidate context a stance loadout would produce: the geared base
+/// plus the stance itself. Its action_ids are the stance's full
+/// candidate action pool.
 fn candidate_stat_block(
     ctx: &ReducerContext,
     player_entity_id: u64,
     stance: &crate::asset::stance::Stance,
     armament_ids: &[u32],
 ) -> StatBlock {
-    let ecs = ctx.ecs();
-    let handle = ecs.find(player_entity_id);
-    let mut candidate = { handle.baseline() }
-        .and_then(|b| ctx.db.baselines().id().find(b.baseline_id))
-        .map_or_else(StatBlock::default, |b| b.stat_block);
-    if let Some(c) = handle.traits_stat_block_cache() {
-        candidate += &c.stat_block;
-    }
-    if let Some(c) = handle.armor() {
-        if let Some(a) = ctx.db.armors().id().find(c.armor_id) {
-            candidate += &a.stat_block;
-        }
-    }
-    if let Some(c) = handle.relics() {
-        for id in &c.relic_ids {
-            if let Some(r) = ctx.db.relics().id().find(id) {
-                candidate += &r.stat_block;
-            }
-        }
-    }
-    for id in armament_ids {
-        if let Some(a) = ctx.db.armaments().id().find(id) {
-            candidate += &a.stat_block;
-        }
-    }
+    let mut candidate = geared_stat_block(ctx, player_entity_id, armament_ids);
     candidate += &stance.stat_block;
     candidate
 }
@@ -317,12 +329,72 @@ pub fn assign_stance_actions(
     });
     // Everything the stance menu derives applies IMMEDIATELY for the
     // ACTIVE stance: a bar assignment (Some, even empty) becomes the
-    // pinned bar now; None (no assignment) leaves the bar alone.
+    // pinned bar now; None falls back to the DEFAULT bar when one is
+    // configured — the same rule adoption applies.
     let handle = ecs.find(p.entity_id());
-    if let Some(bar_ids) = action_ids {
-        if { handle.active_stance() }.is_some_and(|a| a.stance_id == stance_id) {
+    if { handle.active_stance() }.is_some_and(|a| a.stance_id == stance_id) {
+        let default_bar = { handle.default_actions() }.map(|d| d.action_ids);
+        if let Some(bar_ids) = action_ids.or(default_bar) {
             handle.upsert_new_pinned_actions(bar_ids);
         }
+    }
+    Ok(())
+}
+
+/// Assign the DEFAULT action bar — what a stance change pins when the
+/// adopted stance carries no bar assignment of its own, mirroring the
+/// default armament slot. The pool is the DEFAULT configuration's
+/// candidates: base + worn gear + default armaments, NO stance (the
+/// base every stance compares to). The ACTIVE stance rides it live when
+/// it has no override of its own.
+#[reducer]
+pub fn set_default_actions(ctx: &ReducerContext, action_ids: Vec<u32>) -> Result<(), String> {
+    if action_ids.len() > MAX_ASSIGNED_ACTIONS {
+        return Err(format!(
+            "At most {} actions fit the bar; {} requested.",
+            MAX_ASSIGNED_ACTIONS,
+            action_ids.len()
+        ));
+    }
+    let ecs = ctx.ecs();
+    let p = ecs
+        .from_player_identity(ctx.sender())
+        .ok_or("Cannot find a player entity.")?;
+    let player_entity_id = p.entity_id();
+    let handle = ecs.find(player_entity_id);
+    let default_armament_ids = { handle.default_armaments() }
+        .map(|d| d.armament_ids)
+        .unwrap_or_default();
+    let pool =
+        geared_stat_block(ctx, player_entity_id, &default_armament_ids).action_ids;
+    for id in &action_ids {
+        if !pool.contains(id) {
+            let name = ctx
+                .db
+                .actions()
+                .id()
+                .find(id)
+                .map_or_else(|| format!("#{}", id), |a| a.name);
+            return Err(format!(
+                "The action \"{}\" is not in the default configuration's candidate pool.",
+                name
+            ));
+        }
+    }
+    ecs.find(player_entity_id)
+        .upsert_new_default_actions(action_ids.clone());
+    // The active stance without a bar override rides the default: apply now.
+    let handle = ecs.find(player_entity_id);
+    let active_has_override = { handle.active_stance() }.is_some_and(|active| {
+        { handle.stance_loadouts() }.is_some_and(|loadouts| {
+            loadouts
+                .assignments
+                .iter()
+                .any(|a| a.stance_id == active.stance_id && a.action_ids.is_some())
+        })
+    });
+    if !active_has_override {
+        ecs.find(player_entity_id).upsert_new_pinned_actions(action_ids);
     }
     Ok(())
 }

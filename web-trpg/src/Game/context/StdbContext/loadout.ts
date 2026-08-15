@@ -145,6 +145,22 @@ export const useMyEquipmentArmamentIds = (): number[] => {
   );
 };
 
+/** The DEFAULT action bar (the equip menu's): what a stance change pins
+ * when the adopted stance carries no bar assignment of its own. */
+export const useMyDefaultActionIds = (): number[] => {
+  const playerEntity = usePlayerEntity();
+  return useTableData(
+    "default_actions_components",
+    (t) => {
+      if (playerEntity == null) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (((t.entityId as any).find(playerEntity)?.actionIds ??
+        []) as number[]).slice();
+    },
+    [playerEntity],
+  );
+};
+
 /** The DEFAULT wielded set (the equip menu's): what the hands hold when
  * the active stance assigns no override. */
 export const useMyDefaultArmamentIds = (): number[] => {

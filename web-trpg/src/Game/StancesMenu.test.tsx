@@ -199,6 +199,39 @@ test("clicking an active-by-default item enters custom mode WITHOUT it, keeping 
   });
 });
 
+test("a stance with no bar of its own rides the DEFAULT bar; its toggle enters a blank custom bar", () => {
+  const assignStanceActions = mock(() => {});
+  const withDefaultBar = {
+    ...tables(),
+    default_actions_components: mockTable([
+      { entityId: 1n, actionIds: [actionIdOf("take")] },
+    ]),
+  };
+  const wrapper = gameWrapper(withDefaultBar, {
+    identity: {} as Identity,
+    reducers: { assignStanceActions },
+  });
+  const { container } = render(<StancesMenu />, { wrapper });
+
+  // Standing assigns no bar: the DEFAULT bar rides in, counted and shown.
+  const standing = cardOf(container, "standing")!;
+  expect(standing.textContent).toContain("Actions (1/10)");
+  const chips = [...standing.querySelectorAll(".actionBar .actionChip")];
+  expect(chips.map((chip) => chip.textContent)).toEqual(["1 Take"]);
+
+  // Two "use default" toggles per card now — armaments first, then the
+  // bar's. Clicking the bar's while on defaults enters a BLANK custom bar.
+  const useDefaultButtons = [...standing.querySelectorAll("button")].filter(
+    (button) => button.textContent === "use default",
+  );
+  expect(useDefaultButtons.length).toBe(2);
+  fireEvent.click(useDefaultButtons[1]!);
+  expect(assignStanceActions).toHaveBeenCalledWith({
+    stanceId: stanceIdOf("standing"),
+    actionIds: [],
+  });
+});
+
 test("gallery dots: one per reachable stance, the active stance marked", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });
@@ -228,10 +261,12 @@ test("cards show categorized totals with deltas from the no-stance base", () => 
   expect(dueling.textContent).toContain("Combat");
   expect(dueling.textContent).toContain("Body");
 
-  // Standing assigns nothing: bare-body totals, zero deltas.
+  // Standing assigns nothing: bare-body totals — and a zero delta shows
+  // NO parenthetical at all ("(0)" is noise, nowhere).
   const standing = cardOf(container, "standing")!;
-  expect(standing.textContent).toContain("Hand 2 (0)");
-  expect(standing.textContent).toContain("Attack 0 (0)");
+  expect(standing.textContent).toContain("Hand 2");
+  expect(standing.textContent).toContain("Attack 0");
+  expect(standing.textContent).not.toContain("(0)");
 });
 
 test("the bar lists assigned actions in hotkey order; a tap removes", () => {
