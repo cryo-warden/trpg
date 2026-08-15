@@ -299,6 +299,36 @@ test("the DEFAULT action bar: pool-validated, pinned by stances without a bar of
   );
 }, 60000);
 
+test("set_default_armaments configures IMMEDIATELY: the menu path, hands re-resolving", async () => {
+  const swordId = idByName(player.db.armaments, "test_sword");
+  const clubId = idByName(player.db.armaments, "test_club");
+  const myDefaults = () => [
+    ...([...player.db.default_armaments_components.iter()].find(
+      (row) => row.entityId === playerEntityId,
+    )?.armamentIds ?? []),
+  ];
+
+  // Ownership is counted: two swords cannot come from one.
+  await expect(
+    player.reducers.setDefaultArmaments({ armamentIds: [swordId, swordId] }),
+  ).rejects.toThrow(/Not enough owned/);
+
+  // Club alone: the configuration row lands AT ONCE, and the hands
+  // follow (dueling holds no override — it rides the defaults). Whether
+  // any in-fiction action queues is the server's business; the client
+  // only configured.
+  await player.reducers.setDefaultArmaments({ armamentIds: [clubId] });
+  await waitFor(() => myDefaults().join(",") === `${clubId}`, 30000);
+  await waitFor(() => !myActionNames().includes("test_slash"), 30000);
+  expect(myActionNames()).toContain("test_smash");
+
+  // Both back, for whatever follows.
+  await player.reducers.setDefaultArmaments({
+    armamentIds: [clubId, swordId],
+  });
+  await waitFor(() => myActionNames().includes("test_slash"), 30000);
+}, 60000);
+
 test("the four-relic cap is enforced", async () => {
   const charmId = idByName(player.db.relics, "test_charm");
   await expect(

@@ -100,24 +100,21 @@ test("the menu shows totals, the equipped contribution, and the default armament
   expect(defaults?.querySelectorAll("button.active").length).toBe(1);
 });
 
-const SPECIAL_ACTION_ROWS = [
-  { key: { tag: "Equip" }, actionId: actionIdOf("equip") },
-  { key: { tag: "Unequip" }, actionId: actionIdOf("unequip") },
-];
-
-test("an armament button queues equip when off, unequip when on", () => {
-  const act = mock(() => {});
-  const withRegistry = {
+test("an armament button CONFIGURES the default set: toggled on when off, off when on", () => {
+  // Menus configure core state immediately — the toggle proposes the new
+  // default set; whether any in-fiction action queues is the server's
+  // business, invisible here.
+  const setDefaultArmaments = mock(() => {});
+  const withTotals = {
     ...tables(),
-    special_actions: mockTable(SPECIAL_ACTION_ROWS),
     total_stat_block_components: mockTable([
       { entityId: 1n, statBlock: { hand: 2 } },
     ]),
   };
   const off = render(<LoadoutPanel />, {
-    wrapper: gameWrapper(withRegistry, {
+    wrapper: gameWrapper(withTotals, {
       identity: {} as Identity,
-      reducers: { act },
+      reducers: { setDefaultArmaments },
     }),
   });
   const swordOff = [
@@ -125,14 +122,13 @@ test("an armament button queues equip when off, unequip when on", () => {
   ].find((button) => button.textContent!.startsWith("sword"))!;
   expect(swordOff.hasAttribute("disabled")).toBe(false);
   fireEvent.click(swordOff);
-  expect(act).toHaveBeenCalledWith({
-    actionId: actionIdOf("equip"),
-    targetEntityId: 5n,
+  expect(setDefaultArmaments).toHaveBeenCalledWith({
+    armamentIds: [armamentIdOf("sword")],
   });
 
-  const actOn = mock(() => {});
+  const setOn = mock(() => {});
   const assigned = {
-    ...withRegistry,
+    ...withTotals,
     default_armaments_components: mockTable([
       { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
     ]),
@@ -140,7 +136,7 @@ test("an armament button queues equip when off, unequip when on", () => {
   const on = render(<LoadoutPanel />, {
     wrapper: gameWrapper(assigned, {
       identity: {} as Identity,
-      reducers: { act: actOn },
+      reducers: { setDefaultArmaments: setOn },
     }),
   });
   const swordOn = [
@@ -148,10 +144,7 @@ test("an armament button queues equip when off, unequip when on", () => {
   ].find((button) => button.textContent!.startsWith("sword"))!;
   expect(swordOn.className).toContain("active");
   fireEvent.click(swordOn);
-  expect(actOn).toHaveBeenCalledWith({
-    actionId: actionIdOf("unequip"),
-    targetEntityId: 5n,
-  });
+  expect(setOn).toHaveBeenCalledWith({ armamentIds: [] });
 });
 
 test("an armament past the DEFAULT configuration's free hand renders visibly disabled", () => {
@@ -160,7 +153,7 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
   // empty → default configuration hand = 0 - (-1) + 0 = 1. The staff
   // (-2) would drive it negative: visibly disabled. The sword (-1)
   // stays available.
-  const act = mock(() => {});
+  const setDefaultArmaments = mock(() => {});
   const withStaff = {
     ...tables(),
     location_components: mockTable([
@@ -171,7 +164,6 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
       { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
       { entityId: 9n, itemRef: { tag: "Armament", value: armamentIdOf("staff") } },
     ]),
-    special_actions: mockTable(SPECIAL_ACTION_ROWS),
     // Total reflects the sword IN HAND (hand 1 - 1 = 0 base... authored
     // here directly): total hand 0 with the sword's -1 folded in.
     total_stat_block_components: mockTable([
@@ -184,7 +176,7 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
   const { container } = render(<LoadoutPanel />, {
     wrapper: gameWrapper(withStaff, {
       identity: {} as Identity,
-      reducers: { act },
+      reducers: { setDefaultArmaments },
     }),
   });
   // Default configuration hand: 0 - (sword -1) + (defaults: none) = 1.
@@ -195,7 +187,7 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
   expect(sword.hasAttribute("disabled")).toBe(false);
   // A disabled button proposes nothing.
   fireEvent.click(staff);
-  expect(act).not.toHaveBeenCalled();
+  expect(setDefaultArmaments).not.toHaveBeenCalled();
 });
 
 test("the equip menu lays the stance card's detailed stats out — deltaless", () => {

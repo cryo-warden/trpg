@@ -21,6 +21,7 @@ import RefuseLoginRequestReducer from "../refuse_login_request_reducer";
 import RequestLoginReducer from "../request_login_reducer";
 import SetArmorReducer from "../set_armor_reducer";
 import SetDefaultActionsReducer from "../set_default_actions_reducer";
+import SetDefaultArmamentsReducer from "../set_default_armaments_reducer";
 import SetPasswordReducer from "../set_password_reducer";
 import SetRelicsReducer from "../set_relics_reducer";
 import SetStanceReducer from "../set_stance_reducer";
@@ -40,6 +41,7 @@ export type RefuseLoginRequestParams = __Infer<typeof RefuseLoginRequestReducer>
 export type RequestLoginParams = __Infer<typeof RequestLoginReducer>;
 export type SetArmorParams = __Infer<typeof SetArmorReducer>;
 export type SetDefaultActionsParams = __Infer<typeof SetDefaultActionsReducer>;
+export type SetDefaultArmamentsParams = __Infer<typeof SetDefaultArmamentsReducer>;
 export type SetPasswordParams = __Infer<typeof SetPasswordReducer>;
 export type SetRelicsParams = __Infer<typeof SetRelicsReducer>;
 export type SetStanceParams = __Infer<typeof SetStanceReducer>;

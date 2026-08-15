@@ -14,10 +14,7 @@ import {
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "./context/StdbContext/components";
-import {
-  useActionDisplayNameOf,
-  useSpecialActionIds,
-} from "./context/StdbContext/assetLookup";
+import { useActionDisplayNameOf } from "./context/StdbContext/assetLookup";
 import { useStanceFreeBase } from "./context/StdbContext/baseStats";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { ActionsBarEditor } from "./ActionsBarEditor";
@@ -48,7 +45,6 @@ export const LoadoutPanel = () => {
   const gearStats = useGearStatBlocks();
   const playerEntity = usePlayerEntity();
   const total = useTotalStatBlockComponent(playerEntity);
-  const specialActionIds = useSpecialActionIds();
   const { baseStats, baseActionIds } = useStanceFreeBase();
   const actionDisplayName = useActionDisplayNameOf();
 
@@ -220,10 +216,7 @@ export const LoadoutPanel = () => {
             item,
             items: ownedArmaments,
           });
-          const verbActionId = on
-            ? specialActionIds.unequip
-            : specialActionIds.equip;
-          // Mirror of equip_item's grip rule: wielding this must keep
+          // Mirror of the server's grip rule: wielding this must keep
           // the DEFAULT configuration's hands non-negative. Unequipping
           // always frees.
           const overweight =
@@ -233,15 +226,20 @@ export const LoadoutPanel = () => {
               key={item.entityId.toString()}
               className={on ? "active" : ""}
               interesting={on}
-              disabled={verbActionId == null || overweight}
-              onClick={() => {
-                if (verbActionId != null) {
-                  connection.reducers.act({
-                    actionId: verbActionId,
-                    targetEntityId: item.entityId,
-                  });
-                }
-              }}
+              disabled={overweight}
+              onClick={() =>
+                // CONFIGURATION, applied immediately — the menu's state
+                // is true the moment the row lands. Whether the change
+                // also queues an in-fiction action is the server's
+                // decision alone.
+                connection.reducers.setDefaultArmaments({
+                  armamentIds: toggledAssetIds({
+                    ids: defaultArmamentIds,
+                    item,
+                    items: ownedArmaments,
+                  }),
+                })
+              }
             >
               {item.name}
               {summaryOf("Armament", item.assetId)}
@@ -249,8 +247,6 @@ export const LoadoutPanel = () => {
           );
         })}
         {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
-        <div>Toggling queues the equip or unequip action — a round like
-        any act.</div>
       </section>
       <section className="defaultActions">
         <h4>Default actions ({defaultActionIds.length}/10)</h4>

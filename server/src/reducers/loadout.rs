@@ -259,6 +259,52 @@ pub fn assign_stance_armaments(
     Ok(())
 }
 
+/// Assign the DEFAULT armament set — what the hands hold when the active
+/// stance assigns no override. A MENU path: core configuration changes
+/// IMMEDIATELY (the menu reflects it at once), and the SERVER alone
+/// decides whether the change also queues any in-fiction action as a
+/// consequence — today the swap is instant; a future combat rule may
+/// queue a re-arm here without the client changing at all. The
+/// equip/unequip ACTS remain the in-world item path (offered on items),
+/// editing this same slot from the fiction's side.
+#[reducer]
+pub fn set_default_armaments(
+    ctx: &ReducerContext,
+    armament_ids: Vec<u32>,
+) -> Result<(), String> {
+    let ecs = ctx.ecs();
+    let p = ecs
+        .from_player_identity(ctx.sender())
+        .ok_or("Cannot find a player entity.")?;
+    let player_entity_id = p.entity_id();
+    for id in &armament_ids {
+        ctx.db
+            .armaments()
+            .id()
+            .find(id)
+            .ok_or_else(|| format!("Unknown armament id {}.", id))?;
+    }
+    let requested: Vec<ItemRef> = armament_ids
+        .iter()
+        .map(|id| ItemRef::Armament(*id))
+        .collect();
+    require_owned(&ecs, player_entity_id, &requested)?;
+    // The grip rule against the configuration being edited: the DEFAULT
+    // set (stance-free), same basis the equip action uses.
+    let geared = geared_stat_block(ctx, player_entity_id, &armament_ids);
+    if geared.hand < 0 {
+        return Err(format!(
+            "This loadout needs {} more grip than the body provides.",
+            -i32::from(geared.hand)
+        ));
+    }
+    ecs.find(player_entity_id)
+        .upsert_new_default_armaments(armament_ids);
+    // Hands re-resolve now (an active stance override keeps winning).
+    ecs.find(player_entity_id).apply_resolved_armaments();
+    Ok(())
+}
+
 /// The bar hotkey positions cap the pinned set.
 const MAX_ASSIGNED_ACTIONS: usize = 10;
 

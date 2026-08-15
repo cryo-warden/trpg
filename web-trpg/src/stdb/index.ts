@@ -49,6 +49,7 @@ import RefuseLoginRequestReducer from "./refuse_login_request_reducer";
 import RequestLoginReducer from "./request_login_reducer";
 import SetArmorReducer from "./set_armor_reducer";
 import SetDefaultActionsReducer from "./set_default_actions_reducer";
+import SetDefaultArmamentsReducer from "./set_default_armaments_reducer";
 import SetPasswordReducer from "./set_password_reducer";
 import SetRelicsReducer from "./set_relics_reducer";
 import SetStanceReducer from "./set_stance_reducer";
@@ -1118,6 +1119,7 @@ const reducersSchema = __reducers(
   __reducerSchema("request_login", RequestLoginReducer),
   __reducerSchema("set_armor", SetArmorReducer),
   __reducerSchema("set_default_actions", SetDefaultActionsReducer),
+  __reducerSchema("set_default_armaments", SetDefaultArmamentsReducer),
   __reducerSchema("set_password", SetPasswordReducer),
   __reducerSchema("set_relics", SetRelicsReducer),
   __reducerSchema("set_stance", SetStanceReducer),
