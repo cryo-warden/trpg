@@ -3,17 +3,17 @@
   "processes": [
     {
       "name": "spacetimedb",
-      "start_command": "bash scripts/prod-stdb.sh",
-      "proxied_ports": ["TRPG_STDB_PORT"]
+      "startCommand": "bash scripts/prod-stdb.sh",
+      "proxiedPorts": ["TRPG_STDB_PORT"]
     },
     {
       "name": "web",
-      "start_command": "bash scripts/prod-web.sh",
-      "proxied_ports": ["TRPG_WEB_PORT"]
+      "startCommand": "bash scripts/prod-web.sh",
+      "proxiedPorts": ["TRPG_WEB_PORT"]
     }
   ],
-  "build_command": "bash -c 'cd web-trpg && bun install && bun run build'",
-  "required_environment_variables": [
+  "buildCommand": "bash -c 'cd web-trpg && bun install && bun run build'",
+  "requiredEnvironmentVariables": [
     "TRPG_STDB_PORT",
     "TRPG_WEB_PORT",
     "TRPG_STDB_DATA_DIR",
