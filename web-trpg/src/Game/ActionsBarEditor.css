@@ -7,11 +7,10 @@
   flex-wrap: wrap;
 }
 
-/* Dragging must not strip the highlight: the chip keeps its golden inner
- * border and lifts with a glow instead of fading out. */
+/* Dragging must not strip the highlight: the chip lifts with a glow
+ * instead of fading out (its golden inner border is an outline now, so
+ * it rides along without being restated here). */
 .actionChip.dragging {
   opacity: 1;
-  box-shadow:
-    inset 0 0 0 2px #d9a521,
-    0 0 8px #d9a521;
+  box-shadow: 0 0 8px #d9a521;
 }
