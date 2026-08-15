@@ -430,7 +430,16 @@ export const LOCATION_MAP_THEMES = {
         { weight: 5, pair: pathPair(pathBlob(["archway"])) },
         { weight: 3, pair: pathPair(pathBlob(["gate"])) },
         { weight: 3, pair: pathPair(pathBlob(["corridor"])) },
-        { weight: 2, pair: pathPair(pathBlob(["crumbling", "stair"], ["climb_down"])) },
+        // Stairs go two ways: descend forward, climb the same crumbling
+        // stair back up — one authored fact, opposite verbs (like the
+        // chasm/rock-wall pair).
+        {
+          weight: 2,
+          pair: pathPair(
+            pathBlob(["crumbling", "stair"], ["climb_down"]),
+            pathBlob(["crumbling", "stair"], ["climb_up"]),
+          ),
+        },
       ],
     },
     roomsSelector: {
