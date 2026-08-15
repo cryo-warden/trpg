@@ -22,4 +22,5 @@ export default __t.row({
     return AppearanceFeatureType.name("appearance_feature_type");
   },
   priority: __t.i32(),
+  exclusionGroup: __t.option(__t.string()).name("exclusion_group"),
 });

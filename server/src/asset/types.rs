@@ -81,6 +81,9 @@ pub struct AppearanceFeatureAsset {
     pub text: String,
     pub appearance_feature_type: AppearanceFeatureType,
     pub priority: i32,
+    /// Mutual-exclusion group (see AppearanceFeature): features sharing a
+    /// non-empty group render at most one at a time.
+    pub exclusion_group: Option<String>,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

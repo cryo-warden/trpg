@@ -649,6 +649,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             text: a.value.text,
             appearance_feature_type: a.value.appearance_feature_type,
             priority: a.value.priority,
+            exclusion_group: a.value.exclusion_group,
         };
         if ctx.db.appearance_features().index().find(index).is_some() {
             ctx.db.appearance_features().index().update(row);

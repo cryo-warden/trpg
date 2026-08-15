@@ -984,7 +984,12 @@ export const questPack = (): AssetPack => ({
   appearanceFeatures: [
     {
       name: "test_jar",
-      value: { text: "jar", appearanceFeatureType: { tag: "Noun" }, priority: 5000 },
+      value: {
+        text: "jar",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 5000,
+        exclusionGroup: undefined,
+      },
     },
     {
       name: "test_shards",
@@ -992,6 +997,7 @@ export const questPack = (): AssetPack => ({
         text: "ceramic shards",
         appearanceFeatureType: { tag: "Noun" },
         priority: 4000,
+        exclusionGroup: undefined,
       },
     },
   ],
@@ -1248,7 +1254,12 @@ export const spawnPack = (): AssetPack => ({
   appearanceFeatures: [
     {
       name: "test_jar",
-      value: { text: "jar", appearanceFeatureType: { tag: "Noun" }, priority: 5000 },
+      value: {
+        text: "jar",
+        appearanceFeatureType: { tag: "Noun" },
+        priority: 5000,
+        exclusionGroup: undefined,
+      },
     },
     {
       name: "test_shards",
@@ -1256,6 +1267,7 @@ export const spawnPack = (): AssetPack => ({
         text: "ceramic shards",
         appearanceFeatureType: { tag: "Noun" },
         priority: 4000,
+        exclusionGroup: undefined,
       },
     },
     {
@@ -1264,6 +1276,7 @@ export const spawnPack = (): AssetPack => ({
         text: "cookie",
         appearanceFeatureType: { tag: "Noun" },
         priority: 5000,
+        exclusionGroup: undefined,
       },
     },
   ],
@@ -1627,6 +1640,7 @@ export const guardedMapPack = ({
         text: "boulder",
         appearanceFeatureType: { tag: "Noun" },
         priority: 5000,
+        exclusionGroup: undefined,
       },
     },
     {
@@ -1635,6 +1649,7 @@ export const guardedMapPack = ({
         text: "rubble",
         appearanceFeatureType: { tag: "Noun" },
         priority: 4000,
+        exclusionGroup: undefined,
       },
     },
   ],

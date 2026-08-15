@@ -3,20 +3,37 @@ import { AppearanceFeatureAsset } from "../../stdb/types";
 // The TS assets ARE the generated wire types; the helpers just construct
 // those generated shapes.
 
-const noun = (text: string, priority: number): AppearanceFeatureAsset => ({
+// `exclusionGroup` ties a feature into a mutual-exclusion group: features
+// sharing one render at most one at a time (see AppearanceFeature). Omitted
+// for the vast majority, which stand alone.
+const noun = (
+  text: string,
+  priority: number,
+  exclusionGroup?: string,
+): AppearanceFeatureAsset => ({
   text,
   appearanceFeatureType: { tag: "Noun" },
   priority,
+  exclusionGroup,
 });
 
 const adjective = (
   text: string,
   priority: number,
+  exclusionGroup?: string,
 ): AppearanceFeatureAsset => ({
   text,
   appearanceFeatureType: { tag: "Adjective" },
   priority,
+  exclusionGroup,
 });
+
+// Identity NOUNS ("skeleton", "zombie") sit ABOVE the baseline "human"
+// (priority -100, the always-replaceable body noun) but BELOW the real
+// creature bodies (priority 100): an identity replaces "human" but yields
+// the noun slot to a wolf or bat, riding along as its paired adjective
+// instead. See the grouping vocabulary near the foot of this file.
+const IDENTITY_NOUN_PRIORITY = 0;
 
 export const APPEARANCE_FEATURES = {
   human: noun("human", -100),
@@ -127,8 +144,13 @@ export const APPEARANCE_FEATURES = {
   scrying: adjective("scrying", 1000),
   fate: adjective("fate", 1000),
   bone: adjective("bone", 1000),
-  skeletal: adjective("skeletal", 1000),
-  zombie: adjective("zombie", 1000),
+  // Undead identities each contribute a NOUN and an ADJECTIVE sharing one
+  // exclusion group: "skeleton"/"zombie" replace "human", but only "skeletal"
+  // /"zombie" survives on a wolf or bat body — never both forms at once.
+  skeleton: noun("skeleton", IDENTITY_NOUN_PRIORITY, "skeletal"),
+  skeletal: adjective("skeletal", 1000, "skeletal"),
+  zombie: noun("zombie", IDENTITY_NOUN_PRIORITY, "zombie"),
+  zombieLike: adjective("zombie", 1000, "zombie"),
   vampiric: adjective("vampiric", 1000),
   ghostly: adjective("ghostly", 1000),
   fiery: adjective("fiery", 1000),

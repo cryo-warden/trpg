@@ -223,6 +223,7 @@ export const AppearanceFeature = __t.object("AppearanceFeature", {
     return AppearanceFeatureType;
   },
   priority: __t.i32(),
+  exclusionGroup: __t.option(__t.string()),
 });
 export type AppearanceFeature = __Infer<typeof AppearanceFeature>;
 
@@ -232,6 +233,7 @@ export const AppearanceFeatureAsset = __t.object("AppearanceFeatureAsset", {
     return AppearanceFeatureType;
   },
   priority: __t.i32(),
+  exclusionGroup: __t.option(__t.string()),
 });
 export type AppearanceFeatureAsset = __Infer<typeof AppearanceFeatureAsset>;
 

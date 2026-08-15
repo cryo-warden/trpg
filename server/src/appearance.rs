@@ -20,4 +20,10 @@ pub struct AppearanceFeature {
     pub text: String,
     pub appearance_feature_type: AppearanceFeatureType,
     pub priority: i32,
+    /// Mutual-exclusion group: features sharing a non-empty group are
+    /// ALTERNATIVES — at most one renders on any entity (the noun when it
+    /// wins the name, else the group's best adjective). This is how an
+    /// identity's noun and adjective ("skeleton"/"skeletal") exclude each
+    /// other. None stands alone in its own group and always applies.
+    pub exclusion_group: Option<String>,
 }

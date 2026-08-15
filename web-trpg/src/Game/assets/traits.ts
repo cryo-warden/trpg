@@ -17,8 +17,11 @@ export const TRAITS = {
   // ATTRIBUTE system — not quite the usual damage types — is planned to
   // give these natures mechanical flavor (see the player-damage-attributes
   // user story).
-  skeletal: statBlock({ appearanceFeatureNames: ["skeletal"] }),
-  zombie: statBlock({ appearanceFeatureNames: ["zombie"] }),
+  // Undead identities contribute BOTH a noun and an adjective; the renderer
+  // picks one — "skeleton"/"zombie" over a human body, "skeletal"/"zombie"
+  // over any other.
+  skeletal: statBlock({ appearanceFeatureNames: ["skeleton", "skeletal"] }),
+  zombie: statBlock({ appearanceFeatureNames: ["zombie", "zombieLike"] }),
   vampire: statBlock({ appearanceFeatureNames: ["vampiric"] }),
   ghost: statBlock({ appearanceFeatureNames: ["ghostly"] }),
   fire_nature: statBlock({ appearanceFeatureNames: ["fiery"] }),
