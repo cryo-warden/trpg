@@ -27,6 +27,32 @@ secador::secador!(
             ActionEffect(ActionEffect),
         }
 
+        /// The free hand of the DEFAULT configuration: the stored total
+        /// with the in-hand set swapped for the default set. Equip and
+        /// the take auto-wield edit the DEFAULT slot, so their grip rule
+        /// evaluates the configuration they edit — never whatever stance
+        /// override happens to be in hand right now.
+        fn default_configuration_hand(ecs: Ecs, owner_entity_id: u64) -> i32 {
+            let owner = ecs.find(owner_entity_id);
+            let total = owner
+                .total_stat_block()
+                .map_or(0, |t| i32::from(t.stat_block.hand));
+            let hand_of = |armament_id: &u32| {
+                ecs.db
+                    .armaments()
+                    .id()
+                    .find(armament_id)
+                    .map_or(0, |a| i32::from(a.stat_block.hand))
+            };
+            let in_hand: i32 = { owner.equipment() }
+                .map(|e| e.armament_ids.iter().map(hand_of).sum())
+                .unwrap_or(0);
+            let of_default: i32 = { owner.default_armaments() }
+                .map(|d| d.armament_ids.iter().map(hand_of).sum())
+                .unwrap_or(0);
+            total - in_hand + of_default
+        }
+
         /// THE take: shared verbatim by the Take effect and Dive's grab so
         /// the two can never drift. A co-located item moves into the taker
         /// (carrying IS location — pocketing needs no free hand), and an
@@ -68,16 +94,15 @@ secador::secador!(
                     ecs.db.location_components().entity_id().update(item_location);
                     if let crate::item::ItemRef::Armament(armament_id) = item.item_ref {
                         let taker = ecs.find(taker_entity_id);
-                        let current_hand = taker
-                            .total_stat_block()
-                            .map_or(0, |t| i32::from(t.stat_block.hand));
+                        let default_hand =
+                            default_configuration_hand(ecs, taker_entity_id);
                         let armament_hand = ecs
                             .db
                             .armaments()
                             .id()
                             .find(armament_id)
                             .map_or(0, |a| i32::from(a.stat_block.hand));
-                        if current_hand + armament_hand >= 0 {
+                        if default_hand + armament_hand >= 0 {
                             // The auto-wield goes to the DEFAULT slot; the
                             // hands re-resolve (an active stance override
                             // keeps winning).
@@ -118,16 +143,14 @@ secador::secador!(
             let owner = ecs.find(owner_entity_id);
             match item.item_ref {
                 crate::item::ItemRef::Armament(armament_id) => {
-                    let current_hand = owner
-                        .total_stat_block()
-                        .map_or(0, |t| i32::from(t.stat_block.hand));
+                    let default_hand = default_configuration_hand(ecs, owner_entity_id);
                     let armament_hand = ecs
                         .db
                         .armaments()
                         .id()
                         .find(armament_id)
                         .map_or(0, |a| i32::from(a.stat_block.hand));
-                    if current_hand + armament_hand < 0 {
+                    if default_hand + armament_hand < 0 {
                         return false;
                     }
                     let mut armament_ids = owner

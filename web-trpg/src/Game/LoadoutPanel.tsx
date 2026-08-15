@@ -5,6 +5,7 @@ import {
   useGearStatBlocks,
   useMyArmorId,
   useMyDefaultArmamentIds,
+  useMyEquipmentArmamentIds,
   useMyRelicIds,
   useOwnedItems,
 } from "./context/StdbContext/loadout";
@@ -12,18 +13,21 @@ import {
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "./context/StdbContext/components";
+import { useSpecialActionIds } from "./context/StdbContext/assetLookup";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { StatBlockSummary } from "./StatBlockSummary";
 
 /**
- * The worn-gear menu: ONE clothing/armor slot and up to FOUR relics, worn
- * across every stance — plus the DEFAULT armament slot (what the hands
- * hold when the active stance assigns no override; changed in-fiction by
- * the equip/unequip actions, so it displays here without proposing).
- * Above the slots: the player's TOTAL stats, and the combined
- * contribution of everything currently worn and default-wielded. All
- * rules (ownership counting, the four-relic cap) are enforced
- * server-side; this menu only proposes.
+ * The worn-gear menu: ONE clothing/armor slot, up to FOUR relics, and the
+ * DEFAULT armament slot (what the hands hold when the active stance
+ * assigns no override). Everything visible here toggles here: armament
+ * buttons queue the registered equip/unequip ACTION against the item
+ * entity — a round like any act, hands re-resolving server-side — and a
+ * button that cannot be used right now renders visibly disabled (an
+ * armament past the free hand, a relic past the cap), re-enabling live
+ * as gear changes. Above the slots: the player's TOTAL stats and the
+ * combined contribution of everything worn and default-wielded. All
+ * rules are enforced server-side; this menu only proposes.
  */
 export const LoadoutPanel = () => {
   const connection = useStdbConnection();
@@ -34,6 +38,7 @@ export const LoadoutPanel = () => {
   const gearStats = useGearStatBlocks();
   const playerEntity = usePlayerEntity();
   const total = useTotalStatBlockComponent(playerEntity);
+  const specialActionIds = useSpecialActionIds();
 
   const ownedArmors = owned.filter((item) => item.kind === "Armor");
   const ownedRelics = owned.filter((item) => item.kind === "Relic");
@@ -42,6 +47,19 @@ export const LoadoutPanel = () => {
   // The counted-multiset rule for EVERY kind — armor included: two
   // identical armors are two entities, and only the first reads as worn.
   const armorOnIds = armorId == null ? [] : [armorId];
+
+  // The grip rule evaluates the configuration these buttons EDIT: the
+  // stats you would have using the DEFAULT set — the total with the
+  // in-hand set swapped for the defaults — never whatever stance
+  // override happens to be in hand right now. Mirror of the server's
+  // default_configuration_hand.
+  const equipmentArmamentIds = useMyEquipmentArmamentIds();
+  const armamentHandOf = (assetId: number) =>
+    gearStats.armaments.get(assetId)?.hand ?? 0;
+  const defaultConfigurationHand =
+    (total?.statBlock.hand ?? 0) -
+    equipmentArmamentIds.reduce((sum, id) => sum + armamentHandOf(id), 0) +
+    defaultArmamentIds.reduce((sum, id) => sum + armamentHandOf(id), 0);
 
   // What the current gear set adds up to: worn armor + worn relics + the
   // default wielded set, summed from the ASSET blocks.
@@ -132,6 +150,10 @@ export const LoadoutPanel = () => {
               item,
               items: ownedRelics,
             })}
+            disabled={
+              !assetInstanceIsOn({ ids: relicIds, item, items: ownedRelics }) &&
+              relicIds.length >= 4
+            }
             onClick={() =>
               connection.reducers.setRelics({
                 relicIds: toggledAssetIds({
@@ -155,12 +177,28 @@ export const LoadoutPanel = () => {
             item,
             items: ownedArmaments,
           });
+          const verbActionId = on
+            ? specialActionIds.unequip
+            : specialActionIds.equip;
+          // Mirror of equip_item's grip rule: wielding this must keep
+          // the DEFAULT configuration's hands non-negative. Unequipping
+          // always frees.
+          const overweight =
+            !on && defaultConfigurationHand + armamentHandOf(item.assetId) < 0;
           return (
             <Button
               key={item.entityId.toString()}
               className={on ? "active" : ""}
               interesting={on}
-              disabled
+              disabled={verbActionId == null || overweight}
+              onClick={() => {
+                if (verbActionId != null) {
+                  connection.reducers.act({
+                    actionId: verbActionId,
+                    targetEntityId: item.entityId,
+                  });
+                }
+              }}
             >
               {item.name}
               {summaryOf("Armament", item.assetId)}
@@ -168,7 +206,8 @@ export const LoadoutPanel = () => {
           );
         })}
         {ownedArmaments.length === 0 && <div>Nothing carried to wield.</div>}
-        <div>Changed by the equip and unequip actions.</div>
+        <div>Toggling queues the equip or unequip action — a round like
+        any act.</div>
       </section>
     </div>
   );

@@ -413,9 +413,13 @@ export const StancesMenu = () => {
               className={usesDefault ? "active" : ""}
               interesting={usesDefault}
               onClick={() =>
+                // A true toggle: on defaults, clicking moves to a CUSTOM
+                // set with nothing assigned yet (Some([]) — deliberately
+                // bare hands); on an override, clicking returns to the
+                // default set (None).
                 connection.reducers.assignStanceArmaments({
                   stanceId: stance.id,
-                  armamentIds: undefined,
+                  armamentIds: usesDefault ? [] : undefined,
                 })
               }
             >

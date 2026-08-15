@@ -1,8 +1,10 @@
 .TurnPauseOverlay {
-  position: fixed;
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
+  /* Centered over the MESSAGE panel, not the viewport: it shares the
+   * events grid area, so on a narrow screen it can never sit atop menu
+   * stats — and the game often pauses exactly while a menu is open. */
+  grid-area: events;
+  place-self: start center;
+  margin-top: 2rem;
   padding: 0.35rem 1rem;
   border-radius: 0.5rem;
   background: rgba(0, 0, 0, 0.65);

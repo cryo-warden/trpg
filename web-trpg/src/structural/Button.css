@@ -1,5 +1,12 @@
 .Button {
   position: relative;
+
+  /* Visibly disabled, never hidden or silently inert: what a menu shows
+   * it can modify, and what it cannot modify RIGHT NOW says so. */
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
   margin: 4px;
   padding: 1em;
   min-width: 16mm;

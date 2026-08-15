@@ -124,6 +124,81 @@ test("a stance with NO override lights 'use default' and shows the default items
   expect(duelingUseDefault.className).not.toContain("active");
 });
 
+test("'use default' toggles: active proposes an EMPTY custom set, an override proposes the default", () => {
+  const assignStanceArmaments = mock(() => {});
+  const withDefault = {
+    ...tables(),
+    default_armaments_components: mockTable([
+      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+    ]),
+  };
+  const wrapper = gameWrapper(withDefault, {
+    identity: {} as Identity,
+    reducers: { assignStanceArmaments },
+  });
+  const { container } = render(<StancesMenu />, { wrapper });
+
+  // Standing rides the defaults: clicking its lit "use default" moves it
+  // to a custom set with nothing assigned yet.
+  const standing = cardOf(container, "standing")!;
+  const standingUseDefault = [...standing.querySelectorAll("button")].find(
+    (button) => button.textContent === "use default",
+  )!;
+  fireEvent.click(standingUseDefault);
+  expect(assignStanceArmaments).toHaveBeenCalledWith({
+    stanceId: stanceIdOf("standing"),
+    armamentIds: [],
+  });
+
+  // Dueling holds an override: clicking its unlit "use default" returns
+  // it to the default set.
+  const dueling = cardOf(container, "dueling")!;
+  const duelingUseDefault = [...dueling.querySelectorAll("button")].find(
+    (button) => button.textContent === "use default",
+  )!;
+  fireEvent.click(duelingUseDefault);
+  expect(assignStanceArmaments).toHaveBeenCalledWith({
+    stanceId: stanceIdOf("dueling"),
+    armamentIds: undefined,
+  });
+});
+
+test("clicking an active-by-default item enters custom mode WITHOUT it, keeping the rest", () => {
+  const assignStanceArmaments = mock(() => {});
+  const twoDefaults = {
+    ...tables(),
+    location_components: mockTable([
+      { entityId: 5n, locationEntityId: 1n },
+      { entityId: 6n, locationEntityId: 1n },
+    ]),
+    item_components: mockTable([
+      { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
+      { entityId: 6n, itemRef: { tag: "Armament", value: armamentIdOf("club") } },
+    ]),
+    default_armaments_components: mockTable([
+      { entityId: 1n, armamentIds: [armamentIdOf("sword"), armamentIdOf("club")] },
+    ]),
+  };
+  const wrapper = gameWrapper(twoDefaults, {
+    identity: {} as Identity,
+    reducers: { assignStanceArmaments },
+  });
+  const { container } = render(<StancesMenu />, { wrapper });
+
+  // Standing rides the defaults; clicking the club (active by default)
+  // copy-on-writes the visible set minus the club into a new override.
+  const standing = cardOf(container, "standing")!;
+  const club = [...standing.querySelectorAll("button")].find(
+    (button) => button.textContent === "club",
+  )!;
+  expect(club.className).toContain("active");
+  fireEvent.click(club);
+  expect(assignStanceArmaments).toHaveBeenCalledWith({
+    stanceId: stanceIdOf("standing"),
+    armamentIds: [armamentIdOf("sword")],
+  });
+});
+
 test("gallery dots: one per reachable stance, the active stance marked", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });

@@ -59,8 +59,13 @@ export const useOwnedItems = (): OwnedItem[] => {
         .filter((row) => row.locationEntityId === playerEntity)
         .map((row) => row.entityId),
     );
+    // Sorted by ENTITY id: the counted-multiset rule reads "the first N
+    // instances" off this order, and buttons render in it — raw table
+    // iteration order can shift between updates, which would make a
+    // click light up a DIFFERENT instance's button.
     return itemRows
       .filter((row) => carried.has(row.entityId))
+      .sort((a, b) => (a.entityId < b.entityId ? -1 : 1))
       .map((row) => {
         const ref = row.itemRef;
         if (ref.tag === "QuestItem") {

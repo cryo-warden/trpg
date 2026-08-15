@@ -2,6 +2,7 @@ import { test, expect, mock } from "bun:test";
 import { fireEvent, render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
 import {
+  actionIdOf,
   armamentIdOf,
   armorIdOf,
   mockTable,
@@ -97,6 +98,152 @@ test("the menu shows totals, the equipped contribution, and the default armament
   const defaults = container.querySelector(".defaultArmaments");
   expect(defaults?.textContent).toContain("sword");
   expect(defaults?.querySelectorAll("button.active").length).toBe(1);
+});
+
+const SPECIAL_ACTION_ROWS = [
+  { key: { tag: "Equip" }, actionId: actionIdOf("equip") },
+  { key: { tag: "Unequip" }, actionId: actionIdOf("unequip") },
+];
+
+test("an armament button queues equip when off, unequip when on", () => {
+  const act = mock(() => {});
+  const withRegistry = {
+    ...tables(),
+    special_actions: mockTable(SPECIAL_ACTION_ROWS),
+    total_stat_block_components: mockTable([
+      { entityId: 1n, statBlock: { hand: 2 } },
+    ]),
+  };
+  const off = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(withRegistry, {
+      identity: {} as Identity,
+      reducers: { act },
+    }),
+  });
+  const swordOff = [
+    ...off.container.querySelectorAll(".defaultArmaments button"),
+  ].find((button) => button.textContent!.startsWith("sword"))!;
+  expect(swordOff.hasAttribute("disabled")).toBe(false);
+  fireEvent.click(swordOff);
+  expect(act).toHaveBeenCalledWith({
+    actionId: actionIdOf("equip"),
+    targetEntityId: 5n,
+  });
+
+  const actOn = mock(() => {});
+  const assigned = {
+    ...withRegistry,
+    default_armaments_components: mockTable([
+      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+    ]),
+  };
+  const on = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(assigned, {
+      identity: {} as Identity,
+      reducers: { act: actOn },
+    }),
+  });
+  const swordOn = [
+    ...on.container.querySelectorAll(".defaultArmaments button"),
+  ].find((button) => button.textContent!.startsWith("sword"))!;
+  expect(swordOn.className).toContain("active");
+  fireEvent.click(swordOn);
+  expect(actOn).toHaveBeenCalledWith({
+    actionId: actionIdOf("unequip"),
+    targetEntityId: 5n,
+  });
+});
+
+test("an armament past the DEFAULT configuration's free hand renders visibly disabled", () => {
+  // The basis is the DEFAULT configuration, not what's in hand: total
+  // hand 0 with the sword's -1 folded in (equipment holds it), defaults
+  // empty → default configuration hand = 0 - (-1) + 0 = 1. The staff
+  // (-2) would drive it negative: visibly disabled. The sword (-1)
+  // stays available.
+  const act = mock(() => {});
+  const withStaff = {
+    ...tables(),
+    location_components: mockTable([
+      { entityId: 5n, locationEntityId: 1n },
+      { entityId: 9n, locationEntityId: 1n },
+    ]),
+    item_components: mockTable([
+      { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
+      { entityId: 9n, itemRef: { tag: "Armament", value: armamentIdOf("staff") } },
+    ]),
+    special_actions: mockTable(SPECIAL_ACTION_ROWS),
+    // Total reflects the sword IN HAND (hand 1 - 1 = 0 base... authored
+    // here directly): total hand 0 with the sword's -1 folded in.
+    total_stat_block_components: mockTable([
+      { entityId: 1n, statBlock: { hand: 0 } },
+    ]),
+    equipment_components: mockTable([
+      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+    ]),
+  };
+  const { container } = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(withStaff, {
+      identity: {} as Identity,
+      reducers: { act },
+    }),
+  });
+  // Default configuration hand: 0 - (sword -1) + (defaults: none) = 1.
+  const buttons = [...container.querySelectorAll(".defaultArmaments button")];
+  const staff = buttons.find((b) => b.textContent!.startsWith("staff"))!;
+  const sword = buttons.find((b) => b.textContent!.startsWith("sword"))!;
+  expect(staff.hasAttribute("disabled")).toBe(true);
+  expect(sword.hasAttribute("disabled")).toBe(false);
+  // A disabled button proposes nothing.
+  fireEvent.click(staff);
+  expect(act).not.toHaveBeenCalled();
+});
+
+test("owned items render in stable ENTITY order regardless of row order", () => {
+  // Regression: raw table iteration order fed both button order and the
+  // counted first-instance rule, so a click could light a DIFFERENT
+  // instance's button after an update reshuffled rows.
+  const reversedRows = {
+    ...tables(),
+    location_components: mockTable([
+      { entityId: 9n, locationEntityId: 1n },
+      { entityId: 5n, locationEntityId: 1n },
+    ]),
+    item_components: mockTable([
+      { entityId: 9n, itemRef: { tag: "Armament", value: armamentIdOf("staff") } },
+      { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
+    ]),
+  };
+  const { container } = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(reversedRows, { identity: {} as Identity }),
+  });
+  const labels = [
+    ...container.querySelectorAll(".defaultArmaments button"),
+  ].map((button) => button.textContent!.split(" ")[0]);
+  expect(labels).toEqual(["sword", "staff"]);
+});
+
+test("a fifth relic renders visibly disabled at the four-cap", () => {
+  const atCap = {
+    ...tables(),
+    relics_components: mockTable([
+      {
+        entityId: 1n,
+        relicIds: [
+          relicIdOf("frost_talisman"),
+          relicIdOf("storm_bead"),
+          relicIdOf("bone_idol"),
+          relicIdOf("sun_medallion"),
+        ],
+      },
+    ]),
+  };
+  const { container } = render(<LoadoutPanel />, {
+    wrapper: gameWrapper(atCap, { identity: {} as Identity }),
+  });
+  const charm = [...container.querySelectorAll(".relics button")].find(
+    (button) => button.textContent!.startsWith("ember_charm"),
+  )!;
+  expect(charm.hasAttribute("disabled")).toBe(true);
 });
 
 test("toggling a relic on proposes the extended relic set", () => {

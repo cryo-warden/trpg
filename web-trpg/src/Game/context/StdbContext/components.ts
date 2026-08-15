@@ -283,14 +283,19 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
         .filter((row) => row.locationEntityId === playerEntity)
         .map((row) => row.entityId),
     );
-    const carriedSameKind = itemRows.flatMap((row) => {
-      const rowRef = row.itemRef;
-      return carried.has(row.entityId) &&
-        rowRef.tag !== "QuestItem" &&
-        rowRef.tag === ref.tag
-        ? [{ entityId: row.entityId, assetId: rowRef.value }]
-        : [];
-    });
+    // Sorted by entity id: the same stable order every owned-items
+    // surface uses, so "the first instance is on" answers identically
+    // here and in the menus.
+    const carriedSameKind = itemRows
+      .flatMap((row) => {
+        const rowRef = row.itemRef;
+        return carried.has(row.entityId) &&
+          rowRef.tag !== "QuestItem" &&
+          rowRef.tag === ref.tag
+          ? [{ entityId: row.entityId, assetId: rowRef.value }]
+          : [];
+      })
+      .sort((a, b) => (a.entityId < b.entityId ? -1 : 1));
     const onIds: number[] =
       ref.tag === "Armament"
         ? [...(defaultArmaments?.armamentIds ?? [])]
