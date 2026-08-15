@@ -68,16 +68,8 @@
         margin: 0.2em 0;
       }
 
-      /* The bar of assigned actions: drag to reorder (position is the
-       * hotkey), tap to remove. touch-action lives inline on the chips so
-       * dragging beats scrolling only there. */
-      .actionBar {
-        display: flex;
-        flex-wrap: wrap;
-      }
-      .actionChip.dragging {
-        opacity: 0.5;
-      }
+      /* The bar of assigned actions lives in ActionsBarEditor.css —
+       * shared with the equip menu's default bar. */
 
       /* The full would-be totals, by category, compact: two per row, each
        * with its parenthesized delta from the no-stance base. */

@@ -222,12 +222,32 @@ pub struct WeightedNameAsset {
     pub name: String,
 }
 
+/// A matched pair of path presentations, authored: forward leads deeper,
+/// backward faces home (opening pairs with opening; chasm with the rock
+/// wall climbed back up).
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct PathBlobPairAsset {
+    pub forward: EntityBlobAsset,
+    pub backward: EntityBlobAsset,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct PathBlobPairSampleAsset {
+    pub weight: u8,
+    pub pair: PathBlobPairAsset,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct PathBlobPairsSamplerAsset {
+    pub selections: Vec<PathBlobPairSampleAsset>,
+}
+
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct LocationMapThemeAsset {
     pub decorations_selector: EntityBlobsSamplerAsset,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,
-    pub paths_selector: EntityBlobsSamplerAsset,
+    pub paths_selector: PathBlobPairsSamplerAsset,
     pub rooms_selector: EntityBlobsSamplerAsset,
     /// The themed fortune-telling scenery placed in each map's guaranteed
     /// checkpoint room (the entrance).
@@ -316,6 +336,11 @@ pub struct LocationMapConnectionAsset {
     pub exit_anchor: ConnectionAnchor,
     pub destination_anchor: ConnectionAnchor,
     pub both_ways: bool,
+    /// CROSS-MAP paths are even more special: an authored pair themed by
+    /// both endpoints ("dark cave mouth" going in, "bright cave mouth"
+    /// coming out). forward rides the authored direction, backward the
+    /// both_ways reverse; omitted, each side samples its exit theme.
+    pub path_pair: Option<PathBlobPairAsset>,
 }
 
 // One entry of an authored Record: `name` is the Record key, taken verbatim

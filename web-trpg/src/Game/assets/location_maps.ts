@@ -74,6 +74,15 @@ const pathBlob = (
   offeredActionNames: string[] = ["move"],
 ): EntityBlobAsset => blob({ appearanceFeatureNames, offeredActionNames });
 
+/** A MATCHED pair of path presentations: the two directions between two
+ * rooms are one authored fact — an opening pairs with an opening, a
+ * chasm with the rock wall climbed back up. Omit `backward` for the
+ * symmetric case. */
+const pathPair = (
+  forward: EntityBlobAsset,
+  backward: EntityBlobAsset = forward,
+) => ({ forward, backward });
+
 // Path guards: the same breakable shape, standing in for a blocked way.
 const boulderGuard = container(["boulder"], ["rubble"]);
 const barricadeGuard = container(["barricade"], ["scrap_wood"]);
@@ -179,8 +188,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 7,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: pathBlob(["trail"]) },
-        { weight: 4, blob: pathBlob(["path"]) },
+        { weight: 5, pair: pathPair(pathBlob(["trail"])) },
+        { weight: 4, pair: pathPair(pathBlob(["path"])) },
       ],
     },
     roomsSelector: {
@@ -217,12 +226,19 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 4,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: pathBlob(["opening"]) },
-        { weight: 4, blob: pathBlob(["hole"]) },
-        // The verbs the user squeezes and climbs by: different paths,
-        // different crossings, different messages.
-        { weight: 2, blob: pathBlob(["chasm"], ["climb_down"]) },
-        { weight: 2, blob: pathBlob(["crack"], ["squeeze"]) },
+        { weight: 5, pair: pathPair(pathBlob(["opening"])) },
+        { weight: 4, pair: pathPair(pathBlob(["hole"])) },
+        // The verbs the player squeezes and climbs by: different paths,
+        // different crossings, different messages — and the chasm's far
+        // side is the ROCK WALL you climb back up, one authored fact.
+        {
+          weight: 2,
+          pair: pathPair(
+            pathBlob(["chasm"], ["climb_down"]),
+            pathBlob(["rock_wall"], ["climb_down"]),
+          ),
+        },
+        { weight: 2, pair: pathPair(pathBlob(["crack"], ["squeeze"])) },
       ],
     },
     roomsSelector: {
@@ -259,8 +275,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 5,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: pathBlob(["trail"]) },
-        { weight: 3, blob: pathBlob(["opening"]) },
+        { weight: 5, pair: pathPair(pathBlob(["trail"])) },
+        { weight: 3, pair: pathPair(pathBlob(["opening"])) },
       ],
     },
     roomsSelector: {
@@ -296,8 +312,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 6,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: pathBlob(["trail"]) },
-        { weight: 3, blob: pathBlob(["opening"]) },
+        { weight: 5, pair: pathPair(pathBlob(["trail"])) },
+        { weight: 3, pair: pathPair(pathBlob(["opening"])) },
       ],
     },
     roomsSelector: {
@@ -399,10 +415,10 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 6,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: pathBlob(["archway"]) },
-        { weight: 3, blob: pathBlob(["gate"]) },
-        { weight: 3, blob: pathBlob(["corridor"]) },
-        { weight: 2, blob: pathBlob(["crumbling", "stair"], ["climb_down"]) },
+        { weight: 5, pair: pathPair(pathBlob(["archway"])) },
+        { weight: 3, pair: pathPair(pathBlob(["gate"])) },
+        { weight: 3, pair: pathPair(pathBlob(["corridor"])) },
+        { weight: 2, pair: pathPair(pathBlob(["crumbling", "stair"], ["climb_down"])) },
       ],
     },
     roomsSelector: {
@@ -485,8 +501,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 5,
     pathsSelector: {
       selections: [
-        { weight: 5, blob: pathBlob(["archway"]) },
-        { weight: 3, blob: pathBlob(["stair"]) },
+        { weight: 5, pair: pathPair(pathBlob(["archway"])) },
+        { weight: 3, pair: pathPair(pathBlob(["stair"])) },
       ],
     },
     roomsSelector: {
@@ -741,22 +757,65 @@ export type LocationMapName = keyof typeof LOCATION_MAPS;
 // Paths materialize lazily — a player standing in the anchor room demands
 // the far map into existence.
 const connect = (
-  exit: LocationMapName,
-  exitAnchor: LocationMapConnectionAsset["exitAnchor"]["tag"],
-  destination: LocationMapName,
-  destinationAnchor: LocationMapConnectionAsset["destinationAnchor"]["tag"],
+  {
+    exit,
+    exitAnchor,
+    destination,
+    destinationAnchor,
+    pathPair: connectionPathPair,
+  }: {
+    exit: LocationMapName;
+    exitAnchor: LocationMapConnectionAsset["exitAnchor"]["tag"];
+    destination: LocationMapName;
+    destinationAnchor: LocationMapConnectionAsset["destinationAnchor"]["tag"];
+    /** Cross-map crossings are even more special: an authored pair
+     * themed by BOTH endpoints (forward = the authored direction). */
+    pathPair?: LocationMapConnectionAsset["pathPair"];
+  },
 ): LocationMapConnectionAsset => ({
   exitLocationMapName: exit,
   destinationLocationMapName: destination,
   exitAnchor: { tag: exitAnchor },
   destinationAnchor: { tag: destinationAnchor },
   bothWays: true,
+  pathPair: connectionPathPair,
 });
 
 export const LOCATION_MAP_CONNECTIONS: LocationMapConnectionAsset[] = [
-  connect("start_zone", "Branch", "beginner_cave", "Entrance"),
-  connect("start_zone", "Ending", "verdant_meadow", "Entrance"),
-  connect("verdant_meadow", "Ending", "whispering_forest", "Entrance"),
-  connect("whispering_forest", "Ending", "old_keep", "Entrance"),
-  connect("old_keep", "Ending", "elemental_sanctum", "Entrance"),
+  connect({
+    exit: "start_zone",
+    exitAnchor: "Branch",
+    destination: "beginner_cave",
+    destinationAnchor: "Entrance",
+    // Themed by both endpoints: going in, a dark cave mouth; coming
+    // back out, a bright one.
+    pathPair: pathPair(
+      pathBlob(["dark", "cave_mouth"]),
+      pathBlob(["bright", "cave_mouth"]),
+    ),
+  }),
+  connect({
+    exit: "start_zone",
+    exitAnchor: "Ending",
+    destination: "verdant_meadow",
+    destinationAnchor: "Entrance",
+  }),
+  connect({
+    exit: "verdant_meadow",
+    exitAnchor: "Ending",
+    destination: "whispering_forest",
+    destinationAnchor: "Entrance",
+  }),
+  connect({
+    exit: "whispering_forest",
+    exitAnchor: "Ending",
+    destination: "old_keep",
+    destinationAnchor: "Entrance",
+  }),
+  connect({
+    exit: "old_keep",
+    exitAnchor: "Ending",
+    destination: "elemental_sanctum",
+    destinationAnchor: "Entrance",
+  }),
 ];

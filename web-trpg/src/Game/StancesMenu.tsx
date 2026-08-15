@@ -26,13 +26,9 @@ import {
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { reachableStanceIds } from "./domain/stanceReachability";
 import { signedStatSummary } from "./domain/statSummary";
-import {
-  ALL_STATS,
-  IntStatKey,
-  STAT_GROUPS,
-  statWithDelta,
-} from "./statGroups";
+import { ALL_STATS, IntStatKey } from "./statGroups";
 import { StatBlockSummary } from "./StatBlockSummary";
+import { StatGroupsView } from "./StatGroupsView";
 
 /**
  * The standalone stances menu: one card per REACHABLE stance. There is no
@@ -187,22 +183,10 @@ export const StancesMenu = () => {
                 <StatBlockSummary statBlock={stance.statBlock} />
               </div>
             )}
-            {STAT_GROUPS.map((group) => (
-              <div className="statGroup" key={group.label}>
-                <h4>{group.label}</h4>
-                <div className="totals">
-                  {group.stats.map(([key, label]) => (
-                    <div key={key}>
-                      {label}{" "}
-                      {statWithDelta(
-                        candidate[key],
-                        candidate[key] - baseStats[key],
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <StatGroupsView
+              statOf={(key) => candidate[key]}
+              deltaOf={(key) => candidate[key] - baseStats[key]}
+            />
             {grantedActionNames.length > 0 && (
               <div>Grants: {grantedActionNames.join(", ")}</div>
             )}

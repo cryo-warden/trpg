@@ -861,19 +861,28 @@ fn materialize_connection(
         rng,
     )
     .ok_or("destination anchor resolves to no room")?;
-    // The path wears the EXIT map's theme.
+    // An AUTHORED presentation wins (each directed row carries its half
+    // of the connection's pair — "dark cave mouth" in, "bright cave
+    // mouth" out); otherwise the path wears the EXIT map's theme (the
+    // sampled pair's exploring direction).
     let exit_map = ecs
         .db
         .location_maps()
         .id()
         .find(connection.exit_location_map_id)
         .ok_or("unknown exit map")?;
-    let path_blob = ecs
-        .db
-        .location_map_themes()
-        .id()
-        .find(exit_map.theme_id)
-        .and_then(|theme| theme.paths_selector.sample(rng).map(|b| b.to_owned()));
+    let path_blob = connection.path_blob.clone().or_else(|| {
+        ecs.db
+            .location_map_themes()
+            .id()
+            .find(exit_map.theme_id)
+            .and_then(|theme| {
+                theme
+                    .paths_selector
+                    .sample(rng)
+                    .map(|pair| pair.forward.clone())
+            })
+    });
     match path_blob {
         Some(blob) => {
             ecs.new_path(blob, room_entity_id, destination_room)?;

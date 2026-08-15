@@ -1,0 +1,17 @@
+/* The bar of assigned actions: drag to reorder (position is the hotkey),
+ * tap to remove. touch-action lives inline on the chips so dragging
+ * beats scrolling only there. Unscoped: the stance cards and the equip
+ * menu's default bar share this one editor. */
+.actionBar {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+/* Dragging must not strip the highlight: the chip keeps its golden inner
+ * border and lifts with a glow instead of fading out. */
+.actionChip.dragging {
+  opacity: 1;
+  box-shadow:
+    inset 0 0 0 2px #d9a521,
+    0 0 8px #d9a521;
+}

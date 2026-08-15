@@ -44,9 +44,14 @@ export const ActionButton = ({
   const validOptions = useActionOptions(finalTarget);
   const isValid = validOptions.includes(actionId);
 
-  const isActive = actionStateComponent?.actionId === actionId;
+  // Active/queued is a fact about THIS action against THIS target: the
+  // same action rendered on another entity's card must not glow.
+  const isActive =
+    actionStateComponent?.actionId === actionId &&
+    actionStateComponent?.targetEntityId === finalTarget;
   const isQueued = (actionQueue?.entries ?? []).some(
-    (entry) => entry.actionId === actionId,
+    (entry) =>
+      entry.actionId === actionId && entry.targetEntityId === finalTarget,
   );
 
   return (

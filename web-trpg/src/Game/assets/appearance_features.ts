@@ -100,6 +100,10 @@ export const APPEARANCE_FEATURES = {
   corridor: noun("corridor", 10000),
   stair: noun("stair", 10000),
   rubble: noun("rubble", 10000),
+  // Paired-path opposites: the chasm's far side, and the mouths of
+  // cross-map crossings.
+  rock_wall: noun("rock wall", 10000),
+  cave_mouth: noun("cave mouth", 10000),
   bones: noun("bones", 10000),
   brazier: noun("brazier", 10000),
   altar: noun("altar", 10000),
@@ -110,6 +114,8 @@ export const APPEARANCE_FEATURES = {
   hollow: adjective("hollow", 1000),
   // Boss drops sparkle: the reward that anticipation promised.
   sparkling: adjective("sparkling", 1000),
+  dark: adjective("dark", 1000),
+  bright: adjective("bright", 1000),
   tiny: adjective("tiny", 1000),
   small: adjective("small", 900),
   big: adjective("big", 900),

@@ -1,0 +1,11 @@
+/* The compact categorized stats: two per row per category, wherever the
+ * view renders — stance cards and the equip menu alike. */
+.statGroup h4 {
+  opacity: 0.7;
+  margin: 0.4em 0 0.1em;
+}
+.statGroup .totals {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 0.6em;
+}

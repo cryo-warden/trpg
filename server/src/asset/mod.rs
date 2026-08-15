@@ -22,6 +22,7 @@ use crate::{
         },
         location_map_theme::{
             location_map_themes, EntityBlobSample, EntityBlobsSampler, LocationMapTheme,
+            PathBlobPair, PathBlobPairSample, PathBlobPairsSampler,
         },
         armament::{armaments, Armament},
         armor::{armors, Armor},
@@ -885,7 +886,23 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             )?,
             min_decoration_count: t.value.min_decoration_count,
             max_decoration_count: t.value.max_decoration_count,
-            paths_selector: resolve_entity_blobs_sampler(t.value.paths_selector, &maps)?,
+            paths_selector: PathBlobPairsSampler {
+                selections: t
+                    .value
+                    .paths_selector
+                    .selections
+                    .into_iter()
+                    .map(|s| {
+                        Ok::<_, String>(PathBlobPairSample {
+                            weight: s.weight,
+                            pair: PathBlobPair {
+                                forward: resolve_entity_blob(s.pair.forward, &maps)?,
+                                backward: resolve_entity_blob(s.pair.backward, &maps)?,
+                            },
+                        })
+                    })
+                    .collect::<Result<_, _>>()?,
+            },
             rooms_selector: resolve_entity_blobs_sampler(t.value.rooms_selector, &maps)?,
             checkpoints_selector: resolve_entity_blobs_sampler(
                 t.value.checkpoints_selector,
@@ -937,6 +954,15 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             "location map",
             &connection.destination_location_map_name,
         )?;
+        // The authored pair splits across the directed rows: forward on
+        // the authored direction, backward on the both_ways reverse.
+        let (forward_blob, backward_blob) = match connection.path_pair {
+            Some(pair) => (
+                Some(resolve_entity_blob(pair.forward, &maps)?),
+                Some(resolve_entity_blob(pair.backward, &maps)?),
+            ),
+            None => (None, None),
+        };
         ctx.db
             .location_map_connections()
             .insert(LocationMapConnection {
@@ -945,6 +971,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 destination_location_map_id: destination_id,
                 exit_anchor: connection.exit_anchor.clone(),
                 destination_anchor: connection.destination_anchor.clone(),
+                path_blob: forward_blob,
             });
         next_connection_id += 1;
         if connection.both_ways {
@@ -956,6 +983,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                     destination_location_map_id: exit_id,
                     exit_anchor: connection.destination_anchor,
                     destination_anchor: connection.exit_anchor,
+                    path_blob: backward_blob,
                 });
             next_connection_id += 1;
         }

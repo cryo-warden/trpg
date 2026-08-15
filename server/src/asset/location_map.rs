@@ -118,6 +118,10 @@ pub struct LocationMapConnection {
     pub destination_location_map_id: u32,
     pub exit_anchor: ConnectionAnchor,
     pub destination_anchor: ConnectionAnchor,
+    /// THIS direction's authored presentation (the pair's forward on the
+    /// authored row, its backward on the both_ways reverse); None samples
+    /// the exit map's theme instead.
+    pub path_blob: Option<crate::entity::EntityBlob>,
 }
 
 /// The room a ConnectionAnchor selects within a generated (or recorded)
@@ -254,12 +258,15 @@ impl LocationMap {
         // Clamp the main/extra split to the rooms actually produced.
         let main_room_count = (main_room_count as usize).min(room_count);
 
-        // Main-path chain, connecting consecutive main rooms.
+        // Main-path chain, connecting consecutive main rooms. The two
+        // directions are one MATCHED pair: forward leads deeper along the
+        // chain, backward faces home — an opening pairs with an opening,
+        // a chasm with the rock wall climbed back up.
         for i in 0..main_room_count.saturating_sub(1) {
-            if let Some(p) = theme.paths_selector.sample(&mut rng) {
+            if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                 let (a, b) = (room_handles[i].entity_id(), room_handles[i + 1].entity_id());
-                ecs.new_path(p.to_owned(), a, b)?;
-                ecs.new_path(p.to_owned(), b, a)?;
+                ecs.new_path(pair.forward.clone(), a, b)?;
+                ecs.new_path(pair.backward.clone(), b, a)?;
             }
         }
 
@@ -273,11 +280,14 @@ impl LocationMap {
         }
         let mut side_attachments: Vec<SideAttachment> = Vec::new();
         for i in main_room_count..room_count {
-            if let Some(p) = theme.paths_selector.sample(&mut rng) {
+            if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                 let a = room_handles[i].entity_id();
                 let b = room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
-                ecs.new_path(p.to_owned(), a, b)?;
-                let outbound = ecs.new_path(p.to_owned(), b, a)?;
+                // The OUTBOUND direction (into the side room) is the
+                // pair's forward — the exploring direction; the way back
+                // wears its matched backward.
+                ecs.new_path(pair.backward.clone(), a, b)?;
+                let outbound = ecs.new_path(pair.forward.clone(), b, a)?;
                 side_attachments.push(SideAttachment {
                     attach_room_entity_id: b,
                     outbound_path_entity_id: outbound.entity_id(),
@@ -298,11 +308,11 @@ impl LocationMap {
             for _ in 0..self.loop_count {
                 let a_index: usize =
                     rng.get_range::<u32, usize>(0, (main_room_count - 2) as u32);
-                if let Some(p) = theme.paths_selector.sample(&mut rng) {
+                if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                     let a = room_handles[a_index].entity_id();
                     let b = room_handles[a_index + 2].entity_id();
-                    let forward = ecs.new_path(p.to_owned(), a, b)?;
-                    let backward = ecs.new_path(p.to_owned(), b, a)?;
+                    let forward = ecs.new_path(pair.forward.clone(), a, b)?;
+                    let backward = ecs.new_path(pair.backward.clone(), b, a)?;
                     if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
                         let wall = ecs.new().instantiate_blob(
                             wall_blob.to_owned(),

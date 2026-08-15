@@ -37,6 +37,46 @@ impl WeightedSampler for EntityBlobsSampler {
     }
 }
 
+/// A MATCHED pair of path presentations: the two directions between two
+/// rooms are one authored fact, never two independent samples — an
+/// opening pairs with an opening, a chasm with the rock wall you climb
+/// back up. `forward` is the direction leading DEEPER (the exploring
+/// direction); `backward` faces home.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct PathBlobPair {
+    pub forward: EntityBlob,
+    pub backward: EntityBlob,
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct PathBlobPairSample {
+    pub weight: u8,
+    pub pair: PathBlobPair,
+}
+
+impl WeightedSample for PathBlobPairSample {
+    type Result = PathBlobPair;
+    fn value(&self) -> &Self::Result {
+        &self.pair
+    }
+    fn weight(&self) -> super::weighted_sampler::Weight {
+        self.weight as u32
+    }
+}
+
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct PathBlobPairsSampler {
+    pub selections: Vec<PathBlobPairSample>,
+}
+
+impl WeightedSampler for PathBlobPairsSampler {
+    type Result = PathBlobPair;
+    type Sample = PathBlobPairSample;
+    fn selections(&self) -> &Vec<Self::Sample> {
+        &self.selections
+    }
+}
+
 #[table(accessor = location_map_themes)]
 pub struct LocationMapTheme {
     #[primary_key]
@@ -46,7 +86,7 @@ pub struct LocationMapTheme {
     pub decorations_selector: EntityBlobsSampler,
     pub min_decoration_count: u8,
     pub max_decoration_count: u8,
-    pub paths_selector: EntityBlobsSampler,
+    pub paths_selector: PathBlobPairsSampler,
     pub rooms_selector: EntityBlobsSampler,
     /// The themed fortune-telling scenery (bone dice, scrying bowls, fate
     /// decks) placed in each map's guaranteed checkpoint room.

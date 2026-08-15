@@ -18,7 +18,8 @@ import { useActionDisplayNameOf } from "./context/StdbContext/assetLookup";
 import { useStanceFreeBase } from "./context/StdbContext/baseStats";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { ActionsBarEditor } from "./ActionsBarEditor";
-import { IntStatKey, STAT_GROUPS } from "./statGroups";
+import { IntStatKey } from "./statGroups";
+import { StatGroupsView } from "./StatGroupsView";
 import { StatBlockSummary } from "./StatBlockSummary";
 
 /**
@@ -124,20 +125,10 @@ export const LoadoutPanel = () => {
   return (
     <div className="Loadout stanceCard">
       <h3>Loadout</h3>
-      {/* The stance card's detailed stats view — DEFAULT configuration
-          values, no deltas: this is the base the deltas compare to. */}
-      {STAT_GROUPS.map((group) => (
-        <div className="statGroup" key={group.label}>
-          <h4>{group.label}</h4>
-          <div className="totals">
-            {group.stats.map(([key, label]) => (
-              <div key={key}>
-                {label} {defaultConfigStat(key)}
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+      {/* The SAME detailed stats view stance cards render — DEFAULT
+          configuration values, no deltas: this is the base the deltas
+          compare to. */}
+      <StatGroupsView statOf={defaultConfigStat} />
       <section className="totals">
         <div>
           Equipped: <StatBlockSummary statBlock={equippedContribution} />

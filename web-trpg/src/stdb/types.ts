@@ -1044,6 +1044,9 @@ export const LocationMapConnection = __t.object("LocationMapConnection", {
   get destinationAnchor() {
     return ConnectionAnchor;
   },
+  get pathBlob() {
+    return __t.option(EntityBlob);
+  },
 });
 export type LocationMapConnection = __Infer<typeof LocationMapConnection>;
 
@@ -1057,6 +1060,9 @@ export const LocationMapConnectionAsset = __t.object("LocationMapConnectionAsset
     return ConnectionAnchor;
   },
   bothWays: __t.bool(),
+  get pathPair() {
+    return __t.option(PathBlobPairAsset);
+  },
 });
 export type LocationMapConnectionAsset = __Infer<typeof LocationMapConnectionAsset>;
 
@@ -1069,7 +1075,7 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
   minDecorationCount: __t.u8(),
   maxDecorationCount: __t.u8(),
   get pathsSelector() {
-    return EntityBlobsSampler;
+    return PathBlobPairsSampler;
   },
   get roomsSelector() {
     return EntityBlobsSampler;
@@ -1095,7 +1101,7 @@ export const LocationMapThemeAsset = __t.object("LocationMapThemeAsset", {
   minDecorationCount: __t.u8(),
   maxDecorationCount: __t.u8(),
   get pathsSelector() {
-    return EntityBlobsSamplerAsset;
+    return PathBlobPairsSamplerAsset;
   },
   get roomsSelector() {
     return EntityBlobsSamplerAsset;
@@ -1287,6 +1293,56 @@ export const NamedStatBlockAsset = __t.object("NamedStatBlockAsset", {
   },
 });
 export type NamedStatBlockAsset = __Infer<typeof NamedStatBlockAsset>;
+
+export const PathBlobPair = __t.object("PathBlobPair", {
+  get forward() {
+    return EntityBlob;
+  },
+  get backward() {
+    return EntityBlob;
+  },
+});
+export type PathBlobPair = __Infer<typeof PathBlobPair>;
+
+export const PathBlobPairAsset = __t.object("PathBlobPairAsset", {
+  get forward() {
+    return EntityBlobAsset;
+  },
+  get backward() {
+    return EntityBlobAsset;
+  },
+});
+export type PathBlobPairAsset = __Infer<typeof PathBlobPairAsset>;
+
+export const PathBlobPairSample = __t.object("PathBlobPairSample", {
+  weight: __t.u8(),
+  get pair() {
+    return PathBlobPair;
+  },
+});
+export type PathBlobPairSample = __Infer<typeof PathBlobPairSample>;
+
+export const PathBlobPairSampleAsset = __t.object("PathBlobPairSampleAsset", {
+  weight: __t.u8(),
+  get pair() {
+    return PathBlobPairAsset;
+  },
+});
+export type PathBlobPairSampleAsset = __Infer<typeof PathBlobPairSampleAsset>;
+
+export const PathBlobPairsSampler = __t.object("PathBlobPairsSampler", {
+  get selections() {
+    return __t.array(PathBlobPairSample);
+  },
+});
+export type PathBlobPairsSampler = __Infer<typeof PathBlobPairsSampler>;
+
+export const PathBlobPairsSamplerAsset = __t.object("PathBlobPairsSamplerAsset", {
+  get selections() {
+    return __t.array(PathBlobPairSampleAsset);
+  },
+});
+export type PathBlobPairsSamplerAsset = __Infer<typeof PathBlobPairsSamplerAsset>;
 
 export const PathBlockerComponent = __t.object("PathBlockerComponent", {
   entityId: __t.u64(),

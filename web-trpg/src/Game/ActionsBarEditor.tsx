@@ -14,6 +14,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import "./ActionsBarEditor.css";
 import { actionHotkeyFor } from "./domain/hotkeys";
 
 /**
