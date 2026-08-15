@@ -49,6 +49,10 @@ pub enum SpecialActionKey {
     /// The reconciliation system's forced action (never offered): the
     /// round spent re-arming when equipment diverges from configuration.
     Rearm,
+    /// The COMMON move verb (paths offer their own crossing verbs; this
+    /// names the plain one), registered so the bar menus can offer it a
+    /// stable configured slot.
+    Move,
 }
 
 #[table(accessor = special_actions, public)]

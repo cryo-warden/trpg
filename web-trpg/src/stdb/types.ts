@@ -318,6 +318,7 @@ export const AssetPack = __t.object("AssetPack", {
   unequipActionName: __t.option(__t.string()),
   eatActionName: __t.option(__t.string()),
   rearmActionName: __t.option(__t.string()),
+  moveActionName: __t.option(__t.string()),
   get encounterBlobs() {
     return __t.array(NamedEntityBlobAsset);
   },
@@ -1581,6 +1582,7 @@ export const SpecialActionKey = __t.enum("SpecialActionKey", {
   Unequip: __t.unit(),
   Eat: __t.unit(),
   Rearm: __t.unit(),
+  Move: __t.unit(),
 });
 export type SpecialActionKey = __Infer<typeof SpecialActionKey>;
 

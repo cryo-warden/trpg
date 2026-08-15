@@ -45,6 +45,7 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       unequipActionName: "unequip",
       eatActionName: "eat",
       rearmActionName: "re_arm",
+      moveActionName: "move",
       encounterBlobs: namedPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),
       locationMapThemes: namedPairs(LOCATION_MAP_THEMES),

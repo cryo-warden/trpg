@@ -10,6 +10,9 @@ export type SpecialActionIdsInput = {
   equip: ActionId | null;
   unequip: ActionId | null;
   eat: ActionId | null;
+  /** The common move verb: registered for pinning; paths still author
+   * which verbs they offer, so no offer DERIVES from this. */
+  move: ActionId | null;
 };
 
 /**

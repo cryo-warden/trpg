@@ -41,6 +41,7 @@ export type SpecialActionIds = {
   equip: ActionId | null;
   unequip: ActionId | null;
   eat: ActionId | null;
+  move: ActionId | null;
 };
 
 export const useSpecialActionIds = (): SpecialActionIds =>
@@ -56,10 +57,25 @@ export const useSpecialActionIds = (): SpecialActionIds =>
         equip: byKey.get("Equip") ?? null,
         unequip: byKey.get("Unequip") ?? null,
         eat: byKey.get("Eat") ?? null,
+        move: byKey.get("Move") ?? null,
       };
     },
     [],
   );
+
+/** The COMMON verbs every bar may pin for a stable slot (the registered
+ * specials minus the system-only re-arm): offered or derived in play,
+ * absent from any granted pool, configurable all the same. */
+export const useCommonPinnableActionIds = (): ActionId[] => {
+  const ids = useSpecialActionIds();
+  return useMemo(
+    () =>
+      [ids.take, ids.drop, ids.equip, ids.unequip, ids.eat, ids.move].filter(
+        (id): id is ActionId => id != null,
+      ),
+    [ids],
+  );
+};
 
 /** Resolves a runtime action id to its PROPER display name (through the
  * client vocabulary), never the internal underscored key. Unknown ids

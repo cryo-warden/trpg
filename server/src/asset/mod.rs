@@ -105,6 +105,9 @@ pub struct AssetPack {
     /// anyone); a pack without equipment reconfiguration may omit it —
     /// equipment then simply never diverges from configuration.
     rearm_action_name: Option<String>,
+    /// The COMMON move verb, registered so the bar menus can give it a
+    /// stable configured slot (paths still decide what they offer).
+    move_action_name: Option<String>,
     encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
@@ -806,6 +809,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         (
             crate::action::SpecialActionKey::Rearm,
             asset_pack.rearm_action_name,
+        ),
+        (
+            crate::action::SpecialActionKey::Move,
+            asset_pack.move_action_name,
         ),
     ];
     for (key, name) in special_action_entries {

@@ -64,6 +64,7 @@ const NO_SPECIAL_ACTIONS = {
   equip: null,
   unequip: null,
   eat: null,
+  move: null,
 };
 const enemy = {
   playerEntity: 1n,
@@ -358,6 +359,7 @@ const SPECIAL_ACTIONS = {
   equip: actionIdOf("equip"),
   unequip: actionIdOf("unequip"),
   eat: actionIdOf("eat"),
+  move: actionIdOf("move"),
 };
 
 test("item verbs DERIVE from the target: no actor knowledge required", () => {

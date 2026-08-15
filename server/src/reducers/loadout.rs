@@ -2,7 +2,7 @@ use ecs::{Ecs, WithEcs};
 use spacetimedb::{reducer, ReducerContext};
 
 use crate::{
-    action::actions,
+    action::{actions, special_actions},
     asset::{
         armament::armaments, armor::armors, baseline::baselines, relic::relics,
         stance::stances, stat_block::StatBlock,
@@ -11,6 +11,7 @@ use crate::{
     entity::*,
     item::{ItemRef, StanceLoadout},
 };
+use spacetimedb::Table;
 
 /// Counts the gear the entity carries (carrying IS location), per matching
 /// asset id. Duplicated asset ids in a request need that many owned items —
@@ -301,6 +302,19 @@ pub fn set_default_armaments(
     Ok(())
 }
 
+/// The COMMON verbs every bar may pin for a stable slot: the registered
+/// special actions (take, drop, equip, unequip, eat, move) — offered or
+/// derived in play, absent from any granted pool, but configurable all
+/// the same. The system-only re-arm never joins a bar.
+fn common_pinnable_action_ids(ctx: &ReducerContext) -> Vec<u32> {
+    ctx.db
+        .special_actions()
+        .iter()
+        .filter(|s| s.key != crate::action::SpecialActionKey::Rearm)
+        .map(|s| s.action_id)
+        .collect()
+}
+
 /// The bar hotkey positions cap the pinned set.
 const MAX_ASSIGNED_ACTIONS: usize = 10;
 
@@ -346,9 +360,11 @@ pub fn assign_stance_actions(
             .and_then(|a| a.armament_ids.clone())
             .or_else(|| handle.default_armaments().map(|d| d.armament_ids))
             .unwrap_or_default();
-        let pool =
+        let mut pool =
             candidate_stat_block(ctx, p.entity_id(), &stance, &stance_armament_ids)
                 .action_ids;
+        // The common verbs are always pinnable: their slot is the point.
+        pool.extend(common_pinnable_action_ids(ctx));
         for id in bar_ids {
             if !pool.contains(id) {
                 let name = ctx
@@ -407,8 +423,10 @@ pub fn set_default_actions(ctx: &ReducerContext, action_ids: Vec<u32>) -> Result
     let default_armament_ids = { handle.default_armaments() }
         .map(|d| d.armament_ids)
         .unwrap_or_default();
-    let pool =
+    let mut pool =
         geared_stat_block(ctx, player_entity_id, &default_armament_ids).action_ids;
+    // The common verbs are always pinnable: their slot is the point.
+    pool.extend(common_pinnable_action_ids(ctx));
     for id in &action_ids {
         if !pool.contains(id) {
             let name = ctx

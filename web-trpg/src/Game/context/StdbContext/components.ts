@@ -176,6 +176,13 @@ const useOfferedActionsComponent = createUseComponent(
   "offered_actions_components",
 );
 
+/** The AUTHORED offers of an entity (its offered_actions component) —
+ * what the Activate pseudo-slot fires for the focus. */
+export const useOfferedActionIdsOf = (entityId: EntityId | null): ActionId[] => {
+  const offered = useOfferedActionsComponent(entityId);
+  return useMemo(() => [...(offered?.actionIds ?? [])], [offered]);
+};
+
 /** Path entities whose blocker still stands: they render as nothing (no
  * panel), so they must also CONSUME nothing — no target hotkey, no list
  * slot. One derivation for every surface that lays entities out. */

@@ -4,6 +4,7 @@ import "./StancesMenu.css";
 import { ActionsBarEditor } from "./ActionsBarEditor";
 import {
   useActionDisplayNameOf,
+  useCommonPinnableActionIds,
   useStanceDetailRows,
   useStanceReachabilityGraph,
 } from "./context/StdbContext/assetLookup";
@@ -58,6 +59,7 @@ export const StancesMenu = () => {
   const armamentStats = useArmamentStatBlocks();
   // Buttons render PROPER names, never the internal underscored key.
   const actionDisplayName = useActionDisplayNameOf();
+  const commonPinnable = useCommonPinnableActionIds();
 
   const totalStatBlock = total?.statBlock ?? null;
   const reachable = useMemo(() => {
@@ -161,6 +163,9 @@ export const StancesMenu = () => {
             ...resolvedArmaments.flatMap((id) => [
               ...(armamentStats.get(id)?.actionIds ?? []),
             ]),
+            // The common verbs are always pinnable: their slot is the
+            // point.
+            ...commonPinnable,
           ]),
         ];
         // Highlighting always shows the EFFECTIVE set: the override when

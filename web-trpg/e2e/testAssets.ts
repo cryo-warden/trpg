@@ -56,6 +56,7 @@ const emptyPack = (): AssetPack => ({
   unequipActionName: undefined,
   eatActionName: undefined,
   rearmActionName: undefined,
+  moveActionName: undefined,
   encounterBlobs: [],
   encounters: [],
   locationMapThemes: [],

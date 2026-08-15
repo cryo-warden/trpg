@@ -14,7 +14,10 @@ import {
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "./context/StdbContext/components";
-import { useActionDisplayNameOf } from "./context/StdbContext/assetLookup";
+import {
+  useActionDisplayNameOf,
+  useCommonPinnableActionIds,
+} from "./context/StdbContext/assetLookup";
 import { useStanceFreeBase } from "./context/StdbContext/baseStats";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { ActionsBarEditor } from "./ActionsBarEditor";
@@ -80,13 +83,17 @@ export const LoadoutPanel = () => {
       0,
     );
   // The default bar's candidate pool: the base grants plus the default
-  // armaments' grants — no stance.
+  // armaments' grants — no stance — plus the COMMON verbs (take, move,
+  // …): offered or derived in play, absent from any granted pool, but
+  // pinnable for a stable slot all the same.
+  const commonPinnable = useCommonPinnableActionIds();
   const defaultPoolActionIds = [
     ...new Set([
       ...baseActionIds,
       ...defaultArmamentIds.flatMap((id) => [
         ...(gearStats.armaments.get(id)?.actionIds ?? []),
       ]),
+      ...commonPinnable,
     ]),
   ];
 
