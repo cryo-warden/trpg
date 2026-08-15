@@ -7,11 +7,13 @@ import {
   useActionOptions,
   useActionPhase,
   useIsBlockedPath,
+  useItemAssetStatBlock,
   useMyVisitedLocationIds,
   usePathComponent,
   usePlayerEntity,
   useQuestItemFreshness,
 } from "../context/StdbContext/components";
+import { StatBlockSummary } from "../StatBlockSummary";
 import { EntityName } from "../EntityName";
 import { EntityId } from "../trpg";
 import { EPBar } from "./EPBar";
@@ -62,6 +64,10 @@ export const EntityPanel = ({
   // Per-viewer quest-item freshness: a stinky duplicate reads as such
   // EVERYWHERE — on the ground before pickup included.
   const questFreshness = useQuestItemFreshness(entity);
+  // An item's card summarizes what it contributes — the same non-zero
+  // rule every other stat surface uses. Predictability: what a thing
+  // does is readable before touching it.
+  const itemStatBlock = useItemAssetStatBlock(entity);
   const focusThis = useCallback(() => {
     setFocus(entity);
   }, [entity, setFocus]);
@@ -99,6 +105,11 @@ export const EntityPanel = ({
           <span className="actionPhase"> — recovering…</span>
         )}
       </div>
+      {itemStatBlock != null && (
+        <div>
+          <StatBlockSummary statBlock={itemStatBlock} />
+        </div>
+      )}
       <HPBar entity={entity} />
       <EPBar entity={entity} />
       {detailed && <ActionBar entity={entity} />}

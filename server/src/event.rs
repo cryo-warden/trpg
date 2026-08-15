@@ -12,7 +12,11 @@ secador::secador!(
         use crate::{
             action::{ActionEffect, ActionId},
             asset::armament::armaments,
+            asset::armor::armors,
+            asset::quest::quests,
+            asset::relic::relics,
             asset::stance::{special_stances, SpecialStanceKey},
+            asset::stat_block::StatBlock,
             entity::*,
             entity_handle_extension::EntityHandleExtension,
         };
@@ -213,6 +217,30 @@ secador::secador!(
             }
         }
 
+        /// The stat block an item contributes when worn or wielded — or per
+        /// bit when eaten: the payload stat-affecting events carry so the
+        /// narration can show the numbers that moved.
+        fn item_asset_stat_block(ecs: Ecs, item_entity_id: u64) -> Option<StatBlock> {
+            let item = ecs.db.item_components().entity_id().find(item_entity_id)?;
+            match item.item_ref {
+                crate::item::ItemRef::Armament(id) => {
+                    ecs.db.armaments().id().find(id).map(|a| a.stat_block)
+                }
+                crate::item::ItemRef::Armor(id) => {
+                    ecs.db.armors().id().find(id).map(|a| a.stat_block)
+                }
+                crate::item::ItemRef::Relic(id) => {
+                    ecs.db.relics().id().find(id).map(|r| r.stat_block)
+                }
+                crate::item::ItemRef::QuestItem(q) => ecs
+                    .db
+                    .quests()
+                    .id()
+                    .find(q.quest_id)
+                    .map(|quest| quest.per_bit_stat_block),
+            }
+        }
+
         #[table(accessor = observable_events, public, event)]
         #[derive(Debug, Clone)]
         pub struct EntityEvent {
@@ -223,6 +251,9 @@ secador::secador!(
             pub owner_entity_id: u64,
             pub event_type: EventType,
             pub target_entity_id: u64,
+            /// The stat DELTA this event applied, when it applied one (eat,
+            /// equip, unequip): the narration renders its non-zero elements.
+            pub stat_block: Option<StatBlock>,
         }
 
         impl EntityEvent {
@@ -362,10 +393,23 @@ secador::secador!(
                             }
                         }
                         ActionEffect::Equip => {
-                            equip_item(ecs, self.owner_entity_id, target_entity_id)
+                            let stat_block = item_asset_stat_block(ecs, target_entity_id);
+                            let done =
+                                equip_item(ecs, self.owner_entity_id, target_entity_id);
+                            if done {
+                                self.stat_block = stat_block;
+                            }
+                            done
                         }
                         ActionEffect::Unequip => {
-                            unequip_item(ecs, self.owner_entity_id, target_entity_id)
+                            let stat_block = item_asset_stat_block(ecs, target_entity_id);
+                            let done =
+                                unequip_item(ecs, self.owner_entity_id, target_entity_id);
+                            if done {
+                                // The DELTA of taking it off.
+                                self.stat_block = stat_block.map(|block| block.negated());
+                            }
+                            done
                         }
                         // Eating a CARRIED quest item sets its bit (the
                         // quest cache re-derives; mhp/mep rise through the
@@ -395,6 +439,10 @@ secador::secador!(
                                         q.quest_id,
                                         q.index,
                                     ) {
+                                        // Fetched before the deletion takes
+                                        // the item row with it.
+                                        self.stat_block =
+                                            item_asset_stat_block(ecs, target_entity_id);
                                         crate::system::delete_entity_with_joins(
                                             ecs,
                                             target_entity_id,
@@ -623,6 +671,7 @@ secador::secador!(
                     owner_entity_id,
                     event_type,
                     target_entity_id,
+                    stat_block: None,
                 }
             }
         }

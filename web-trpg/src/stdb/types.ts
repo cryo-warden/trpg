@@ -774,6 +774,9 @@ export const EntityEvent = __t.object("EntityEvent", {
     return EventType;
   },
   targetEntityId: __t.u64(),
+  get statBlock() {
+    return __t.option(StatBlock);
+  },
 });
 export type EntityEvent = __Infer<typeof EntityEvent>;
 

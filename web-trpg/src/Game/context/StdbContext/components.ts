@@ -196,6 +196,32 @@ export const useQuestItemFreshness = (
   }, [item, progressRows, playerEntity]);
 };
 
+/** The stat block an item entity's asset contributes — gear when worn or
+ * wielded, a quest item's per-bit grant when eaten. Null for non-items
+ * and unknown refs. Feeds the entity card's stat summary line. */
+export const useItemAssetStatBlock = (entityId: EntityId | null) => {
+  const item = useItemComponent(entityId);
+  const armaments = useTableData("armaments", (t) => [...t.iter()], []);
+  const armors = useTableData("armors", (t) => [...t.iter()], []);
+  const relics = useTableData("relics", (t) => [...t.iter()], []);
+  const quests = useTableData("quests", (t) => [...t.iter()], []);
+  return useMemo(() => {
+    const ref = item?.itemRef;
+    if (ref == null) {
+      return null;
+    }
+    if (ref.tag === "QuestItem") {
+      return (
+        quests.find((row) => row.id === ref.value.questId)?.perBitStatBlock ??
+        null
+      );
+    }
+    const rows =
+      ref.tag === "Armament" ? armaments : ref.tag === "Armor" ? armors : relics;
+    return rows.find((row) => row.id === ref.value)?.statBlock ?? null;
+  }, [item, armaments, armors, relics, quests]);
+};
+
 /** This carried item INSTANCE counts as equipped/worn: the same counted-
  * multiset rule the menus use, so an item's Equip/Unequip options can
  * never disagree with its highlight anywhere else. */
@@ -244,15 +270,14 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
       return false;
     }
     const ref = targetItem.itemRef;
-    if (ref.tag === "Armor") {
-      return armor?.armorId === ref.value;
-    }
     if (ref.tag === "QuestItem") {
       // Quest items are eaten, never worn.
       return false;
     }
-    // Counted kinds: which instances of this asset the player carries, in
-    // stable row order, decides whether THIS instance is on.
+    // Counted kinds — armor included: which instances of this asset the
+    // player carries, in stable row order, decides whether THIS instance
+    // is on. Two identical armors are two entities; only the first
+    // counts as worn.
     const carried = new Set(
       locationRows
         .filter((row) => row.locationEntityId === playerEntity)
@@ -269,7 +294,11 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
     const onIds: number[] =
       ref.tag === "Armament"
         ? [...(defaultArmaments?.armamentIds ?? [])]
-        : [...(relics?.relicIds ?? [])];
+        : ref.tag === "Armor"
+          ? armor == null
+            ? []
+            : [armor.armorId]
+          : [...(relics?.relicIds ?? [])];
     return assetInstanceIsOn({
       ids: onIds,
       item: { entityId: focus, assetId: ref.value },

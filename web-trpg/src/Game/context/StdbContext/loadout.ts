@@ -169,6 +169,22 @@ const useStatBlockMap = (table: "armaments" | "armors" | "relics") =>
 export const useArmamentStatBlocks = (): Map<number, StatBlock> =>
   useStatBlockMap("armaments");
 
+/** All three gear kinds' asset stat blocks, for surfaces summing a worn
+ * set (the loadout menu's equipped-contribution line). */
+export const useGearStatBlocks = (): {
+  armaments: Map<number, StatBlock>;
+  armors: Map<number, StatBlock>;
+  relics: Map<number, StatBlock>;
+} => {
+  const armaments = useStatBlockMap("armaments");
+  const armors = useStatBlockMap("armors");
+  const relics = useStatBlockMap("relics");
+  return useMemo(
+    () => ({ armaments, armors, relics }),
+    [armaments, armors, relics],
+  );
+};
+
 /** Resolves any owned item to its gear asset's stat block. */
 export const useGearStatBlockOf = (): ((
   item: OwnedItem,

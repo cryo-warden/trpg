@@ -56,6 +56,18 @@ secador::secador_multi!(
         }
 
         impl StatBlock {
+            /// The sign-flipped copy of the INT stats (id vecs stay empty):
+            /// the delta an unequip applies. Saturating — i8::MIN flips to
+            /// i8::MAX rather than panicking.
+            pub fn negated(&self) -> StatBlock {
+                let mut negated = StatBlock::default();
+                seca_small_int!(1);
+                negated.__stat = self.__stat.saturating_neg();
+                seca_wide_int!(1);
+                negated.__stat = self.__stat.saturating_neg();
+                negated
+            }
+
             pub fn meets(&self, requirements: &StatRequirements) -> bool {
                 seca_small_int!(1);
                 if requirements.__stat.is_some_and(|min| self.__stat < min) {

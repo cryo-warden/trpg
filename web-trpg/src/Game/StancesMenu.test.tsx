@@ -147,7 +147,8 @@ test("cards show categorized totals with deltas from the no-stance base", () => 
   expect(dueling.textContent).toContain("Attack 1 (+1)");
   expect(dueling.textContent).toContain("Hand 1 (-1)");
   expect(dueling.textContent).toContain("Morale 1 (+1)");
-  expect(dueling.textContent).toContain("Grants: lunge");
+  // Proper display names, never the internal underscored key.
+  expect(dueling.textContent).toContain("Grants: Lunge");
   // The category headings structure the list.
   expect(dueling.textContent).toContain("Combat");
   expect(dueling.textContent).toContain("Body");
@@ -184,14 +185,14 @@ test("the bar lists assigned actions in hotkey order; a tap removes", () => {
   const dueling = cardOf(container, "dueling")!;
   const chips = [...dueling.querySelectorAll(".actionBar .actionChip")];
   expect(chips.map((chip) => chip.textContent)).toEqual([
-    "1 duel",
-    "2 stand",
+    "1 Duel",
+    "2 Stand",
   ]);
   // Assigned actions live in the bar, not the pool.
   const poolLabels = [...dueling.querySelectorAll("button")]
     .filter((button) => !button.className.includes("actionChip"))
     .map((button) => button.textContent);
-  expect(poolLabels).not.toContain("duel");
+  expect(poolLabels).not.toContain("Duel");
 
   // A plain tap removes, preserving the rest of the order.
   fireEvent.click(chips[0]);
@@ -212,7 +213,7 @@ test("assigning an action pins it into the stance's bar order", () => {
   // Dueling's candidate pool includes its own grant, lunge.
   const dueling = cardOf(container, "dueling")!;
   const lunge = [...dueling.querySelectorAll("button")].find((button) =>
-    button.textContent!.includes("lunge"),
+    button.textContent!.includes("Lunge"),
   )!;
   fireEvent.click(lunge);
   expect(assignStanceActions).toHaveBeenCalledWith({

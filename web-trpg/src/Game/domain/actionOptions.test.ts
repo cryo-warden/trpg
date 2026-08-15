@@ -243,6 +243,24 @@ test("only a FRESH carried quest item offers Eat; stinky never does", () => {
   ).toEqual([]);
 });
 
+test("a quest item never offers equip — cookies are food, not gear", () => {
+  const equipId = actionIdOf("equip");
+  expect(
+    getActionOptions({
+      ...enemy,
+      actionIds: [equipId],
+      actionAssetOf,
+      targetHasHp: false,
+      targetHasPath: false,
+      targetHasItem: true,
+      targetCarriedByPlayer: true,
+      targetIsEquipped: false,
+      targetHasCheckpointObject: false,
+      targetQuestItemFreshness: "fresh" as const,
+    }),
+  ).toEqual([]);
+});
+
 test("a target's offered interactions appear without the player knowing them", () => {
   const openId = actionIdOf("open");
   const dumpId = actionIdOf("dump");

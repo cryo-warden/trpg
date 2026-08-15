@@ -6,6 +6,7 @@ import {
   Narration,
   NarrationContext,
 } from "../Game/domain/narration";
+import { signedStatSummary } from "../Game/domain/statSummary";
 import { CreateLanguage } from "./language";
 
 /**
@@ -33,22 +34,38 @@ const DEFAULT_ACTION_TEMPLATE =
 export const createDebug: CreateLanguage<NarrationContext> = ({
   actionAppearanceOf,
 }) => {
-  const getActionTemplate = (actionId: ActionId): string =>
-    actionAppearanceOf(actionId)?.beginTemplate ?? DEFAULT_ACTION_TEMPLATE;
+  // A KNOWN action without a beginTemplate is deliberately silent at
+  // start: instant deeds (equip, unequip) narrate once, at the effect —
+  // never the same sentence twice. Unknown actions keep the mysterious
+  // default.
+  const getActionTemplate = (actionId: ActionId): string | null => {
+    const appearance = actionAppearanceOf(actionId);
+    if (appearance != null && appearance.beginTemplate == null) {
+      return null;
+    }
+    return appearance?.beginTemplate ?? DEFAULT_ACTION_TEMPLATE;
+  };
 
   // The sentence for an event, or null when the event is not narrated (e.g.
   // resting, or an effect kind with no player-facing description yet).
   const narrateEvent = (event: EntityEvent): Narration | null => {
   switch (event.eventType.tag) {
-    case "StartAction":
-      return {
-        template: getActionTemplate(event.eventType.value),
-        values: [event.ownerEntityId, event.targetEntityId],
-      };
+    case "StartAction": {
+      const template = getActionTemplate(event.eventType.value);
+      return template == null
+        ? null
+        : {
+            template,
+            values: [event.ownerEntityId, event.targetEntityId],
+          };
+    }
     case "ActionEffect": {
       const owner = event.ownerEntityId;
       const target = event.targetEntityId;
       const effect = event.eventType.value;
+      // The numbers ARE the juice: a stat-bearing event renders what moved.
+      const statSuffix =
+        event.statBlock != null ? signedStatSummary(event.statBlock) : "";
       switch (effect.tag) {
         case "Attack":
           return {
@@ -76,20 +93,35 @@ export const createDebug: CreateLanguage<NarrationContext> = ({
             values: [owner, target],
           };
         case "Equip":
-          return {
-            template: "{0:sentence:subject} readied {1:object}.",
-            values: [owner, target],
-          };
+          return statSuffix !== ""
+            ? {
+                template: "{0:sentence:subject} readied {1:object} ({2}).",
+                values: [owner, target, statSuffix],
+              }
+            : {
+                template: "{0:sentence:subject} readied {1:object}.",
+                values: [owner, target],
+              };
         case "Unequip":
-          return {
-            template: "{0:sentence:subject} put away {1:object}.",
-            values: [owner, target],
-          };
+          return statSuffix !== ""
+            ? {
+                template: "{0:sentence:subject} put away {1:object} ({2}).",
+                values: [owner, target, statSuffix],
+              }
+            : {
+                template: "{0:sentence:subject} put away {1:object}.",
+                values: [owner, target],
+              };
         case "Eat":
-          return {
-            template: "{0:sentence:subject} ate {1:object}.",
-            values: [owner, target],
-          };
+          return statSuffix !== ""
+            ? {
+                template: "{0:sentence:subject} ate {1:object} ({2}).",
+                values: [owner, target, statSuffix],
+              }
+            : {
+                template: "{0:sentence:subject} ate {1:object}.",
+                values: [owner, target],
+              };
         default:
           // Buff and any future effect kinds are not narrated yet.
           return null;

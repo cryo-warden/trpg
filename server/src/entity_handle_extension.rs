@@ -463,11 +463,20 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             match a.action_type {
                 ActionType::Attack => o.hp().is_some() && !self.is_ally(other_entity_id),
                 ActionType::Buff => o.hp().is_some() && self.is_ally(other_entity_id),
-                // Equip/unequip and eat target an item the actor CARRIES.
-                ActionType::Equip | ActionType::Eat => {
-                    o.item().is_some()
-                        && { o.location() }
-                            .is_some_and(|l| l.location_entity_id == e.entity_id())
+                // Equip/unequip target CARRIED gear — an item whose ref is
+                // actually wearable/wieldable, never a quest item.
+                ActionType::Equip => {
+                    { o.item() }.is_some_and(|item| {
+                        !matches!(item.item_ref, crate::item::ItemRef::QuestItem(_))
+                    }) && { o.location() }
+                        .is_some_and(|l| l.location_entity_id == e.entity_id())
+                }
+                // Eat targets a CARRIED consumable: quest items only.
+                ActionType::Eat => {
+                    { o.item() }.is_some_and(|item| {
+                        matches!(item.item_ref, crate::item::ItemRef::QuestItem(_))
+                    }) && { o.location() }
+                        .is_some_and(|l| l.location_entity_id == e.entity_id())
                 }
                 // An item is a valid inventory target when it is within
                 // reach: sharing the room (takeable), carried (droppable),

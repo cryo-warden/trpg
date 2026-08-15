@@ -18,6 +18,19 @@ const languageDeps = {
   },
 };
 const bopId = orderedNames.indexOf("bop");
+const equipId = orderedNames.indexOf("equip");
+
+/** A stat-bearing effect event: the delta the act applied rides along. */
+const statEffect = (
+  effect: { tag: string; value?: number },
+  statBlock: Record<string, number>,
+): EntityEvent =>
+  ({
+    ownerEntityId: 1n,
+    targetEntityId: 2n,
+    eventType: { tag: "ActionEffect", value: effect },
+    statBlock,
+  }) as unknown as EntityEvent;
 
 const names: Record<string, string> = { "1": "the goblin", "2": "the hero" };
 const getName: NarrationName = ({ named }) =>
@@ -109,5 +122,23 @@ for (const [label, language] of [
     expect(render(startAction(9999))).toBe(
       "The goblin began a mysterious action toward the hero.",
     );
+  });
+
+  test(`${label}: a known action WITHOUT a begin template starts silently`, () => {
+    // Regression: equip once narrated the identical sentence at start and
+    // at effect. Instant deeds narrate once, at the effect.
+    expect(render(startAction(equipId))).toBeNull();
+  });
+
+  test(`${label}: a stat-bearing event renders the numbers that moved`, () => {
+    expect(
+      render(statEffect({ tag: "Equip" }, { bladed: 1, hand: -1, mhp: 0 })),
+    ).toBe("The goblin readied the hero (-1 hand, +1 bladed).");
+    expect(render(statEffect({ tag: "Eat" }, { mhp: 2 }))).toBe(
+      "The goblin ate the hero (+2 mhp).",
+    );
+    expect(
+      render(statEffect({ tag: "Unequip" }, { defense: -1 })),
+    ).toBe("The goblin put away the hero (-1 defense).");
   });
 }

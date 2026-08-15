@@ -257,7 +257,11 @@ export type ActionName = keyof typeof ACTIONS;
 
 /** Client-only display vocabulary, keyed like the asset Record. English
  * lives here permanently as the debugging language. */
-export type ActionAppearance = { displayName: string; beginTemplate: string };
+/** beginTemplate narrates the action's START (the telegraph). An entry
+ * WITHOUT one is deliberately silent at start: instant deeds like equip
+ * narrate once, at the effect — a begin line would read as the same
+ * message twice. */
+export type ActionAppearance = { displayName: string; beginTemplate?: string };
 
 export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   move: {
@@ -347,13 +351,13 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
     displayName: "Drop",
     beginTemplate: "{0:sentence:subject} set down {1:object}.",
   },
+  // Equip and unequip narrate at the EFFECT (with the stat change); a
+  // begin line would be the identical sentence twice.
   equip: {
     displayName: "Equip",
-    beginTemplate: "{0:sentence:subject} readied {1:object}.",
   },
   unequip: {
     displayName: "Unequip",
-    beginTemplate: "{0:sentence:subject} put away {1:object}.",
   },
   eat: {
     displayName: "Eat",

@@ -44,6 +44,61 @@ test("LoadoutPanel lists owned gear by kind with resolved names", () => {
   expect(container.querySelector(".stanceArmaments")).toBeNull();
 });
 
+test("of two identical armors, only the FIRST instance draws as worn", () => {
+  // Regression: the armor highlight once compared asset ids alone, so
+  // both jerkin ENTITIES lit up when one was worn. The counted-multiset
+  // rule (stable entity order) decides for armor exactly like relics.
+  const twoJerkins = {
+    ...tables(),
+    location_components: mockTable([
+      { entityId: 6n, locationEntityId: 1n },
+      { entityId: 8n, locationEntityId: 1n },
+    ]),
+    item_components: mockTable([
+      { entityId: 6n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
+      { entityId: 8n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
+    ]),
+    armor_components: mockTable([
+      { entityId: 1n, armorId: armorIdOf("leather_jerkin") },
+    ]),
+  };
+  const wrapper = gameWrapper(twoJerkins, { identity: {} as Identity });
+  const { container } = render(<LoadoutPanel />, { wrapper });
+
+  const activeArmorButtons = [
+    ...container.querySelectorAll(".armor button.active"),
+  ];
+  expect(activeArmorButtons.length).toBe(1);
+});
+
+test("the menu shows totals, the equipped contribution, and the default armaments", () => {
+  const equipped = {
+    ...tables(),
+    armor_components: mockTable([
+      { entityId: 1n, armorId: armorIdOf("leather_jerkin") },
+    ]),
+    default_armaments_components: mockTable([
+      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+    ]),
+    total_stat_block_components: mockTable([]),
+  };
+  const wrapper = gameWrapper(equipped, { identity: {} as Identity });
+  const { container } = render(<LoadoutPanel />, { wrapper });
+
+  // The worn jerkin (+1 defense) and default sword (+1 bladed, -1 hand)
+  // fold into one signed contribution line.
+  expect(container.querySelector(".totals")?.textContent).toContain(
+    "+1 defense",
+  );
+  expect(container.querySelector(".totals")?.textContent).toContain(
+    "+1 bladed",
+  );
+  // The default slot lists the sword as held.
+  const defaults = container.querySelector(".defaultArmaments");
+  expect(defaults?.textContent).toContain("sword");
+  expect(defaults?.querySelectorAll("button.active").length).toBe(1);
+});
+
 test("toggling a relic on proposes the extended relic set", () => {
   const setRelics = mock(() => {});
   const wrapper = gameWrapper(tables(), {
@@ -52,8 +107,9 @@ test("toggling a relic on proposes the extended relic set", () => {
   });
   const { container } = render(<LoadoutPanel />, { wrapper });
 
+  // Buttons carry the stat summary after the name now: match by prefix.
   const charm = [...container.querySelectorAll(".relics button")].find(
-    (button) => button.textContent === "ember_charm",
+    (button) => button.textContent!.startsWith("ember_charm"),
   )!;
   fireEvent.click(charm);
   expect(setRelics).toHaveBeenCalledWith({

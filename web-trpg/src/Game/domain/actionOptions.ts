@@ -116,9 +116,11 @@ export const getActionOptions = ({
       }
       // Equip targets a CARRIED, not-yet-equipped item; unequip a CARRIED,
       // equipped one. Which verb an Equip action is comes from its effects,
-      // exactly like the Inventory verbs.
+      // exactly like the Inventory verbs. Quest items are food, never gear:
+      // they must not offer equip.
       case "Equip": {
         if (!targetHasItem || !targetCarriedByPlayer) return false;
+        if (targetQuestItemFreshness != null) return false;
         const effects = action.rounds.flatMap((round) => round.effects);
         if (effects.some((effect) => effect.tag === "Equip")) {
           return !targetIsEquipped;

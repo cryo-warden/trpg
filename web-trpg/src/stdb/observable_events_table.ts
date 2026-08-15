@@ -10,6 +10,7 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
+  StatBlock,
   EventType,
 } from "./types";
 
@@ -22,4 +23,7 @@ export default __t.row({
     return EventType.name("event_type");
   },
   targetEntityId: __t.u64().name("target_entity_id"),
+  get statBlock() {
+    return __t.option(StatBlock).name("stat_block");
+  },
 });

@@ -1,5 +1,6 @@
 import { test, expect, beforeAll, afterAll } from "bun:test";
 import type { DbConnection } from "../src/stdb";
+import type { EntityEvent } from "../src/stdb/types";
 import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, playerEntityIdFor, waitFor } from "./client";
@@ -101,6 +102,7 @@ beforeAll(async () => {
       "SELECT * FROM enemy_controller_components",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM accounts",
+      "SELECT * FROM observable_events",
     ]);
   await player.reducers.createAccount({ name: "conqueror" });
   playerEntityId = await playerEntityIdFor(player, "conqueror");
@@ -171,11 +173,27 @@ test("take and eat the drop: the bit sets and pays +2 mhp through the quest cach
     targetEntityId: cookieEntityId,
   });
   await waitFor(() => roomOf(cookieEntityId) === playerEntityId, 30000);
+  // The eat EVENT carries the stat delta it applied — the single source
+  // of truth (the quest's per-bit block) rides the event for narration.
+  // Event rows stream (insert callbacks) rather than persisting in the
+  // client cache, so capture them as they arrive.
+  const eatEvents: EntityEvent[] = [];
+  player.db.observable_events.onInsert((_ctx, event) => {
+    if (
+      event.eventType.tag === "ActionEffect" &&
+      event.eventType.value.tag === "Eat" &&
+      event.ownerEntityId === playerEntityId
+    ) {
+      eatEvents.push(event);
+    }
+  });
   await player.reducers.act({
     actionId: actionIdByName("test_eat"),
     targetEntityId: cookieEntityId,
   });
   await waitFor(() => myBitZero(), 30000);
+  await waitFor(() => eatEvents.length > 0, 30000);
+  expect(eatEvents[0]!.statBlock?.mhp).toBe(2);
   await waitFor(
     () =>
       [...player.db.hp_components.iter()].find(

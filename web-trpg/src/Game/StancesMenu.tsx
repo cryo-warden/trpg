@@ -40,6 +40,9 @@ import {
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { useTableData } from "./context/StdbContext/useTableData";
 import { reachableStanceIds } from "./domain/stanceReachability";
+import { ACTION_APPEARANCES, ActionName } from "./assets/actions";
+import { signedStatSummary } from "./domain/statSummary";
+import { StatBlockSummary } from "./StatBlockSummary";
 
 /** Every int stat of the block (the id-vec grants are not numbers). */
 type IntStatKey = Exclude<keyof StatBlock, "actionIds" | "appearanceFeatureIds">;
@@ -231,6 +234,17 @@ export const StancesMenu = () => {
       new Map<number, string>([...table.iter()].map((row) => [row.id, row.name])),
     [],
   );
+  // Buttons render PROPER names, never the internal underscored key: the
+  // subscribed table's raw name resolves through the client vocabulary.
+  const actionDisplayName = (actionId: number): string => {
+    const raw = actionNames.get(actionId);
+    if (raw == null) {
+      return `#${actionId}`;
+    }
+    return raw in ACTION_APPEARANCES
+      ? ACTION_APPEARANCES[raw as ActionName].displayName
+      : raw;
+  };
 
   const totalStatBlock = total?.statBlock ?? null;
   const reachable = useMemo(() => {
@@ -343,7 +357,7 @@ export const StancesMenu = () => {
         ) as Record<IntStatKey, number>;
         const freeHand = candidate.hand;
         const grantedActionNames = [...stance.statBlock.actionIds].map(
-          (id) => actionNames.get(id) ?? `#${id}`,
+          (id) => actionDisplayName(id),
         );
         // The stance's candidate ACTION pool: base grants (the total minus
         // the active stance's and in-hand armaments' grants) plus this
@@ -373,6 +387,11 @@ export const StancesMenu = () => {
               {stance.name}
               {stance.id === activeStanceId && " (active)"}
             </h3>
+            {signedStatSummary(stance.statBlock) !== "" && (
+              <div className="stanceSummary">
+                <StatBlockSummary statBlock={stance.statBlock} />
+              </div>
+            )}
             {STAT_GROUPS.map((group) => (
               <div className="statGroup" key={group.label}>
                 <h4>{group.label}</h4>
@@ -433,7 +452,7 @@ export const StancesMenu = () => {
             </h4>
             <StanceActionsBar
               assignedActionIds={assignedActions}
-              nameOf={(actionId) => actionNames.get(actionId) ?? `#${actionId}`}
+              nameOf={actionDisplayName}
               onAssign={(actionIds) =>
                 connection.reducers.assignStanceActions({
                   stanceId: stance.id,
@@ -454,7 +473,7 @@ export const StancesMenu = () => {
                     })
                   }
                 >
-                  {actionNames.get(actionId) ?? `#${actionId}`}
+                  {actionDisplayName(actionId)}
                 </Button>
               ))}
           </section>
