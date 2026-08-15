@@ -103,6 +103,30 @@ test("FocusProvider clears a focus that is not co-located with the player", () =
   expect(result.current.focus).toBeNull(); // different room -> cleared
 });
 
+test("FocusProvider keeps focus on the sky seen through the exterior chain", () => {
+  // Regression: an outer entity (the sky) shows through the room's
+  // exterior edge but is no sibling, so the focus-clearing rule dropped
+  // it the instant it was clicked. Room 10 sits (50, Exterior); the sky
+  // 51 hangs in that same outdoors.
+  const exterior = { tag: "Exterior" };
+  const { result } = renderHook(
+    () => ({ focus: useFocus(), setFocus: useSetFocus() }),
+    {
+      wrapper: providerWrapper({
+        location_components: mockTable([
+          { entityId: 1n, locationEntityId: 10n, kind: exterior }, // player
+          { entityId: 10n, locationEntityId: 50n, kind: exterior }, // room -> outdoors
+          { entityId: 51n, locationEntityId: 50n, kind: exterior }, // sky
+        ]),
+        location_map_components: mockTable([{ entityId: 10n, locationMapEntityId: 99n }]),
+      }),
+    },
+  );
+
+  act(() => result.current.setFocus(51n));
+  expect(result.current.focus).toBe(51n);
+});
+
 test("FocusProvider auto-focuses a lone hostile but never overrides a choice", () => {
   const { result } = renderHook(
     () => ({ focus: useFocus(), setFocus: useSetFocus() }),

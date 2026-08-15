@@ -5,6 +5,7 @@ import {
   useActiveHostiles,
   useLocation,
   usePlayerEntity,
+  useVisibleOuterEntities,
 } from "./StdbContext/components";
 import { useTableData } from "./StdbContext/useTableData";
 
@@ -16,6 +17,9 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({
   const playerEntity = usePlayerEntity();
   const playerLocation = useLocation(playerEntity);
   const activeHostiles = useActiveHostiles();
+  // The outer entities the room shows through its exterior edges (the sky
+  // and its kin): focusable exactly because they are rendered.
+  const visibleOuter = useVisibleOuterEntities(playerLocation);
   const locationRows = useTableData(
     "location_components",
     (table) => [...table.iter()],
@@ -25,12 +29,14 @@ export const FocusProvider: React.FC<{ children: React.ReactNode }> = ({
   const locationById = new Map(
     locationRows.map((row) => [row.entityId, row.locationEntityId]),
   );
+  const visibleOuterEntityIds = new Set(visibleOuter);
   const selected =
     focusSelection != null &&
     isFocusValid({
       focus: focusSelection,
       playerEntity,
       playerLocation,
+      visibleOuterEntityIds,
       locationOf: (entityId) => locationById.get(entityId) ?? null,
     })
       ? focusSelection
