@@ -1,0 +1,1 @@
+"Convert the quests_rooms_roles join table into a component on the room entity (quest_id indexed btree + role), so room deletion cleanup is macro-generated and the hand-wired cleanup_quest_room_rows hook disappears. Viable today: one quest claims one room, and the macro already supports indexed component fields (LocationComponent)."

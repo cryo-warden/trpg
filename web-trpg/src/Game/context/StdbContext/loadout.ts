@@ -1,6 +1,11 @@
 import { useMemo } from "react";
 import { StatBlock } from "../../../stdb/types";
 import { EntityId } from "../../trpg";
+import { ARMAMENT_DISPLAY_NAMES } from "../../assets/armaments";
+import { ARMOR_DISPLAY_NAMES } from "../../assets/armors";
+import { RELIC_DISPLAY_NAMES } from "../../assets/relics";
+import { QUEST_DISPLAY_NAMES } from "../../assets/quests";
+import { displayNameFrom } from "../../assets/display_names";
 import { usePlayerEntity } from "./components";
 import { useTableData } from "./useTableData";
 
@@ -21,14 +26,27 @@ export type OwnedItem = {
   /** Gear asset id — or the QUEST id for quest items (their instance
    * identity is the quest bit, not a gear asset). */
   assetId: number;
+  /** The PROPER display name (raw key resolved through the client
+   * vocabulary), never the internal underscored key. */
   name: string;
 };
 
-const useNameMap = (table: "armaments" | "armors" | "relics") =>
+/** id -> display name for a gear kind: the subscribed table hands back the
+ * raw key from an id, the kind's vocabulary turns it human. */
+const useNameMap = (
+  table: "armaments" | "armors" | "relics",
+  vocabulary: Record<string, string>,
+) =>
   useTableData(
     table,
-    (t) => new Map<number, string>([...t.iter()].map((row) => [row.id, row.name])),
-    [],
+    (t) =>
+      new Map<number, string>(
+        [...t.iter()].map((row) => [
+          row.id,
+          displayNameFrom(vocabulary, row.name),
+        ]),
+      ),
+    [vocabulary],
   );
 
 /** Everything the player carries (carrying IS location), resolved to gear
@@ -41,12 +59,18 @@ export const useOwnedItems = (): OwnedItem[] => {
     [],
   );
   const itemRows = useTableData("item_components", (t) => [...t.iter()], []);
-  const armamentNames = useNameMap("armaments");
-  const armorNames = useNameMap("armors");
-  const relicNames = useNameMap("relics");
+  const armamentNames = useNameMap("armaments", ARMAMENT_DISPLAY_NAMES);
+  const armorNames = useNameMap("armors", ARMOR_DISPLAY_NAMES);
+  const relicNames = useNameMap("relics", RELIC_DISPLAY_NAMES);
   const questNames = useTableData(
     "quests",
-    (t) => new Map<number, string>([...t.iter()].map((row) => [row.id, row.name])),
+    (t) =>
+      new Map<number, string>(
+        [...t.iter()].map((row) => [
+          row.id,
+          displayNameFrom(QUEST_DISPLAY_NAMES, row.name),
+        ]),
+      ),
     [],
   );
 

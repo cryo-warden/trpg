@@ -1,0 +1,1 @@
+"Equipping an item produces the same narration twice (appears to fire at both action start and finish). One action, one message: find where StartAction and the effect both narrate identically and de-duplicate the source, not the display."

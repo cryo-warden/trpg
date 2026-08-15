@@ -9,6 +9,9 @@ import {
   relicIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
+import { ARMAMENT_DISPLAY_NAMES } from "./assets/armaments";
+import { ARMOR_DISPLAY_NAMES } from "./assets/armors";
+import { RELIC_DISPLAY_NAMES } from "./assets/relics";
 import { LoadoutPanel } from "./LoadoutPanel";
 
 // The player (entity 1) carries a sword item (entity 5), a jerkin (6), and
@@ -31,15 +34,19 @@ const tables = () => ({
   active_stance_components: mockTable([]),
 });
 
-test("LoadoutPanel lists owned gear by kind with resolved names", () => {
+test("LoadoutPanel lists owned gear by kind with resolved DISPLAY names", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<LoadoutPanel />, { wrapper });
 
+  // PROPER display names, never the internal underscored key.
   expect(container.querySelector(".armor")?.textContent).toContain(
+    ARMOR_DISPLAY_NAMES.leather_jerkin,
+  );
+  expect(container.querySelector(".armor")?.textContent).not.toContain(
     "leather_jerkin",
   );
   expect(container.querySelector(".relics")?.textContent).toContain(
-    "ember_charm",
+    RELIC_DISPLAY_NAMES.ember_charm,
   );
   // Armaments moved to the stances menu; this menu is worn gear only.
   expect(container.querySelector(".stanceArmaments")).toBeNull();
@@ -96,7 +103,7 @@ test("the menu shows totals, the equipped contribution, and the default armament
   );
   // The default slot lists the sword as held.
   const defaults = container.querySelector(".defaultArmaments");
-  expect(defaults?.textContent).toContain("sword");
+  expect(defaults?.textContent).toContain(ARMAMENT_DISPLAY_NAMES.sword);
   expect(defaults?.querySelectorAll("button.active").length).toBe(1);
 });
 
@@ -119,7 +126,9 @@ test("an armament button CONFIGURES the default set: toggled on when off, off wh
   });
   const swordOff = [
     ...off.container.querySelectorAll(".defaultArmaments button"),
-  ].find((button) => button.textContent!.startsWith("sword"))!;
+  ].find((button) =>
+    button.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.sword),
+  )!;
   expect(swordOff.hasAttribute("disabled")).toBe(false);
   fireEvent.click(swordOff);
   expect(setDefaultArmaments).toHaveBeenCalledWith({
@@ -141,7 +150,9 @@ test("an armament button CONFIGURES the default set: toggled on when off, off wh
   });
   const swordOn = [
     ...on.container.querySelectorAll(".defaultArmaments button"),
-  ].find((button) => button.textContent!.startsWith("sword"))!;
+  ].find((button) =>
+    button.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.sword),
+  )!;
   expect(swordOn.className).toContain("active");
   fireEvent.click(swordOn);
   expect(setOn).toHaveBeenCalledWith({ armamentIds: [] });
@@ -181,8 +192,12 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
   });
   // Default configuration hand: 0 - (sword -1) + (defaults: none) = 1.
   const buttons = [...container.querySelectorAll(".defaultArmaments button")];
-  const staff = buttons.find((b) => b.textContent!.startsWith("staff"))!;
-  const sword = buttons.find((b) => b.textContent!.startsWith("sword"))!;
+  const staff = buttons.find((b) =>
+    b.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.staff),
+  )!;
+  const sword = buttons.find((b) =>
+    b.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.sword),
+  )!;
   expect(staff.hasAttribute("disabled")).toBe(true);
   expect(sword.hasAttribute("disabled")).toBe(false);
   // A disabled button proposes nothing.
@@ -290,7 +305,11 @@ test("owned items render in stable ENTITY order regardless of row order", () => 
   const labels = [
     ...container.querySelectorAll(".defaultArmaments button"),
   ].map((button) => button.textContent!.split(" ")[0]);
-  expect(labels).toEqual(["sword", "staff"]);
+  // Sorted by ENTITY id (5 sword, 9 staff), rendered by DISPLAY name.
+  expect(labels).toEqual([
+    ARMAMENT_DISPLAY_NAMES.sword,
+    ARMAMENT_DISPLAY_NAMES.staff,
+  ]);
 });
 
 test("a fifth relic renders visibly disabled at the four-cap", () => {
@@ -311,8 +330,8 @@ test("a fifth relic renders visibly disabled at the four-cap", () => {
   const { container } = render(<LoadoutPanel />, {
     wrapper: gameWrapper(atCap, { identity: {} as Identity }),
   });
-  const charm = [...container.querySelectorAll(".relics button")].find(
-    (button) => button.textContent!.startsWith("ember_charm"),
+  const charm = [...container.querySelectorAll(".relics button")].find((button) =>
+    button.textContent!.startsWith(RELIC_DISPLAY_NAMES.ember_charm),
   )!;
   expect(charm.hasAttribute("disabled")).toBe(true);
 });
@@ -326,8 +345,8 @@ test("toggling a relic on proposes the extended relic set", () => {
   const { container } = render(<LoadoutPanel />, { wrapper });
 
   // Buttons carry the stat summary after the name now: match by prefix.
-  const charm = [...container.querySelectorAll(".relics button")].find(
-    (button) => button.textContent!.startsWith("ember_charm"),
+  const charm = [...container.querySelectorAll(".relics button")].find((button) =>
+    button.textContent!.startsWith(RELIC_DISPLAY_NAMES.ember_charm),
   )!;
   fireEvent.click(charm);
   expect(setRelics).toHaveBeenCalledWith({

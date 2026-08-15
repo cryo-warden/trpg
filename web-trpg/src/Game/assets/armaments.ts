@@ -36,3 +36,16 @@ export const ARMAMENTS = {
 } satisfies Record<string, StatBlockAsset>;
 
 export type ArmamentName = keyof typeof ARMAMENTS;
+
+/** What a person reads on an armament button — the ACTION_APPEARANCES
+ * seam for gear. The Record over ArmamentName makes a missing entry a
+ * compile error. */
+export const ARMAMENT_DISPLAY_NAMES: Record<ArmamentName, string> = {
+  club: "Club",
+  sword: "Sword",
+  staff: "Staff",
+  shield: "Shield",
+  spear: "Spear",
+  axe: "Axe",
+  dagger: "Dagger",
+};

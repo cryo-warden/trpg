@@ -1,0 +1,1 @@
+"Events carry an optional StatBlock payload; the client renders the NON-ZERO elements with signed numbers. Eating a cookie narrates its own message with the stat change (+1 mhp / +2 mhp); equip/unequip narrate what the gear changed. The numbers ARE the juice: every stat-affecting event shows what moved."

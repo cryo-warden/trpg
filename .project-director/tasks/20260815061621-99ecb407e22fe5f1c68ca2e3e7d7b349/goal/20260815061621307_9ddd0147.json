@@ -1,0 +1,1 @@
+"The events view's side is a SETTING: default 'dynamic' places events top-RIGHT on wide screens and top-left on narrow; explicit 'right' and 'left' settings force it. Client-side layout preference (grid template swap), persisted locally."

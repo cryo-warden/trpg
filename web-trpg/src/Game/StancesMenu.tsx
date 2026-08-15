@@ -14,6 +14,8 @@ import {
   usePlayerEntity,
   useTotalStatBlockComponent,
 } from "./context/StdbContext/components";
+import { STANCE_DISPLAY_NAMES } from "./assets/stances";
+import { displayNameFrom } from "./assets/display_names";
 import { assetInstanceIsOn, toggledAssetIds } from "./domain/countedAssets";
 import {
   OwnedItem,
@@ -177,10 +179,11 @@ export const StancesMenu = () => {
             item,
             items: ownedArmaments,
           });
+        const stanceName = displayNameFrom(STANCE_DISPLAY_NAMES, stance.name);
         return (
           <section className="stanceCard" key={stance.id}>
             <h3>
-              {stance.name}
+              {stanceName}
               {stance.id === activeStanceId && " (active)"}
             </h3>
             {signedStatSummary(stance.statBlock) !== "" && (
@@ -291,8 +294,8 @@ export const StancesMenu = () => {
           <button
             key={stance.id}
             type="button"
-            aria-label={stance.name}
-            title={stance.name}
+            aria-label={displayNameFrom(STANCE_DISPLAY_NAMES, stance.name)}
+            title={displayNameFrom(STANCE_DISPLAY_NAMES, stance.name)}
             className={[
               index === currentIndex ? "current" : "",
               stance.id === activeStanceId ? "activeStance" : "",

@@ -1,0 +1,1 @@
+"New default hotkeys on the home row: LEFT side selects targets, RIGHT side fires actions. Each possible target gets a key in the order 'fdsarewqvcxz'; each action gets a key in the order 'jkl;uiopnm,.'. Targeting a key updates focus; action keys act on the current focus."

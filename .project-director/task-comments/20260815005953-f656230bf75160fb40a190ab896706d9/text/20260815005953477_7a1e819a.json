@@ -1,0 +1,1 @@
+"User direction (2026-08-14): consider making EQUIP a context-sensitive OFFERED action -- gear items would offer equip/unequip themselves rather than players inherently knowing it. Needs an Interact validation variant for CARRIED targets (current rule is co-location; a carried item's location is the player). Same shape could carry doors/levers/attune migration."

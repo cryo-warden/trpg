@@ -1,0 +1,1 @@
+"User refinement: the events-position preference (and UI configuration like it) is ACCOUNT-attached server state, not local storage - a per-account configuration row (e.g. account_ui_settings keyed by account id) synced via subscription, so it follows the player across devices. Values: dynamic (default) | right | left."

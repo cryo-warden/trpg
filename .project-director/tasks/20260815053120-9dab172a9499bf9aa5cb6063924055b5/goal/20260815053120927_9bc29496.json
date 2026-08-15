@@ -1,0 +1,1 @@
+"Move becomes an OFFERED action on path entities (riding the offered-actions surface), removing it from actor knowledge. Different paths then offer different move verbs with distinct narration: a slower 'squeeze' through a crack, a careful 'climb down' a chasm, a 'sidle' along a ledge - authored per path blob, each with its own event message."

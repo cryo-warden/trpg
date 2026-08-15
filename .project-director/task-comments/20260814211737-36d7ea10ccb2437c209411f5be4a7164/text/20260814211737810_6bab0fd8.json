@@ -1,0 +1,1 @@
+"ZoneKind landed in 11e3b7d as the explicit Private/Common designation on LocationMap (asset-authored). First consumer: turn pacing — Private instances are turn-guarded, Common zones realtime. The instancing work should reuse this same enum for the shared-hub rules (cap heuristic, party override) rather than adding a second flag."

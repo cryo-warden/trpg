@@ -9,6 +9,8 @@ import {
   stanceIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
+import { STANCE_DISPLAY_NAMES, StanceName } from "./assets/stances";
+import { ARMAMENT_DISPLAY_NAMES, ArmamentName } from "./assets/armaments";
 import { StancesMenu } from "./StancesMenu";
 
 const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
@@ -73,16 +75,25 @@ const tables = () => ({
   ]),
 });
 
-const cardOf = (container: HTMLElement, stanceName: string) =>
+// Tests name stances by their raw key; the card renders the DISPLAY name,
+// so resolve before matching.
+const cardOf = (container: HTMLElement, stance: StanceName) =>
   [...container.querySelectorAll(".stanceCard")].find((card) =>
-    card.querySelector("h3")!.textContent!.startsWith(stanceName),
+    card
+      .querySelector("h3")!
+      .textContent!.startsWith(STANCE_DISPLAY_NAMES[stance]),
   );
+
+const armamentLabel = (name: ArmamentName) => ARMAMENT_DISPLAY_NAMES[name];
 
 test("shows exactly the REACHABLE stances, marking the active one", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  expect(cardOf(container, "standing")?.textContent).toContain("(active)");
+  // The card title reads the PROPER display name, never the raw key.
+  expect(cardOf(container, "standing")?.querySelector("h3")?.textContent).toBe(
+    "Standing (active)",
+  );
   // Dueling is reachable through the duel posture — no "known" state
   // exists; reachability alone decides.
   expect(cardOf(container, "dueling")).toBeDefined();
@@ -109,7 +120,7 @@ test("a stance with NO override lights 'use default' and shows the default items
   )!;
   expect(useDefault.className).toContain("active");
   const standingSword = standingButtons.find(
-    (button) => button.textContent === "sword",
+    (button) => button.textContent === armamentLabel("sword"),
   )!;
   expect(standingSword.className).toContain("active");
   expect(standing.textContent).toContain("Hand 1 (-1)");
@@ -189,7 +200,7 @@ test("clicking an active-by-default item enters custom mode WITHOUT it, keeping 
   // copy-on-writes the visible set minus the club into a new override.
   const standing = cardOf(container, "standing")!;
   const club = [...standing.querySelectorAll("button")].find(
-    (button) => button.textContent === "club",
+    (button) => button.textContent === armamentLabel("club"),
   )!;
   expect(club.className).toContain("active");
   fireEvent.click(club);
@@ -239,7 +250,7 @@ test("gallery dots: one per reachable stance, the active stance marked", () => {
   const dots = [...container.querySelectorAll(".dots button")];
   expect(dots.length).toBe(container.querySelectorAll(".stanceCard").length);
   const standingDot = dots.find(
-    (dot) => dot.getAttribute("aria-label") === "standing",
+    (dot) => dot.getAttribute("aria-label") === STANCE_DISPLAY_NAMES.standing,
   )!;
   expect(standingDot.className).toContain("activeStance");
 });
@@ -342,8 +353,8 @@ test("assigned armaments highlight and unassign; overweight ones disable", () =>
 
   const dueling = cardOf(container, "dueling")!;
   const buttons = [...dueling.querySelectorAll("button")];
-  const sword = buttons.find((b) => b.textContent === "sword")!;
-  const spear = buttons.find((b) => b.textContent === "spear")!;
+  const sword = buttons.find((b) => b.textContent === armamentLabel("sword"))!;
+  const spear = buttons.find((b) => b.textContent === armamentLabel("spear"))!;
 
   expect(sword.className).toContain("active");
   // Grip 2, sword already holds 1: the two-handed spear cannot also fit.

@@ -1,0 +1,1 @@
+"Remove any authored default hotkeys still in the assets (pinned/hotkey defaults). Remove the admin-ish quick_move and divine_heal actions from prod; add a plain heal action restoring 1+focus HP in their place."

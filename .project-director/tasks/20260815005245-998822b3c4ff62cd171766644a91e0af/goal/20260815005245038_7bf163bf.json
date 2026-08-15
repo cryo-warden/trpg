@@ -1,0 +1,1 @@
+"Two identical armors (same asset, different entities) both render as equipped when only one is. The counted-multiset rule must pick INSTANCES deterministically (stable entity-id order), and every equipped-highlight surface must agree with it."
