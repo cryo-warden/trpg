@@ -310,6 +310,7 @@ const QUEST_ROOM_RNG_STREAM: u64 = u64::from_le_bytes(*b"questroo");
 /// The rooms a boss claim takes: the Ending room hosts the boss, and the
 /// last Main room — its neighbor on the chain — hosts the checkpoint
 /// placed before it. Pure selection over the role-tagged result.
+#[cfg_attr(test, derive(Debug, PartialEq))]
 struct BossClaimRooms {
     boss_room_entity_id: u64,
     /// None when the chain has no Main room (a two-room map): the
@@ -625,9 +626,13 @@ mod tests {
 
     #[test]
     fn a_boss_claim_takes_the_ending_room_and_saves_before_it() {
-        let rooms = boss_claim_rooms(&four_room_result()).unwrap();
-        assert_eq!(rooms.boss_room_entity_id, 3);
-        assert_eq!(rooms.before_room_entity_id, Some(2));
+        assert_eq!(
+            boss_claim_rooms(&four_room_result()),
+            Some(BossClaimRooms {
+                boss_room_entity_id: 3,
+                before_room_entity_id: Some(2),
+            }),
+        );
     }
 
     #[test]
@@ -637,9 +642,13 @@ mod tests {
             checkpoint_room_entity_ids: vec![1],
             containers: vec![],
         };
-        let rooms = boss_claim_rooms(&result).unwrap();
-        assert_eq!(rooms.boss_room_entity_id, 2);
-        assert_eq!(rooms.before_room_entity_id, None);
+        assert_eq!(
+            boss_claim_rooms(&result),
+            Some(BossClaimRooms {
+                boss_room_entity_id: 2,
+                before_room_entity_id: None,
+            }),
+        );
     }
 
     #[test]
