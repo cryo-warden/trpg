@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getActionOptions } from "../../domain/actionOptions";
 import { bitIsSet } from "../../domain/bitset";
 import { assetInstanceIsOn } from "../../domain/countedAssets";
@@ -93,6 +93,53 @@ export const useAllegianceComponents = createUseTable("allegiance_components");
 export const useAppearanceFeaturesComponents = createUseTable(
   "appearance_features_components",
 );
+
+/** How long a vanished entity's look lingers after its rows delete —
+ * plenty for its final event to bake (that happens on the very next
+ * render), then the scheduled eviction reclaims the memory. */
+const APPEARANCE_EVICTION_DELAY_MS = 60_000;
+
+/** Last-known appearance features by entity: the live rows merged over a
+ * RETAINED map, so an entity deleted in the same transaction as its
+ * final event — an eaten cookie — still renders by its last look, never
+ * as "something". Every insert/update refreshes the retained copy (the
+ * merge runs on every table change); a DELETE schedules a future
+ * eviction rather than evicting now — and a row reappearing (the
+ * subscription scope churning) cancels it. Presentation fallback ONLY:
+ * gameplay logic keeps reading the live rows. (The mutable-map-in-state
+ * idiom is EventsPanel's bakedMap pattern.) */
+export const useLastKnownAppearanceIndexes = (): Map<EntityId, number[]> => {
+  const live = useAppearanceFeaturesComponents();
+  const [retained] = useState(() => new Map<EntityId, number[]>());
+  const [deletedAtMs] = useState(() => new Map<EntityId, number>());
+  // The eviction bookkeeping is an EFFECT (clock reads are impure in
+  // render): it only reclaims memory — the map handed out below simply
+  // stops including an entry on the next table change after eviction.
+  useEffect(() => {
+    const liveIds = new Set(live.map((row) => row.entityId));
+    const now = Date.now();
+    for (const entityId of [...retained.keys()]) {
+      if (liveIds.has(entityId)) {
+        deletedAtMs.delete(entityId);
+        continue;
+      }
+      const since = deletedAtMs.get(entityId);
+      if (since == null) {
+        deletedAtMs.set(entityId, now);
+      } else if (now - since > APPEARANCE_EVICTION_DELAY_MS) {
+        retained.delete(entityId);
+        deletedAtMs.delete(entityId);
+      }
+    }
+  }, [live, retained, deletedAtMs]);
+  return useMemo(() => {
+    for (const row of live) {
+      retained.set(row.entityId, [...row.appearanceFeatureIndexes]);
+    }
+    // A fresh identity per change, so downstream memos re-derive.
+    return new Map(retained);
+  }, [live, retained]);
+};
 
 const useAllegianceComponent = createUseComponent("allegiance_components");
 export const usePathComponent = createUseComponent("path_components");

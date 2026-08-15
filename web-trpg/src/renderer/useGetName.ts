@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useAppearanceFeatureAssetsOf } from "../Game/context/StdbContext/assetLookup";
-import { useAppearanceFeaturesComponents } from "../Game/context/StdbContext/components";
+import { useLastKnownAppearanceIndexes } from "../Game/context/StdbContext/components";
 import { EntityId } from "../Game/trpg";
 import { getName } from "../Game/domain/appearance";
 
@@ -11,17 +11,13 @@ import { getName } from "../Game/domain/appearance";
  * plugin will supply its own vocabulary picker here instead.
  */
 export const useGetName = (viewpointEntityId: EntityId | null) => {
-  const appearanceFeaturesComponents = useAppearanceFeaturesComponents();
+  // LAST-KNOWN appearance, not just the live rows: an entity deleted in
+  // the same transaction as its final event (an eaten cookie) still
+  // names by its final look, never as "something".
+  const appearanceFeatureIndexesByEntityId = useLastKnownAppearanceIndexes();
   const appearanceFeatureAssetsOf = useAppearanceFeatureAssetsOf();
 
   return useMemo(() => {
-    const appearanceFeatureIndexesByEntityId = new Map(
-      appearanceFeaturesComponents.map((c) => [
-        c.entityId,
-        c.appearanceFeatureIndexes,
-      ]),
-    );
-
     return (input: {
       named: EntityId | string | undefined;
       subject?: EntityId | string | undefined;
@@ -35,7 +31,7 @@ export const useGetName = (viewpointEntityId: EntityId | null) => {
           ),
       });
   }, [
-    appearanceFeaturesComponents,
+    appearanceFeatureIndexesByEntityId,
     appearanceFeatureAssetsOf,
     viewpointEntityId,
   ]);
