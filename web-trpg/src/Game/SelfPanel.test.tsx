@@ -7,7 +7,7 @@ import { SelfPanel } from "./SelfPanel";
 
 test("SelfPanel renders the player's detailed panel with self-valid action buttons", () => {
   const identity = {} as Identity;
-  const buffId = actionIdOf("divine_heal");
+  const buffId = actionIdOf("heal");
   const wrapper = gameWrapper(
     {
       player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),

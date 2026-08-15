@@ -217,7 +217,7 @@ test("a stance with no bar of its own rides the DEFAULT bar; its toggle enters a
   const standing = cardOf(container, "standing")!;
   expect(standing.textContent).toContain("Actions (1/10)");
   const chips = [...standing.querySelectorAll(".actionBar .actionChip")];
-  expect(chips.map((chip) => chip.textContent)).toEqual(["1 Take"]);
+  expect(chips.map((chip) => chip.textContent)).toEqual(["j Take"]);
 
   // Two "use default" toggles per card now — armaments first, then the
   // bar's. Clicking the bar's while on defaults enters a BLANK custom bar.
@@ -295,8 +295,8 @@ test("the bar lists assigned actions in hotkey order; a tap removes", () => {
   const dueling = cardOf(container, "dueling")!;
   const chips = [...dueling.querySelectorAll(".actionBar .actionChip")];
   expect(chips.map((chip) => chip.textContent)).toEqual([
-    "1 Duel",
-    "2 Stand",
+    "j Duel",
+    "k Stand",
   ]);
   // Assigned actions live in the bar, not the pool.
   const poolLabels = [...dueling.querySelectorAll("button")]

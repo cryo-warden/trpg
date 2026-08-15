@@ -14,6 +14,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { actionHotkeyFor } from "./domain/hotkeys";
 
 /**
  * The action-bar editor, shared by the stance cards and the equip menu's
@@ -113,7 +114,7 @@ export const ActionsBarEditor = ({
             <SortableActionChip
               key={actionId}
               id={String(actionId)}
-              label={`${(index + 1) % 10} ${nameOf(actionId)}`}
+              label={`${actionHotkeyFor(index) ?? "·"} ${nameOf(actionId)}`}
               onRemove={() =>
                 onAssign(assignedActionIds.filter((id) => id !== actionId))
               }

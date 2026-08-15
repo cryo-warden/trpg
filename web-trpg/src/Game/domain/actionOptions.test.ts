@@ -55,7 +55,7 @@ test("an unknown allegiance is not an ally (unless it is the entity itself)", ()
 });
 
 const attackId = actionIdOf("bop");
-const buffId = actionIdOf("divine_heal");
+const buffId = actionIdOf("heal");
 const moveId = actionIdOf("move");
 const allIds = [attackId, buffId, moveId];
 const NO_SPECIAL_ACTIONS = {

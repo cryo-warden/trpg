@@ -20,7 +20,7 @@ import {
 } from "./components";
 
 const attackId = actionIdOf("bop");
-const buffId = actionIdOf("divine_heal");
+const buffId = actionIdOf("heal");
 const moveId = actionIdOf("move");
 
 test("useLocationEntities returns entities in the location and updates on insert", () => {

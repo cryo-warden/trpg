@@ -375,10 +375,21 @@ pub fn action_system(ecs: Ecs) {
                         action_state.target_entity_id,
                     ));
                 }
-                ActionEffect::Heal(_) => {
+                ActionEffect::Heal(heal) => {
+                    // Healing scales by the healer's FOCUS, exactly as
+                    // attacks scale by attack: authored base + stat,
+                    // never below zero. The plain heal authors 1 and
+                    // restores 1+focus.
+                    let focus = i32::from(
+                        e.total_stat_block()
+                            .map(|t| t.stat_block.focus)
+                            .unwrap_or(0),
+                    );
+                    let amount = max(0, i32::from(*heal) + focus)
+                        .min(i32::from(i16::MAX)) as i16;
                     queue.emit_middle(ecs.new_event(
                         entity_id,
-                        EventType::ActionEffect(effect.to_owned()),
+                        EventType::ActionEffect(ActionEffect::Heal(amount)),
                         action_state.target_entity_id,
                     ));
                 }

@@ -22,8 +22,8 @@ export const NEW_PLAYER_BLOB = blob({
   // A REASONABLE DEFAULT HUMAN: no admin trait (its grant-everything set
   // distorts testing); admin is a role on the account, not a body plan.
   traitNames: ["mobile", "bopper"],
-  // Ordered: bar position auto-assigns the numeric hotkey (1..9, then 0).
-  pinnedActionNames: ["slash", "boppity_bop", "quick_move"],
+  // NO authored default hotkeys: the bar derives from stats and focus,
+  // and slots are the player's to configure (see the home-row scheme).
   allegiance: {
     allegianceEntityId: { tag: "Named", value: "allegiance1" },
   },

@@ -2,12 +2,14 @@ import { ComponentPropsWithRef } from "react";
 import { Panel } from "../structural/Panel";
 import { ActionButton } from "./ActionButton";
 import { usePinnedActions } from "./context/StdbContext/components";
+import { ACTION_HOTKEYS, actionHotkeyFor } from "./domain/hotkeys";
 import "./PinnedActionsPanel.css";
 
 /**
  * The pinned-actions bar: the entity's chosen actions, each automatically
- * hotkeyed by its position (1..9, then 0). Buttons carry no explicit target,
- * so a press binds the current focus — with lone-hostile auto-focus, the
+ * hotkeyed by its position on the RIGHT home row (jkl; then the rows
+ * around it — see ACTION_HOTKEYS). Buttons carry no explicit target, so
+ * a press binds the current focus — with lone-hostile auto-focus, the
  * routine battle turn is one keypress.
  */
 export const PinnedActionsPanel = (
@@ -18,13 +20,13 @@ export const PinnedActionsPanel = (
   return (
     <Panel {...props}>
       <div className="PinnedActions">
-        {pinnedActions.slice(0, 10).map((actionId, index) => {
-          // The Button already renders its hotkey; no separate label.
-          const hotkey = `${(index + 1) % 10}`;
-          return (
-            <ActionButton key={actionId} actionId={actionId} hotkey={hotkey} />
-          );
-        })}
+        {pinnedActions.slice(0, ACTION_HOTKEYS.length).map((actionId, index) => (
+          <ActionButton
+            key={actionId}
+            actionId={actionId}
+            hotkey={actionHotkeyFor(index)}
+          />
+        ))}
       </div>
     </Panel>
   );

@@ -14,8 +14,21 @@ import {
 } from "../context/StdbContext/components";
 import { LoadoutPanel } from "../LoadoutPanel";
 import { StancesMenu } from "../StancesMenu";
+import { targetHotkeyFor } from "../domain/hotkeys";
 import { EntityId } from "../trpg";
 import { EntitiesDisplay } from "./EntitiesDisplay";
+
+/** LEFT home-row keys assigned down the displayed order. */
+const targetHotkeys = (ordered: EntityId[]): Map<EntityId, string> => {
+  const map = new Map<EntityId, string>();
+  ordered.forEach((entity, index) => {
+    const key = targetHotkeyFor(index);
+    if (key != null) {
+      map.set(entity, key);
+    }
+  });
+  return map;
+};
 
 export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   const mode = useDynamicPanelMode();
@@ -75,20 +88,28 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
     );
     if (threatened) {
       const surroundings = sortedEntities.filter((id) => !hostileSet.has(id));
+      // Target hotkeys run down the DISPLAY order, threats first.
+      const hotkeysByEntity = targetHotkeys([...hostiles, ...surroundings]);
       return (
         <Panel {...props}>
           <div className="DynamicSections">
             <section className="hostiles">
               <h3>Threats</h3>
               <Scroller>
-                <EntitiesDisplay entityIds={hostiles} />
+                <EntitiesDisplay
+                  entityIds={hostiles}
+                  hotkeysByEntity={hotkeysByEntity}
+                />
               </Scroller>
             </section>
             {surroundings.length > 0 && (
               <section className="surroundings">
                 <h3>Surroundings</h3>
                 <Scroller>
-                  <EntitiesDisplay entityIds={surroundings} />
+                  <EntitiesDisplay
+                    entityIds={surroundings}
+                    hotkeysByEntity={hotkeysByEntity}
+                  />
                 </Scroller>
               </section>
             )}
@@ -98,6 +119,7 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
     }
     const paths = sortedEntities.filter((id) => pathIds.has(id));
     const present = sortedEntities.filter((id) => !pathIds.has(id));
+    const hotkeysByEntity = targetHotkeys([...paths, ...present]);
     return (
       <Panel {...props}>
         <div className="DynamicSections">
@@ -105,14 +127,20 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
             <section className="paths">
               <h3>Paths</h3>
               <Scroller>
-                <EntitiesDisplay entityIds={paths} />
+                <EntitiesDisplay
+                  entityIds={paths}
+                  hotkeysByEntity={hotkeysByEntity}
+                />
               </Scroller>
             </section>
           )}
           <section className="present">
             <h3>Here</h3>
             <Scroller>
-              <EntitiesDisplay entityIds={present} />
+              <EntitiesDisplay
+                entityIds={present}
+                hotkeysByEntity={hotkeysByEntity}
+              />
             </Scroller>
           </section>
         </div>
@@ -124,7 +152,10 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
   return (
     <Panel {...props}>
       <Scroller>
-        <EntitiesDisplay entityIds={sortedEntities} />
+        <EntitiesDisplay
+          entityIds={sortedEntities}
+          hotkeysByEntity={targetHotkeys(sortedEntities)}
+        />
       </Scroller>
     </Panel>
   );

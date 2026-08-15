@@ -67,11 +67,6 @@ export const ACTIONS = {
     requirements: requirements({ gait: 1 }),
     rounds: [interruptibleRound(), round(Move)],
   },
-  quick_move: {
-    actionType: { tag: "Move" },
-    requirements: requirements({ gait: 1 }),
-    rounds: [round(Move)],
-  },
   bop: {
     actionType: { tag: "Attack" },
     requirements: requirements({ hand: 1 }),
@@ -85,10 +80,12 @@ export const ACTIONS = {
     // telegraph round.
     rounds: [interruptibleRound(Intimidate(1)), round(Attack(1), Attack(1))],
   },
-  divine_heal: {
+  // The plain heal: restores 1 + the healer's focus (healing scales by
+  // focus exactly as attacks scale by attack).
+  heal: {
     actionType: { tag: "Buff" },
     requirements: NO_REQUIREMENTS,
-    rounds: [round(Heal(500))],
+    rounds: [round(Heal(1))],
   },
   slime_spray: {
     actionType: { tag: "Attack" },
@@ -277,10 +274,6 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
     displayName: "Move",
     beginTemplate: "{0:sentence:subject} moved toward {1:object}.",
   },
-  quick_move: {
-    displayName: "Quick Move",
-    beginTemplate: "{0:sentence:subject} moved quickly toward {1:object}.",
-  },
   bop: {
     displayName: "Bop",
     beginTemplate: "{0:sentence:subject} wound up to bop {1:object}.",
@@ -289,10 +282,9 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
     displayName: "Boppity Bop",
     beginTemplate: "{0:sentence:subject} wound up to boppity-bop {1:object}.",
   },
-  divine_heal: {
-    displayName: "Divine Heal",
-    beginTemplate:
-      "{0:sentence:subject} began to focus a beam of pure lifeforce onto {1:object}.",
+  heal: {
+    displayName: "Heal",
+    beginTemplate: "{0:sentence:subject} gathered mending light over {1:object}.",
   },
   slime_spray: {
     displayName: "Slime Spray",

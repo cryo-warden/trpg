@@ -55,7 +55,7 @@ export const STANCES = {
     statBlock: statBlock({
       gait: 1,
       upright: 2,
-      actionNames: ["move", "quick_move"],
+      actionNames: ["move"],
     }),
   },
   perched: {
@@ -67,7 +67,7 @@ export const STANCES = {
     statBlock: statBlock({
       gait: 2,
       upright: 2,
-      actionNames: ["move", "quick_move"],
+      actionNames: ["move"],
     }),
   },
   // General magic; the elemental specializations trade breadth for a
@@ -75,7 +75,7 @@ export const STANCES = {
   // a stance-carried pool would be a one-time permanent boost.)
   casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ upright: 2, actionNames: ["divine_heal"] }),
+    statBlock: statBlock({ upright: 2, actionNames: ["heal"] }),
   },
   fire_casting: {
     requirements: requirements({ focus: 1 }),
