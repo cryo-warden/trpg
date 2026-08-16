@@ -173,7 +173,7 @@ pub fn resolve_anchor_room(
                 None
             } else {
                 let index: usize =
-                    rng.get_range::<u32, usize>(0, (main_room_entity_ids.len() - 1) as u32);
+                    rng.get_range::<u32, usize>(0, main_room_entity_ids.len() as u32);
                 main_room_entity_ids.get(index).copied()
             }
         }
@@ -182,7 +182,7 @@ pub fn resolve_anchor_room(
                 // Deterministically varied would be nicer; any branch room
                 // serves the fiction.
                 let index: usize =
-                    rng.get_range::<u32, usize>(0, (extra_room_entity_ids.len() - 1) as u32);
+                    rng.get_range::<u32, usize>(0, extra_room_entity_ids.len() as u32);
                 extra_room_entity_ids.get(index).copied().or(Some(room))
             } else {
                 resolve_anchor_room(
