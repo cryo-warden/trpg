@@ -163,40 +163,86 @@ fn generic_debris_feature_ids(ecs: Ecs) -> Vec<u32> {
         .unwrap_or_default()
 }
 
-/// Paired entities share ONE fate. Each tick, BEFORE the deltas settle, mirror
-/// every shared entity's pending HP delta (this tick's accumulated damage and
-/// healing) onto its partner, so a blow to either side lands on both and the
-/// pair stays in lockstep — a crack smashed from one side is a cave-in on both.
-/// Two blows to opposite sides both count (deltas sum), and healing shares
-/// alike. Deltas are SNAPSHOTTED before any are applied, so a mutual pair never
-/// double-counts its own mirrored delta.
+/// Paired entities share ONE fate. This mirrors each shared entity's per-tick
+/// HP DELTA onto its partner, so a blow to either side lands on both — but it
+/// only ever touches the accumulated deltas, NEVER hp itself, so the deltas
+/// stay truthful for any other system that reads them (hp_system settles them
+/// afterward). Two clean passes: a COMPUTE pass gathers each side's missing
+/// delta (skipping when nothing changes), then an UPDATE pass applies it.
+///
+/// Idempotency rides the TRANSIENT hp_share_applied component: it records what
+/// this system already mirrored onto each entity this tick, so a re-run
+/// subtracts it and never multi-counts. That state is event-backed, so it
+/// vanishes with the transaction and needs no reset. (Limitation: before this
+/// system runs the deltas are still un-shared, so ordering matters.)
 pub fn hp_share_system(ecs: Ecs) {
-    // (partner_entity_id, accumulated_damage, accumulated_healing)
-    let mut mirrored: Vec<(u64, i16, i16)> = Vec::new();
+    // Each side's ORIGINAL delta this tick = its current delta minus whatever
+    // this system already mirrored onto it (nothing, until the update pass).
+    let applied_damage =
+        |c: &Option<HpShareAppliedComponent>| c.as_ref().map_or(0i32, |a| i32::from(a.damage));
+    let applied_healing =
+        |c: &Option<HpShareAppliedComponent>| c.as_ref().map_or(0i32, |a| i32::from(a.healing));
+    let clamp_i16 = |v: i32| v.clamp(i32::from(i16::MIN), i32::from(i16::MAX)) as i16;
+
+    struct Pending {
+        entity_id: u64,
+        add_damage: i16,
+        add_healing: i16,
+    }
+
+    // COMPUTE PASS: read-only. Each side's target is the pair's COMBINED
+    // original delta; the add is whatever that side is still missing.
+    let mut pending: Vec<Pending> = Vec::new();
     for e in ecs.iter_hp_share() {
         let handle = e.into_handle();
-        let Some(share) = handle.hp_share() else {
+        let (Some(share), Some(hp)) = (handle.hp_share(), handle.hp()) else {
             continue;
         };
-        let Some(hp) = handle.hp() else {
+        let partner = ecs.find(share.partner_entity_id);
+        let Some(partner_hp) = partner.hp() else {
             continue;
         };
-        if hp.accumulated_damage == 0 && hp.accumulated_healing == 0 {
+        let own_applied = handle.hp_share_applied();
+        let partner_applied = partner.hp_share_applied();
+        let own_d = i32::from(hp.accumulated_damage);
+        let own_h = i32::from(hp.accumulated_healing);
+        let own_orig_d = own_d - applied_damage(&own_applied);
+        let own_orig_h = own_h - applied_healing(&own_applied);
+        let partner_orig_d =
+            i32::from(partner_hp.accumulated_damage) - applied_damage(&partner_applied);
+        let partner_orig_h =
+            i32::from(partner_hp.accumulated_healing) - applied_healing(&partner_applied);
+        let add_damage = clamp_i16((own_orig_d + partner_orig_d) - own_d);
+        let add_healing = clamp_i16((own_orig_h + partner_orig_h) - own_h);
+        if add_damage == 0 && add_healing == 0 {
             continue;
         }
-        mirrored.push((
-            share.partner_entity_id,
-            hp.accumulated_damage,
-            hp.accumulated_healing,
-        ));
+        pending.push(Pending {
+            entity_id: handle.entity_id(),
+            add_damage,
+            add_healing,
+        });
     }
-    for (partner_entity_id, damage, healing) in mirrored {
-        let partner = ecs.find(partner_entity_id);
-        if let Some(mut hp) = partner.hp() {
-            hp.accumulated_damage = hp.accumulated_damage.saturating_add(damage);
-            hp.accumulated_healing = hp.accumulated_healing.saturating_add(healing);
-            partner.update_hp_row(hp);
+
+    // UPDATE PASS: apply to the entity's own DELTAS (never hp), and record the
+    // cumulative applied amount in the transient component for idempotency.
+    for p in pending {
+        let handle = ecs.find(p.entity_id);
+        if let Some(mut hp) = handle.hp() {
+            hp.accumulated_damage = hp.accumulated_damage.saturating_add(p.add_damage);
+            hp.accumulated_healing = hp.accumulated_healing.saturating_add(p.add_healing);
+            handle.clone().update_hp_row(hp);
         }
+        let prior = handle.hp_share_applied();
+        let damage = prior
+            .as_ref()
+            .map_or(0, |a| a.damage)
+            .saturating_add(p.add_damage);
+        let healing = prior
+            .as_ref()
+            .map_or(0, |a| a.healing)
+            .saturating_add(p.add_healing);
+        handle.upsert_new_hp_share_applied(damage, healing);
     }
 }
 

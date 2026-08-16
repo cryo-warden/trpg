@@ -197,6 +197,8 @@ fn resolve_entity_blob(
         // Shared-HP links are forged at generation (paired paths), never
         // authored on a blob.
         hp_share: None,
+        // Transient per-tick state; never authored, cleared each transaction.
+        hp_share_applied: None,
         allegiance: author.allegiance,
         baseline: author
             .baseline_name

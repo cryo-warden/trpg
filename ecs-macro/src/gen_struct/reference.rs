@@ -38,7 +38,7 @@ impl ReferenceStructs {
             selector: selector_ident(),
             scope: scope_ident(),
             registry_row: registry_declaration.registry_row.to_owned(),
-            registry_table: fundamental::Table(registry_declaration.table.to_owned()),
+            registry_table: fundamental::Table(registry_declaration.table.to_owned(), false),
             id: entity_declaration.id.to_owned(),
             id_ty: entity_declaration.id_ty.to_owned(),
         }

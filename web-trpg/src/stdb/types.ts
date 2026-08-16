@@ -578,6 +578,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get hpShare() {
     return __t.option(HpShareComponentBlob);
   },
+  get hpShareApplied() {
+    return __t.option(HpShareAppliedComponentBlob);
+  },
   get allegiance() {
     return __t.option(AllegianceComponentBlob);
   },
@@ -936,6 +939,19 @@ export const HpComponentBlob = __t.object("HpComponentBlob", {
   accumulatedHealing: __t.i16(),
 });
 export type HpComponentBlob = __Infer<typeof HpComponentBlob>;
+
+export const HpShareAppliedComponent = __t.object("HpShareAppliedComponent", {
+  entityId: __t.u64(),
+  damage: __t.i16(),
+  healing: __t.i16(),
+});
+export type HpShareAppliedComponent = __Infer<typeof HpShareAppliedComponent>;
+
+export const HpShareAppliedComponentBlob = __t.object("HpShareAppliedComponentBlob", {
+  damage: __t.i16(),
+  healing: __t.i16(),
+});
+export type HpShareAppliedComponentBlob = __Infer<typeof HpShareAppliedComponentBlob>;
 
 export const HpShareComponent = __t.object("HpShareComponent", {
   entityId: __t.u64(),

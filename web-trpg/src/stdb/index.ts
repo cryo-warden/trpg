@@ -97,6 +97,7 @@ import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_c
 import EquipmentStatBlockDirtyFlagComponentsRow from "./equipment_stat_block_dirty_flag_components_table";
 import FearStatusComponentsRow from "./fear_status_components_table";
 import HpComponentsRow from "./hp_components_table";
+import HpShareAppliedComponentsRow from "./hp_share_applied_components_table";
 import HpShareComponentsRow from "./hp_share_components_table";
 import ItemComponentsRow from "./item_components_table";
 import LocationComponentsRow from "./location_components_table";
@@ -627,6 +628,18 @@ const tablesSchema = __schema({
       { name: 'hp_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, HpComponentsRow),
+  hp_share_applied_components: __table({
+    name: 'hp_share_applied_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'hp_share_applied_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'hp_share_applied_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+    event: true,
+  }, HpShareAppliedComponentsRow),
   hp_share_components: __table({
     name: 'hp_share_components',
     indexes: [

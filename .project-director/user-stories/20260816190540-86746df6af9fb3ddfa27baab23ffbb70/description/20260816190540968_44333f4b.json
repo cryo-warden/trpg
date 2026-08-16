@@ -1,0 +1,1 @@
+"As a component author, I want to use the DB to manage state that only exists during a single game tick, so that transient bookkeeping never persists past the tick and needs no cleanup."

@@ -33,7 +33,7 @@ impl EntityBlobStruct {
     ) -> Option<Self> {
         blob_declaration.map(|blob_declaration| Self {
             attrs: struct_attrs.attrs.to_owned(),
-            table: fundamental::Table(blob_declaration.table.to_owned()),
+            table: fundamental::Table(blob_declaration.table.to_owned(), false),
             entity_blob_struct: format_ident!("{}Blob", entity_declaration.entity),
             component_fields: component_declarations
                 .iter()

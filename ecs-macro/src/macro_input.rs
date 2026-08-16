@@ -14,6 +14,7 @@ mod kw {
     use syn::custom_keyword;
     custom_keyword!(table);
     custom_keyword!(dirties);
+    custom_keyword!(transient);
 }
 
 fn try_extract_attr(
@@ -81,18 +82,29 @@ pub struct ComponentDeclaration {
     /// Component names (flags) that every mutation of this component's
     /// tables auto-inserts, so a dirty flag can never be forgotten.
     pub dirties: Vec<Ident>,
+    /// TRANSIENT: the component's tables hold state that exists only within a
+    /// single game tick (one reducer transaction). Backed by SpacetimeDB's
+    /// `event` table attribute, whose rows do not persist past the
+    /// transaction — so no cleanup is needed. (If that contract ever changes,
+    /// this flag is the one place to add our own per-tick cleanup.)
+    pub transient: bool,
     pub fields: fundamental::Fields,
 }
 
-/// One argument inside #[component(...)]: either a `name in table` pair or a
-/// `dirties(a, b)` list.
+/// One argument inside #[component(...)]: a `name in table` pair, a
+/// `dirties(a, b)` list, or the `transient` marker.
 enum ComponentAttrArg {
     Pair(ComponentTablePair),
     Dirties(Vec<Ident>),
+    Transient,
 }
 
 impl Parse for ComponentAttrArg {
     fn parse(input: ParseStream) -> Result<Self> {
+        if input.peek(kw::transient) {
+            input.parse::<kw::transient>()?;
+            return Ok(Self::Transient);
+        }
         if input.peek(kw::dirties) {
             input.parse::<kw::dirties>()?;
             let content;
@@ -122,10 +134,12 @@ impl TryFrom<ItemStruct> for fundamental::WithAttrs<ComponentDeclaration> {
         })?;
         let mut component_table_pairs = Vec::new();
         let mut dirties = Vec::new();
+        let mut transient = false;
         for arg in args {
             match arg {
                 ComponentAttrArg::Pair(pair) => component_table_pairs.push(pair),
                 ComponentAttrArg::Dirties(names) => dirties.extend(names),
+                ComponentAttrArg::Transient => transient = true,
             }
         }
         let component_ty = value.ident.clone();
@@ -135,6 +149,7 @@ impl TryFrom<ItemStruct> for fundamental::WithAttrs<ComponentDeclaration> {
             fields,
             component_table_pairs,
             dirties,
+            transient,
         }
         .add_attrs(attrs))
     }

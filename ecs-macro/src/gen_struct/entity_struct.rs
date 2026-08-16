@@ -33,7 +33,7 @@ impl ToTokens for EntityStruct {
             entity_struct,
             id_ty,
         } = self;
-        let tables = fundamental::Tables(vec![table.to_owned()]);
+        let tables = fundamental::Tables(vec![table.to_owned()], false);
         tokens.extend(quote! {
           #attrs
           #tables

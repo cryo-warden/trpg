@@ -87,6 +87,18 @@ entity!(
         pub partner_entity_id: EntityId,
     }
 
+    // TRANSIENT (per-tick): the HP delta hp_share_system has ALREADY mirrored
+    // onto this entity this tick. Its event-backed table clears itself every
+    // transaction, so the mirror can stay idempotent — a re-run subtracts what
+    // was already applied — without persisting anything or needing a reset.
+    // This is the first user of the transient-component mechanism; generalize
+    // from here.
+    #[component(hp_share_applied in hp_share_applied_components, transient)]
+    struct HpShareAppliedComponent {
+        pub damage: i16,
+        pub healing: i16,
+    }
+
     #[component(allegiance in allegiance_components)]
     struct AllegianceComponent {
         #[index(btree)]

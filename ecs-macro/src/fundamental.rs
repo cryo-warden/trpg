@@ -158,8 +158,11 @@ impl ToTokens for FieldNames {
     }
 }
 
+/// A generated table. `transient` maps to SpacetimeDB's `event` attribute:
+/// the table's rows exist only within a single reducer transaction (one game
+/// tick) and never persist — the backing for a "transient component".
 #[derive(Clone)]
-pub struct Table(pub Ident);
+pub struct Table(pub Ident, pub bool);
 
 impl Deref for Table {
     type Target = Ident;
@@ -170,16 +173,23 @@ impl Deref for Table {
 
 impl ToTokens for Table {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Table(table) = self;
+        let Table(table, transient) = self;
         // TODO Make the `public` controllable.
+        let transient = if *transient {
+            quote! { , event }
+        } else {
+            quote! {}
+        };
         tokens.extend(quote! {
-          #[::spacetimedb::table(accessor = #table, public)]
+          #[::spacetimedb::table(accessor = #table, public #transient)]
         })
     }
 }
 
+/// A component's tables. `transient` applies to every one of them (a
+/// transient component is transient across all its tables).
 #[derive(Clone)]
-pub struct Tables(pub Vec<Ident>);
+pub struct Tables(pub Vec<Ident>, pub bool);
 
 impl Deref for Tables {
     type Target = Vec<Ident>;
@@ -190,8 +200,8 @@ impl Deref for Tables {
 
 impl ToTokens for Tables {
     fn to_tokens(&self, tokens: &mut TokenStream) {
-        let Tables(tables) = self;
-        let tables = tables.iter().map(|t| Table(t.to_owned()));
+        let Tables(tables, transient) = self;
+        let tables = tables.iter().map(|t| Table(t.to_owned(), *transient));
         tokens.extend(quote! {
           #(#tables)*
         })

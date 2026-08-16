@@ -35,6 +35,8 @@ beforeAll(async () => {
       "SELECT * FROM appearance_features",
       "SELECT * FROM appearance_features_components",
       "SELECT * FROM enemy_controller_components",
+      "SELECT * FROM hp_components",
+      "SELECT * FROM hp_share_components",
     ]);
   await player.reducers.createAccount({ name: "explorer" });
 }, 60000);
@@ -86,6 +88,38 @@ test("generated paths receive a rolled variation feature", async () => {
   await waitFor(pathCarriesWinding, 30000);
   expect(pathCarriesWinding()).toBe(true);
 }, 40000);
+
+test("generated path pairs are linked to share HP (for cave-ins)", async () => {
+  // Both directions of a crossing are one physical thing: generation links
+  // them with a MUTUAL HpShare, and each path is a real body with HP — so a
+  // blow to one side collapses both.
+  await waitFor(() => player.db.hp_share_components.count() > 0, 30000);
+
+  const linkedPairWithHp = () => {
+    const pathIds = new Set(
+      [...player.db.path_components.iter()].map((r) => r.entityId),
+    );
+    const partnerOf = new Map(
+      [...player.db.hp_share_components.iter()].map((r) => [
+        r.entityId,
+        r.partnerEntityId,
+      ]),
+    );
+    const hasHp = new Set(
+      [...player.db.hp_components.iter()].map((r) => r.entityId),
+    );
+    return [...partnerOf.entries()].find(
+      ([id, partner]) =>
+        pathIds.has(id) &&
+        pathIds.has(partner) &&
+        partnerOf.get(partner) === id &&
+        hasHp.has(id) &&
+        hasHp.has(partner),
+    );
+  };
+  await waitFor(() => linkedPairWithHp() != null, 30000);
+  expect(linkedPairWithHp()).toBeDefined();
+});
 
 test("a differentiable pack spawns with distinct variety traits", async () => {
   // The palette forces exactly one of three distinct variety traits onto each

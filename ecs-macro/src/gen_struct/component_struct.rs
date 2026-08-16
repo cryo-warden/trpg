@@ -26,6 +26,7 @@ impl ComponentStruct {
                     .iter()
                     .map(|ctp| ctp.table.to_owned())
                     .collect(),
+                cwa.transient,
             ),
             component_struct: cwa.component_ty.to_owned(),
             id: ewa.id.to_owned(),
