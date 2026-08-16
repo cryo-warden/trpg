@@ -29,8 +29,35 @@ const CHECKPOINT_BLOBS = {
   }),
 };
 
-/** A breakable loot container: hp makes it smashable, remains turn the
- * debris into decoration, and the quest layer hides cookies inside.
+/** A physical object's toughness, as an hp component. Anything physical can
+ * break if you hit it hard enough — but a non-actor's HP bar stays hidden
+ * until it is actually struck (see HPBar), so this clutters nothing. Objects
+ * need no baseline: their look is authored and their durability is this. */
+const durability = (mhp: number, defense: number): EntityBlobAsset["hp"] => ({
+  hp: mhp,
+  mhp,
+  defense,
+  accumulatedDamage: 0,
+  accumulatedHealing: 0,
+});
+// Most scenery is far tougher than any beginner player or early monster —
+// effectively permanent until you are strong enough to matter. Softer things
+// take real effort; flimsy things still have a point of defense. (Loot
+// containers, below, are the deliberate exception — meant to be smashed open.)
+const STURDY = durability(25, 5);
+const MEDIUM = durability(12, 2);
+const SOFT = durability(6, 1);
+
+/** A scenery decoration: an authored look plus lightweight durability, no
+ * baseline and no stat pipeline. It is a physical object with hit points, but
+ * its bar stays hidden until struck. */
+const decoration = (
+  appearanceFeatureNames: string[],
+  toughness = STURDY,
+): EntityBlobAsset => blob({ appearanceFeatureNames, hp: toughness });
+
+/** A breakable loot container: FLIMSY hit points make it smashable, remains
+ * turn the debris into decoration, and the quest layer hides cookies inside.
  * offeredActionNames are the GENTLE interactions this container itself
  * offers to anyone beside it — a lidded chest opens, a sack tips over —
  * explicit per container, never inferred from its look. Smashing always
@@ -44,13 +71,8 @@ const container = (
     appearanceFeatureNames,
     remainsAppearanceFeatureNames,
     offeredActionNames,
-    hp: {
-      hp: 2,
-      mhp: 2,
-      defense: 0,
-      accumulatedDamage: 0,
-      accumulatedHealing: 0,
-    },
+    // Flimsy, but with a point of defense like any object.
+    hp: durability(2, 1),
   });
 
 const jar = container(["jar"], ["ceramic_shards"]);
@@ -70,11 +92,11 @@ const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
  * the path, not the walker — a crack offers squeeze, a chasm climb_down,
  * everything else the plain move. No body knows "move" innately.
  *
- * A path takes its whole look through the stat pipeline (appliesAppearance-
- * Features): its noun is a BASELINE and its adjectives are TRAITS, exactly
- * like a creature is a body plus traits. Generation then adds rolled
- * variation traits on top; the pipeline OVERWRITES its look from baseline +
- * all traits. Never attackable — the rest of the block is discarded. */
+ * A path takes its whole look through the stat pipeline: its noun is a
+ * BASELINE and its adjectives are TRAITS, exactly like a creature is a body
+ * plus traits. Generation then adds rolled variation traits on top; the
+ * pipeline OVERWRITES its look from baseline + all traits. The baseline has
+ * max HP 0, so the pool guard leaves the path bodiless — never attackable. */
 const pathBlob = (
   baselineName: string,
   offeredActionNames: string[] = ["move"],
@@ -84,7 +106,6 @@ const pathBlob = (
     baselineName,
     offeredActionNames,
     traitNames,
-    appliesAppearanceFeatures: {},
   });
 
 /** A MATCHED pair of path presentations: the two directions between two
@@ -120,8 +141,8 @@ const crumblingPillarGuard = container(["crumbling", "pillar"], ["rubble"]);
  * three, occasionally none. Global for now — every theme draws the same set;
  * a theme (or map) can override later. Exclusion groups on the traits'
  * features keep a roll from pairing opposites/redundants (wide+narrow,
- * dim+dark). Each name is a TRAIT (see traits.ts), routed through the path's
- * appliesAppearanceFeatures pipeline. */
+ * dim+dark). Each name is a TRAIT (see traits.ts), surfaced through the
+ * path's baseline+traits pipeline. */
 const PATH_VARIATION_TRAIT_NAMES = [
   "winding",
   "wide",
@@ -143,9 +164,9 @@ export const LOCATION_MAP_THEMES = {
       selections: [
         // Camp scenery, not cave rubble: the exterior training ground reads
         // as a camp.
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["campfire"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["bedroll"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["banner"] }) },
+        { weight: 5, blob: decoration(["campfire"], SOFT) },
+        { weight: 3, blob: decoration(["bedroll"], SOFT) },
+        { weight: 2, blob: decoration(["banner"], MEDIUM) },
         {
           weight: 4,
           blob: blob({
@@ -169,13 +190,13 @@ export const LOCATION_MAP_THEMES = {
         {
           weight: 2,
           blob: blob({
-            // A differentiable item takes its whole look through the appearance
-            // pipeline: the noun is a baseline, the rolled condition a trait —
-            // overwritten from baseline + traits, no stats, no HP.
+            // A differentiable item takes its whole look through the pipeline:
+            // the noun is a baseline (max HP 0 → no HP), the rolled condition a
+            // trait. Overwritten from baseline + traits; you take it, not fight
+            // it.
             baselineName: "sword",
             item: { tag: "Armament", value: "sword" },
             differentiable: { traitPaletteName: "weapon_variety" },
-            appliesAppearanceFeatures: {},
           }),
         },
         {
@@ -191,7 +212,6 @@ export const LOCATION_MAP_THEMES = {
             baselineName: "shield",
             item: { tag: "Armament", value: "shield" },
             differentiable: { traitPaletteName: "weapon_variety" },
-            appliesAppearanceFeatures: {},
           }),
         },
         {
@@ -214,7 +234,6 @@ export const LOCATION_MAP_THEMES = {
             baselineName: "staff",
             item: { tag: "Armament", value: "staff" },
             differentiable: { traitPaletteName: "weapon_variety" },
-            appliesAppearanceFeatures: {},
           }),
         },
         {
@@ -275,9 +294,9 @@ export const LOCATION_MAP_THEMES = {
   cave: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["rock"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["stone"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["boulder"] }) },
+        { weight: 5, blob: decoration(["rock"]) },
+        { weight: 4, blob: decoration(["stone"]) },
+        { weight: 2, blob: decoration(["boulder"]) },
       ],
     },
     minDecorationCount: 2,
@@ -325,10 +344,10 @@ export const LOCATION_MAP_THEMES = {
   meadow: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["grass"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["stump"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["log"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["mossy", "rock"] }) },
+        { weight: 5, blob: decoration(["grass"], SOFT) },
+        { weight: 3, blob: decoration(["stump"], MEDIUM) },
+        { weight: 2, blob: decoration(["log"], MEDIUM) },
+        { weight: 2, blob: decoration(["mossy", "rock"]) },
       ],
     },
     minDecorationCount: 2,
@@ -364,10 +383,10 @@ export const LOCATION_MAP_THEMES = {
   forest: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["tree"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["stump"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["log"] }) },
-        { weight: 1, blob: blob({ appearanceFeatureNames: ["huge", "tree"] }) },
+        { weight: 5, blob: decoration(["tree"]) },
+        { weight: 3, blob: decoration(["stump"], MEDIUM) },
+        { weight: 3, blob: decoration(["log"], MEDIUM) },
+        { weight: 1, blob: decoration(["huge", "tree"]) },
       ],
     },
     minDecorationCount: 3,
@@ -407,9 +426,9 @@ export const LOCATION_MAP_THEMES = {
     // armament-shaped decoration is a takeable item entity.
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["rubble"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["bones"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["brazier"] }) },
+        { weight: 5, blob: decoration(["rubble"]) },
+        { weight: 3, blob: decoration(["bones"], MEDIUM) },
+        { weight: 2, blob: decoration(["brazier"]) },
         {
           weight: 2,
           blob: blob({
@@ -524,10 +543,10 @@ export const LOCATION_MAP_THEMES = {
   sanctum: {
     decorationsSelector: {
       selections: [
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["pillar"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["smoldering", "brazier"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["frozen", "altar"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["crackling", "pillar"] }) },
+        { weight: 4, blob: decoration(["pillar"]) },
+        { weight: 3, blob: decoration(["smoldering", "brazier"]) },
+        { weight: 3, blob: decoration(["frozen", "altar"]) },
+        { weight: 2, blob: decoration(["crackling", "pillar"]) },
         {
           weight: 1,
           blob: blob({

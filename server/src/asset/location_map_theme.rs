@@ -111,10 +111,10 @@ pub struct LocationMapTheme {
     pub blockers_selector: EntityBlobsSampler,
     /// Optional path-variation TRAITS (by id): adjective-bearing traits rolled
     /// into a path at generation and applied to BOTH directions so a crossing
-    /// reads the same coming and going. The path carries applies_appearance_
-    /// features, so these ride the ordinary trait pipeline — their appearance
-    /// features surface on the path like any creature's. Empty leaves this
-    /// theme's paths plain.
+    /// reads the same coming and going. A path's baseline has max HP 0, so
+    /// these ride the ordinary trait pipeline — their appearance features
+    /// surface on the path like any creature's, but it stays bodiless (never
+    /// attackable). Empty leaves this theme's paths plain.
     pub path_variation_trait_ids: Vec<u32>,
     /// Weighted count distribution for path variations: index = number of
     /// variations rolled, value = its weight (index 1 usually dominant, 2

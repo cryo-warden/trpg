@@ -97,10 +97,7 @@ pub fn death_system(ecs: Ecs) {
             ecs.db
                 .observable_events()
                 .insert(ecs.new_event(entity_id, EventType::Died, entity_id));
-        } else if handle.enemy_controller().is_none() && handle.remains().is_some() {
-            // A BREAKABLE (scenery with authored remains) shatters.
-            shattered.push(entity_id);
-        } else {
+        } else if handle.enemy_controller().is_some() {
             // A dead NPC becomes a CORPSE, never a deletion: the entity
             // remains — its name stays in every message — and the body is
             // there to see (and to target). The enemy controller also
@@ -112,6 +109,12 @@ pub fn death_system(ecs: Ecs) {
                 .observable_events()
                 .insert(ecs.new_event(entity_id, EventType::Died, entity_id));
             ecs.find(entity_id).upsert_new_perished();
+        } else {
+            // A pure physical OBJECT (no controller) breaks: any physical
+            // thing yields if you hit it hard enough. It shatters — leaving
+            // debris if it authored remains — and is removed, never left as a
+            // lingering "corpse".
+            shattered.push(entity_id);
         }
     }
     for entity_id in shattered {
@@ -133,8 +136,10 @@ pub fn death_system(ecs: Ecs) {
                     .into_handle()
                     .upsert_new_appearance_features(remains.appearance_feature_ids);
             }
-            delete_entity_with_joins(ecs, entity_id);
         }
+        // The broken thing is always removed — whether it left debris behind
+        // or simply came apart into nothing.
+        delete_entity_with_joins(ecs, entity_id);
     }
 }
 
@@ -602,17 +607,11 @@ pub fn entity_stats_system(ecs: Ecs) {
     }
 
     for f in ecs.iter_total_stat_block_dirty_flag() {
-        // TWO opt-ins share this computation. applies_stat_block wants the
-        // whole block (HP/EP/attack/actions + look); applies_appearance_features
-        // wants ONLY the look (paths, decorative items). An object carrying
-        // neither is inert: clear the flag and skip, so it never gains pools or
-        // becomes attackable by accident.
-        let applies_stat_block = f.applies_stat_block().is_some();
-        let applies_appearance_features = f.applies_appearance_features().is_some();
-        if !applies_stat_block && !applies_appearance_features {
-            f.delete_total_stat_block_dirty_flag();
-            continue;
-        }
+        // A baseline or trait is enough to derive a stat block — no opt-in
+        // flag. What comes of it is decided downstream: apply_stat_block gives
+        // pools only to a real body (positive max HP), so a bodiless feature
+        // (a path, an exit — baseline max HP 0) computes its look and grants
+        // but stays HP-less and un-targetable.
         log::debug!("Entity {} is computing total stat block.", f.entity_id());
         let mut stat_block = f.base_stat_block();
 
@@ -620,19 +619,6 @@ pub fn entity_stats_system(ecs: Ecs) {
             .and_then(|active| ecs.db.stances().id().find(active.stance_id))
         {
             stat_block += &s.stat_block;
-        }
-
-        // Appearance-only entities take just the computed look — the same
-        // baseline+traits features a creature gets — and OVERWRITE with it,
-        // exactly as apply_stat_block does. Their whole appearance is authored
-        // as a baseline (the noun) plus traits (the adjectives), so there is
-        // nothing else to preserve. No pools, no derived actions: the rest of
-        // the block is discarded, so nothing here is ever attackable.
-        if !applies_stat_block {
-            f.delete_total_stat_block_dirty_flag()
-                .into_handle()
-                .set_appearance_feature_ids(stat_block.appearance_feature_ids);
-            continue;
         }
 
         // Derived availability: an action the total's requirements check

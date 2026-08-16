@@ -145,12 +145,6 @@ export default __t.row({
   get perished() {
     return __t.option(FlagComponentBlob);
   },
-  get appliesStatBlock() {
-    return __t.option(FlagComponentBlob).name("applies_stat_block");
-  },
-  get appliesAppearanceFeatures() {
-    return __t.option(FlagComponentBlob).name("applies_appearance_features");
-  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },

@@ -111,16 +111,32 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         stat_block: StatBlock,
         available_action_ids: Vec<ActionId>,
     ) -> Self {
-        self.to_handle()
+        let handle = self
+            .to_handle()
             .clone()
             .upsert_new_total_stat_block(stat_block.clone())
-            .into_handle()
-            .upsert_new_attack(stat_block.attack)
-            .set_mhp(stat_block.mhp)
-            .set_mep(stat_block.mep)
-            .set_defense(stat_block.defense)
+            .into_handle();
+        // The look and the grants apply to ANYTHING that derives — a bodiless
+        // feature (a path) shows its adjectives and offers no less.
+        handle
+            .clone()
             .set_actions(available_action_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids);
+        // A BODY exists only with a positive max HP. Without one, the entity
+        // gets no hp/ep/attack pools — and with no hp component, nothing can
+        // target it (attacks require the target to have hp). Everything with a
+        // real body — creatures and breakable objects alike — gets its pools,
+        // still governed by the max-pool ratchet.
+        if stat_block.mhp > 0 {
+            let body = handle
+                .clone()
+                .upsert_new_attack(stat_block.attack)
+                .set_mhp(stat_block.mhp)
+                .set_defense(stat_block.defense);
+            if stat_block.mep > 0 {
+                body.set_mep(stat_block.mep);
+            }
+        }
         self
     }
 
@@ -137,9 +153,9 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     // boost under this rule).
     //
     // These writers fabricate pools freely; the gate against giving a
-    // stat-less object a pool lives one level up — apply_stat_block only runs
-    // for entities carrying the applies_stat_block flag (see
-    // entity_stats_system), so nothing without that opt-in ever reaches here.
+    // bodiless thing a pool lives one level up — apply_stat_block calls them
+    // only when the computed max HP is positive, so a path (max HP 0) never
+    // reaches here.
     fn set_mhp(self, mhp: i16) -> Self {
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {

@@ -71,8 +71,6 @@ import ActiveStanceComponentsRow from "./active_stance_components_table";
 import AllegianceComponentsRow from "./allegiance_components_table";
 import AppearanceFeaturesRow from "./appearance_features_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
-import AppliesAppearanceFeaturesComponentsRow from "./applies_appearance_features_components_table";
-import AppliesStatBlockComponentsRow from "./applies_stat_block_components_table";
 import ArmamentsRow from "./armaments_table";
 import ArmorComponentsRow from "./armor_components_table";
 import ArmorsRow from "./armors_table";
@@ -326,28 +324,6 @@ const tablesSchema = __schema({
       { name: 'appearance_features_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, AppearanceFeaturesComponentsRow),
-  applies_appearance_features_components: __table({
-    name: 'applies_appearance_features_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'applies_appearance_features_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'applies_appearance_features_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, AppliesAppearanceFeaturesComponentsRow),
-  applies_stat_block_components: __table({
-    name: 'applies_stat_block_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'applies_stat_block_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'applies_stat_block_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, AppliesStatBlockComponentsRow),
   armaments: __table({
     name: 'armaments',
     indexes: [

@@ -210,25 +210,6 @@ entity!(
       // gate on their respawn timer instead (revival must not be
       // blocked by a permanent flag).
       perished in perished_components,
-      // OPT-IN to a mechanical stat block. Baselines and traits describe any
-      // physical object (a "crumbling" "stair"), but only entities carrying
-      // this flag get their stat block APPLIED — the HP/EP/attack/actions
-      // pools computed and created. Without it, a baseline/trait-bearing
-      // object stays inert: no pools, never attackable, no accident. An
-      // invisible gate — no other system reads it.
-      applies_stat_block in applies_stat_block_components,
-      // OPT-IN to appearance features WITHOUT a mechanical stat block. Like
-      // applies_stat_block, this makes the stat pipeline COMPUTE the entity's
-      // stat block — but only the resulting appearance features are kept, and
-      // they OVERWRITE the look exactly as apply_stat_block does; the
-      // HP/EP/attack/actions are discarded. The whole look is authored as a
-      // baseline (the noun) plus traits (the adjectives), same as a creature —
-      // paths and decorative items carry this so their base and rolled
-      // variety ride one pipeline, without becoming attackable. (A deliberate
-      // stopgap: it computes a whole stat block to harvest just the look — a
-      // dedicated appearance pass with its own dirty triggers is the eventual
-      // replacement.)
-      applies_appearance_features in applies_appearance_features_components,
     )]
     struct FlagComponent {}
 

@@ -653,12 +653,6 @@ export const EntityBlob = __t.object("EntityBlob", {
   get perished() {
     return __t.option(FlagComponentBlob);
   },
-  get appliesStatBlock() {
-    return __t.option(FlagComponentBlob);
-  },
-  get appliesAppearanceFeatures() {
-    return __t.option(FlagComponentBlob);
-  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -793,12 +787,6 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   },
   get enemyController() {
     return __t.option(EnemyControllerComponentBlob);
-  },
-  get appliesStatBlock() {
-    return __t.option(FlagComponentBlob);
-  },
-  get appliesAppearanceFeatures() {
-    return __t.option(FlagComponentBlob);
   },
   get differentiable() {
     return __t.option(DifferentiableAsset);

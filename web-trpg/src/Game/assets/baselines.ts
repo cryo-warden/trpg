@@ -152,13 +152,13 @@ export const BASELINES = {
     actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["wisp"],
   }),
-  // NON-CREATURE BODIES. A path or a differentiable item takes its whole look
-  // through the stat pipeline (it carries appliesAppearanceFeatures), so its
-  // base noun is a baseline and any adjectives are traits — the same way a
-  // creature is a body plus traits. These carry no stats, only a noun: the
-  // pipeline keeps just the appearance. (Inert scenery that never computes
-  // still authors its features directly; only entities that compute need a
-  // baseline.)
+  // BODILESS BODIES. A path or a differentiable item takes its whole look
+  // through the stat pipeline — its base noun is a baseline and any adjectives
+  // are traits, the same way a creature is a body plus traits. These carry no
+  // stats at all: with max HP 0 the pool guard gives them no HP, so they show
+  // their adjectives yet stay un-attackable. (Inert scenery that never
+  // computes still authors its features directly; lightweight objects that
+  // just need durability author an hp component, no baseline.)
   trail: statBlock({ appearanceFeatureNames: ["trail"] }),
   path: statBlock({ appearanceFeatureNames: ["path"] }),
   opening: statBlock({ appearanceFeatureNames: ["opening"] }),

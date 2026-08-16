@@ -194,8 +194,8 @@ export const mapGenPack = (): AssetPack => ({
   // A differentiable pack: three creatures sharing a palette of three distinct
   // variety traits, forced to exactly one each — so the pack must come out with
   // three DISTINCT marks (the distinct-across-pack draw). test_winding_trait is
-  // the path-variation trait: paths carry appliesAppearanceFeatures, so it
-  // surfaces its test_winding feature through the ordinary trait pipeline.
+  // the path-variation trait: a path's baseline has max HP 0, so it surfaces
+  // its test_winding feature through the pipeline as pure look (no HP).
   traits: [
     { name: "test_v1", value: statBlock({ appearanceFeatureNames: ["test_v1_mark"] }) },
     { name: "test_v2", value: statBlock({ appearanceFeatureNames: ["test_v2_mark"] }) },
@@ -218,9 +218,7 @@ export const mapGenPack = (): AssetPack => ({
     {
       name: "test_pack_categoric",
       value: blob({
-        enemyController: {},
-        appliesStatBlock: {},
-        differentiable: { traitPaletteName: "test_variety" },
+        enemyController: {},        differentiable: { traitPaletteName: "test_variety" },
       }),
     },
     { name: "test_creature", value: blob({ baselineName: "test_human" }) },
@@ -240,9 +238,9 @@ export const mapGenPack = (): AssetPack => ({
       value: {
         // Nameless blobs: NameComponent.name is unique, so a generator that
         // stamps out many rooms/paths must not give them a fixed name.
-        // A differentiable ITEM decoration: it carries appliesAppearanceFeatures
-        // (no stat block), so its look is OVERWRITTEN from baseline + traits —
-        // the test_deco base noun plus the drawn variety trait's feature.
+        // A differentiable ITEM decoration: its base noun is the test_deco
+        // baseline (max HP 0 → no HP), and the drawn variety trait's feature is
+        // OVERWRITTEN onto its look from baseline + traits.
         decorationsSelector: {
           selections: [
             {
@@ -250,7 +248,6 @@ export const mapGenPack = (): AssetPack => ({
               blob: blob({
                 baselineName: "test_deco",
                 differentiable: { traitPaletteName: "test_variety" },
-                appliesAppearanceFeatures: {},
               }),
             },
           ],
@@ -258,22 +255,16 @@ export const mapGenPack = (): AssetPack => ({
         minDecorationCount: 1,
         maxDecorationCount: 2,
         // Paths OFFER their crossing verb; no body knows moves innately.
-        // Both directions of a generated pair are ONE authored fact. Each
-        // carries appliesAppearanceFeatures so its rolled variation trait
-        // surfaces as a look.
+        // Both directions of a generated pair are ONE authored fact. The
+        // rolled variation trait surfaces as a look through the pipeline; with
+        // no baseline (max HP 0) the path stays bodiless.
         pathsSelector: {
           selections: [
             {
               weight: 1,
               pair: {
-                forward: blob({
-                  offeredActionNames: ["test_action"],
-                  appliesAppearanceFeatures: {},
-                }),
-                backward: blob({
-                  offeredActionNames: ["test_action"],
-                  appliesAppearanceFeatures: {},
-                }),
+                forward: blob({ offeredActionNames: ["test_action"] }),
+                backward: blob({ offeredActionNames: ["test_action"] }),
               },
             },
           ],
@@ -321,9 +312,7 @@ export const mapGenPack = (): AssetPack => ({
     { name: "allegiance1", value: blob({}) },
     { name: "allegiance2", value: blob({}) },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_human",
+  newPlayerBlob: blob({    baselineName: "test_human",
     allegiance: { allegianceEntityId: { tag: "Named", value: "allegiance1" } },
   }),
 });
@@ -399,9 +388,7 @@ export const stancePack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_human",
+  newPlayerBlob: blob({    baselineName: "test_human",
     stanceName: "test_brawler",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -515,9 +502,7 @@ export const loadoutPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_human",
+  newPlayerBlob: blob({    baselineName: "test_human",
     stanceName: "test_standing",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -638,9 +623,7 @@ export const moralePack = (): AssetPack => ({
       }),
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_mouse",
+  newPlayerBlob: blob({    baselineName: "test_mouse",
     stanceName: "test_standing",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -650,9 +633,7 @@ export const moralePack = (): AssetPack => ({
   }),
   instantiateEntityBlobs: [
     blob({
-      enemyController: {},
-      appliesStatBlock: {},
-      baselineName: "test_giant",
+      enemyController: {},      baselineName: "test_giant",
       location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
       kind: { tag: "Interior" },
@@ -779,9 +760,7 @@ export const connectionsPack = (): AssetPack => ({
       pathPair: undefined,
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_walker",
+  newPlayerBlob: blob({    baselineName: "test_walker",
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
   }),
 });
@@ -895,9 +874,7 @@ export const deathPack = (): AssetPack => ({
       value: statBlock({ mhp: 2 }),
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_hero",
+  newPlayerBlob: blob({    baselineName: "test_hero",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
       kind: { tag: "Interior" },
@@ -925,9 +902,7 @@ export const deathPack = (): AssetPack => ({
     },
     }),
     blob({
-      enemyController: {},
-      appliesStatBlock: {},
-      baselineName: "test_brute",
+      enemyController: {},      baselineName: "test_brute",
       location: {
         locationEntityId: { tag: "Literal", value: 1000n },
         kind: { tag: "Interior" },
@@ -935,9 +910,7 @@ export const deathPack = (): AssetPack => ({
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
     blob({
-      enemyController: {},
-      appliesStatBlock: {},
-      baselineName: "test_vermin",
+      enemyController: {},      baselineName: "test_vermin",
       location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
       kind: { tag: "Interior" },
@@ -999,9 +972,7 @@ export const divePack = (): AssetPack => ({
       }),
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_human",
+  newPlayerBlob: blob({    baselineName: "test_human",
     stanceName: "test_standing",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
@@ -1044,12 +1015,14 @@ export const combatPack = ({
       },
     },
   ],
-  // A trait with a real mhp: an entity carrying it WOULD get HP — unless it
-  // lacks the applies_stat_block opt-in, which is exactly what the test checks.
+  // A zero-stat trait carrying only a marker feature: an entity built from it
+  // goes through the stat pipeline (its appearance resolves) yet sums to zero
+  // max HP, so the pool guard leaves it with no HP component — exactly what the
+  // test checks.
   traits: [
     {
       name: "test_inert",
-      value: statBlock({ mhp: 5 }),
+      value: statBlock({ appearanceFeatureNames: ["test_inert_mark"] }),
     },
   ],
   actions: [
@@ -1091,13 +1064,11 @@ export const combatPack = ({
       },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
-    // A trait that WOULD grant HP, but NO applies_stat_block opt-in: the
-    // stat pipeline must skip it, so it stays HP-less and un-attackable. Its
-    // marker feature is authored directly (not via the gated pipeline) so the
-    // test can still find it.
+    // A zero-stat trait bearer: the stat pipeline runs (its marker feature
+    // resolves onto its look, proving it computed) but sums to zero max HP,
+    // so the pool guard leaves it HP-less and un-attackable.
     blob({
       traitNames: ["test_inert"],
-      appearanceFeatureNames: ["test_inert_mark"],
       location: {
         locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
         kind: { tag: "Interior" },
@@ -1197,9 +1168,7 @@ export const questPack = (): AssetPack => ({
       }),
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_human",
+  newPlayerBlob: blob({    baselineName: "test_human",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
       kind: { tag: "Interior" },
@@ -1345,9 +1314,7 @@ export const interactionsPack = (): AssetPack => ({
       }),
     },
   ],
-  newPlayerBlob: blob({
-    appliesStatBlock: {},
-    baselineName: "test_looter",
+  newPlayerBlob: blob({    baselineName: "test_looter",
     location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
       kind: { tag: "Interior" },
@@ -1565,7 +1532,7 @@ export const bossPack = (): AssetPack => ({
     },
   ],
   encounterBlobs: [
-    { name: "test_warden_categoric", value: blob({ appliesStatBlock: {} }) },
+    { name: "test_warden_categoric", value: blob({}) },
     {
       name: "test_warden",
       value: blob({
@@ -1648,7 +1615,7 @@ export const bossPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({ appliesStatBlock: {}, baselineName: "test_challenger" }),
+  newPlayerBlob: blob({ baselineName: "test_challenger" }),
 });
 
 /**
@@ -1693,7 +1660,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
     },
   ],
   encounterBlobs: [
-    { name: "test_lurker_categoric", value: blob({ appliesStatBlock: {} }) },
+    { name: "test_lurker_categoric", value: blob({}) },
     {
       name: "test_lurker",
       value: blob({
@@ -1762,7 +1729,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({ appliesStatBlock: {}, baselineName: "test_hero" }),
+  newPlayerBlob: blob({ baselineName: "test_hero" }),
 });
 
 /**
@@ -1897,5 +1864,5 @@ export const guardedMapPack = ({
       },
     },
   ],
-  newPlayerBlob: blob({ appliesStatBlock: {}, baselineName: "test_scout" }),
+  newPlayerBlob: blob({ baselineName: "test_scout" }),
 });

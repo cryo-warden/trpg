@@ -23,10 +23,11 @@ export const TRAITS = {
   skeletal: statBlock({ appearanceFeatureNames: ["skeleton", "skeletal"] }),
   zombie: statBlock({ appearanceFeatureNames: ["zombie", "zombieLike"] }),
   // Path-variation traits: adjective-bearing traits rolled onto paths at
-  // generation. A path carries appliesAppearanceFeatures, so these surface as
-  // its look through the ordinary trait pipeline — no stats, pure atmosphere.
-  // Their appearance features carry the exclusion groups (width, brightness)
-  // that keep a single path from reading as both "wide" and "narrow".
+  // generation. A path's baseline has max HP 0 (a bodiless feature), so these
+  // surface as its look through the ordinary trait pipeline without ever
+  // giving it HP — pure atmosphere. Their appearance features carry the
+  // exclusion groups (width, brightness) that keep a single path from reading
+  // as both "wide" and "narrow".
   winding: statBlock({ appearanceFeatureNames: ["winding"] }),
   wide: statBlock({ appearanceFeatureNames: ["wide"] }),
   narrow: statBlock({ appearanceFeatureNames: ["narrow"] }),

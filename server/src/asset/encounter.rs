@@ -78,9 +78,9 @@ impl Encounter {
 /// "wolf 1-4" — while WITHIN one entity an exclusion group never repeats (no
 /// "brawny runt"). Opposite-group traits ACROSS entities are welcome (the
 /// leader and the runt). Every draw rides the ORDINARY trait pipeline: a
-/// combatant (applies_stat_block) gets both stats and look; a decorative item
-/// (applies_appearance_features) gets only the look. What the entity keeps is
-/// decided by its own flags, not by anything special here.
+/// combatant (a body — positive max HP) gets both stats and look; a bodiless
+/// item (max HP 0) gets only the look. What the entity keeps is decided by its
+/// own baseline, not by anything special here.
 pub(crate) fn apply_variety(ecs: Ecs, entity_ids: &[u64]) {
     let mut by_palette: HashMap<u32, Vec<u64>> = HashMap::new();
     for &entity_id in entity_ids {

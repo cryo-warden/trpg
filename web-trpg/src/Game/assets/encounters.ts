@@ -3,9 +3,10 @@ import { blob } from "./entity_blobs";
 
 export const ENCOUNTER_BLOBS = {
   /* TODO Add enemy allegiance component */
-  // The categoric blob merged into every encounter member: enemies opt in to
-  // a mechanical stat block here, once, so every creature gets its HP/EP/etc.
-  encounter_enemy: blob({ enemyController: {}, appliesStatBlock: {} }),
+  // The categoric blob merged into every encounter member: the enemy
+  // controller marks it a threat. Its HP/EP/etc. derive from its baseline like
+  // any body's — no opt-in flag.
+  encounter_enemy: blob({ enemyController: {} }),
   slime: blob({ baselineName: "slime", stanceName: "amorphous" }),
   slimeSmall: blob({
     baselineName: "slime",

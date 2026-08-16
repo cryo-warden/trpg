@@ -27,8 +27,6 @@ export const NAMED_ENTITY_BLOBS = {
 
 export const NEW_PLAYER_BLOB = blob({
   baselineName: "human",
-  // A player is a combatant: opt in to a mechanical stat block.
-  appliesStatBlock: {},
   // Standing is the improvising default; the sword makes the dueling stance
   // reachable and grants slash. One hand stays free, so bop survives.
   stanceName: "standing",

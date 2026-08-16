@@ -128,10 +128,10 @@ pub struct LocationMapConnection {
 }
 
 /// Add rolled variation TRAITS to a freshly created path, on top of any the
-/// blob authored. The path carries applies_appearance_features, so the stat
-/// pipeline surfaces the traits' adjectives onto its look next tick (unioned
-/// with its authored base). A no-op for an empty set, so variation-free themes
-/// leave paths exactly as authored.
+/// blob authored. The path's baseline has max HP 0, so the stat pipeline
+/// surfaces the traits' adjectives onto its look next tick as pure appearance
+/// (no HP). A no-op for an empty set, so variation-free themes leave paths
+/// exactly as authored.
 fn merge_path_variation_traits(path: &EntityHandle, variation_trait_ids: &[u32]) {
     if variation_trait_ids.is_empty() {
         return;
