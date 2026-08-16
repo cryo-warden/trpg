@@ -656,6 +656,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get appliesStatBlock() {
     return __t.option(FlagComponentBlob);
   },
+  get appliesAppearanceFeatures() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -792,6 +795,9 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
     return __t.option(EnemyControllerComponentBlob);
   },
   get appliesStatBlock() {
+    return __t.option(FlagComponentBlob);
+  },
+  get appliesAppearanceFeatures() {
     return __t.option(FlagComponentBlob);
   },
   get differentiable() {
@@ -1144,7 +1150,7 @@ export const LocationMapTheme = __t.object("LocationMapTheme", {
   get blockersSelector() {
     return EntityBlobsSampler;
   },
-  pathVariations: __t.array(__t.u32()),
+  pathVariationTraitIds: __t.array(__t.u32()),
   pathVariationCountWeights: __t.byteArray(),
 });
 export type LocationMapTheme = __Infer<typeof LocationMapTheme>;
@@ -1172,7 +1178,7 @@ export const LocationMapThemeAsset = __t.object("LocationMapThemeAsset", {
   get blockersSelector() {
     return EntityBlobsSamplerAsset;
   },
-  pathVariationNames: __t.array(__t.string()),
+  pathVariationTraitNames: __t.array(__t.string()),
   pathVariationCountWeights: __t.byteArray(),
 });
 export type LocationMapThemeAsset = __Infer<typeof LocationMapThemeAsset>;

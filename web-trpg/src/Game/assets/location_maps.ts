@@ -72,7 +72,16 @@ const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
 const pathBlob = (
   appearanceFeatureNames: string[],
   offeredActionNames: string[] = ["move"],
-): EntityBlobAsset => blob({ appearanceFeatureNames, offeredActionNames });
+): EntityBlobAsset =>
+  blob({
+    appearanceFeatureNames,
+    offeredActionNames,
+    // A path takes its look through the stat pipeline: rolled variation
+    // traits (and any it authored) surface as appearance features, unioned
+    // onto this authored base — the same granting creatures use, minus a
+    // stat block. Never attackable; just a richer look.
+    appliesAppearanceFeatures: {},
+  });
 
 /** A MATCHED pair of path presentations: the two directions between two
  * rooms are one authored fact — an opening pairs with an opening, a
@@ -102,12 +111,14 @@ const thicketGuard = container(["thicket"], ["scrap_wood"]);
 const crumblingWallGuard = container(["crumbling", "wall"], ["rubble"]);
 const crumblingPillarGuard = container(["crumbling", "pillar"], ["rubble"]);
 
-/** The shared pool of optional path-variation adjectives merged into paths at
+/** The shared palette of optional path-variation TRAITS rolled onto paths at
  * generation, with a weighted count: mostly one, rarely two, almost never
- * three, occasionally none. Global for now — every theme draws the same pool;
- * a theme (or map) can override later. Exclusion groups on the features keep
- * a roll from pairing opposites/redundants (wide+narrow, dim+dark). */
-const PATH_VARIATION_NAMES = [
+ * three, occasionally none. Global for now — every theme draws the same set;
+ * a theme (or map) can override later. Exclusion groups on the traits'
+ * features keep a roll from pairing opposites/redundants (wide+narrow,
+ * dim+dark). Each name is a TRAIT (see traits.ts), routed through the path's
+ * appliesAppearanceFeatures pipeline. */
+const PATH_VARIATION_TRAIT_NAMES = [
   "winding",
   "wide",
   "narrow",
@@ -157,6 +168,10 @@ export const LOCATION_MAP_THEMES = {
             appearanceFeatureNames: ["sword"],
             item: { tag: "Armament", value: "sword" },
             differentiable: { traitPaletteName: "weapon_variety" },
+            // A differentiable item takes its rolled variety through the same
+            // appearance pipeline paths use: the drawn condition trait surfaces
+            // as a look, unioned onto "sword" — no stats, no HP.
+            appliesAppearanceFeatures: {},
           }),
         },
         {
@@ -172,6 +187,7 @@ export const LOCATION_MAP_THEMES = {
             appearanceFeatureNames: ["shield"],
             item: { tag: "Armament", value: "shield" },
             differentiable: { traitPaletteName: "weapon_variety" },
+            appliesAppearanceFeatures: {},
           }),
         },
         {
@@ -194,6 +210,7 @@ export const LOCATION_MAP_THEMES = {
             appearanceFeatureNames: ["staff"],
             item: { tag: "Armament", value: "staff" },
             differentiable: { traitPaletteName: "weapon_variety" },
+            appliesAppearanceFeatures: {},
           }),
         },
         {
@@ -248,7 +265,7 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: barricadeGuard }] },
-    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   cave: {
@@ -298,7 +315,7 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: boulderGuard }] },
-    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   meadow: {
@@ -337,7 +354,7 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
-    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   forest: {
@@ -378,7 +395,7 @@ export const LOCATION_MAP_THEMES = {
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
-    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   keep: {
@@ -497,7 +514,7 @@ export const LOCATION_MAP_THEMES = {
     blockersSelector: {
       selections: [{ weight: 1, blob: crumblingWallGuard }],
     },
-    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   sanctum: {
@@ -581,7 +598,7 @@ export const LOCATION_MAP_THEMES = {
     blockersSelector: {
       selections: [{ weight: 1, blob: crumblingPillarGuard }],
     },
-    pathVariationNames: PATH_VARIATION_NAMES,
+    pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
 } satisfies Record<string, LocationMapThemeAsset>;

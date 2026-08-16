@@ -22,6 +22,19 @@ export const TRAITS = {
   // over any other.
   skeletal: statBlock({ appearanceFeatureNames: ["skeleton", "skeletal"] }),
   zombie: statBlock({ appearanceFeatureNames: ["zombie", "zombieLike"] }),
+  // Path-variation traits: adjective-bearing traits rolled onto paths at
+  // generation. A path carries appliesAppearanceFeatures, so these surface as
+  // its look through the ordinary trait pipeline — no stats, pure atmosphere.
+  // Their appearance features carry the exclusion groups (width, brightness)
+  // that keep a single path from reading as both "wide" and "narrow".
+  winding: statBlock({ appearanceFeatureNames: ["winding"] }),
+  wide: statBlock({ appearanceFeatureNames: ["wide"] }),
+  narrow: statBlock({ appearanceFeatureNames: ["narrow"] }),
+  large: statBlock({ appearanceFeatureNames: ["large"] }),
+  bright: statBlock({ appearanceFeatureNames: ["bright"] }),
+  dim: statBlock({ appearanceFeatureNames: ["dim"] }),
+  dark: statBlock({ appearanceFeatureNames: ["dark"] }),
+  hazy: statBlock({ appearanceFeatureNames: ["hazy"] }),
   // Enemy variety traits, signed so a pack's expected stats stay flat: brawny
   // (+hp) is balanced by scrawny (-hp), rangy trades a step of speed, scarred
   // is flavor only. Drawn distinctly across a pack via a trait palette.

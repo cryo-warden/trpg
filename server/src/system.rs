@@ -602,11 +602,14 @@ pub fn entity_stats_system(ecs: Ecs) {
     }
 
     for f in ecs.iter_total_stat_block_dirty_flag() {
-        // Only entities that OPTED IN get a mechanical stat block. A
-        // baseline/trait-bearing object without the flag (a decoration, a
-        // path) is inert: clear the flag and skip, so it never gains HP/EP or
+        // TWO opt-ins share this computation. applies_stat_block wants the
+        // whole block (HP/EP/attack/actions + look); applies_appearance_features
+        // wants ONLY the look (paths, decorative items). An object carrying
+        // neither is inert: clear the flag and skip, so it never gains pools or
         // becomes attackable by accident.
-        if f.applies_stat_block().is_none() {
+        let applies_stat_block = f.applies_stat_block().is_some();
+        let applies_appearance_features = f.applies_appearance_features().is_some();
+        if !applies_stat_block && !applies_appearance_features {
             f.delete_total_stat_block_dirty_flag();
             continue;
         }
@@ -617,6 +620,27 @@ pub fn entity_stats_system(ecs: Ecs) {
             .and_then(|active| ecs.db.stances().id().find(active.stance_id))
         {
             stat_block += &s.stat_block;
+        }
+
+        // Appearance-only entities take just the computed look — the same
+        // features creatures get from their baseline/traits — UNIONED onto
+        // whatever base the blob authored, so a path keeps its "trail" and
+        // gains a rolled "winding". No pools, no derived actions: the rest of
+        // the block is discarded, so nothing here is ever attackable.
+        if !applies_stat_block {
+            let mut ids = f
+                .appearance_features()
+                .map(|c| c.appearance_feature_indexes)
+                .unwrap_or_default();
+            for id in stat_block.appearance_feature_ids {
+                if !ids.contains(&id) {
+                    ids.push(id);
+                }
+            }
+            f.delete_total_stat_block_dirty_flag()
+                .into_handle()
+                .set_appearance_feature_ids(ids);
+            continue;
         }
 
         // Derived availability: an action the total's requirements check

@@ -424,6 +424,9 @@ fn resolve_entity_blob(
         // block applied (HP/EP/attack/actions). Baseline/trait-bearing
         // scenery without it stays inert.
         applies_stat_block: author.applies_stat_block,
+        // Appearance-only opt-in: the stat pipeline computes a block for it,
+        // but only the look is kept (see FlagComponent).
+        applies_appearance_features: author.applies_appearance_features,
         differentiable: author
             .differentiable
             .map(|d| {
@@ -971,11 +974,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 t.value.blockers_selector,
                 &maps,
             )?,
-            path_variations: t
+            path_variation_trait_ids: t
                 .value
-                .path_variation_names
+                .path_variation_trait_names
                 .iter()
-                .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
+                .map(|n| resolve_name(&maps.traits, "trait", n))
                 .collect::<Result<_, _>>()?,
             path_variation_count_weights: t.value.path_variation_count_weights,
         };

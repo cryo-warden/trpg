@@ -6,18 +6,15 @@ use spacetimedb::{
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    appearance::appearance_features,
     asset::{
-        location_map_theme::{pick_distinct_group, weighted_index},
-        r#trait::traits,
+        location_map_theme::{pick_distinct_group, variety_group_of, weighted_index},
         trait_palette::trait_palettes,
     },
     ecs_extension::EcsExtension,
     entity::{
         EntityBlob, EntityHandle, FindEntityHandle, InstantiateEntityBlob, LocationKind,
-        NewEntityHandle, WithEntityHandle, __appearance_features__Option,
-        __appearance_features__OptionGet, __applies_stat_block__OptionGet,
-        __differentiable__OptionGet, __location__Option, __traits__Option, __traits__OptionGet,
+        NewEntityHandle, WithEntityHandle, __differentiable__OptionGet, __location__Option,
+        __traits__Option, __traits__OptionGet,
     },
 };
 
@@ -80,8 +77,10 @@ impl Encounter {
 /// OTHER where the palette is large enough — a pack reads as individuals, not
 /// "wolf 1-4" — while WITHIN one entity an exclusion group never repeats (no
 /// "brawny runt"). Opposite-group traits ACROSS entities are welcome (the
-/// leader and the runt). A combatant gets the trait through its stat pipeline;
-/// an item/scenery gets only the trait's appearance features merged on.
+/// leader and the runt). Every draw rides the ORDINARY trait pipeline: a
+/// combatant (applies_stat_block) gets both stats and look; a decorative item
+/// (applies_appearance_features) gets only the look. What the entity keeps is
+/// decided by its own flags, not by anything special here.
 pub(crate) fn apply_variety(ecs: Ecs, entity_ids: &[u64]) {
     let mut by_palette: HashMap<u32, Vec<u64>> = HashMap::new();
     for &entity_id in entity_ids {
@@ -101,18 +100,6 @@ pub(crate) fn apply_variety(ecs: Ecs, entity_ids: &[u64]) {
         if palette.trait_ids.is_empty() || palette.count_weights.is_empty() {
             continue;
         }
-        // A trait's variety group is its first appearance feature's exclusion
-        // group (brawny/runt share "build"), so a single member never draws
-        // two of the same axis.
-        let group_of = |trait_id: u32| -> Option<String> {
-            let t = ecs.db.traits().id().find(trait_id)?;
-            let feature_id = *t.stat_block.appearance_feature_ids.first()?;
-            ecs.db
-                .appearance_features()
-                .index()
-                .find(feature_id)?
-                .exclusion_group
-        };
         let mut used_across_pack: HashSet<u32> = HashSet::new();
         for entity_id in members {
             let count = weighted_index(&palette.count_weights, &mut rng);
@@ -132,44 +119,26 @@ pub(crate) fn apply_variety(ecs: Ecs, entity_ids: &[u64]) {
             } else {
                 palette.trait_ids.clone()
             };
-            let chosen = pick_distinct_group(candidates, count, &group_of, &mut rng);
+            let chosen =
+                pick_distinct_group(candidates, count, |id| variety_group_of(ecs, id), &mut rng);
             if chosen.is_empty() {
                 continue;
             }
             for id in &chosen {
                 used_across_pack.insert(*id);
             }
+            // The trait rides the stat pipeline; the entity's flags decide
+            // whether it surfaces as stats+look (combatant) or look-only
+            // (decorative item). An item's mechanical worth lives on its
+            // asset, never on these appearance-only variety traits.
             let entity = ecs.find(entity_id);
-            if entity.applies_stat_block().is_some() {
-                // A combatant: the trait rides the stat pipeline, so both its
-                // stats and its appearance apply.
-                let mut trait_ids =
-                    entity.traits().map(|t| t.trait_ids).unwrap_or_default();
-                for id in chosen {
-                    if !trait_ids.contains(&id) {
-                        trait_ids.push(id);
-                    }
+            let mut trait_ids = entity.traits().map(|t| t.trait_ids).unwrap_or_default();
+            for id in chosen {
+                if !trait_ids.contains(&id) {
+                    trait_ids.push(id);
                 }
-                entity.upsert_new_traits(trait_ids);
-            } else {
-                // An item or scenery: no stat block runs for it, so merge the
-                // chosen traits' APPEARANCE features straight on — decorative
-                // variety only (an item's stats come from its asset, not here).
-                let mut feature_ids = entity
-                    .appearance_features()
-                    .map(|c| c.appearance_feature_indexes)
-                    .unwrap_or_default();
-                for id in chosen {
-                    if let Some(t) = ecs.db.traits().id().find(id) {
-                        for feature_id in t.stat_block.appearance_feature_ids {
-                            if !feature_ids.contains(&feature_id) {
-                                feature_ids.push(feature_id);
-                            }
-                        }
-                    }
-                }
-                entity.upsert_new_appearance_features(feature_ids);
             }
+            entity.upsert_new_traits(trait_ids);
         }
     }
 }

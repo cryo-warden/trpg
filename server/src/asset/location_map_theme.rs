@@ -1,6 +1,7 @@
 use crate::{
     appearance::appearance_features,
     asset::{
+        r#trait::traits,
         rng_range::RngRange,
         weighted_sampler::{WeightedSample, WeightedSampler},
     },
@@ -108,11 +109,13 @@ pub struct LocationMapTheme {
     /// hidden paths and shortcuts until smashed. Authored with hp and
     /// remains like any breakable.
     pub blockers_selector: EntityBlobsSampler,
-    /// Optional path-variation appearance features (by id): adjectives merged
-    /// into a path's look at generation, rolled per path pair and applied to
-    /// BOTH directions so a crossing reads the same coming and going. Empty
-    /// leaves this theme's paths plain.
-    pub path_variations: Vec<u32>,
+    /// Optional path-variation TRAITS (by id): adjective-bearing traits rolled
+    /// into a path at generation and applied to BOTH directions so a crossing
+    /// reads the same coming and going. The path carries applies_appearance_
+    /// features, so these ride the ordinary trait pipeline — their appearance
+    /// features surface on the path like any creature's. Empty leaves this
+    /// theme's paths plain.
+    pub path_variation_trait_ids: Vec<u32>,
     /// Weighted count distribution for path variations: index = number of
     /// variations rolled, value = its weight (index 1 usually dominant, 2
     /// small, 3 vanishing; index 0 = plain). Empty disables variations.
@@ -142,14 +145,17 @@ impl LocationMapTheme {
         Ok(())
     }
 
-    /// Roll the appearance-feature ids to merge into ONE path pair: a
-    /// weighted count, then that many features drawn WITHOUT repeating an
-    /// exclusion group (no "wide narrow", no redundant "dim dark"). The
-    /// caller applies the returned set to both directions so a crossing reads
-    /// the same coming and going. Consumes NO rng when the theme declares no
-    /// variations, keeping variation-free themes byte-for-byte stable.
+    /// Roll the variation TRAIT ids to add to ONE path pair: a weighted count,
+    /// then that many traits drawn WITHOUT repeating an exclusion group (no
+    /// "wide narrow", no redundant "dim dark") — grouped by each trait's first
+    /// appearance feature, exactly as pack variety is. The caller adds the
+    /// returned set to both directions so a crossing reads the same coming and
+    /// going. Consumes NO rng when the theme declares no variations, keeping
+    /// variation-free themes byte-for-byte stable.
     pub fn roll_path_variations(&self, ecs: Ecs, rng: &mut StdRng) -> Vec<u32> {
-        if self.path_variations.is_empty() || self.path_variation_count_weights.is_empty() {
+        if self.path_variation_trait_ids.is_empty()
+            || self.path_variation_count_weights.is_empty()
+        {
             return Vec::new();
         }
         let count = weighted_index(&self.path_variation_count_weights, rng);
@@ -157,18 +163,26 @@ impl LocationMapTheme {
             return Vec::new();
         }
         pick_distinct_group(
-            self.path_variations.clone(),
+            self.path_variation_trait_ids.clone(),
             count,
-            |id| {
-                ecs.db
-                    .appearance_features()
-                    .index()
-                    .find(id)
-                    .and_then(|f| f.exclusion_group)
-            },
+            |id| variety_group_of(ecs, id),
             rng,
         )
     }
+}
+
+/// A trait's variety group: the exclusion group of its FIRST appearance
+/// feature (brawny/scrawny share "build"; wide/narrow share "width"), so a
+/// single draw never takes two traits of the same axis. Shared by path-
+/// variation rolls and pack/item variety.
+pub(crate) fn variety_group_of(ecs: Ecs, trait_id: u32) -> Option<String> {
+    let t = ecs.db.traits().id().find(trait_id)?;
+    let feature_id = *t.stat_block.appearance_feature_ids.first()?;
+    ecs.db
+        .appearance_features()
+        .index()
+        .find(feature_id)?
+        .exclusion_group
 }
 
 /// Pick an index into `weights` with probability proportional to its weight.

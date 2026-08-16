@@ -217,6 +217,17 @@ entity!(
       // object stays inert: no pools, never attackable, no accident. An
       // invisible gate — no other system reads it.
       applies_stat_block in applies_stat_block_components,
+      // OPT-IN to appearance features WITHOUT a mechanical stat block. Like
+      // applies_stat_block, this makes the stat pipeline COMPUTE the entity's
+      // stat block — but only the resulting appearance features are kept
+      // (unioned onto the authored base, so a path keeps "trail" and gains
+      // "winding"); the HP/EP/attack/actions are discarded. Paths and
+      // decorative items carry this: their rolled variations/variety ride the
+      // same trait pipeline creatures use, without becoming attackable. (A
+      // deliberate stopgap: it computes a whole stat block to harvest just the
+      // look — a dedicated appearance pass with its own dirty triggers is the
+      // eventual replacement.)
+      applies_appearance_features in applies_appearance_features_components,
     )]
     struct FlagComponent {}
 

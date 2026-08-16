@@ -205,6 +205,12 @@ pub struct EntityBlobAsset {
     /// their HP/EP/attack/actions applied by the stat pipeline. Baseline/
     /// trait-bearing scenery without it stays inert (see FlagComponent).
     pub applies_stat_block: Option<FlagComponentBlob>,
+    /// Opt-in to appearance features via the stat pipeline WITHOUT a
+    /// mechanical stat block: the entity's stat block is computed only to
+    /// harvest its appearance features (unioned onto the authored base) —
+    /// no HP/EP/attack. Paths and decorative items carry this (see
+    /// FlagComponent).
+    pub applies_appearance_features: Option<FlagComponentBlob>,
     /// Opt-in to variety/differentiation: the trait palette to draw from.
     pub differentiable: Option<DifferentiableAsset>,
     /// Marks the entity as attunable fortune-telling scenery.
@@ -284,9 +290,11 @@ pub struct LocationMapThemeAsset {
     /// Themed breakable walls blocking hidden paths and shortcuts until
     /// smashed; authored with hp and remains like any breakable.
     pub blockers_selector: EntityBlobsSamplerAsset,
-    /// Optional path-variation appearance features, authored by name and
-    /// resolved to ids at push: adjectives rolled into paths at generation.
-    pub path_variation_names: Vec<String>,
+    /// Optional path-variation TRAITS, authored by name and resolved to ids
+    /// at push: adjective-bearing traits rolled into paths at generation and
+    /// routed through the ordinary trait pipeline (paths carry
+    /// applies_appearance_features).
+    pub path_variation_trait_names: Vec<String>,
     /// Weighted count distribution for path variations (index = count).
     pub path_variation_count_weights: Vec<u8>,
 }

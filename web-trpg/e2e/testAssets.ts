@@ -187,11 +187,17 @@ export const mapGenPack = (): AssetPack => ({
   ],
   // A differentiable pack: three creatures sharing a palette of three distinct
   // variety traits, forced to exactly one each — so the pack must come out with
-  // three DISTINCT marks (the distinct-across-pack draw).
+  // three DISTINCT marks (the distinct-across-pack draw). test_winding_trait is
+  // the path-variation trait: paths carry appliesAppearanceFeatures, so it
+  // surfaces its test_winding feature through the ordinary trait pipeline.
   traits: [
     { name: "test_v1", value: statBlock({ appearanceFeatureNames: ["test_v1_mark"] }) },
     { name: "test_v2", value: statBlock({ appearanceFeatureNames: ["test_v2_mark"] }) },
     { name: "test_v3", value: statBlock({ appearanceFeatureNames: ["test_v3_mark"] }) },
+    {
+      name: "test_winding_trait",
+      value: statBlock({ appearanceFeatureNames: ["test_winding"] }),
+    },
   ],
   traitPalettes: [
     {
@@ -228,9 +234,9 @@ export const mapGenPack = (): AssetPack => ({
       value: {
         // Nameless blobs: NameComponent.name is unique, so a generator that
         // stamps out many rooms/paths must not give them a fixed name.
-        // A differentiable ITEM decoration (unflagged): the stat pipeline
-        // never runs for it, so apply_variety must MERGE a variety feature
-        // straight onto its appearance.
+        // A differentiable ITEM decoration: it carries appliesAppearanceFeatures
+        // (no stat block), so the drawn variety trait surfaces its feature onto
+        // the item's look — unioned onto the authored test_deco_mark.
         decorationsSelector: {
           selections: [
             {
@@ -238,6 +244,7 @@ export const mapGenPack = (): AssetPack => ({
               blob: blob({
                 appearanceFeatureNames: ["test_deco_mark"],
                 differentiable: { traitPaletteName: "test_variety" },
+                appliesAppearanceFeatures: {},
               }),
             },
           ],
@@ -245,14 +252,22 @@ export const mapGenPack = (): AssetPack => ({
         minDecorationCount: 1,
         maxDecorationCount: 2,
         // Paths OFFER their crossing verb; no body knows moves innately.
-        // Both directions of a generated pair are ONE authored fact.
+        // Both directions of a generated pair are ONE authored fact. Each
+        // carries appliesAppearanceFeatures so its rolled variation trait
+        // surfaces as a look.
         pathsSelector: {
           selections: [
             {
               weight: 1,
               pair: {
-                forward: blob({ offeredActionNames: ["test_action"] }),
-                backward: blob({ offeredActionNames: ["test_action"] }),
+                forward: blob({
+                  offeredActionNames: ["test_action"],
+                  appliesAppearanceFeatures: {},
+                }),
+                backward: blob({
+                  offeredActionNames: ["test_action"],
+                  appliesAppearanceFeatures: {},
+                }),
               },
             },
           ],
@@ -265,9 +280,9 @@ export const mapGenPack = (): AssetPack => ({
         minContainerCount: 0,
         maxContainerCount: 0,
         blockersSelector: { selections: [] },
-        // Force exactly one variation onto every generated path so the test
-        // can assert the merge landed.
-        pathVariationNames: ["test_winding"],
+        // Force exactly one variation trait onto every generated path so the
+        // test can assert its feature surfaced.
+        pathVariationTraitNames: ["test_winding_trait"],
         pathVariationCountWeights: new Uint8Array([0, 1]),
       },
     },
@@ -701,7 +716,7 @@ export const connectionsPack = (): AssetPack => ({
         minContainerCount: 0,
         maxContainerCount: 0,
         blockersSelector: { selections: [] },
-        pathVariationNames: [],
+        pathVariationTraitNames: [],
         pathVariationCountWeights: new Uint8Array(),
       },
     },
@@ -792,7 +807,7 @@ export const deathPack = (): AssetPack => ({
         minContainerCount: 0,
         maxContainerCount: 0,
         blockersSelector: { selections: [] },
-        pathVariationNames: [],
+        pathVariationTraitNames: [],
         pathVariationCountWeights: new Uint8Array(),
       },
     },
@@ -1435,7 +1450,7 @@ export const spawnPack = (): AssetPack => ({
         minContainerCount: 1,
         maxContainerCount: 1,
         blockersSelector: { selections: [] },
-        pathVariationNames: [],
+        pathVariationTraitNames: [],
         pathVariationCountWeights: new Uint8Array(),
       },
     },
@@ -1588,7 +1603,7 @@ export const bossPack = (): AssetPack => ({
         minContainerCount: 0,
         maxContainerCount: 0,
         blockersSelector: { selections: [] },
-        pathVariationNames: [],
+        pathVariationTraitNames: [],
         pathVariationCountWeights: new Uint8Array(),
       },
     },
@@ -1714,7 +1729,7 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
         minContainerCount: 0,
         maxContainerCount: 0,
         blockersSelector: { selections: [] },
-        pathVariationNames: [],
+        pathVariationTraitNames: [],
         pathVariationCountWeights: new Uint8Array(),
       },
     },
@@ -1849,7 +1864,7 @@ export const guardedMapPack = ({
             },
           ],
         },
-        pathVariationNames: [],
+        pathVariationTraitNames: [],
         pathVariationCountWeights: new Uint8Array(),
       },
     },
