@@ -1135,7 +1135,11 @@ export const LocationMapConnection = __t.object("LocationMapConnection", {
   get destinationAnchor() {
     return ConnectionAnchor;
   },
-  get pathBlob() {
+  bothWays: __t.bool(),
+  get forwardPathBlob() {
+    return __t.option(EntityBlob);
+  },
+  get backwardPathBlob() {
     return __t.option(EntityBlob);
   },
 });

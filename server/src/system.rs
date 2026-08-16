@@ -910,7 +910,10 @@ pub fn map_demand_system(ecs: Ecs) {
         if let (Some(pending), Some(party_leader)) =
             (room.pending_connections(), party_leader_of(ecs, player.entity_id()))
         {
-            let mut remaining: Vec<u32> = Vec::new();
+            // Pending connections are DURABLE: materialize_connection is
+            // idempotent (skips a crossing that already exists) and regenerates
+            // the crossing after a cleanup, so the entry is never consumed —
+            // that's what keeps a torn-down neighbor reachable on re-approach.
             for connection_id in pending.connection_ids {
                 let materialization = ConnectionMaterialization {
                     room_entity_id,
@@ -929,14 +932,8 @@ pub fn map_demand_system(ecs: Ecs) {
                             room_entity_id,
                             reason
                         );
-                        remaining.push(connection_id);
                     }
                 }
-            }
-            if remaining.is_empty() {
-                room.delete_pending_connections();
-            } else {
-                room.clone().upsert_new_pending_connections(remaining);
             }
         }
         // Paths out of this room keep their destinations' maps alive.
@@ -993,9 +990,45 @@ struct ConnectionMaterialization<'a> {
     rng: &'a mut spacetimedb::rand::rngs::StdRng,
 }
 
-/// Create the cross-map path for a demanded pending connection, generating the
-/// destination map (for the demanding party) when that party has no instance
-/// of it yet.
+/// The instance room a connection was SEEDED onto (its pending anchor). A
+/// crossing joins the two seeded anchor rooms, so whichever side materializes
+/// first, the other converges on the same pair instead of forging a second one.
+fn anchor_room_for(ecs: Ecs, instance_id: u64, connection_id: u32) -> Option<u64> {
+    ecs.db
+        .location_map_components()
+        .iter()
+        .filter(|c| c.location_map_entity_id == instance_id)
+        .map(|c| c.entity_id)
+        .find(|room_id| {
+            ecs.find(*room_id)
+                .pending_connections()
+                .map(|p| p.connection_ids.contains(&connection_id))
+                .unwrap_or(false)
+        })
+}
+
+/// Whether a path already leaves `room_entity_id` for `destination_room`. The
+/// idempotency check that lets a DURABLE pending connection re-run every tick
+/// without duplicating the crossing, and makes both sides converge on one.
+fn room_connects_to(ecs: Ecs, room_entity_id: u64, destination_room: u64) -> bool {
+    ecs.db
+        .location_components()
+        .location_entity_id()
+        .filter(room_entity_id)
+        .any(|c| {
+            ecs.find(c.entity_id)
+                .path()
+                .map(|p| p.destination_entity_id == destination_room)
+                .unwrap_or(false)
+        })
+}
+
+/// Materialize a demanded crossing as a MATCHED path pair — BOTH directions at
+/// once, HP-linked, exactly like an intra-map crossing (see
+/// create_linked_path_pair) — generating the far map for the demanding party if
+/// needed. Idempotent: skips when the crossing already exists, so the pending
+/// connection can stay durable and simply regenerate the crossing after a
+/// cleanup. Returns the far instance so the caller keeps it demanded.
 fn materialize_connection(ecs: Ecs, m: ConnectionMaterialization) -> Result<u64, String> {
     let ConnectionMaterialization {
         room_entity_id,
@@ -1009,55 +1042,96 @@ fn materialize_connection(ecs: Ecs, m: ConnectionMaterialization) -> Result<u64,
         .id()
         .find(connection_id)
         .ok_or_else(|| format!("unknown connection {}", connection_id))?;
-    let destination_instance_id =
-        party_map_instance(ecs, connection.destination_location_map_id, party_leader)?;
-    let rooms = ecs
-        .find(destination_instance_id)
-        .map_rooms()
-        .ok_or("destination instance records no rooms")?;
-    let destination_room = crate::asset::location_map::resolve_anchor_room(
-        &rooms.main_room_entity_ids,
-        &rooms.extra_room_entity_ids,
-        &connection.destination_anchor,
-        rng,
-    )
-    .ok_or("destination anchor resolves to no room")?;
-    // An AUTHORED presentation wins (each directed row carries its half
-    // of the connection's pair — "dark cave mouth" in, "bright cave
-    // mouth" out); otherwise the path wears the EXIT map's theme (the
-    // sampled pair's exploring direction).
+
+    // Which side of the crossing does this anchor room sit on?
+    let this_map_id = ecs
+        .find(room_entity_id)
+        .location_map()
+        .and_then(|m| ecs.find(m.location_map_entity_id).map_instance())
+        .map(|instance| instance.location_map_id)
+        .ok_or("anchor room has no map instance")?;
+    let from_exit_side = this_map_id == connection.exit_location_map_id;
+    let far_map_id = if from_exit_side {
+        connection.destination_location_map_id
+    } else {
+        connection.exit_location_map_id
+    };
+    let far_instance = party_map_instance(ecs, far_map_id, party_leader)?;
+
+    // The far room is the far side's own seeded anchor (both_ways seeds both
+    // sides), so the two ends agree on which rooms the crossing joins. A one-way
+    // far side isn't seeded — fall back to resolving its anchor fresh.
+    let far_room = match anchor_room_for(ecs, far_instance, connection_id) {
+        Some(room) => room,
+        None => {
+            let rooms = ecs
+                .find(far_instance)
+                .map_rooms()
+                .ok_or("far instance records no rooms")?;
+            let far_anchor = if from_exit_side {
+                &connection.destination_anchor
+            } else {
+                &connection.exit_anchor
+            };
+            crate::asset::location_map::resolve_anchor_room(
+                &rooms.main_room_entity_ids,
+                &rooms.extra_room_entity_ids,
+                far_anchor,
+                rng,
+            )
+            .ok_or("far anchor resolves to no room")?
+        }
+    };
+
+    // Already joined (the far side may have built it, or a prior tick did):
+    // keep the far map demanded and leave the crossing as-is.
+    if room_connects_to(ecs, room_entity_id, far_room) {
+        return Ok(far_instance);
+    }
+
+    // Presentation: the authored pair (forward = exit->destination), else a pair
+    // sampled from the exit map's theme — exactly how intra-map pairs are drawn.
+    // No pair anywhere means no crossing, just as an intra path whose sample came
+    // up empty is simply skipped.
     let exit_map = ecs
         .db
         .location_maps()
         .id()
         .find(connection.exit_location_map_id)
         .ok_or("unknown exit map")?;
-    let path_blob = connection.path_blob.clone().or_else(|| {
-        ecs.db
-            .location_map_themes()
-            .id()
-            .find(exit_map.theme_id)
-            .and_then(|theme| {
-                theme
-                    .paths_selector
-                    .sample(rng)
-                    .map(|pair| pair.forward.clone())
-            })
-    });
-    match path_blob {
-        Some(blob) => {
-            ecs.new_path(blob, room_entity_id, destination_room)?;
-        }
-        // A theme without path blobs still connects; the path is simply
-        // featureless.
-        None => {
-            ecs.new()
-                .upsert_new_location(room_entity_id, LocationKind::Interior)
-                .into_handle()
-                .upsert_new_path(destination_room, LocationKind::Interior);
-        }
-    }
-    Ok(destination_instance_id)
+    let theme = ecs.db.location_map_themes().id().find(exit_map.theme_id);
+    let (exit_to_dest, dest_to_exit) = match (
+        connection.forward_path_blob.clone(),
+        connection.backward_path_blob.clone(),
+    ) {
+        (Some(forward), Some(backward)) => (forward, backward),
+        _ => match theme.as_ref().and_then(|t| t.paths_selector.sample(rng).cloned()) {
+            Some(pair) => (pair.forward, pair.backward),
+            None => return Ok(far_instance),
+        },
+    };
+    let variations = theme
+        .map(|t| t.roll_path_variations(ecs, rng))
+        .unwrap_or_default();
+
+    // near->far wears the exit->destination look from the exit side, reversed
+    // from the destination side.
+    let (near_to_far, far_to_near) = if from_exit_side {
+        (exit_to_dest, dest_to_exit)
+    } else {
+        (dest_to_exit, exit_to_dest)
+    };
+    crate::asset::location_map::create_linked_path_pair(
+        ecs,
+        crate::asset::location_map::PathPairSpec {
+            forward: near_to_far,
+            backward: far_to_near,
+            a: room_entity_id,
+            b: far_room,
+            variations,
+        },
+    )?;
+    Ok(far_instance)
 }
 
 /// Tear down an undemanded map instance: every path pointing INTO its rooms

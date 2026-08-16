@@ -697,6 +697,9 @@ export const connectionsPack = (): AssetPack => ({
       name: "test_walker",
       value: statBlock({ mhp: 5, gait: 2, actionNames: ["test_move"] }),
     },
+    // Paths are real bodies with HP (so a crossing can collapse); give the
+    // test theme's paths a baseline like the real path baselines do.
+    { name: "test_path", value: statBlock({ mhp: 40 }) },
   ],
   locationMapThemes: [
     {
@@ -710,8 +713,14 @@ export const connectionsPack = (): AssetPack => ({
             {
               weight: 1,
               pair: {
-                forward: blob({ offeredActionNames: ["test_move"] }),
-                backward: blob({ offeredActionNames: ["test_move"] }),
+                forward: blob({
+                  offeredActionNames: ["test_move"],
+                  baselineName: "test_path",
+                }),
+                backward: blob({
+                  offeredActionNames: ["test_move"],
+                  baselineName: "test_path",
+                }),
               },
             },
           ],
@@ -779,8 +788,11 @@ export const connectionsPack = (): AssetPack => ({
       pathPair: undefined,
     },
   ],
-  newPlayerBlob: blob({    baselineName: "test_walker",
+  newPlayerBlob: blob({
+    baselineName: "test_walker",
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+    // Seats the fresh player in a generated "near" instance via the invariant.
+    checkpoint: { locationMapName: "test_near", checkpointIndex: 0 },
   }),
 });
 
@@ -893,9 +905,17 @@ export const deathPack = (): AssetPack => ({
       value: statBlock({ mhp: 2 }),
     },
   ],
-  newPlayerBlob: blob({    baselineName: "test_hero",
+  // Real room ENTITIES: the player-location invariant reseats a player whose
+  // room doesn't exist, so a fake Literal room would void the player out the
+  // moment attuning gives them a checkpoint. Named blobs are real entities.
+  namedInstantiateEntityBlobs: [
+    { name: "death_room", value: blob({}) },
+    { name: "brute_room", value: blob({}) },
+  ],
+  newPlayerBlob: blob({
+    baselineName: "test_hero",
     location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      locationEntityId: { tag: "Named", value: "death_room" },
       kind: { tag: "Interior" },
     },
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
@@ -905,35 +925,37 @@ export const deathPack = (): AssetPack => ({
       checkpointObject: {},
       checkpointBinding: { locationMapName: "test_haven", checkpointIndex: 0 },
       location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
+        locationEntityId: { tag: "Named", value: "death_room" },
+        kind: { tag: "Interior" },
+      },
     }),
     blob({
       path: {
-        destinationEntityId: { tag: "Literal", value: 1000n },
+        destinationEntityId: { tag: "Named", value: "brute_room" },
         destinationKind: { tag: "Interior" },
       },
       offeredActionNames: ["test_move"],
       location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
+        locationEntityId: { tag: "Named", value: "death_room" },
+        kind: { tag: "Interior" },
+      },
     }),
     blob({
-      enemyController: {},      baselineName: "test_brute",
+      enemyController: {},
+      baselineName: "test_brute",
       location: {
-        locationEntityId: { tag: "Literal", value: 1000n },
+        locationEntityId: { tag: "Named", value: "brute_room" },
         kind: { tag: "Interior" },
       },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
     blob({
-      enemyController: {},      baselineName: "test_vermin",
+      enemyController: {},
+      baselineName: "test_vermin",
       location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
+        locationEntityId: { tag: "Named", value: "death_room" },
+        kind: { tag: "Interior" },
+      },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
     }),
   ],
@@ -1444,7 +1466,9 @@ export const spawnPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({}),
+  newPlayerBlob: blob({
+    checkpoint: { locationMapName: "test_spawn_map", checkpointIndex: 0 },
+  }),
 });
 
 /**
@@ -1600,7 +1624,10 @@ export const bossPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({ baselineName: "test_challenger" }),
+  newPlayerBlob: blob({
+    baselineName: "test_challenger",
+    checkpoint: { locationMapName: "test_boss_map", checkpointIndex: 0 },
+  }),
 });
 
 /**
@@ -1714,7 +1741,10 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({ baselineName: "test_hero" }),
+  newPlayerBlob: blob({
+    baselineName: "test_hero",
+    checkpoint: { locationMapName: "test_arena", checkpointIndex: 0 },
+  }),
 });
 
 /**
@@ -1849,5 +1879,8 @@ export const guardedMapPack = ({
       },
     },
   ],
-  newPlayerBlob: blob({ baselineName: "test_scout" }),
+  newPlayerBlob: blob({
+    baselineName: "test_scout",
+    checkpoint: { locationMapName: "test_guarded", checkpointIndex: 0 },
+  }),
 });

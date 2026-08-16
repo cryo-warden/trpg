@@ -1,0 +1,1 @@
+"As a test author, I want to run a chosen ordered subset of systems (one system, a pair, or a named convocation) against a minimal fixture, so that a test checks exactly those systems free of side effects from systems it does not name — with exactly ONE big, slow integration test driving fully-populated entities through the complete total system."

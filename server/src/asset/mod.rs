@@ -1030,8 +1030,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             "location map",
             &connection.destination_location_map_name,
         )?;
-        // The authored pair splits across the directed rows: forward on
-        // the authored direction, backward on the both_ways reverse.
+        // ONE row per crossing now (materialize_connection builds both
+        // directions at once): the authored pair rides along whole — forward is
+        // the exit->destination look, backward the destination->exit one.
         let (forward_blob, backward_blob) = match connection.path_pair {
             Some(pair) => (
                 Some(resolve_entity_blob(pair.forward, &maps)?),
@@ -1045,24 +1046,13 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 id: next_connection_id,
                 exit_location_map_id: exit_id,
                 destination_location_map_id: destination_id,
-                exit_anchor: connection.exit_anchor.clone(),
-                destination_anchor: connection.destination_anchor.clone(),
-                path_blob: forward_blob,
+                exit_anchor: connection.exit_anchor,
+                destination_anchor: connection.destination_anchor,
+                both_ways: connection.both_ways,
+                forward_path_blob: forward_blob,
+                backward_path_blob: backward_blob,
             });
         next_connection_id += 1;
-        if connection.both_ways {
-            ctx.db
-                .location_map_connections()
-                .insert(LocationMapConnection {
-                    id: next_connection_id,
-                    exit_location_map_id: destination_id,
-                    destination_location_map_id: exit_id,
-                    exit_anchor: connection.destination_anchor,
-                    destination_anchor: connection.exit_anchor,
-                    path_blob: backward_blob,
-                });
-            next_connection_id += 1;
-        }
     }
     // Union of every map's window per quest: any bit of a windowed quest
     // that no map can spawn is a supply hole (that bit could never be

@@ -71,6 +71,8 @@ beforeAll(async () => {
       "SELECT * FROM location_map_components",
       "SELECT * FROM map_instance_components",
       "SELECT * FROM map_cleanup_timer_components",
+      "SELECT * FROM hp_components",
+      "SELECT * FROM hp_share_components",
       "SELECT * FROM player_controller_components",
       "SELECT * FROM entities_visited_locations",
       "SELECT * FROM accounts",
@@ -128,11 +130,41 @@ test("standing in the anchor room generates the far map and materializes the pat
   );
 }, 60000);
 
-// NOTE: connection resolution targets "the first instance" of the
-// destination map ASSET, and the e2e admin's auto-provisioned player owns
-// its OWN near-map instance — so the return path may legitimately lead to
-// EITHER near instance. These tests are instance-AGNOSTIC on purpose; the
-// recorded instance-ownership design decides which instance SHOULD win.
+test("a cross-map crossing is a matched HP-linked pair, built both ways at once", async () => {
+  // The crossing is ONE physical thing: the near->far path and its far->near
+  // twin are created together and share HP (a cave-in collapses both), exactly
+  // like an intra-map pair.
+  const outbound = pathsIn(anchorRoomId).find(
+    (path) => mapOfRoom(path.destinationEntityId) !== nearInstanceId,
+  )!;
+  const farRoomId = outbound.destinationEntityId;
+
+  // The return twin already exists (materialized together), before arriving.
+  const inbound = pathsIn(farRoomId).find(
+    (path) => path.destinationEntityId === anchorRoomId,
+  );
+  expect(inbound).toBeDefined();
+
+  // Mutually HP-share-linked, and each is a real body with HP.
+  const partnerOf = (id: bigint) =>
+    [...player.db.hp_share_components.iter()].find((r) => r.entityId === id)
+      ?.partnerEntityId;
+  const hasHp = (id: bigint) =>
+    [...player.db.hp_components.iter()].some((r) => r.entityId === id);
+  expect(partnerOf(outbound.entityId)).toBe(inbound!.entityId);
+  expect(partnerOf(inbound!.entityId)).toBe(outbound.entityId);
+  // HP is derived from the path baseline a tick after creation.
+  await waitFor(
+    () => hasHp(outbound.entityId) && hasHp(inbound!.entityId),
+    30000,
+  );
+  expect(hasHp(outbound.entityId)).toBe(true);
+  expect(hasHp(inbound!.entityId)).toBe(true);
+});
+
+// NOTE: with party-keyed instances the crossing leads to the player's OWN far
+// instance, and its return twin back to the player's OWN near instance. These
+// tests stay instance-relative (the e2e admin owns separate instances).
 test("arriving on the far side materializes a return path", async () => {
   const crossPath = pathsIn(anchorRoomId).find(
     (path) => mapOfRoom(path.destinationEntityId) !== nearInstanceId,

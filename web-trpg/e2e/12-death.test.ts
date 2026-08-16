@@ -13,6 +13,10 @@ import { deathPack } from "./testAssets";
 let admin: DbConnection;
 let player: DbConnection;
 let playerEntityId: bigint;
+// Resolved from real seeded entities (rooms are named blobs now), never
+// hardcoded fake ids.
+let deathRoomId: bigint;
+let bruteRoomId: bigint;
 
 const idByName = (
   table: { iter: () => Iterable<{ id: number; name: string }> },
@@ -55,6 +59,12 @@ beforeAll(async () => {
 
   playerEntityId = await playerEntityIdFor(player, "phoenix");
   await waitFor(() => player.db.checkpoint_object_components.count() > 0, 30000);
+  // The player spawns in the (real) death room; the authored path leads to the
+  // brute room.
+  await waitFor(() => myLocation() != null, 30000);
+  deathRoomId = myLocation()!;
+  await waitFor(() => player.db.path_components.count() > 0, 30000);
+  bruteRoomId = [...player.db.path_components.iter()][0].destinationEntityId;
 }, 60000);
 
 afterAll(() => {
@@ -82,7 +92,7 @@ test("a slain vermin becomes a corpse: de-fanged but never deleted", async () =>
     (row) =>
       [...player.db.location_components.iter()].find(
         (l) => l.entityId === row.entityId,
-      )?.locationEntityId === 999n,
+      )?.locationEntityId === deathRoomId,
   )!;
   await player.reducers.act({
     actionId: jabId,
@@ -111,7 +121,7 @@ test("death entrances (no acting), then wakes the player in the freshly generate
   const jabId = idByName(player.db.actions, "test_jab");
   const pathEntityId = [...player.db.path_components.iter()][0].entityId;
   await player.reducers.act({ actionId: moveId, targetEntityId: pathEntityId });
-  await waitFor(() => myLocation() === 1000n, 30000);
+  await waitFor(() => myLocation() === bruteRoomId, 30000);
 
   // The brute's crush is lethal: hp hits 0 and the trance holds — acting
   // is refused until the wake.
@@ -126,7 +136,7 @@ test("death entrances (no acting), then wakes the player in the freshly generate
     () => myLocation() !== 1000n && (myHp()?.hp ?? 0) > 0,
     30000,
   );
-  expect(myLocation()).not.toBe(999n);
-  expect(myLocation()).not.toBe(1000n);
+  expect(myLocation()).not.toBe(deathRoomId);
+  expect(myLocation()).not.toBe(bruteRoomId);
   expect(myHp()!.hp).toBe(myHp()!.mhp);
 }, 60000);

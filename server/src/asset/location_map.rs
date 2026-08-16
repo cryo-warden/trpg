@@ -109,10 +109,12 @@ pub enum ConnectionAnchor {
     Branch,
 }
 
-/// A DIRECTED cross-map connection (both-ways authoring expands to two rows
-/// at push): from the exit map's anchor room, a path materializes into the
-/// destination map's anchor room — lazily, when a player stands in the
-/// anchor room (the demand predicate).
+/// A cross-map connection: ONE crossing between two maps, materialized as a
+/// MATCHED path pair — both directions at once, HP-linked, exactly like any
+/// intra-map crossing — the first time a player stands in either anchor room
+/// (the demand predicate). A both_ways connection seeds BOTH endpoints as
+/// pending, so it can be approached (and regenerated) from either side; a
+/// one-way connection seeds only its exit, so it can never be traversed home.
 #[table(accessor = location_map_connections)]
 pub struct LocationMapConnection {
     #[primary_key]
@@ -121,10 +123,12 @@ pub struct LocationMapConnection {
     pub destination_location_map_id: u32,
     pub exit_anchor: ConnectionAnchor,
     pub destination_anchor: ConnectionAnchor,
-    /// THIS direction's authored presentation (the pair's forward on the
-    /// authored row, its backward on the both_ways reverse); None samples
-    /// the exit map's theme instead.
-    pub path_blob: Option<crate::entity::EntityBlob>,
+    pub both_ways: bool,
+    /// The authored pair: forward is the exit->destination presentation,
+    /// backward the destination->exit one ("dark cave mouth" going in, "bright"
+    /// coming out). None samples the exit map's theme for a pair instead.
+    pub forward_path_blob: Option<crate::entity::EntityBlob>,
+    pub backward_path_blob: Option<crate::entity::EntityBlob>,
 }
 
 /// Add rolled variation TRAITS to a freshly created path, on top of any the
@@ -155,6 +159,38 @@ fn merge_path_variation_traits(path: &EntityHandle, variation_trait_ids: &[u32])
 fn link_hp_share(a: &EntityHandle, b: &EntityHandle) {
     a.clone().upsert_new_hp_share(b.entity_id());
     b.clone().upsert_new_hp_share(a.entity_id());
+}
+
+/// A MATCHED pair of paths between two rooms: the forward blob from `a` to `b`,
+/// the backward blob from `b` to `a`, both wearing one shared variation roll and
+/// linked to share fate. THE single way any crossing is added — every intra-map
+/// path pair and every cross-map crossing (see materialize_connection) goes
+/// through here, so "a crossing reads the same coming and going" holds uniformly.
+pub struct PathPairSpec {
+    pub forward: EntityBlob,
+    pub backward: EntityBlob,
+    pub a: u64,
+    pub b: u64,
+    pub variations: Vec<u32>,
+}
+
+pub fn create_linked_path_pair(
+    ecs: Ecs,
+    spec: PathPairSpec,
+) -> Result<(EntityHandle, EntityHandle), String> {
+    let PathPairSpec {
+        forward,
+        backward,
+        a,
+        b,
+        variations,
+    } = spec;
+    let fwd = ecs.new_path(forward, a, b)?;
+    let bwd = ecs.new_path(backward, b, a)?;
+    merge_path_variation_traits(&fwd, &variations);
+    merge_path_variation_traits(&bwd, &variations);
+    link_hp_share(&fwd, &bwd);
+    Ok((fwd, bwd))
 }
 
 /// The room a ConnectionAnchor selects within a generated (or recorded)
@@ -298,16 +334,19 @@ impl LocationMap {
         for i in 0..main_room_count.saturating_sub(1) {
             if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                 let (a, b) = (room_handles[i].entity_id(), room_handles[i + 1].entity_id());
-                let forward = pair.forward.clone();
-                let backward = pair.backward.clone();
                 // One roll per pair, applied to both directions: a crossing
                 // reads the same coming and going.
                 let variations = theme.roll_path_variations(ecs, &mut rng);
-                let fwd = ecs.new_path(forward, a, b)?;
-                let bwd = ecs.new_path(backward, b, a)?;
-                merge_path_variation_traits(&fwd, &variations);
-                merge_path_variation_traits(&bwd, &variations);
-                link_hp_share(&fwd, &bwd);
+                create_linked_path_pair(
+                    ecs,
+                    PathPairSpec {
+                        forward: pair.forward.clone(),
+                        backward: pair.backward.clone(),
+                        a,
+                        b,
+                        variations,
+                    },
+                )?;
             }
         }
 
@@ -322,21 +361,25 @@ impl LocationMap {
         let mut side_attachments: Vec<SideAttachment> = Vec::new();
         for i in main_room_count..room_count {
             if let Some(pair) = theme.paths_selector.sample(&mut rng) {
-                let a = room_handles[i].entity_id();
-                let b = room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
-                let backward = pair.backward.clone();
-                let forward = pair.forward.clone();
+                let side_room = room_handles[i].entity_id();
+                let attach_room =
+                    room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
                 let variations = theme.roll_path_variations(ecs, &mut rng);
-                // The OUTBOUND direction (into the side room) is the
-                // pair's forward — the exploring direction; the way back
-                // wears its matched backward.
-                let inbound = ecs.new_path(backward, a, b)?;
-                let outbound = ecs.new_path(forward, b, a)?;
-                merge_path_variation_traits(&inbound, &variations);
-                merge_path_variation_traits(&outbound, &variations);
-                link_hp_share(&inbound, &outbound);
+                // The OUTBOUND direction (attach room -> side room) is the
+                // pair's forward — the exploring direction; the way back wears
+                // its matched backward. Outbound is the blockable one.
+                let (outbound, _inbound) = create_linked_path_pair(
+                    ecs,
+                    PathPairSpec {
+                        forward: pair.forward.clone(),
+                        backward: pair.backward.clone(),
+                        a: attach_room,
+                        b: side_room,
+                        variations,
+                    },
+                )?;
                 side_attachments.push(SideAttachment {
-                    attach_room_entity_id: b,
+                    attach_room_entity_id: attach_room,
                     outbound_path_entity_id: outbound.entity_id(),
                 });
             }
@@ -358,14 +401,17 @@ impl LocationMap {
                 if let Some(pair) = theme.paths_selector.sample(&mut rng) {
                     let a = room_handles[a_index].entity_id();
                     let b = room_handles[a_index + 2].entity_id();
-                    let forward_blob = pair.forward.clone();
-                    let backward_blob = pair.backward.clone();
                     let variations = theme.roll_path_variations(ecs, &mut rng);
-                    let forward = ecs.new_path(forward_blob, a, b)?;
-                    merge_path_variation_traits(&forward, &variations);
-                    let backward = ecs.new_path(backward_blob, b, a)?;
-                    merge_path_variation_traits(&backward, &variations);
-                    link_hp_share(&forward, &backward);
+                    let (forward, backward) = create_linked_path_pair(
+                        ecs,
+                        PathPairSpec {
+                            forward: pair.forward.clone(),
+                            backward: pair.backward.clone(),
+                            a,
+                            b,
+                            variations,
+                        },
+                    )?;
                     if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
                         let wall = ecs.new().instantiate_blob(
                             wall_blob.to_owned(),
@@ -389,16 +435,17 @@ impl LocationMap {
             theme.decorate(r, &mut rng)?;
         }
 
-        // The entrance's visible checkpoint: one themed fortune-telling
-        // object to attune to. Placed last for the same rng-stability
-        // reason as decorations. The object carries its abstract binding
-        // (this map asset + index), and the map instance records its
-        // identity and checkpoint rooms so respawn/teleport resolution can
-        // find them — or regenerate the map — later.
+        // The entrance IS the map's guaranteed checkpoint 0 — always, so any
+        // map is a safe spawn/respawn target regardless of theme. A themed
+        // fortune-telling OBJECT to attune to is added on top when the theme
+        // authors one (placed last for the same rng-stability reason as
+        // decorations); its abstract binding is this map asset + index 0. The
+        // map instance records these rooms so respawn/teleport can find them —
+        // or regenerate the map — later.
         let mut checkpoint_room_entity_ids: Vec<u64> = Vec::new();
         if let Some(entrance) = room_handles.first() {
+            checkpoint_room_entity_ids.push(entrance.entity_id());
             if let Some(checkpoint_blob) = theme.checkpoints_selector.sample(&mut rng) {
-                checkpoint_room_entity_ids.push(entrance.entity_id());
                 ecs.new()
                     .instantiate_blob(
                         checkpoint_blob.to_owned(),
@@ -406,10 +453,7 @@ impl LocationMap {
                     )?
                     .upsert_new_location(entrance.entity_id(), LocationKind::Interior)
                     .into_handle()
-                    .upsert_new_checkpoint_binding(
-                        self.id,
-                        (checkpoint_room_entity_ids.len() - 1) as u32,
-                    );
+                    .upsert_new_checkpoint_binding(self.id, 0);
             }
         }
         // ALL rooms gain the map's authored location pair: exterior rooms
@@ -526,18 +570,28 @@ impl LocationMap {
                 extra_room_entity_ids.clone(),
             );
 
-        // Seed the anchors: every connection LEAVING this map attaches, as
-        // pending, to its resolved anchor room. A player standing there
-        // later demands the far map and the path materializes.
+        // Seed the anchors: every connection TOUCHING this map attaches, as
+        // pending, to its resolved anchor room here. A player standing there
+        // later demands the far map and the crossing materializes. A connection
+        // seeds on its EXIT side always, and on its DESTINATION side too when
+        // both_ways — so a two-way crossing is approachable (and regenerable)
+        // from either map, and both sides converge on the same crossing.
         use spacetimedb::Table as _;
         for connection in ecs.db.location_map_connections().iter() {
-            if connection.exit_location_map_id != self.id {
+            let anchor = if connection.exit_location_map_id == self.id {
+                Some(&connection.exit_anchor)
+            } else if connection.both_ways && connection.destination_location_map_id == self.id {
+                Some(&connection.destination_anchor)
+            } else {
+                None
+            };
+            let Some(anchor) = anchor else {
                 continue;
-            }
+            };
             if let Some(anchor_room) = resolve_anchor_room(
                 &main_room_entity_ids,
                 &extra_room_entity_ids,
-                &connection.exit_anchor,
+                anchor,
                 &mut rng,
             ) {
                 let room = ecs.find(anchor_room);
