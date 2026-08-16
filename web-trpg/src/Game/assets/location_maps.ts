@@ -68,18 +68,22 @@ const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
 
 /** A path presentation, OFFERING its crossing verbs: movement belongs to
  * the path, not the walker — a crack offers squeeze, a chasm climb_down,
- * everything else the plain move. No body knows "move" innately. */
+ * everything else the plain move. No body knows "move" innately.
+ *
+ * A path takes its whole look through the stat pipeline (appliesAppearance-
+ * Features): its noun is a BASELINE and its adjectives are TRAITS, exactly
+ * like a creature is a body plus traits. Generation then adds rolled
+ * variation traits on top; the pipeline OVERWRITES its look from baseline +
+ * all traits. Never attackable — the rest of the block is discarded. */
 const pathBlob = (
-  appearanceFeatureNames: string[],
+  baselineName: string,
   offeredActionNames: string[] = ["move"],
+  traitNames?: string[],
 ): EntityBlobAsset =>
   blob({
-    appearanceFeatureNames,
+    baselineName,
     offeredActionNames,
-    // A path takes its look through the stat pipeline: rolled variation
-    // traits (and any it authored) surface as appearance features, unioned
-    // onto this authored base — the same granting creatures use, minus a
-    // stat block. Never attackable; just a richer look.
+    traitNames,
     appliesAppearanceFeatures: {},
   });
 
@@ -165,12 +169,12 @@ export const LOCATION_MAP_THEMES = {
         {
           weight: 2,
           blob: blob({
-            appearanceFeatureNames: ["sword"],
+            // A differentiable item takes its whole look through the appearance
+            // pipeline: the noun is a baseline, the rolled condition a trait —
+            // overwritten from baseline + traits, no stats, no HP.
+            baselineName: "sword",
             item: { tag: "Armament", value: "sword" },
             differentiable: { traitPaletteName: "weapon_variety" },
-            // A differentiable item takes its rolled variety through the same
-            // appearance pipeline paths use: the drawn condition trait surfaces
-            // as a look, unioned onto "sword" — no stats, no HP.
             appliesAppearanceFeatures: {},
           }),
         },
@@ -184,7 +188,7 @@ export const LOCATION_MAP_THEMES = {
         {
           weight: 2,
           blob: blob({
-            appearanceFeatureNames: ["shield"],
+            baselineName: "shield",
             item: { tag: "Armament", value: "shield" },
             differentiable: { traitPaletteName: "weapon_variety" },
             appliesAppearanceFeatures: {},
@@ -207,7 +211,7 @@ export const LOCATION_MAP_THEMES = {
         {
           weight: 1,
           blob: blob({
-            appearanceFeatureNames: ["staff"],
+            baselineName: "staff",
             item: { tag: "Armament", value: "staff" },
             differentiable: { traitPaletteName: "weapon_variety" },
             appliesAppearanceFeatures: {},
@@ -240,8 +244,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 7,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob(["trail"])) },
-        { weight: 4, pair: pathPair(pathBlob(["path"])) },
+        { weight: 5, pair: pathPair(pathBlob("trail")) },
+        { weight: 4, pair: pathPair(pathBlob("path")) },
       ],
     },
     roomsSelector: {
@@ -280,19 +284,19 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 4,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob(["opening"])) },
-        { weight: 4, pair: pathPair(pathBlob(["hole"])) },
+        { weight: 5, pair: pathPair(pathBlob("opening")) },
+        { weight: 4, pair: pathPair(pathBlob("hole")) },
         // The verbs the player squeezes and climbs by: different paths,
         // different crossings, different messages — and the chasm's far
         // side is the ROCK WALL you climb back up, one authored fact.
         {
           weight: 2,
           pair: pathPair(
-            pathBlob(["chasm"], ["climb_down"]),
-            pathBlob(["rock_wall"], ["climb_up"]),
+            pathBlob("chasm", ["climb_down"]),
+            pathBlob("rock_wall", ["climb_up"]),
           ),
         },
-        { weight: 2, pair: pathPair(pathBlob(["crack"], ["squeeze"])) },
+        { weight: 2, pair: pathPair(pathBlob("crack", ["squeeze"])) },
       ],
     },
     roomsSelector: {
@@ -331,8 +335,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 5,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob(["trail"])) },
-        { weight: 3, pair: pathPair(pathBlob(["opening"])) },
+        { weight: 5, pair: pathPair(pathBlob("trail")) },
+        { weight: 3, pair: pathPair(pathBlob("opening")) },
       ],
     },
     roomsSelector: {
@@ -370,8 +374,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 6,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob(["trail"])) },
-        { weight: 3, pair: pathPair(pathBlob(["opening"])) },
+        { weight: 5, pair: pathPair(pathBlob("trail")) },
+        { weight: 3, pair: pathPair(pathBlob("opening")) },
       ],
     },
     roomsSelector: {
@@ -475,17 +479,17 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 6,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob(["archway"])) },
-        { weight: 3, pair: pathPair(pathBlob(["gate"])) },
-        { weight: 3, pair: pathPair(pathBlob(["corridor"])) },
+        { weight: 5, pair: pathPair(pathBlob("archway")) },
+        { weight: 3, pair: pathPair(pathBlob("gate")) },
+        { weight: 3, pair: pathPair(pathBlob("corridor")) },
         // Stairs go two ways: descend forward, climb the same crumbling
         // stair back up — one authored fact, opposite verbs (like the
         // chasm/rock-wall pair).
         {
           weight: 2,
           pair: pathPair(
-            pathBlob(["crumbling", "stair"], ["climb_down"]),
-            pathBlob(["crumbling", "stair"], ["climb_up"]),
+            pathBlob("stair", ["climb_down"], ["crumbling"]),
+            pathBlob("stair", ["climb_up"], ["crumbling"]),
           ),
         },
       ],
@@ -572,8 +576,8 @@ export const LOCATION_MAP_THEMES = {
     maxDecorationCount: 5,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob(["archway"])) },
-        { weight: 3, pair: pathPair(pathBlob(["stair"])) },
+        { weight: 5, pair: pathPair(pathBlob("archway")) },
+        { weight: 3, pair: pathPair(pathBlob("stair")) },
       ],
     },
     roomsSelector: {
@@ -869,8 +873,8 @@ export const LOCATION_MAP_CONNECTIONS: LocationMapConnectionAsset[] = [
     // Themed by both endpoints: going in, a dark cave mouth; coming
     // back out, a bright one.
     pathPair: pathPair(
-      pathBlob(["dark", "cave_mouth"]),
-      pathBlob(["bright", "cave_mouth"]),
+      pathBlob("cave_mouth", ["move"], ["dark"]),
+      pathBlob("cave_mouth", ["move"], ["bright"]),
     ),
   }),
   connect({

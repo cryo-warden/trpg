@@ -152,6 +152,30 @@ export const BASELINES = {
     actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["wisp"],
   }),
+  // NON-CREATURE BODIES. A path or a differentiable item takes its whole look
+  // through the stat pipeline (it carries appliesAppearanceFeatures), so its
+  // base noun is a baseline and any adjectives are traits — the same way a
+  // creature is a body plus traits. These carry no stats, only a noun: the
+  // pipeline keeps just the appearance. (Inert scenery that never computes
+  // still authors its features directly; only entities that compute need a
+  // baseline.)
+  trail: statBlock({ appearanceFeatureNames: ["trail"] }),
+  path: statBlock({ appearanceFeatureNames: ["path"] }),
+  opening: statBlock({ appearanceFeatureNames: ["opening"] }),
+  hole: statBlock({ appearanceFeatureNames: ["hole"] }),
+  chasm: statBlock({ appearanceFeatureNames: ["chasm"] }),
+  rock_wall: statBlock({ appearanceFeatureNames: ["rock_wall"] }),
+  crack: statBlock({ appearanceFeatureNames: ["crack"] }),
+  archway: statBlock({ appearanceFeatureNames: ["archway"] }),
+  gate: statBlock({ appearanceFeatureNames: ["gate"] }),
+  corridor: statBlock({ appearanceFeatureNames: ["corridor"] }),
+  stair: statBlock({ appearanceFeatureNames: ["stair"] }),
+  cave_mouth: statBlock({ appearanceFeatureNames: ["cave_mouth"] }),
+  // Differentiable armory pieces: the noun is a baseline, the rolled
+  // condition (rusty/gleaming/…) a trait.
+  sword: statBlock({ appearanceFeatureNames: ["sword"] }),
+  shield: statBlock({ appearanceFeatureNames: ["shield"] }),
+  staff: statBlock({ appearanceFeatureNames: ["staff"] }),
 } satisfies Record<string, StatBlockAsset>;
 
 export type BaselineName = keyof typeof BASELINES;

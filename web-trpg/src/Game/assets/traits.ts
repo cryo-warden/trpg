@@ -35,6 +35,9 @@ export const TRAITS = {
   dim: statBlock({ appearanceFeatureNames: ["dim"] }),
   dark: statBlock({ appearanceFeatureNames: ["dark"] }),
   hazy: statBlock({ appearanceFeatureNames: ["hazy"] }),
+  // Authored path adjective (not rolled): the crumbling stair wears it on
+  // both directions.
+  crumbling: statBlock({ appearanceFeatureNames: ["crumbling"] }),
   // Enemy variety traits, signed so a pack's expected stats stay flat: brawny
   // (+hp) is balanced by scrawny (-hp), rangy trades a step of speed, scarred
   // is flavor only. Drawn distinctly across a pack via a trait palette.

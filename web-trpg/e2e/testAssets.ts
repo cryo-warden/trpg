@@ -169,6 +169,12 @@ export const mapGenPack = (): AssetPack => ({
       name: "test_human",
       value: statBlock({ attack: 1, mhp: 5, mep: 5 }),
     },
+    // A non-creature body: the differentiable decoration's base noun. Its
+    // whole look rides the appearance pipeline (baseline + variety trait).
+    {
+      name: "test_deco",
+      value: statBlock({ appearanceFeatureNames: ["test_deco_mark"] }),
+    },
   ],
   appearanceFeatures: [
     {
@@ -235,14 +241,14 @@ export const mapGenPack = (): AssetPack => ({
         // Nameless blobs: NameComponent.name is unique, so a generator that
         // stamps out many rooms/paths must not give them a fixed name.
         // A differentiable ITEM decoration: it carries appliesAppearanceFeatures
-        // (no stat block), so the drawn variety trait surfaces its feature onto
-        // the item's look — unioned onto the authored test_deco_mark.
+        // (no stat block), so its look is OVERWRITTEN from baseline + traits —
+        // the test_deco base noun plus the drawn variety trait's feature.
         decorationsSelector: {
           selections: [
             {
               weight: 1,
               blob: blob({
-                appearanceFeatureNames: ["test_deco_mark"],
+                baselineName: "test_deco",
                 differentiable: { traitPaletteName: "test_variety" },
                 appliesAppearanceFeatures: {},
               }),

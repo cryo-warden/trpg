@@ -623,23 +623,15 @@ pub fn entity_stats_system(ecs: Ecs) {
         }
 
         // Appearance-only entities take just the computed look — the same
-        // features creatures get from their baseline/traits — UNIONED onto
-        // whatever base the blob authored, so a path keeps its "trail" and
-        // gains a rolled "winding". No pools, no derived actions: the rest of
+        // baseline+traits features a creature gets — and OVERWRITE with it,
+        // exactly as apply_stat_block does. Their whole appearance is authored
+        // as a baseline (the noun) plus traits (the adjectives), so there is
+        // nothing else to preserve. No pools, no derived actions: the rest of
         // the block is discarded, so nothing here is ever attackable.
         if !applies_stat_block {
-            let mut ids = f
-                .appearance_features()
-                .map(|c| c.appearance_feature_indexes)
-                .unwrap_or_default();
-            for id in stat_block.appearance_feature_ids {
-                if !ids.contains(&id) {
-                    ids.push(id);
-                }
-            }
             f.delete_total_stat_block_dirty_flag()
                 .into_handle()
-                .set_appearance_feature_ids(ids);
+                .set_appearance_feature_ids(stat_block.appearance_feature_ids);
             continue;
         }
 
