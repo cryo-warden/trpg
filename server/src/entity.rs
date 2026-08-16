@@ -76,10 +76,11 @@ entity!(
     }
 
     // Paired entities share ONE fate. The two directions of a crossing are
-    // one physical thing: damage to either drops both, and destroying one
+    // one physical thing: a blow to either lands on both, and destroying one
     // collapses the other — a crack smashed from one side is a cave-in on
-    // both. hp_share_system keeps the pair's hp synced to the lower value
-    // each tick. (Both partners carry it, pointing at each other.)
+    // both. hp_share_system mirrors each side's per-tick HP delta onto the
+    // other, so the pair takes every blow (and every heal) together. (Both
+    // partners carry it, pointing at each other.)
     #[component(hp_share in hp_share_components)]
     struct HpShareComponent {
         #[index(btree)]

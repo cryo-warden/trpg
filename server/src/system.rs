@@ -163,25 +163,39 @@ fn generic_debris_feature_ids(ecs: Ecs) -> Vec<u32> {
         .unwrap_or_default()
 }
 
-/// Paired entities share ONE HP. Each tick, sync every partner down to the
-/// LOWER of the pair, so damage to either drops both and a lethal blow to one
-/// fells the other in the same tick (a crack smashed from one side collapses
-/// the whole crossing). Runs after hp settles and before death resolves, so
-/// both halves of a crossing perish together.
+/// Paired entities share ONE fate. Each tick, BEFORE the deltas settle, mirror
+/// every shared entity's pending HP delta (this tick's accumulated damage and
+/// healing) onto its partner, so a blow to either side lands on both and the
+/// pair stays in lockstep — a crack smashed from one side is a cave-in on both.
+/// Two blows to opposite sides both count (deltas sum), and healing shares
+/// alike. Deltas are SNAPSHOTTED before any are applied, so a mutual pair never
+/// double-counts its own mirrored delta.
 pub fn hp_share_system(ecs: Ecs) {
+    // (partner_entity_id, accumulated_damage, accumulated_healing)
+    let mut mirrored: Vec<(u64, i16, i16)> = Vec::new();
     for e in ecs.iter_hp_share() {
         let handle = e.into_handle();
         let Some(share) = handle.hp_share() else {
             continue;
         };
-        let Some(partner_hp) = ecs.find(share.partner_entity_id).hp().map(|h| h.hp) else {
+        let Some(hp) = handle.hp() else {
             continue;
         };
-        if let Some(mut hp) = handle.hp() {
-            if partner_hp < hp.hp {
-                hp.hp = partner_hp;
-                handle.update_hp_row(hp);
-            }
+        if hp.accumulated_damage == 0 && hp.accumulated_healing == 0 {
+            continue;
+        }
+        mirrored.push((
+            share.partner_entity_id,
+            hp.accumulated_damage,
+            hp.accumulated_healing,
+        ));
+    }
+    for (partner_entity_id, damage, healing) in mirrored {
+        let partner = ecs.find(partner_entity_id);
+        if let Some(mut hp) = partner.hp() {
+            hp.accumulated_damage = hp.accumulated_damage.saturating_add(damage);
+            hp.accumulated_healing = hp.accumulated_healing.saturating_add(healing);
+            partner.update_hp_row(hp);
         }
     }
 }
@@ -1369,8 +1383,10 @@ pub fn execute_all_systems(ecs: Ecs) {
     actionless_stamp_system(ecs);
     crate::turn::turn_pause_system(ecs);
     action_system(ecs);
-    hp_system(ecs);
+    // Mirror shared-HP deltas onto partners BEFORE the deltas settle, so both
+    // halves of a crossing take the same blow this same tick.
     hp_share_system(ecs);
+    hp_system(ecs);
     death_system(ecs);
     respawn_system(ecs);
     ep_system(ecs);

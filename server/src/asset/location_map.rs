@@ -149,9 +149,9 @@ fn merge_path_variation_traits(path: &EntityHandle, variation_trait_ids: &[u32])
 }
 
 /// Link two paired paths so they share ONE fate: each carries an HpShare
-/// pointing at the other, and hp_share_system keeps their hp synced to the
-/// lower value. Smash one direction of a crossing and the other collapses with
-/// it — a crack broken through is a cave-in on both sides.
+/// pointing at the other, and hp_share_system mirrors each side's per-tick HP
+/// delta onto the other. Smash one direction of a crossing and the other
+/// collapses with it — a crack broken through is a cave-in on both sides.
 fn link_hp_share(a: &EntityHandle, b: &EntityHandle) {
     a.clone().upsert_new_hp_share(b.entity_id());
     b.clone().upsert_new_hp_share(a.entity_id());
