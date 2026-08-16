@@ -97,7 +97,7 @@ test("eating a fresh cookie sets its bit; mhp AND hp rise through the ratchet", 
 
   await player.reducers.act({ actionId: eatId, targetEntityId: first.entityId });
   await waitFor(() => myHp()?.mhp === 6, 30000);
-  // The ratchet: gaining a pool never fakes a damaged state.
+  // The ratchet: gaining a maximum never fakes a damaged state.
   expect(myHp()?.hp).toBe(6);
   expect(popcount()).toBe(1);
   // The eaten cookie is GONE.

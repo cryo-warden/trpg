@@ -82,12 +82,12 @@ export const LoadoutPanel = () => {
       (sum, id) => sum + (gearStats.armaments.get(id)?.[key] ?? 0),
       0,
     );
-  // The default bar's candidate pool: the base grants plus the default
+  // The default bar's candidate set: the base grants plus the default
   // armaments' grants — no stance — plus the COMMON verbs (take, move,
-  // …): offered or derived in play, absent from any granted pool, but
+  // …): offered or derived in play, absent from any granted set, but
   // pinnable for a stable slot all the same.
   const commonPinnable = useCommonPinnableActionIds();
-  const defaultPoolActionIds = [
+  const defaultCandidateActionIds = [
     ...new Set([
       ...baseActionIds,
       ...defaultArmamentIds.flatMap((id) => [
@@ -255,7 +255,7 @@ export const LoadoutPanel = () => {
             connection.reducers.setDefaultActions({ actionIds })
           }
         />
-        {defaultPoolActionIds
+        {defaultCandidateActionIds
           .filter((actionId) => !defaultActionIds.includes(actionId))
           .map((actionId) => (
             <Button

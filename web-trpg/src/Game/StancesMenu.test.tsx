@@ -309,11 +309,11 @@ test("the bar lists assigned actions in hotkey order; a tap removes", () => {
     "j Duel",
     "k Stand",
   ]);
-  // Assigned actions live in the bar, not the pool.
-  const poolLabels = [...dueling.querySelectorAll("button")]
+  // Assigned actions live in the bar, not the candidates.
+  const candidateLabels = [...dueling.querySelectorAll("button")]
     .filter((button) => !button.className.includes("actionChip"))
     .map((button) => button.textContent);
-  expect(poolLabels).not.toContain("Duel");
+  expect(candidateLabels).not.toContain("Duel");
 
   // A plain tap removes, preserving the rest of the order.
   fireEvent.click(chips[0]);
@@ -331,7 +331,7 @@ test("assigning an action pins it into the stance's bar order", () => {
   });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  // Dueling's candidate pool includes its own grant, lunge.
+  // Dueling's candidate set includes its own grant, lunge.
   const dueling = cardOf(container, "dueling")!;
   const lunge = [...dueling.querySelectorAll("button")].find((button) =>
     button.textContent!.includes("Lunge"),

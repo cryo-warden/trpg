@@ -26,7 +26,7 @@ export const STAT_GROUPS: readonly StatGroup[] = [
     ],
   },
   {
-    label: "Pools",
+    label: "Vitals",
     stats: [
       ["mhp", "Max HP"],
       ["mep", "Max EP"],

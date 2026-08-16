@@ -65,7 +65,7 @@ export const useSpecialActionIds = (): SpecialActionIds =>
 
 /** The COMMON verbs every bar may pin for a stable slot (the registered
  * specials minus the system-only re-arm): offered or derived in play,
- * absent from any granted pool, configurable all the same. */
+ * absent from any granted set, configurable all the same. */
 export const useCommonPinnableActionIds = (): ActionId[] => {
   const ids = useSpecialActionIds();
   return useMemo(

@@ -30,7 +30,7 @@ pub enum ItemRef {
 /// Armaments reference armament ASSET ids; ownership is validated by
 /// counting the player's item entities at assignment time (two one-handed
 /// blades need two owned blades — the counted-multiset rule). Actions are
-/// validated against the stance's candidate pool.
+/// validated against the stance's candidate set.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct StanceLoadout {
     pub stance_id: u32,

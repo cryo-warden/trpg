@@ -1,7 +1,7 @@
 use spacetimedb::table;
 
 /// A reusable set of traits eligible to be drawn onto a differentiable entity
-/// (see DifferentiableComponent), plus how many to draw. NOT an object pool —
+/// (see DifferentiableComponent), plus how many to draw. A palette —
 /// a palette: the caller picks from it, it retires nothing.
 #[table(accessor = trait_palettes)]
 #[derive(Debug, Clone)]

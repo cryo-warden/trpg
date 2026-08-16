@@ -226,9 +226,9 @@ test("the equip menu lays the stance card's detailed stats out — deltaless", (
   expect(groupsText).not.toContain("(");
 });
 
-test("the DEFAULT action bar proposes set_default_actions from its pool", () => {
+test("the DEFAULT action bar proposes set_default_actions from its candidates", () => {
   const setDefaultActions = mock(() => {});
-  const withPool = {
+  const withCandidates = {
     ...tables(),
     total_stat_block_components: mockTable([
       {
@@ -238,7 +238,7 @@ test("the DEFAULT action bar proposes set_default_actions from its pool", () => 
     ]),
   };
   const { container } = render(<LoadoutPanel />, {
-    wrapper: gameWrapper(withPool, {
+    wrapper: gameWrapper(withCandidates, {
       identity: {} as Identity,
       reducers: { setDefaultActions },
     }),
@@ -252,7 +252,7 @@ test("the DEFAULT action bar proposes set_default_actions from its pool", () => 
   });
 });
 
-test("pool clicks STACK onto the default bar, never replace it", () => {
+test("a candidate click STACKS onto the default bar, never replaces it", () => {
   // Regression: default_actions_components was never subscribed, so the
   // client list read empty and every click proposed a one-element
   // replacement.

@@ -81,8 +81,9 @@ const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
  * A path takes its whole look through the stat pipeline: its noun is a
  * BASELINE and its adjectives are TRAITS, exactly like a creature is a body
  * plus traits. Generation then adds rolled variation traits on top; the
- * pipeline OVERWRITES its look from baseline + all traits. The baseline has
- * max HP 0, so the pool guard leaves the path bodiless — never attackable. */
+ * pipeline OVERWRITES its look from baseline + all traits. The baseline gives
+ * it high HP and defense — a physical crossing you can collapse only with real
+ * force — and generation links paired directions so they share that fate. */
 const pathBlob = (
   baselineName: string,
   offeredActionNames: string[] = ["move"],

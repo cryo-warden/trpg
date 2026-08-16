@@ -73,8 +73,8 @@ export const STANCES = {
     }),
   },
   // General magic; the elemental specializations trade breadth for a
-  // sharper granted technique. (No mep grant: max pools are a ratchet, so
-  // a stance-carried pool would be a one-time permanent boost.)
+  // sharper granted technique. (No mep grant: the maxima are a ratchet, so
+  // a stance-carried maximum would be a one-time permanent boost.)
   casting: {
     requirements: requirements({ focus: 1 }),
     statBlock: statBlock({ upright: 2, actionNames: ["heal"] }),

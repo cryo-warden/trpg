@@ -4,7 +4,7 @@ import { statBlock } from "./stat_block";
 // Quests: each progress bit grants perBitStatBlock once (total = per-bit x
 // popcount); bitCount is the WORLD-WIDE supply, spread across maps by the
 // per-map spawn windows. The cookie quests are the first legitimate
-// mhp/mep sources under the max-pool ratchet: limited, permanent,
+// mhp/mep sources under the maxima ratchet: limited, permanent,
 // progression-shaped — bits only ever turn on.
 export const QUESTS = {
   red_cookies: {

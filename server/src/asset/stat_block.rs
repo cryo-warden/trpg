@@ -1,5 +1,5 @@
 // Stats are deliberately narrow: play-relevant values live in roughly the
-// -20..20 realm, so i8 covers them; only the HP/EP pools merit i16. Merging
+// -20..20 realm, so i8 covers them; only the HP/EP maxima merit i16. Merging
 // saturates instead of wrapping so extreme stacking clamps at the type's
 // bounds rather than corrupting the total.
 //

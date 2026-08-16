@@ -154,7 +154,7 @@ pub struct QuestItemRefAsset {
 }
 
 /// A reusable set of eligible traits (by NAME) and how many to draw, resolved
-/// to a TraitPalette at push. NOT an object pool — a palette to draw from.
+/// to a TraitPalette at push. A palette to draw from.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct TraitPaletteAsset {
     pub trait_names: Vec<String>,

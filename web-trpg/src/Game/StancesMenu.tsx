@@ -154,11 +154,11 @@ export const StancesMenu = () => {
         const grantedActionNames = [...stance.statBlock.actionIds].map(
           (id) => actionDisplayName(id),
         );
-        // The stance's candidate ACTION pool: base grants (the total minus
+        // The stance's candidate ACTION set: base grants (the total minus
         // the active stance's and in-hand armaments' grants) plus this
         // stance's grants plus its assigned armaments' grants. Assigning
         // picks the pinned bar this stance carries in, in hotkey order.
-        const poolActionIds = [
+        const candidateActionIds = [
           ...new Set([
             ...baseActionIds,
             ...stance.statBlock.actionIds,
@@ -269,7 +269,7 @@ export const StancesMenu = () => {
                 })
               }
             />
-            {poolActionIds
+            {candidateActionIds
               .filter((actionId) => !assignedActions.includes(actionId))
               .map((actionId) => (
                 <Button

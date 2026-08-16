@@ -391,7 +391,7 @@ export const stancePack = (): AssetPack => ({
       name: "test_prone",
       value: {
         requirements: NO_REQUIREMENTS,
-        // The mep grant exercises the max-pool RATCHET: adopting prone
+        // The mep grant exercises the maxima RATCHET: adopting prone
         // raises mep once; leaving never lowers it back.
         statBlock: statBlock({ gait: -2, mep: 3 }),
       },

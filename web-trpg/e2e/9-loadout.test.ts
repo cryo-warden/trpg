@@ -206,13 +206,13 @@ test("bar assignments: on adoption for other stances, INSTANT for the active one
       (r) => r.entityId === playerEntityId,
     );
 
-  // Outside the candidate pool: rejected at assignment time.
+  // Outside the candidate set: rejected at assignment time.
   await expect(
     player.reducers.assignStanceActions({
       stanceId: standingId,
       actionIds: [999999],
     }),
-  ).rejects.toThrow(/pool/);
+  ).rejects.toThrow(/set/);
 
   // Standing is NOT active (we are in dueling): the bar waits for the
   // adoption to pay its round.
@@ -270,7 +270,7 @@ test("unequip/equip actions edit the DEFAULT slot; hands re-resolve", async () =
   expect(myDefaults()).toEqual([clubId, swordId]);
 }, 60000);
 
-test("the DEFAULT action bar: pool-validated, pinned by stances without a bar of their own", async () => {
+test("the DEFAULT action bar: set-validated, pinned by stances without a bar of their own", async () => {
   const takeId = idByName(player.db.actions, "test_take");
   const slashId = idByName(player.db.actions, "test_slash");
   const duelingId = idByName(player.db.stances, "test_dueling");
@@ -279,10 +279,10 @@ test("the DEFAULT action bar: pool-validated, pinned by stances without a bar of
       (r) => r.entityId === playerEntityId,
     );
 
-  // Outside the DEFAULT configuration's candidate pool: rejected.
+  // Outside the DEFAULT configuration's candidate set: rejected.
   await expect(
     player.reducers.setDefaultActions({ actionIds: [999999] }),
-  ).rejects.toThrow(/pool/);
+  ).rejects.toThrow(/set/);
 
   // A valid default bar (test_slash rides the default sword's grant).
   // The ACTIVE stance (standing) holds its own bar override, so the

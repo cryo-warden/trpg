@@ -83,7 +83,7 @@ test("the new player carries the authored stance", () => {
 
 // Runs BEFORE any other test adopts prone: the ratchet's one-time raise is
 // exactly what is under test.
-test("max pools are a RATCHET: a raise carries ep up; leaving never lowers it back", async () => {
+test("the maxima are a RATCHET: a raise carries ep up; leaving never lowers it back", async () => {
   const myEp = () =>
     [...player.db.ep_components.iter()].find(
       (row) => row.entityId === playerEntityId,
@@ -92,17 +92,17 @@ test("max pools are a RATCHET: a raise carries ep up; leaving never lowers it ba
     [...player.db.active_stance_components.iter()].find(
       (row) => row.entityId === playerEntityId,
     )?.stanceId;
-  // The body grants no mep, so the pool starts empty.
+  // The body grants no mep, so it starts with no EP.
   expect(myEp()?.mep ?? 0).toBe(0);
 
   // Adopting prone (+3 mep) raises the maximum AND carries ep up with it:
-  // gaining a pool never fakes a spent state.
+  // gaining a maximum never fakes a spent state.
   await player.reducers.setStance({ stanceId: stanceIdByName("test_prone") });
   await waitFor(() => myEp()?.mep === 3, 30000);
   expect(myEp()?.ep).toBe(3);
 
   // Leaving refuses the reduction: the raise/lower cycle behind every
-  // max-pool exploit never closes.
+  // max-value exploit never closes.
   await player.reducers.setStance({ stanceId: stanceIdByName("test_brawler") });
   await waitFor(() => activeStance() === stanceIdByName("test_brawler"), 30000);
   expect(myEp()?.mep).toBe(3);

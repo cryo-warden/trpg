@@ -203,20 +203,20 @@ pub(crate) fn weighted_index(weights: &[u8], rng: &mut StdRng) -> usize {
     weights.len().saturating_sub(1)
 }
 
-/// Draw up to `count` ids from a shuffled `pool`, skipping any whose exclusion
-/// group (via `group_of`) was already taken — so a pick never pairs opposites
-/// or redundants. Groupless ids always take. Pure over its group lookup so
-/// the selection rule is unit-testable without a database.
+/// Draw up to `count` ids from the shuffled `candidates`, skipping any whose
+/// exclusion group (via `group_of`) was already taken — so a pick never pairs
+/// opposites or redundants. Groupless ids always take. Pure over its group
+/// lookup so the selection rule is unit-testable without a database.
 pub(crate) fn pick_distinct_group(
-    mut pool: Vec<u32>,
+    mut candidates: Vec<u32>,
     count: usize,
     group_of: impl Fn(u32) -> Option<String>,
     rng: &mut StdRng,
 ) -> Vec<u32> {
-    pool.shuffle(rng);
+    candidates.shuffle(rng);
     let mut chosen: Vec<u32> = Vec::new();
     let mut taken_groups: HashSet<String> = HashSet::new();
-    for id in pool {
+    for id in candidates {
         if chosen.len() >= count {
             break;
         }

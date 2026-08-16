@@ -119,7 +119,7 @@ pub fn set_relics(ctx: &ReducerContext, relic_ids: Vec<u32>) -> Result<(), Strin
 /// The GEARED context: base parts rebuilt explicitly (baseline plus
 /// traits, worn armor/relics, and the given armaments) — never the
 /// current equipment cache, and no stance: the base every stance
-/// compares to. Its action_ids are the DEFAULT bar's candidate pool.
+/// compares to. Its action_ids are the DEFAULT bar's candidate set.
 fn geared_stat_block(
     ctx: &ReducerContext,
     player_entity_id: u64,
@@ -155,7 +155,7 @@ fn geared_stat_block(
 
 /// The candidate context a stance loadout would produce: the geared base
 /// plus the stance itself. Its action_ids are the stance's full
-/// candidate action pool.
+/// candidate action set.
 fn candidate_stat_block(
     ctx: &ReducerContext,
     player_entity_id: u64,
@@ -304,7 +304,7 @@ pub fn set_default_armaments(
 
 /// The COMMON verbs every bar may pin for a stable slot: the registered
 /// special actions (take, drop, equip, unequip, eat, move) — offered or
-/// derived in play, absent from any granted pool, but configurable all
+/// derived in play, absent from any granted set, but configurable all
 /// the same. The system-only re-arm never joins a bar.
 fn common_pinnable_action_ids(ctx: &ReducerContext) -> Vec<u32> {
     ctx.db
@@ -319,7 +319,7 @@ fn common_pinnable_action_ids(ctx: &ReducerContext) -> Vec<u32> {
 const MAX_ASSIGNED_ACTIONS: usize = 10;
 
 /// Assign the ACTIONS one stance pins to the bar, in bar order (position is
-/// the hotkey). Each must come from the stance's candidate pool — what the
+/// the hotkey). Each must come from the stance's candidate set — what the
 /// body, traits, worn gear, ASSIGNED armaments, and the stance itself
 /// grant. Same configuration-only rule as armaments: the bar actually
 /// changes when a stance change pays its round.
@@ -348,7 +348,7 @@ pub fn assign_stance_actions(
             ));
         }
 
-        // The candidate pool reflects what the stance will ACTUALLY fight
+        // The candidate set reflects what the stance will ACTUALLY fight
         // with: its armament override when it has one, else the default
         // wielded set.
         let handle = ecs.find(p.entity_id());
@@ -360,13 +360,13 @@ pub fn assign_stance_actions(
             .and_then(|a| a.armament_ids.clone())
             .or_else(|| handle.default_armaments().map(|d| d.armament_ids))
             .unwrap_or_default();
-        let mut pool =
+        let mut candidates =
             candidate_stat_block(ctx, p.entity_id(), &stance, &stance_armament_ids)
                 .action_ids;
         // The common verbs are always pinnable: their slot is the point.
-        pool.extend(common_pinnable_action_ids(ctx));
+        candidates.extend(common_pinnable_action_ids(ctx));
         for id in bar_ids {
-            if !pool.contains(id) {
+            if !candidates.contains(id) {
                 let name = ctx
                     .db
                     .actions()
@@ -374,7 +374,7 @@ pub fn assign_stance_actions(
                     .find(id)
                     .map_or_else(|| format!("#{}", id), |a| a.name);
                 return Err(format!(
-                    "The action \"{}\" is not in this stance's candidate pool.",
+                    "The action \"{}\" is not in this stance's candidate set.",
                     name
                 ));
             }
@@ -401,7 +401,7 @@ pub fn assign_stance_actions(
 
 /// Assign the DEFAULT action bar — what a stance change pins when the
 /// adopted stance carries no bar assignment of its own, mirroring the
-/// default armament slot. The pool is the DEFAULT configuration's
+/// default armament slot. The candidate set is the DEFAULT configuration's
 /// candidates: base + worn gear + default armaments, NO stance (the
 /// base every stance compares to). The ACTIVE stance rides it live when
 /// it has no override of its own.
@@ -423,12 +423,12 @@ pub fn set_default_actions(ctx: &ReducerContext, action_ids: Vec<u32>) -> Result
     let default_armament_ids = { handle.default_armaments() }
         .map(|d| d.armament_ids)
         .unwrap_or_default();
-    let mut pool =
+    let mut candidates =
         geared_stat_block(ctx, player_entity_id, &default_armament_ids).action_ids;
     // The common verbs are always pinnable: their slot is the point.
-    pool.extend(common_pinnable_action_ids(ctx));
+    candidates.extend(common_pinnable_action_ids(ctx));
     for id in &action_ids {
-        if !pool.contains(id) {
+        if !candidates.contains(id) {
             let name = ctx
                 .db
                 .actions()
@@ -436,7 +436,7 @@ pub fn set_default_actions(ctx: &ReducerContext, action_ids: Vec<u32>) -> Result
                 .find(id)
                 .map_or_else(|| format!("#{}", id), |a| a.name);
             return Err(format!(
-                "The action \"{}\" is not in the default configuration's candidate pool.",
+                "The action \"{}\" is not in the default configuration's candidate set.",
                 name
             ));
         }
