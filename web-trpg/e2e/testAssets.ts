@@ -328,8 +328,11 @@ export const mapGenPack = (): AssetPack => ({
     { name: "allegiance1", value: blob({}) },
     { name: "allegiance2", value: blob({}) },
   ],
-  newPlayerBlob: blob({    baselineName: "test_human",
+  newPlayerBlob: blob({
+    baselineName: "test_human",
     allegiance: { allegianceEntityId: { tag: "Named", value: "allegiance1" } },
+    // Seats the fresh player in the generated map via the location invariant.
+    checkpoint: { locationMapName: "tiny", checkpointIndex: 0 },
   }),
 });
 

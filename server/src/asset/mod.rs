@@ -39,7 +39,8 @@ use crate::{
         traits_stat_block_dirty_flag_components,
         ActionsComponentBlob, ActiveStanceComponentBlob,
         AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
-        CheckpointBindingComponentBlob, DifferentiableComponentBlob, EntityBlob,
+        CheckpointBindingComponentBlob, CheckpointComponentBlob, DifferentiableComponentBlob,
+        EntityBlob,
         EquipmentComponentBlob, FindEntityHandle, FlagComponent, InstantiateEntityBlob,
         ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
         RemainsComponentBlob, TraitsComponentBlob,
@@ -320,7 +321,19 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        checkpoint: None,
+        checkpoint: author
+            .checkpoint
+            .map(|c| {
+                Ok::<_, String>(CheckpointComponentBlob {
+                    location_map_id: resolve_name(
+                        &maps.location_maps,
+                        "location map",
+                        &c.location_map_name,
+                    )?,
+                    checkpoint_index: c.checkpoint_index,
+                })
+            })
+            .transpose()?,
         map_instance: None,
         map_checkpoints: None,
         map_rooms: None,

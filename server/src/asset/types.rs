@@ -209,10 +209,23 @@ pub struct EntityBlobAsset {
     /// NAME plus which of its generated checkpoints. Never a room entity —
     /// the room may not exist until the binding is cashed in.
     pub checkpoint_binding: Option<CheckpointBindingAsset>,
+    /// Where this entity wakes/spawns: a map by NAME plus checkpoint index.
+    /// The new-player blob carries one (starting map, index 0) so the
+    /// player-location invariant can seat a fresh player without any hardcoded
+    /// "first map" rule.
+    pub checkpoint: Option<CheckpointAsset>,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct CheckpointBindingAsset {
+    pub location_map_name: String,
+    pub checkpoint_index: u32,
+}
+
+/// The authored form of a CheckpointComponent: a map by NAME plus which of its
+/// generated checkpoints, resolved to ids at push.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct CheckpointAsset {
     pub location_map_name: String,
     pub checkpoint_index: u32,
 }

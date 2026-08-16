@@ -1,0 +1,1 @@
+"Harden map generation and the full map lifecycle by expressing it as ordered invariant systems (per the systems-enforce-invariants principle): party-keyed instances, checkpoint-driven placement with void-out recovery, symmetric HP-shared cross-map crossings, silent cleanup cascades, and a 3-tier defeat model (cleanup vs destruction vs death)."

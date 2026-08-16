@@ -1,0 +1,1 @@
+"One system seats any player whose location entity does not exist at their checkpoint (map+index), regenerating their party's instance if needed. Covers initial new-player placement (checkpoint on the new-player blob, by map name, index 0) and recovery from voiding out."

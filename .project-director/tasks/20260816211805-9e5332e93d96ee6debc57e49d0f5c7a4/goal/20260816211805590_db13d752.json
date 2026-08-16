@@ -1,0 +1,1 @@
+"Every player carries PartyComponent{party_leader}; party_leader_sanitation_system repoints any leader that isn't a live entity at self. Foundation for party-scoped instances. DONE commit 4cd3ad6."

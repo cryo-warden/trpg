@@ -1,0 +1,1 @@
+"MapInstanceComponent gains party_leader; every find-instance is party-scoped; stop the unconditional starting-map generation. Kills duplicate/party-blind instances (Bug C)."

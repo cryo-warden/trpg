@@ -1,0 +1,1 @@
+"Cleanup = silent delete (never players). Destruction = spill contents + spawn debris + delete (never players), driven by a transient marker. Death = players get a respawn timer, non-players are marked for destruction."

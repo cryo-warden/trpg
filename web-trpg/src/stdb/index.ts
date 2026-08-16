@@ -761,6 +761,9 @@ const tablesSchema = __schema({
       { accessor: 'entity_id', name: 'map_instance_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
+      { accessor: 'party_leader', name: 'map_instance_components_party_leader_idx_btree', algorithm: 'btree', columns: [
+        'partyLeader',
+      ] },
     ],
     constraints: [
       { name: 'map_instance_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },

@@ -238,26 +238,26 @@ pub struct MapGenerationResult {
     pub containers: Vec<GeneratedContainer>,
 }
 
-impl MapGenerationResult {
-    pub fn entrance_room_id(&self) -> Option<u64> {
-        self.rooms
-            .iter()
-            .find(|room| room.role == RoomRole::Entrance)
-            .map(|room| room.entity_id)
-    }
-}
 impl LocationMap {
-    pub fn generate_entities(&self, ecs: Ecs) -> Result<MapGenerationResult, String> {
+    pub fn generate_entities(
+        &self,
+        ecs: Ecs,
+        party_leader: u64,
+    ) -> Result<MapGenerationResult, String> {
         match self.layout {
-            Layout::Path => self.generate_path_layout(ecs),
+            Layout::Path => self.generate_path_layout(ecs, party_leader),
             // WIP Create hub generation algorithm.
-            Layout::Hub => self.generate_path_layout(ecs),
+            Layout::Hub => self.generate_path_layout(ecs, party_leader),
         }
     }
     fn rng(&self) -> StdRng {
         StdRng::seed_from_u64(self.rng_seed.unwrap_or_default())
     }
-    fn generate_path_layout(&self, ecs: Ecs) -> Result<MapGenerationResult, String> {
+    fn generate_path_layout(
+        &self,
+        ecs: Ecs,
+        party_leader: u64,
+    ) -> Result<MapGenerationResult, String> {
         let theme = if let Some(theme) = ecs.db.location_map_themes().id().find(self.theme_id) {
             theme
         } else {
@@ -516,7 +516,7 @@ impl LocationMap {
             .collect();
         location_map_entity
             .clone()
-            .upsert_new_map_instance(self.id)
+            .upsert_new_map_instance(self.id, party_leader)
             .into_handle()
             .clone()
             .upsert_new_map_checkpoints(checkpoint_room_entity_ids.clone())

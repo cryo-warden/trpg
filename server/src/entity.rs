@@ -271,10 +271,16 @@ entity!(
         pub trait_palette_id: u32,
     }
 
-    // A generated map instance's identity: which map ASSET it realizes.
+    // A generated map instance's identity: which map ASSET it realizes, and
+    // WHOSE it is. Instances are keyed by (location_map_id, party_leader) — one
+    // instance per party, so two parties exploring the same map never collide
+    // and each keeps its own generated layout. party_leader is an entity id
+    // (0 = the sanctioned null pointer, never a live entity).
     #[component(map_instance in map_instance_components)]
     struct MapInstanceComponent {
         pub location_map_id: u32,
+        #[index(btree)]
+        pub party_leader: EntityId,
     }
 
     // The generated checkpoint rooms of a map instance, in placement order —

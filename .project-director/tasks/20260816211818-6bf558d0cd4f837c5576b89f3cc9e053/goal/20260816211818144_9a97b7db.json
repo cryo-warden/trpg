@@ -1,0 +1,1 @@
+"Materialize both directions of a crossing together and HpShare-link them; keep pending_connections durable so a torn-down neighbor regenerates the crossing on re-approach. Fixes the dangling-link bug (Bug A) and the missing cross-map HP share (Bug D)."

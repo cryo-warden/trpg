@@ -39,4 +39,8 @@ export const NEW_PLAYER_BLOB = blob({
   allegiance: {
     allegianceEntityId: { tag: "Named", value: "allegiance1" },
   },
+  // Where a fresh player wakes: the starting zone's first checkpoint. The
+  // player-location invariant seats them here (generating the map for their
+  // party if needed) — no hardcoded "first map" rule.
+  checkpoint: { locationMapName: "start_zone", checkpointIndex: 0 },
 });

@@ -265,7 +265,11 @@ pub fn respawn_system(ecs: Ecs) {
                     handle.entity_id()
                 );
             }
-            Some(checkpoint) => match resolve_checkpoint_room(ecs, &checkpoint) {
+            Some(checkpoint) => match party_leader_of(ecs, handle.entity_id())
+                .ok_or_else(|| "no valid party leader".to_string())
+                .and_then(|party_leader| {
+                    resolve_checkpoint_room(ecs, &checkpoint, party_leader)
+                }) {
                 Err(reason) => {
                     log::error!(
                         "Entity {} cannot reach its checkpoint ({}); reviving in place.",
@@ -285,32 +289,49 @@ pub fn respawn_system(ecs: Ecs) {
     }
 }
 
-/// The checkpoint's room: an existing instance of the map if one is
-/// generated, else a freshly generated one.
+/// A PARTY's instance of a map: the existing one, or a freshly generated one
+/// stamped to that party. Instances are keyed by (location_map_id, party_leader),
+/// so this never binds one party to another's layout.
+fn party_map_instance(
+    ecs: Ecs,
+    location_map_id: u32,
+    party_leader: u64,
+) -> Result<u64, String> {
+    let find = || {
+        ecs.iter_map_instance()
+            .find(|m| {
+                let instance = m.map_instance();
+                instance.location_map_id == location_map_id
+                    && instance.party_leader == party_leader
+            })
+            .map(|m| m.entity_id())
+    };
+    if let Some(existing) = find() {
+        return Ok(existing);
+    }
+    let map = ecs
+        .db
+        .location_maps()
+        .id()
+        .find(location_map_id)
+        .ok_or_else(|| format!("unknown location map {}", location_map_id))?;
+    crate::map_materialization::materialize_map(ecs, &map, party_leader)?;
+    find().ok_or_else(|| "generated map produced no instance".to_string())
+}
+
+/// The checkpoint's room within the party's instance of the map (generated on
+/// demand if the party has none yet).
 fn resolve_checkpoint_room(
     ecs: Ecs,
     checkpoint: &CheckpointComponent,
+    party_leader: u64,
 ) -> Result<u64, String> {
-    let instance_checkpoints = ecs
-        .iter_map_instance()
-        .find(|m| m.map_instance().location_map_id == checkpoint.location_map_id)
-        .and_then(|m| m.into_handle().map_checkpoints())
-        .map(|c| c.checkpoint_room_entity_ids);
-    let checkpoints = match instance_checkpoints {
-        Some(checkpoints) => checkpoints,
-        None => {
-            let map = ecs
-                .db
-                .location_maps()
-                .id()
-                .find(checkpoint.location_map_id)
-                .ok_or_else(|| {
-                    format!("unknown location map {}", checkpoint.location_map_id)
-                })?;
-            crate::map_materialization::materialize_map(ecs, &map)?
-                .checkpoint_room_entity_ids
-        }
-    };
+    let instance_id = party_map_instance(ecs, checkpoint.location_map_id, party_leader)?;
+    let checkpoints = ecs
+        .find(instance_id)
+        .map_checkpoints()
+        .map(|c| c.checkpoint_room_entity_ids)
+        .ok_or("instance records no checkpoints")?;
     checkpoints
         .get(checkpoint.checkpoint_index as usize)
         .copied()
@@ -800,31 +821,58 @@ pub fn player_provision_system(ecs: Ecs) {
     }
 }
 
-pub fn player_activation_system(ecs: Ecs) {
+/// INVARIANT: every player stands in a room that exists. A player whose
+/// location entity is missing — never placed (a new player), or voided out when
+/// their room was cleaned up — is seated at their checkpoint (a map ASSET + index
+/// on their CheckpointComponent), regenerating their party's instance of that
+/// map if needed. This is BOTH initial placement (the new-player blob carries a
+/// checkpoint → starting map, index 0) and recovery from voiding out.
+///
+/// Two-pass: the read-only pass collects who needs seating (resolving a
+/// checkpoint can generate a whole map, which must not run while iterating the
+/// player table); the write pass seats them.
+pub fn player_location_sanitation_system(ecs: Ecs) {
+    struct Reseat {
+        entity_id: u64,
+        checkpoint: CheckpointComponent,
+        party_leader: u64,
+    }
+    let mut reseats: Vec<Reseat> = Vec::new();
     for p in ecs.iter_player_controller() {
-        // WIP Do NOT add a location if player is inactive. Consider adding a flag when deactivating.
-        if p.location().is_none() {
-            // WIP Add checkpoint component to select a specific location map.
-            if let Some(m) = ecs.db.location_maps().iter().next() {
-                match crate::map_materialization::materialize_map(ecs, &m) {
-                    // WIP Add checkpoint location to select a specific room.
-                    // WIP Consider adding rng seed to checkpoint to allow same map to regen.
-                    Ok(map_generation_result) => {
-                        if let Some(location_entity_id) =
-                            map_generation_result.entrance_room_id()
-                        {
-                            p.insert_new_location(location_entity_id, LocationKind::Interior);
-                            // A new player's checkpoint: the starting map's
-                            // first generated checkpoint, automatically —
-                            // an ABSTRACT destination (map + index), never
-                            // a room entity.
-                            p.upsert_new_checkpoint(m.id, 0);
-                        }
-                    }
-                    Err(e) => {
-                        log::error!("Map generation failed: {}", e);
-                    }
-                }
+        let handle = p.into_handle();
+        // A present location whose room still exists needs nothing.
+        if let Some(location) = handle.location() {
+            if ecs.db.entities().id().find(location.location_entity_id).is_some() {
+                continue;
+            }
+        }
+        // Seating needs a checkpoint to aim at and a valid party to own the
+        // instance. A brand-new player's leader is repaired earlier THIS tick
+        // by party_leader_sanitation_system, so by here it's valid; anything
+        // still unresolved simply waits for the next tick.
+        let (Some(checkpoint), Some(party_leader)) =
+            (handle.checkpoint(), party_leader_of(ecs, handle.entity_id()))
+        else {
+            continue;
+        };
+        reseats.push(Reseat {
+            entity_id: handle.entity_id(),
+            checkpoint,
+            party_leader,
+        });
+    }
+    for reseat in reseats {
+        match resolve_checkpoint_room(ecs, &reseat.checkpoint, reseat.party_leader) {
+            Ok(room_entity_id) => {
+                ecs.find(reseat.entity_id)
+                    .upsert_new_location(room_entity_id, LocationKind::Interior);
+            }
+            Err(reason) => {
+                log::error!(
+                    "Player {} cannot reach its checkpoint ({}); left unplaced.",
+                    reseat.entity_id,
+                    reason
+                );
             }
         }
     }
@@ -855,12 +903,22 @@ pub fn map_demand_system(ecs: Ecs) {
         if let Some(m) = room.location_map() {
             demanded.insert(m.location_map_entity_id);
         }
-        // Pending connections: demand generates the far side and the
-        // connecting path appears.
-        if let Some(pending) = room.pending_connections() {
+        // Pending connections: demand generates the far side (for THIS
+        // player's party) and the connecting path appears. Skip until the
+        // player's party leader is valid — party_leader_sanitation_system
+        // repairs it, and the connection stays pending until then.
+        if let (Some(pending), Some(party_leader)) =
+            (room.pending_connections(), party_leader_of(ecs, player.entity_id()))
+        {
             let mut remaining: Vec<u32> = Vec::new();
             for connection_id in pending.connection_ids {
-                match materialize_connection(ecs, room_entity_id, connection_id, &mut rng) {
+                let materialization = ConnectionMaterialization {
+                    room_entity_id,
+                    connection_id,
+                    party_leader,
+                    rng: &mut rng,
+                };
+                match materialize_connection(ecs, materialization) {
                     Ok(destination_instance_id) => {
                         demanded.insert(destination_instance_id);
                     }
@@ -925,43 +983,34 @@ pub fn map_demand_system(ecs: Ecs) {
     }
 }
 
-/// Create the cross-map path for a demanded pending connection, generating
-/// the destination map when no instance of it exists.
-fn materialize_connection(
-    ecs: Ecs,
+/// The demand-time inputs for materializing one cross-map crossing: the anchor
+/// ROOM it leaves from, WHICH connection, the demanding party (the destination
+/// instance is generated for THEM), and the shared anchor-pick rng.
+struct ConnectionMaterialization<'a> {
     room_entity_id: u64,
     connection_id: u32,
-    rng: &mut spacetimedb::rand::rngs::StdRng,
-) -> Result<u64, String> {
+    party_leader: u64,
+    rng: &'a mut spacetimedb::rand::rngs::StdRng,
+}
+
+/// Create the cross-map path for a demanded pending connection, generating the
+/// destination map (for the demanding party) when that party has no instance
+/// of it yet.
+fn materialize_connection(ecs: Ecs, m: ConnectionMaterialization) -> Result<u64, String> {
+    let ConnectionMaterialization {
+        room_entity_id,
+        connection_id,
+        party_leader,
+        rng,
+    } = m;
     let connection = ecs
         .db
         .location_map_connections()
         .id()
         .find(connection_id)
         .ok_or_else(|| format!("unknown connection {}", connection_id))?;
-    let find_instance = || {
-        ecs.iter_map_instance()
-            .find(|m| m.map_instance().location_map_id == connection.destination_location_map_id)
-            .map(|m| m.entity_id())
-    };
-    let destination_instance_id = match find_instance() {
-        Some(id) => id,
-        None => {
-            let map = ecs
-                .db
-                .location_maps()
-                .id()
-                .find(connection.destination_location_map_id)
-                .ok_or_else(|| {
-                    format!(
-                        "unknown location map {}",
-                        connection.destination_location_map_id
-                    )
-                })?;
-            crate::map_materialization::materialize_map(ecs, &map)?;
-            find_instance().ok_or("destination map generated no instance")?
-        }
-    };
+    let destination_instance_id =
+        party_map_instance(ecs, connection.destination_location_map_id, party_leader)?;
     let rooms = ecs
         .find(destination_instance_id)
         .map_rooms()
@@ -1297,6 +1346,15 @@ pub fn party_leader_sanitation_system(ecs: Ecs) {
     }
 }
 
+/// An entity's party leader, but only when it's a live entity. Returns None
+/// when there's no party component or the leader isn't (yet) valid —
+/// party_leader_sanitation_system repairs the latter, so callers skip and
+/// retry next tick rather than keying anything to a dangling leader.
+fn party_leader_of(ecs: Ecs, entity_id: u64) -> Option<u64> {
+    let leader = ecs.find(entity_id).party()?.party_leader;
+    ecs.db.entities().id().find(leader).is_some().then_some(leader)
+}
+
 /// Order-insensitive multiset equality over asset id lists: two id lists
 /// hold the same gear regardless of ordering.
 fn armament_multisets_match(a: &[u32], b: &[u32]) -> bool {
@@ -1448,6 +1506,9 @@ pub fn execute_all_systems(ecs: Ecs) {
     // Repair party leaders (0 or since-deleted) before anything keys off party
     // membership — map instances and their live-condition are party-scoped.
     party_leader_sanitation_system(ecs);
+    // Then seat any player whose room doesn't exist (new player or voided out)
+    // at their checkpoint — with a now-valid leader to own the party's instance.
+    player_location_sanitation_system(ecs);
     configuration_sanitation_system(ecs);
     equipment_reconciliation_system(ecs);
     gear_location_system(ecs);
@@ -1468,7 +1529,6 @@ pub fn execute_all_systems(ecs: Ecs) {
     entity_stats_system(ecs);
     player_provision_system(ecs);
     visited_location_system(ecs);
-    player_activation_system(ecs);
     map_demand_system(ecs);
     enemy_control_system(ecs);
 }

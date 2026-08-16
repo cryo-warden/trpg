@@ -22,8 +22,12 @@ use crate::entity::*;
 use ecs::Ecs;
 use spacetimedb::rand::{rngs::StdRng, seq::SliceRandom, SeedableRng};
 
-pub fn materialize_map(ecs: Ecs, map: &LocationMap) -> Result<MapGenerationResult, String> {
-    let mut result = map.generate_entities(ecs)?;
+pub fn materialize_map(
+    ecs: Ecs,
+    map: &LocationMap,
+    party_leader: u64,
+) -> Result<MapGenerationResult, String> {
+    let mut result = map.generate_entities(ecs, party_leader)?;
     crate::quest::apply_quest_room_claims(ecs, map, &mut result)?;
     crate::quest::apply_quest_spawns(ecs, map, &mut result)?;
     apply_encounters(ecs, map, &result)?;

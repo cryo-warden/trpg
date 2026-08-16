@@ -1,0 +1,1 @@
+"Room whose instance is gone -> cleaned; entity whose location is gone -> player relocated / non-player cleaned; path whose destination is gone -> deleted. Silent (spill-free) delete path, ordered so each system's deletion is the next's detected condition."

@@ -1,0 +1,1 @@
+"Edge/Branch anchors used len()-1 as the half-open upper bound, so the last room was never a valid anchor. DONE commit 2276024."
