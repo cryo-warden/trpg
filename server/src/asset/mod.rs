@@ -199,6 +199,8 @@ fn resolve_entity_blob(
         hp_share: None,
         // Transient per-tick state; never authored, cleared each transaction.
         hp_share_applied: None,
+        // Party membership is granted at player creation, not authored on a blob.
+        party: None,
         allegiance: author.allegiance,
         baseline: author
             .baseline_name

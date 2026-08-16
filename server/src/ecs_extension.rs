@@ -92,13 +92,18 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // allegiance as a Named selector), so instantiation needs nothing
         // beyond an empty scope. Dirty flags follow automatically from the
         // blob's component mutations.
-        Ok(self
+        let player = self
             .new()
             .instantiate_blob(
                 self.get_new_player_blob()
                     .ok_or("Failed to obtain the new player entity blob.")?,
                 &self.instantiation_scope(),
             )?
-            .upsert_new_player_controller(account_id))
+            .upsert_new_player_controller(account_id);
+        // party_leader starts at 0 (no live entity); party_leader_sanitation_system
+        // repoints it at the player itself, so a lone player is their own leader.
+        // Added on a fresh handle so new_player's return type stays unchanged.
+        self.find(player.entity_id()).upsert_new_party(0);
+        Ok(player)
     }
 }

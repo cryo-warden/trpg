@@ -1274,6 +1274,29 @@ pub fn configuration_sanitation_system(ecs: Ecs) {
     }
 }
 
+/// INVARIANT: a party's leader is always a live entity. New players are created
+/// with party_leader = 0 (no leader yet); this repoints any leader that isn't a
+/// live entity — 0, or a leader since cleaned up — at the party member itself. So
+/// a lone player is their own leader and downstream code keys off one entity id
+/// with no "solo vs group" branch. (Two-pass to avoid mutating the table under
+/// its own iterator.)
+pub fn party_leader_sanitation_system(ecs: Ecs) {
+    let mut orphaned: Vec<u64> = Vec::new();
+    for p in ecs.iter_party() {
+        let handle = p.into_handle();
+        let Some(party) = handle.party() else {
+            continue;
+        };
+        if ecs.db.entities().id().find(party.party_leader).is_some() {
+            continue;
+        }
+        orphaned.push(handle.entity_id());
+    }
+    for entity_id in orphaned {
+        ecs.find(entity_id).upsert_new_party(entity_id);
+    }
+}
+
 /// Order-insensitive multiset equality over asset id lists: two id lists
 /// hold the same gear regardless of ordering.
 fn armament_multisets_match(a: &[u32], b: &[u32]) -> bool {
@@ -1422,6 +1445,9 @@ pub fn execute_all_systems(ecs: Ecs) {
     // reconciliation converges equipment toward the (now satisfiable)
     // intent, claiming the queue slot before this tick's actions shift —
     // the exact timing control system ordering buys us.
+    // Repair party leaders (0 or since-deleted) before anything keys off party
+    // membership — map instances and their live-condition are party-scoped.
+    party_leader_sanitation_system(ecs);
     configuration_sanitation_system(ecs);
     equipment_reconciliation_system(ecs);
     gear_location_system(ecs);

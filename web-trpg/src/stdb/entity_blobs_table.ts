@@ -17,6 +17,7 @@ import {
   HpShareComponentBlob,
   HpShareAppliedComponentBlob,
   AllegianceComponentBlob,
+  PartyComponentBlob,
   BaselineComponentBlob,
   TraitsComponentBlob,
   ActiveStanceComponentBlob,
@@ -77,6 +78,9 @@ export default __t.row({
   },
   get allegiance() {
     return __t.option(AllegianceComponentBlob);
+  },
+  get party() {
+    return __t.option(PartyComponentBlob);
   },
   get baseline() {
     return __t.option(BaselineComponentBlob);

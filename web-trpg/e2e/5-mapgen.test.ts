@@ -37,6 +37,7 @@ beforeAll(async () => {
       "SELECT * FROM enemy_controller_components",
       "SELECT * FROM hp_components",
       "SELECT * FROM hp_share_components",
+      "SELECT * FROM party_components",
     ]);
   await player.reducers.createAccount({ name: "explorer" });
 }, 60000);
@@ -64,6 +65,24 @@ test("new_player + map generation builds a room/path graph and places the player
 
   expect(player.db.path_components.count()).toBeGreaterThan(0);
 }, 40000);
+
+test("a new player is their own party leader (invariant repairs leader 0)", async () => {
+  // Players are created with party_leader = 0; party_leader_sanitation_system
+  // repoints any leader that isn't a live entity at the member itself. So a
+  // lone player ends up leading their own party — every party lookup keys off
+  // one entity id, no solo-vs-group branch.
+  await waitFor(() => player.db.player_controller_components.count() > 0, 30000);
+  const entityId = [
+    ...player.db.player_controller_components.iter(),
+  ][0].entityId;
+
+  const ownLeader = () =>
+    [...player.db.party_components.iter()].find(
+      (row) => row.entityId === entityId,
+    )?.partyLeader;
+  await waitFor(() => ownLeader() === entityId, 30000);
+  expect(ownLeader()).toBe(entityId);
+});
 
 test("generated paths receive a rolled variation feature", async () => {
   // The theme forces exactly one variation (test_winding) onto every

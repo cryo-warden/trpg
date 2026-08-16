@@ -584,6 +584,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get allegiance() {
     return __t.option(AllegianceComponentBlob);
   },
+  get party() {
+    return __t.option(PartyComponentBlob);
+  },
   get baseline() {
     return __t.option(BaselineComponentBlob);
   },
@@ -1384,6 +1387,19 @@ export const NamedTraitPaletteAsset = __t.object("NamedTraitPaletteAsset", {
   },
 });
 export type NamedTraitPaletteAsset = __Infer<typeof NamedTraitPaletteAsset>;
+
+export const PartyComponent = __t.object("PartyComponent", {
+  entityId: __t.u64(),
+  partyLeader: __t.u64(),
+});
+export type PartyComponent = __Infer<typeof PartyComponent>;
+
+export const PartyComponentBlob = __t.object("PartyComponentBlob", {
+  get partyLeader() {
+    return EntityIdSelector;
+  },
+});
+export type PartyComponentBlob = __Infer<typeof PartyComponentBlob>;
 
 export const PathBlobPair = __t.object("PathBlobPair", {
   get forward() {

@@ -105,6 +105,19 @@ entity!(
         pub allegiance_entity_id: EntityId,
     }
 
+    // On a PLAYER: which party they belong to, NAMED BY ITS LEADER entity. A
+    // lone player leads their own party (party_leader == self), so map instances
+    // and every lookup key off one entity id — no "solo vs group" branch anywhere.
+    // New players are created with party_leader = 0; party_leader_sanitation_system
+    // enforces the invariant that a leader is always a live entity, repointing any
+    // dangling leader (0, or one since cleaned up) at the member itself. The btree
+    // answers "which players share leader L" for the map live-condition.
+    #[component(party in party_components)]
+    struct PartyComponent {
+        #[index(btree)]
+        pub party_leader: EntityId,
+    }
+
     #[component(baseline in baseline_components, dirties(total_stat_block_dirty_flag))]
     struct BaselineComponent {
         pub baseline_id: u32,

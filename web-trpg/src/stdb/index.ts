@@ -114,6 +114,7 @@ import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
 import OfferedActionsComponentsRow from "./offered_actions_components_table";
 import OpenComponentsRow from "./open_components_table";
+import PartyComponentsRow from "./party_components_table";
 import PathBlockerComponentsRow from "./path_blocker_components_table";
 import PathComponentsRow from "./path_components_table";
 import PendingConnectionsComponentsRow from "./pending_connections_components_table";
@@ -836,6 +837,20 @@ const tablesSchema = __schema({
       { name: 'open_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, OpenComponentsRow),
+  party_components: __table({
+    name: 'party_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'party_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+      { accessor: 'party_leader', name: 'party_components_party_leader_idx_btree', algorithm: 'btree', columns: [
+        'partyLeader',
+      ] },
+    ],
+    constraints: [
+      { name: 'party_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, PartyComponentsRow),
   path_blocker_components: __table({
     name: 'path_blocker_components',
     indexes: [
