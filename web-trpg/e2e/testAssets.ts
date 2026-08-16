@@ -43,6 +43,7 @@ const emptyPack = (): AssetPack => ({
   appearanceFeatures: [],
   baselines: [],
   traits: [],
+  traitPalettes: [],
   armaments: [],
   armors: [],
   relics: [],
@@ -179,6 +180,46 @@ export const mapGenPack = (): AssetPack => ({
         exclusionGroup: undefined,
       },
     },
+    { name: "test_v1_mark", value: { text: "v1", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
+    { name: "test_v2_mark", value: { text: "v2", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
+    { name: "test_v3_mark", value: { text: "v3", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
+  ],
+  // A differentiable pack: three creatures sharing a palette of three distinct
+  // variety traits, forced to exactly one each — so the pack must come out with
+  // three DISTINCT marks (the distinct-across-pack draw).
+  traits: [
+    { name: "test_v1", value: statBlock({ appearanceFeatureNames: ["test_v1_mark"] }) },
+    { name: "test_v2", value: statBlock({ appearanceFeatureNames: ["test_v2_mark"] }) },
+    { name: "test_v3", value: statBlock({ appearanceFeatureNames: ["test_v3_mark"] }) },
+  ],
+  traitPalettes: [
+    {
+      name: "test_variety",
+      value: {
+        traitNames: ["test_v1", "test_v2", "test_v3"],
+        countWeights: new Uint8Array([0, 1]),
+      },
+    },
+  ],
+  encounterBlobs: [
+    {
+      name: "test_pack_categoric",
+      value: blob({
+        enemyController: {},
+        appliesStatBlock: {},
+        differentiable: { traitPaletteName: "test_variety" },
+      }),
+    },
+    { name: "test_creature", value: blob({ baselineName: "test_human" }) },
+  ],
+  encounters: [
+    {
+      name: "test_pack",
+      value: {
+        categoricBlobName: "test_pack_categoric",
+        blobNames: ["test_creature", "test_creature", "test_creature"],
+      },
+    },
   ],
   locationMapThemes: [
     {
@@ -228,9 +269,9 @@ export const mapGenPack = (): AssetPack => ({
         extraRoomCount: 0,
         mainRoomCount: 3,
         loopCount: 1,
-        encounterNamesSampler: [],
-        minEncounterCount: 0,
-        maxEncounterCount: 0,
+        encounterNamesSampler: [{ weight: 1, name: "test_pack" }],
+        minEncounterCount: 1,
+        maxEncounterCount: 2,
         minHiddenRoomCount: 0,
         maxHiddenRoomCount: 0,
         questSpawns: [],

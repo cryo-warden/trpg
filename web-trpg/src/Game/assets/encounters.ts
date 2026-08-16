@@ -30,11 +30,18 @@ export const ENCOUNTER_BLOBS = {
     stanceName: "striding",
   }),
   rat: blob({ baselineName: "rat", stanceName: "standing" }),
-  wolf: blob({ baselineName: "wolf", stanceName: "striding" }),
+  // Wolves draw distinct variety traits per pack (brawny/rangy/scrawny/
+  // scarred), so a pack reads as individuals instead of "wolf 1-4".
+  wolf: blob({
+    baselineName: "wolf",
+    stanceName: "striding",
+    differentiable: { traitPaletteName: "wolf_variety" },
+  }),
   wolfBig: blob({
     baselineName: "wolf",
     stanceName: "striding",
     traitNames: ["big"],
+    differentiable: { traitPaletteName: "wolf_variety" },
   }),
   // Bandits and skeletons fight with what they carry: the armament grants
   // the attack, the stance shapes the fight.

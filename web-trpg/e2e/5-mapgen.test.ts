@@ -34,6 +34,7 @@ beforeAll(async () => {
       "SELECT * FROM named_entities",
       "SELECT * FROM appearance_features",
       "SELECT * FROM appearance_features_components",
+      "SELECT * FROM enemy_controller_components",
     ]);
   await player.reducers.createAccount({ name: "explorer" });
 }, 60000);
@@ -85,6 +86,42 @@ test("generated paths receive a rolled variation feature", async () => {
   await waitFor(pathCarriesWinding, 30000);
   expect(pathCarriesWinding()).toBe(true);
 }, 40000);
+
+test("a differentiable pack spawns with distinct variety traits", async () => {
+  // The palette forces exactly one of three distinct variety traits onto each
+  // of three co-spawned members, so the pack must end up carrying three
+  // DISTINCT marks — proof the draw differentiates instead of cloning.
+  await waitFor(() => player.db.appearance_features.count() > 0, 30000);
+  const markIndexes = new Set(
+    [...player.db.appearance_features.iter()]
+      .filter((row) =>
+        ["test_v1_mark", "test_v2_mark", "test_v3_mark"].includes(row.name),
+      )
+      .map((row) => row.index),
+  );
+  expect(markIndexes.size).toBe(3);
+
+  await waitFor(
+    () => player.db.enemy_controller_components.count() >= 3,
+    30000,
+  );
+  const packIds = new Set(
+    [...player.db.enemy_controller_components.iter()].map((r) => r.entityId),
+  );
+
+  const distinctMarksOnPack = () => {
+    const seen = new Set<number>();
+    for (const row of player.db.appearance_features_components.iter()) {
+      if (!packIds.has(row.entityId)) continue;
+      for (const index of row.appearanceFeatureIndexes) {
+        if (markIndexes.has(index)) seen.add(index);
+      }
+    }
+    return seen;
+  };
+  await waitFor(() => distinctMarksOnPack().size >= 3, 30000);
+  expect(distinctMarksOnPack().size).toBe(3);
+});
 
 test("the new player's allegiance resolved through the Named selector", async () => {
   const entityId = [

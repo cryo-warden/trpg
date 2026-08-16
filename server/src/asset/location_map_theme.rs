@@ -166,7 +166,7 @@ impl LocationMapTheme {
 
 /// Pick an index into `weights` with probability proportional to its weight.
 /// An all-zero (or empty) slice yields 0.
-fn weighted_index(weights: &[u8], rng: &mut StdRng) -> usize {
+pub(crate) fn weighted_index(weights: &[u8], rng: &mut StdRng) -> usize {
     let total: u32 = weights.iter().map(|w| u32::from(*w)).sum();
     if total == 0 {
         return 0;
@@ -186,7 +186,7 @@ fn weighted_index(weights: &[u8], rng: &mut StdRng) -> usize {
 /// group (via `group_of`) was already taken — so a pick never pairs opposites
 /// or redundants. Groupless ids always take. Pure over its group lookup so
 /// the selection rule is unit-testable without a database.
-fn pick_distinct_group(
+pub(crate) fn pick_distinct_group(
     mut pool: Vec<u32>,
     count: usize,
     group_of: impl Fn(u32) -> Option<String>,

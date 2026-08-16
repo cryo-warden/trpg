@@ -230,6 +230,17 @@ entity!(
         pub checkpoint_index: u32,
     }
 
+    // OPT-IN to variety and differentiation: points at a reusable trait
+    // PALETTE (see TraitPalette) — the set of traits eligible to be drawn onto
+    // this entity. At spawn, co-located members sharing a palette draw DISTINCT
+    // trait subsets, so a pack reads as "a brawny wolf, a rangy wolf, a scarred
+    // wolf" instead of "wolf 1-4". An explicit per-entity opt-in so players and
+    // unique NPCs are never differentiated by accident.
+    #[component(differentiable in differentiable_components)]
+    struct DifferentiableComponent {
+        pub trait_palette_id: u32,
+    }
+
     // A generated map instance's identity: which map ASSET it realizes.
     #[component(map_instance in map_instance_components)]
     struct MapInstanceComponent {

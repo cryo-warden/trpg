@@ -22,6 +22,13 @@ export const TRAITS = {
   // over any other.
   skeletal: statBlock({ appearanceFeatureNames: ["skeleton", "skeletal"] }),
   zombie: statBlock({ appearanceFeatureNames: ["zombie", "zombieLike"] }),
+  // Enemy variety traits, signed so a pack's expected stats stay flat: brawny
+  // (+hp) is balanced by scrawny (-hp), rangy trades a step of speed, scarred
+  // is flavor only. Drawn distinctly across a pack via a trait palette.
+  brawny: statBlock({ mhp: 2, appearanceFeatureNames: ["brawny"] }),
+  rangy: statBlock({ gait: 1, appearanceFeatureNames: ["rangy"] }),
+  scrawny: statBlock({ mhp: -2, appearanceFeatureNames: ["scrawny"] }),
+  scarred: statBlock({ appearanceFeatureNames: ["scarred"] }),
   vampire: statBlock({ appearanceFeatureNames: ["vampiric"] }),
   ghost: statBlock({ appearanceFeatureNames: ["ghostly"] }),
   fire_nature: statBlock({ appearanceFeatureNames: ["fiery"] }),

@@ -297,6 +297,9 @@ export const AssetPack = __t.object("AssetPack", {
   get traits() {
     return __t.array(NamedStatBlockAsset);
   },
+  get traitPalettes() {
+    return __t.array(NamedTraitPaletteAsset);
+  },
   get armaments() {
     return __t.array(NamedStatBlockAsset);
   },
@@ -477,6 +480,22 @@ export const DefeatDropComponentBlob = __t.object("DefeatDropComponentBlob", {
 });
 export type DefeatDropComponentBlob = __Infer<typeof DefeatDropComponentBlob>;
 
+export const DifferentiableAsset = __t.object("DifferentiableAsset", {
+  traitPaletteName: __t.string(),
+});
+export type DifferentiableAsset = __Infer<typeof DifferentiableAsset>;
+
+export const DifferentiableComponent = __t.object("DifferentiableComponent", {
+  entityId: __t.u64(),
+  traitPaletteId: __t.u32(),
+});
+export type DifferentiableComponent = __Infer<typeof DifferentiableComponent>;
+
+export const DifferentiableComponentBlob = __t.object("DifferentiableComponentBlob", {
+  traitPaletteId: __t.u32(),
+});
+export type DifferentiableComponentBlob = __Infer<typeof DifferentiableComponentBlob>;
+
 export const Encounter = __t.object("Encounter", {
   id: __t.u32(),
   name: __t.string(),
@@ -640,6 +659,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
+  get differentiable() {
+    return __t.option(DifferentiableComponentBlob);
+  },
   get mapInstance() {
     return __t.option(MapInstanceComponentBlob);
   },
@@ -771,6 +793,9 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   },
   get appliesStatBlock() {
     return __t.option(FlagComponentBlob);
+  },
+  get differentiable() {
+    return __t.option(DifferentiableAsset);
   },
   get checkpointObject() {
     return __t.option(FlagComponentBlob);
@@ -1326,6 +1351,14 @@ export const NamedStatBlockAsset = __t.object("NamedStatBlockAsset", {
 });
 export type NamedStatBlockAsset = __Infer<typeof NamedStatBlockAsset>;
 
+export const NamedTraitPaletteAsset = __t.object("NamedTraitPaletteAsset", {
+  name: __t.string(),
+  get value() {
+    return TraitPaletteAsset;
+  },
+});
+export type NamedTraitPaletteAsset = __Infer<typeof NamedTraitPaletteAsset>;
+
 export const PathBlobPair = __t.object("PathBlobPair", {
   get forward() {
     return EntityBlob;
@@ -1825,6 +1858,20 @@ export const Trait = __t.object("Trait", {
   },
 });
 export type Trait = __Infer<typeof Trait>;
+
+export const TraitPalette = __t.object("TraitPalette", {
+  id: __t.u32(),
+  name: __t.string(),
+  traitIds: __t.array(__t.u32()),
+  countWeights: __t.byteArray(),
+});
+export type TraitPalette = __Infer<typeof TraitPalette>;
+
+export const TraitPaletteAsset = __t.object("TraitPaletteAsset", {
+  traitNames: __t.array(__t.string()),
+  countWeights: __t.byteArray(),
+});
+export type TraitPaletteAsset = __Infer<typeof TraitPaletteAsset>;
 
 export const TraitsComponent = __t.object("TraitsComponent", {
   entityId: __t.u64(),

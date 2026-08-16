@@ -149,6 +149,13 @@ export const APPEARANCE_FEATURES = {
   narrow: adjective("narrow", 1000, "width"),
   large: adjective("large", 1000),
   hazy: adjective("hazy", 1000),
+  // Enemy variety adjectives. Build (brawny/rangy/scrawny) is one exclusion
+  // group so a single creature never reads as two builds; scarred is flavor
+  // that stacks with any build.
+  brawny: adjective("brawny", 1000, "build"),
+  rangy: adjective("rangy", 1000, "build"),
+  scrawny: adjective("scrawny", 1000, "build"),
+  scarred: adjective("scarred", 1000),
   tiny: adjective("tiny", 1000),
   small: adjective("small", 900),
   big: adjective("big", 900),

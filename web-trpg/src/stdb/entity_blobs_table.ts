@@ -28,6 +28,7 @@ import {
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
   CheckpointComponentBlob,
+  DifferentiableComponentBlob,
   MapInstanceComponentBlob,
   MapCheckpointsComponentBlob,
   MapRoomsComponentBlob,
@@ -149,6 +150,9 @@ export default __t.row({
   },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
+  },
+  get differentiable() {
+    return __t.option(DifferentiableComponentBlob);
   },
   get mapInstance() {
     return __t.option(MapInstanceComponentBlob).name("map_instance");

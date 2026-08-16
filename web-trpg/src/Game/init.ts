@@ -16,6 +16,7 @@ import {
 import { QUESTS } from "./assets/quests";
 import { STANCES } from "./assets/stances";
 import { TRAITS } from "./assets/traits";
+import { TRAIT_PALETTES } from "./assets/trait_palettes";
 
 /** Pushes the production asset pack. Admin-gated server-side: only an
  * attached, rotated admin account may call this — clients never push
@@ -29,6 +30,7 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       appearanceFeatures: namedPairs(APPEARANCE_FEATURES),
       baselines: namedPairs(BASELINES),
       traits: namedPairs(TRAITS),
+      traitPalettes: namedPairs(TRAIT_PALETTES),
       armaments: namedPairs(ARMAMENTS),
       armors: namedPairs(ARMORS),
       relics: namedPairs(RELICS),

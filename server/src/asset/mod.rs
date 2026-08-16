@@ -11,7 +11,7 @@ use crate::{
             EntityBlobAsset, EntityBlobsSamplerAsset, ItemRefAsset, NamedActionAsset,
             NamedAppearanceFeatureAsset, NamedEncounterAsset, NamedEntityBlobAsset,
             NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedQuestAsset,
-            NamedStanceAsset, NamedStatBlockAsset, StatBlockAsset,
+            NamedStanceAsset, NamedStatBlockAsset, NamedTraitPaletteAsset, StatBlockAsset,
         },
         quest::{quests, Quest},
         baseline::{baselines, Baseline},
@@ -27,6 +27,7 @@ use crate::{
         armament::{armaments, Armament},
         armor::{armors, Armor},
         r#trait::{traits, Trait},
+        trait_palette::{trait_palettes, TraitPalette},
         relic::{relics, Relic},
         stance::{special_stances, stances, SpecialStance, SpecialStanceKey, Stance},
         stat_block::StatBlock,
@@ -38,7 +39,7 @@ use crate::{
         traits_stat_block_dirty_flag_components,
         ActionsComponentBlob, ActiveStanceComponentBlob,
         AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
-        CheckpointBindingComponentBlob, EntityBlob,
+        CheckpointBindingComponentBlob, DifferentiableComponentBlob, EntityBlob,
         EquipmentComponentBlob, FindEntityHandle, FlagComponent, InstantiateEntityBlob,
         ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
         RemainsComponentBlob, TraitsComponentBlob,
@@ -59,6 +60,7 @@ pub mod rng_range;
 pub mod stance;
 pub mod stat_block;
 pub mod r#trait;
+pub mod trait_palette;
 pub mod weighted_sampler;
 
 #[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
@@ -82,6 +84,7 @@ pub struct AssetPack {
     appearance_features: Vec<NamedAppearanceFeatureAsset>,
     baselines: Vec<NamedStatBlockAsset>,
     traits: Vec<NamedStatBlockAsset>,
+    trait_palettes: Vec<NamedTraitPaletteAsset>,
     armaments: Vec<NamedStatBlockAsset>,
     armors: Vec<NamedStatBlockAsset>,
     relics: Vec<NamedStatBlockAsset>,
@@ -169,6 +172,7 @@ struct AssetNameMaps {
     appearance_features: HashMap<String, u32>,
     baselines: HashMap<String, u32>,
     traits: HashMap<String, u32>,
+    trait_palettes: HashMap<String, u32>,
     armaments: HashMap<String, u32>,
     armors: HashMap<String, u32>,
     relics: HashMap<String, u32>,
@@ -420,6 +424,18 @@ fn resolve_entity_blob(
         // block applied (HP/EP/attack/actions). Baseline/trait-bearing
         // scenery without it stays inert.
         applies_stat_block: author.applies_stat_block,
+        differentiable: author
+            .differentiable
+            .map(|d| {
+                Ok::<_, String>(DifferentiableComponentBlob {
+                    trait_palette_id: resolve_name(
+                        &maps.trait_palettes,
+                        "trait palette",
+                        &d.trait_palette_name,
+                    )?,
+                })
+            })
+            .transpose()?,
         // Stamped by the quest room-claim application, never authored.
         defeat_drop: None,
         location_map: None,
@@ -573,6 +589,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.traits().iter().map(|t| (t.name, t.id)),
             asset_pack.traits.iter().map(|t| &t.name),
         )?,
+        trait_palettes: match_names(
+            "trait palette",
+            ctx.db.trait_palettes().iter().map(|p| (p.name, p.id)),
+            asset_pack.trait_palettes.iter().map(|p| &p.name),
+        )?,
         armaments: match_names(
             "armament",
             ctx.db.armaments().iter().map(|a| (a.name, a.id)),
@@ -687,6 +708,26 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.traits().id().update(row);
         } else {
             ctx.db.traits().insert(row);
+        }
+    }
+
+    for p in asset_pack.trait_palettes {
+        let id = maps.trait_palettes[&p.name];
+        let row = TraitPalette {
+            id,
+            name: p.name,
+            trait_ids: p
+                .value
+                .trait_names
+                .iter()
+                .map(|n| resolve_name(&maps.traits, "trait", n))
+                .collect::<Result<_, _>>()?,
+            count_weights: p.value.count_weights,
+        };
+        if ctx.db.trait_palettes().id().find(id).is_some() {
+            ctx.db.trait_palettes().id().update(row);
+        } else {
+            ctx.db.trait_palettes().insert(row);
         }
     }
 

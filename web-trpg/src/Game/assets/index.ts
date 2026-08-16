@@ -13,6 +13,7 @@ import {
 } from "./location_maps";
 import { STANCES } from "./stances";
 import { TRAITS } from "./traits";
+import { TRAIT_PALETTES } from "./trait_palettes";
 
 // The TS assets ARE the generated wire types, authored as Records keyed by
 // canonical name. The client never converts a name to an id — the server
@@ -36,6 +37,7 @@ export const assets = {
   appearanceFeatures: APPEARANCE_FEATURES,
   baselines: BASELINES,
   traits: TRAITS,
+  traitPalettes: TRAIT_PALETTES,
   armaments: ARMAMENTS,
   armors: ARMORS,
   relics: RELICS,

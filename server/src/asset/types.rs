@@ -153,6 +153,20 @@ pub struct QuestItemRefAsset {
     pub index: u32,
 }
 
+/// A reusable set of eligible traits (by NAME) and how many to draw, resolved
+/// to a TraitPalette at push. NOT an object pool — a palette to draw from.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct TraitPaletteAsset {
+    pub trait_names: Vec<String>,
+    pub count_weights: Vec<u8>,
+}
+
+/// The authored form of the differentiable opt-in: the trait palette by NAME.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct DifferentiableAsset {
+    pub trait_palette_name: String,
+}
+
 /// The authored form of an entity blob: components whose fields reference
 /// other assets are authored by NAME, and only push_assets resolves them to
 /// the integer ids stored in the real EntityBlob. Runtime-state components
@@ -191,6 +205,8 @@ pub struct EntityBlobAsset {
     /// their HP/EP/attack/actions applied by the stat pipeline. Baseline/
     /// trait-bearing scenery without it stays inert (see FlagComponent).
     pub applies_stat_block: Option<FlagComponentBlob>,
+    /// Opt-in to variety/differentiation: the trait palette to draw from.
+    pub differentiable: Option<DifferentiableAsset>,
     /// Marks the entity as attunable fortune-telling scenery.
     pub checkpoint_object: Option<FlagComponentBlob>,
     /// The abstract destination attuning to this object binds: a map by
@@ -385,6 +401,7 @@ secador::secador!(
         (EncounterAsset, NamedEncounterAsset),
         (LocationMapThemeAsset, NamedLocationMapThemeAsset),
         (LocationMapAsset, NamedLocationMapAsset),
+        (TraitPaletteAsset, NamedTraitPaletteAsset),
     ],
     {
         seca!(1);

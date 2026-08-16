@@ -1,11 +1,22 @@
 use ecs::Ecs;
-use spacetimedb::table;
+use spacetimedb::{
+    rand::{rngs::StdRng, Rng, SeedableRng},
+    table,
+};
+use std::collections::{HashMap, HashSet};
 
 use crate::{
+    appearance::appearance_features,
+    asset::{
+        location_map_theme::{pick_distinct_group, weighted_index},
+        r#trait::traits,
+        trait_palette::trait_palettes,
+    },
     ecs_extension::EcsExtension,
     entity::{
-        EntityBlob, EntityHandle, InstantiateEntityBlob, LocationKind, NewEntityHandle,
-        WithEntityHandle, __location__Option,
+        EntityBlob, EntityHandle, FindEntityHandle, InstantiateEntityBlob, LocationKind,
+        NewEntityHandle, WithEntityHandle, __differentiable__OptionGet, __location__Option,
+        __traits__Option, __traits__OptionGet,
     },
 };
 
@@ -58,6 +69,80 @@ impl Encounter {
                 spawn.upsert_new_location(room.entity_id(), LocationKind::Interior);
             }
         }
+        apply_variety(ecs, &spawned_entity_ids);
         Ok(spawned_entity_ids)
+    }
+}
+
+/// Draw DISTINCT variety traits onto the just-spawned members that opted in
+/// (a differentiable component). Members sharing a palette differ from EACH
+/// OTHER where the palette is large enough — a pack reads as individuals, not
+/// "wolf 1-4" — while WITHIN one member an exclusion group never repeats (no
+/// "brawny runt"). Opposite-group traits ACROSS members are welcome (the
+/// leader and the runt). Appearance-only or stat-bearing, per the palette.
+fn apply_variety(ecs: Ecs, entity_ids: &[u64]) {
+    let mut by_palette: HashMap<u32, Vec<u64>> = HashMap::new();
+    for &entity_id in entity_ids {
+        if let Some(d) = ecs.find(entity_id).differentiable() {
+            by_palette.entry(d.trait_palette_id).or_default().push(entity_id);
+        }
+    }
+    if by_palette.is_empty() {
+        return;
+    }
+    // Anchor picks need no cross-tick determinism; seed from the tick's rng.
+    let mut rng = StdRng::seed_from_u64(ecs.rng().gen::<u64>());
+    for (palette_id, members) in by_palette {
+        let Some(palette) = ecs.db.trait_palettes().id().find(palette_id) else {
+            continue;
+        };
+        if palette.trait_ids.is_empty() || palette.count_weights.is_empty() {
+            continue;
+        }
+        // A trait's variety group is its first appearance feature's exclusion
+        // group (brawny/runt share "build"), so a single member never draws
+        // two of the same axis.
+        let group_of = |trait_id: u32| -> Option<String> {
+            let t = ecs.db.traits().id().find(trait_id)?;
+            let feature_id = *t.stat_block.appearance_feature_ids.first()?;
+            ecs.db
+                .appearance_features()
+                .index()
+                .find(feature_id)?
+                .exclusion_group
+        };
+        let mut used_across_pack: HashSet<u32> = HashSet::new();
+        for entity_id in members {
+            let count = weighted_index(&palette.count_weights, &mut rng);
+            if count == 0 {
+                continue;
+            }
+            // Prefer traits not yet used in this pack (so members differ),
+            // falling back to the full set when that would run dry.
+            let fresh: Vec<u32> = palette
+                .trait_ids
+                .iter()
+                .copied()
+                .filter(|id| !used_across_pack.contains(id))
+                .collect();
+            let candidates = if fresh.len() >= count {
+                fresh
+            } else {
+                palette.trait_ids.clone()
+            };
+            let chosen = pick_distinct_group(candidates, count, &group_of, &mut rng);
+            if chosen.is_empty() {
+                continue;
+            }
+            let entity = ecs.find(entity_id);
+            let mut trait_ids = entity.traits().map(|t| t.trait_ids).unwrap_or_default();
+            for id in chosen {
+                used_across_pack.insert(id);
+                if !trait_ids.contains(&id) {
+                    trait_ids.push(id);
+                }
+            }
+            entity.upsert_new_traits(trait_ids);
+        }
     }
 }
