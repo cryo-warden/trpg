@@ -152,30 +152,52 @@ export const BASELINES = {
     actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["wisp"],
   }),
-  // BODILESS BODIES. A path or a differentiable item takes its whole look
-  // through the stat pipeline — its base noun is a baseline and any adjectives
-  // are traits, the same way a creature is a body plus traits. These carry no
-  // stats at all: with max HP 0 the pool guard gives them no HP, so they show
-  // their adjectives yet stay un-attackable. (Inert scenery that never
-  // computes still authors its features directly; lightweight objects that
-  // just need durability author an hp component, no baseline.)
-  trail: statBlock({ appearanceFeatureNames: ["trail"] }),
-  path: statBlock({ appearanceFeatureNames: ["path"] }),
-  opening: statBlock({ appearanceFeatureNames: ["opening"] }),
-  hole: statBlock({ appearanceFeatureNames: ["hole"] }),
-  chasm: statBlock({ appearanceFeatureNames: ["chasm"] }),
-  rock_wall: statBlock({ appearanceFeatureNames: ["rock_wall"] }),
-  crack: statBlock({ appearanceFeatureNames: ["crack"] }),
-  archway: statBlock({ appearanceFeatureNames: ["archway"] }),
-  gate: statBlock({ appearanceFeatureNames: ["gate"] }),
-  corridor: statBlock({ appearanceFeatureNames: ["corridor"] }),
-  stair: statBlock({ appearanceFeatureNames: ["stair"] }),
-  cave_mouth: statBlock({ appearanceFeatureNames: ["cave_mouth"] }),
-  // Differentiable armory pieces: the noun is a baseline, the rolled
-  // condition (rusty/gleaming/…) a trait.
-  sword: statBlock({ appearanceFeatureNames: ["sword"] }),
-  shield: statBlock({ appearanceFeatureNames: ["shield"] }),
-  staff: statBlock({ appearanceFeatureNames: ["staff"] }),
+  // STRUCTURAL FEATURES. A path is a physical crossing: its noun is a baseline
+  // and any adjectives are traits, the same way a creature is a body plus
+  // traits. Tough — high HP and defense — so a beginner can't casually collapse
+  // a corridor; but not indestructible, so a crack smashed hard enough caves
+  // in. Paired directions share HP (an HpShare linked at generation), so
+  // breaking one collapses both.
+  trail: statBlock({ appearanceFeatureNames: ["trail"], mhp: 40, defense: 8 }),
+  path: statBlock({ appearanceFeatureNames: ["path"], mhp: 40, defense: 8 }),
+  opening: statBlock({ appearanceFeatureNames: ["opening"], mhp: 40, defense: 8 }),
+  hole: statBlock({ appearanceFeatureNames: ["hole"], mhp: 40, defense: 8 }),
+  chasm: statBlock({ appearanceFeatureNames: ["chasm"], mhp: 40, defense: 8 }),
+  rock_wall: statBlock({ appearanceFeatureNames: ["rock_wall"], mhp: 40, defense: 8 }),
+  crack: statBlock({ appearanceFeatureNames: ["crack"], mhp: 40, defense: 8 }),
+  archway: statBlock({ appearanceFeatureNames: ["archway"], mhp: 40, defense: 8 }),
+  gate: statBlock({ appearanceFeatureNames: ["gate"], mhp: 40, defense: 8 }),
+  corridor: statBlock({ appearanceFeatureNames: ["corridor"], mhp: 40, defense: 8 }),
+  stair: statBlock({ appearanceFeatureNames: ["stair"], mhp: 40, defense: 8 }),
+  cave_mouth: statBlock({ appearanceFeatureNames: ["cave_mouth"], mhp: 40, defense: 8 }),
+  // Differentiable armory pieces: the noun is a baseline, the rolled condition
+  // (rusty/gleaming/…) a trait. Small breakable objects you would sooner take
+  // than smash.
+  sword: statBlock({ appearanceFeatureNames: ["sword"], mhp: 8, defense: 2 }),
+  shield: statBlock({ appearanceFeatureNames: ["shield"], mhp: 8, defense: 2 }),
+  staff: statBlock({ appearanceFeatureNames: ["staff"], mhp: 8, defense: 2 }),
+  // SCENERY. A physical object is a baseline (the noun) plus, where the name
+  // carries an adjective, a trait — its look and its stats from one place, like
+  // a creature. Most scenery is far tougher than any beginner or early monster;
+  // soft things still keep a point of defense. Broken, it leaves debris.
+  rock: statBlock({ appearanceFeatureNames: ["rock"], mhp: 25, defense: 5 }),
+  stone: statBlock({ appearanceFeatureNames: ["stone"], mhp: 25, defense: 5 }),
+  boulder: statBlock({ appearanceFeatureNames: ["boulder"], mhp: 25, defense: 5 }),
+  tree: statBlock({ appearanceFeatureNames: ["tree"], mhp: 25, defense: 5 }),
+  rubble: statBlock({ appearanceFeatureNames: ["rubble"], mhp: 25, defense: 5 }),
+  brazier: statBlock({ appearanceFeatureNames: ["brazier"], mhp: 25, defense: 5 }),
+  pillar: statBlock({ appearanceFeatureNames: ["pillar"], mhp: 25, defense: 5 }),
+  altar: statBlock({ appearanceFeatureNames: ["altar"], mhp: 25, defense: 5 }),
+  stump: statBlock({ appearanceFeatureNames: ["stump"], mhp: 12, defense: 2 }),
+  log: statBlock({ appearanceFeatureNames: ["log"], mhp: 12, defense: 2 }),
+  banner: statBlock({ appearanceFeatureNames: ["banner"], mhp: 12, defense: 2 }),
+  bones: statBlock({ appearanceFeatureNames: ["bones"], mhp: 12, defense: 2 }),
+  grass: statBlock({ appearanceFeatureNames: ["grass"], mhp: 6, defense: 1 }),
+  campfire: statBlock({ appearanceFeatureNames: ["campfire"], mhp: 6, defense: 1 }),
+  bedroll: statBlock({ appearanceFeatureNames: ["bedroll"], mhp: 6, defense: 1 }),
+  // The practice dummy: made to be hit — modest HP, no defense so a beginner
+  // sees real damage. "training" rides as a trait.
+  dummy: statBlock({ appearanceFeatureNames: ["dummy"], mhp: 10, defense: 0 }),
 } satisfies Record<string, StatBlockAsset>;
 
 export type BaselineName = keyof typeof BASELINES;

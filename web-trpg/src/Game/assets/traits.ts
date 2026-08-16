@@ -39,6 +39,14 @@ export const TRAITS = {
   // Authored path adjective (not rolled): the crumbling stair wears it on
   // both directions.
   crumbling: statBlock({ appearanceFeatureNames: ["crumbling"] }),
+  // Scenery adjectives: the modifier half of a decoration's name (a mossy
+  // rock, a smoldering brazier), riding its noun baseline as a trait. Pure
+  // appearance — the object's durability lives on the baseline.
+  mossy: statBlock({ appearanceFeatureNames: ["mossy"] }),
+  smoldering: statBlock({ appearanceFeatureNames: ["smoldering"] }),
+  frozen: statBlock({ appearanceFeatureNames: ["frozen"] }),
+  crackling: statBlock({ appearanceFeatureNames: ["crackling"] }),
+  training: statBlock({ appearanceFeatureNames: ["training"] }),
   // Enemy variety traits, signed so a pack's expected stats stay flat: brawny
   // (+hp) is balanced by scrawny (-hp), rangy trades a step of speed, scarred
   // is flavor only. Drawn distinctly across a pack via a trait palette.

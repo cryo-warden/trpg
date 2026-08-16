@@ -64,7 +64,7 @@ test("new_player + map generation builds a room/path graph and places the player
 }, 40000);
 
 test("generated paths receive a rolled variation feature", async () => {
-  // The theme's pool forces exactly one variation (test_winding) onto every
+  // The theme forces exactly one variation (test_winding) onto every
   // path, so every generated path must carry that feature index.
   await waitFor(() => player.db.appearance_features.count() > 0, 30000);
   const windingIndex = [...player.db.appearance_features.iter()].find(

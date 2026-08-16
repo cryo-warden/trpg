@@ -169,11 +169,21 @@ export const mapGenPack = (): AssetPack => ({
       name: "test_human",
       value: statBlock({ attack: 1, mhp: 5, mep: 5 }),
     },
-    // A non-creature body: the differentiable decoration's base noun. Its
-    // whole look rides the appearance pipeline (baseline + variety trait).
+    // A scenery body: the differentiable decoration's base noun, with real
+    // durability. Its whole look rides the pipeline (baseline + variety trait).
     {
       name: "test_deco",
-      value: statBlock({ appearanceFeatureNames: ["test_deco_mark"] }),
+      value: statBlock({
+        appearanceFeatureNames: ["test_deco_mark"],
+        mhp: 20,
+        defense: 4,
+      }),
+    },
+    // A path body: tough, so generated paths don't collapse the moment their
+    // stat block computes.
+    {
+      name: "test_path",
+      value: statBlock({ mhp: 40, defense: 8 }),
     },
   ],
   appearanceFeatures: [
@@ -263,8 +273,14 @@ export const mapGenPack = (): AssetPack => ({
             {
               weight: 1,
               pair: {
-                forward: blob({ offeredActionNames: ["test_action"] }),
-                backward: blob({ offeredActionNames: ["test_action"] }),
+                forward: blob({
+                  baselineName: "test_path",
+                  offeredActionNames: ["test_action"],
+                }),
+                backward: blob({
+                  baselineName: "test_path",
+                  offeredActionNames: ["test_action"],
+                }),
               },
             },
           ],
@@ -1001,30 +1017,6 @@ export const combatPack = ({
   enemyHp = 10,
 }: { attackDamage?: number; enemyHp?: number } = {}): AssetPack => ({
   ...emptyPack(),
-  // A zero-stat trait + a marker feature: an entity carrying only this is
-  // routed through the stat pipeline (it resolves appearance) but sums to
-  // zero mhp/mep, so it must end up with NO HP component — never attackable.
-  appearanceFeatures: [
-    {
-      name: "test_inert_mark",
-      value: {
-        text: "inert",
-        appearanceFeatureType: { tag: "Noun" },
-        priority: 5000,
-        exclusionGroup: undefined,
-      },
-    },
-  ],
-  // A zero-stat trait carrying only a marker feature: an entity built from it
-  // goes through the stat pipeline (its appearance resolves) yet sums to zero
-  // max HP, so the pool guard leaves it with no HP component — exactly what the
-  // test checks.
-  traits: [
-    {
-      name: "test_inert",
-      value: statBlock({ appearanceFeatureNames: ["test_inert_mark"] }),
-    },
-  ],
   actions: [
     {
       name: "test_attack",
@@ -1063,16 +1055,6 @@ export const combatPack = ({
         accumulatedHealing: 0,
       },
       allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
-    }),
-    // A zero-stat trait bearer: the stat pipeline runs (its marker feature
-    // resolves onto its look, proving it computed) but sums to zero max HP,
-    // so the pool guard leaves it HP-less and un-attackable.
-    blob({
-      traitNames: ["test_inert"],
-      location: {
-        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-        kind: { tag: "Interior" },
-      },
     }),
   ],
 });

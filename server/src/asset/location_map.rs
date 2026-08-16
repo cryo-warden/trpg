@@ -148,6 +148,15 @@ fn merge_path_variation_traits(path: &EntityHandle, variation_trait_ids: &[u32])
     path.clone().upsert_new_traits(ids);
 }
 
+/// Link two paired paths so they share ONE fate: each carries an HpShare
+/// pointing at the other, and hp_share_system keeps their hp synced to the
+/// lower value. Smash one direction of a crossing and the other collapses with
+/// it — a crack broken through is a cave-in on both sides.
+fn link_hp_share(a: &EntityHandle, b: &EntityHandle) {
+    a.clone().upsert_new_hp_share(b.entity_id());
+    b.clone().upsert_new_hp_share(a.entity_id());
+}
+
 /// The room a ConnectionAnchor selects within a generated (or recorded)
 /// room layout, or None for an empty map.
 pub fn resolve_anchor_room(
@@ -294,8 +303,11 @@ impl LocationMap {
                 // One roll per pair, applied to both directions: a crossing
                 // reads the same coming and going.
                 let variations = theme.roll_path_variations(ecs, &mut rng);
-                merge_path_variation_traits(&ecs.new_path(forward, a, b)?, &variations);
-                merge_path_variation_traits(&ecs.new_path(backward, b, a)?, &variations);
+                let fwd = ecs.new_path(forward, a, b)?;
+                let bwd = ecs.new_path(backward, b, a)?;
+                merge_path_variation_traits(&fwd, &variations);
+                merge_path_variation_traits(&bwd, &variations);
+                link_hp_share(&fwd, &bwd);
             }
         }
 
@@ -318,9 +330,11 @@ impl LocationMap {
                 // The OUTBOUND direction (into the side room) is the
                 // pair's forward — the exploring direction; the way back
                 // wears its matched backward.
-                merge_path_variation_traits(&ecs.new_path(backward, a, b)?, &variations);
+                let inbound = ecs.new_path(backward, a, b)?;
                 let outbound = ecs.new_path(forward, b, a)?;
+                merge_path_variation_traits(&inbound, &variations);
                 merge_path_variation_traits(&outbound, &variations);
+                link_hp_share(&inbound, &outbound);
                 side_attachments.push(SideAttachment {
                     attach_room_entity_id: b,
                     outbound_path_entity_id: outbound.entity_id(),
@@ -351,6 +365,7 @@ impl LocationMap {
                     merge_path_variation_traits(&forward, &variations);
                     let backward = ecs.new_path(backward_blob, b, a)?;
                     merge_path_variation_traits(&backward, &variations);
+                    link_hp_share(&forward, &backward);
                     if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
                         let wall = ecs.new().instantiate_blob(
                             wall_blob.to_owned(),

@@ -575,6 +575,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get pathBlocker() {
     return __t.option(PathBlockerComponentBlob);
   },
+  get hpShare() {
+    return __t.option(HpShareComponentBlob);
+  },
   get allegiance() {
     return __t.option(AllegianceComponentBlob);
   },
@@ -933,6 +936,19 @@ export const HpComponentBlob = __t.object("HpComponentBlob", {
   accumulatedHealing: __t.i16(),
 });
 export type HpComponentBlob = __Infer<typeof HpComponentBlob>;
+
+export const HpShareComponent = __t.object("HpShareComponent", {
+  entityId: __t.u64(),
+  partnerEntityId: __t.u64(),
+});
+export type HpShareComponent = __Infer<typeof HpShareComponent>;
+
+export const HpShareComponentBlob = __t.object("HpShareComponentBlob", {
+  get partnerEntityId() {
+    return EntityIdSelector;
+  },
+});
+export type HpShareComponentBlob = __Infer<typeof HpShareComponentBlob>;
 
 export const ItemComponent = __t.object("ItemComponent", {
   entityId: __t.u64(),

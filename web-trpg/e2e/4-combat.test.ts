@@ -70,26 +70,3 @@ test("attacking a co-located enemy reduces its hp", async () => {
   await waitFor(() => (enemyHp() ?? 10) < 10, 30000);
   expect(enemyHp()).toBeLessThan(10);
 });
-
-test("a stat-less trait-bearing entity gets no HP fabricated", async () => {
-  // The inert entity carries only a zero-stat trait. It goes through the stat
-  // pipeline — proven by its resolved appearance — but sums to zero mhp/mep,
-  // so the pool guard must leave it with no HP component (thus un-attackable).
-  await waitFor(() => player.db.appearance_features.count() > 0, 30000);
-  const markIndex = [...player.db.appearance_features.iter()].find(
-    (row) => row.name === "test_inert_mark",
-  )?.index;
-  expect(markIndex).toBeDefined();
-
-  const inertRow = () =>
-    [...player.db.appearance_features_components.iter()].find((row) =>
-      [...row.appearanceFeatureIndexes].includes(markIndex!),
-    );
-  await waitFor(() => inertRow() != null, 30000);
-
-  const inertId = inertRow()!.entityId;
-  const hasHp = [...player.db.hp_components.iter()].some(
-    (row) => row.entityId === inertId,
-  );
-  expect(hasHp).toBe(false);
-});

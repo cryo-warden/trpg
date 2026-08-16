@@ -31,8 +31,9 @@ const CHECKPOINT_BLOBS = {
 
 /** A physical object's toughness, as an hp component. Anything physical can
  * break if you hit it hard enough — but a non-actor's HP bar stays hidden
- * until it is actually struck (see HPBar), so this clutters nothing. Objects
- * need no baseline: their look is authored and their durability is this. */
+ * until it is actually struck (see HPBar), so this clutters nothing. Scenery
+ * takes its durability from its baseline; a container (a distinct breakable
+ * with remains) authors it directly through this. */
 const durability = (mhp: number, defense: number): EntityBlobAsset["hp"] => ({
   hp: mhp,
   mhp,
@@ -40,21 +41,6 @@ const durability = (mhp: number, defense: number): EntityBlobAsset["hp"] => ({
   accumulatedDamage: 0,
   accumulatedHealing: 0,
 });
-// Most scenery is far tougher than any beginner player or early monster —
-// effectively permanent until you are strong enough to matter. Softer things
-// take real effort; flimsy things still have a point of defense. (Loot
-// containers, below, are the deliberate exception — meant to be smashed open.)
-const STURDY = durability(25, 5);
-const MEDIUM = durability(12, 2);
-const SOFT = durability(6, 1);
-
-/** A scenery decoration: an authored look plus lightweight durability, no
- * baseline and no stat pipeline. It is a physical object with hit points, but
- * its bar stays hidden until struck. */
-const decoration = (
-  appearanceFeatureNames: string[],
-  toughness = STURDY,
-): EntityBlobAsset => blob({ appearanceFeatureNames, hp: toughness });
 
 /** A breakable loot container: FLIMSY hit points make it smashable, remains
  * turn the debris into decoration, and the quest layer hides cookies inside.
@@ -164,21 +150,12 @@ export const LOCATION_MAP_THEMES = {
       selections: [
         // Camp scenery, not cave rubble: the exterior training ground reads
         // as a camp.
-        { weight: 5, blob: decoration(["campfire"], SOFT) },
-        { weight: 3, blob: decoration(["bedroll"], SOFT) },
-        { weight: 2, blob: decoration(["banner"], MEDIUM) },
+        { weight: 5, blob: blob({ baselineName: "campfire" }) },
+        { weight: 3, blob: blob({ baselineName: "bedroll" }) },
+        { weight: 2, blob: blob({ baselineName: "banner" }) },
         {
           weight: 4,
-          blob: blob({
-            appearanceFeatureNames: ["training", "dummy"],
-            hp: {
-              hp: 10,
-              mhp: 10,
-              defense: 0,
-              accumulatedDamage: 0,
-              accumulatedHealing: 0,
-            },
-          }),
+          blob: blob({ baselineName: "dummy", traitNames: ["training"] }),
         },
         {
           weight: 2,
@@ -294,9 +271,9 @@ export const LOCATION_MAP_THEMES = {
   cave: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: decoration(["rock"]) },
-        { weight: 4, blob: decoration(["stone"]) },
-        { weight: 2, blob: decoration(["boulder"]) },
+        { weight: 5, blob: blob({ baselineName: "rock" }) },
+        { weight: 4, blob: blob({ baselineName: "stone" }) },
+        { weight: 2, blob: blob({ baselineName: "boulder" }) },
       ],
     },
     minDecorationCount: 2,
@@ -344,10 +321,10 @@ export const LOCATION_MAP_THEMES = {
   meadow: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: decoration(["grass"], SOFT) },
-        { weight: 3, blob: decoration(["stump"], MEDIUM) },
-        { weight: 2, blob: decoration(["log"], MEDIUM) },
-        { weight: 2, blob: decoration(["mossy", "rock"]) },
+        { weight: 5, blob: blob({ baselineName: "grass" }) },
+        { weight: 3, blob: blob({ baselineName: "stump" }) },
+        { weight: 2, blob: blob({ baselineName: "log" }) },
+        { weight: 2, blob: blob({ baselineName: "rock", traitNames: ["mossy"] }) },
       ],
     },
     minDecorationCount: 2,
@@ -383,10 +360,10 @@ export const LOCATION_MAP_THEMES = {
   forest: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: decoration(["tree"]) },
-        { weight: 3, blob: decoration(["stump"], MEDIUM) },
-        { weight: 3, blob: decoration(["log"], MEDIUM) },
-        { weight: 1, blob: decoration(["huge", "tree"]) },
+        { weight: 5, blob: blob({ baselineName: "tree" }) },
+        { weight: 3, blob: blob({ baselineName: "stump" }) },
+        { weight: 3, blob: blob({ baselineName: "log" }) },
+        { weight: 1, blob: blob({ baselineName: "tree", traitNames: ["huge"] }) },
       ],
     },
     minDecorationCount: 3,
@@ -426,9 +403,9 @@ export const LOCATION_MAP_THEMES = {
     // armament-shaped decoration is a takeable item entity.
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: decoration(["rubble"]) },
-        { weight: 3, blob: decoration(["bones"], MEDIUM) },
-        { weight: 2, blob: decoration(["brazier"]) },
+        { weight: 5, blob: blob({ baselineName: "rubble" }) },
+        { weight: 3, blob: blob({ baselineName: "bones" }) },
+        { weight: 2, blob: blob({ baselineName: "brazier" }) },
         {
           weight: 2,
           blob: blob({
@@ -543,10 +520,10 @@ export const LOCATION_MAP_THEMES = {
   sanctum: {
     decorationsSelector: {
       selections: [
-        { weight: 4, blob: decoration(["pillar"]) },
-        { weight: 3, blob: decoration(["smoldering", "brazier"]) },
-        { weight: 3, blob: decoration(["frozen", "altar"]) },
-        { weight: 2, blob: decoration(["crackling", "pillar"]) },
+        { weight: 4, blob: blob({ baselineName: "pillar" }) },
+        { weight: 3, blob: blob({ baselineName: "brazier", traitNames: ["smoldering"] }) },
+        { weight: 3, blob: blob({ baselineName: "altar", traitNames: ["frozen"] }) },
+        { weight: 2, blob: blob({ baselineName: "pillar", traitNames: ["crackling"] }) },
         {
           weight: 1,
           blob: blob({

@@ -75,6 +75,17 @@ entity!(
         pub blocker_entity_id: EntityId,
     }
 
+    // Paired entities share ONE fate. The two directions of a crossing are
+    // one physical thing: damage to either drops both, and destroying one
+    // collapses the other — a crack smashed from one side is a cave-in on
+    // both. hp_share_system keeps the pair's hp synced to the lower value
+    // each tick. (Both partners carry it, pointing at each other.)
+    #[component(hp_share in hp_share_components)]
+    struct HpShareComponent {
+        #[index(btree)]
+        pub partner_entity_id: EntityId,
+    }
+
     #[component(allegiance in allegiance_components)]
     struct AllegianceComponent {
         #[index(btree)]

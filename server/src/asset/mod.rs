@@ -194,6 +194,9 @@ fn resolve_entity_blob(
         path: author.path,
         // Not authorable yet: blockers exist only through generation.
         path_blocker: None,
+        // Shared-HP links are forged at generation (paired paths), never
+        // authored on a blob.
+        hp_share: None,
         allegiance: author.allegiance,
         baseline: author
             .baseline_name

@@ -102,7 +102,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
     }
 
     /// The published total keeps its FULL grants (action_ids unfiltered):
-    /// clients build candidate pools from it, and filtering out valid
+    /// clients build candidate sets from it, and filtering out valid
     /// candidates there would lie to them. The USABLE set — requirement-
     /// and same-stance-filtered — is `available_action_ids`, and lives
     /// solely in ActionsComponent.
@@ -111,51 +111,33 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         stat_block: StatBlock,
         available_action_ids: Vec<ActionId>,
     ) -> Self {
-        let handle = self
-            .to_handle()
+        self.to_handle()
             .clone()
             .upsert_new_total_stat_block(stat_block.clone())
-            .into_handle();
-        // The look and the grants apply to ANYTHING that derives — a bodiless
-        // feature (a path) shows its adjectives and offers no less.
-        handle
-            .clone()
+            .into_handle()
+            .upsert_new_attack(stat_block.attack)
+            .set_mhp(stat_block.mhp)
+            .set_mep(stat_block.mep)
+            .set_defense(stat_block.defense)
             .set_actions(available_action_ids)
             .set_appearance_feature_ids(stat_block.appearance_feature_ids);
-        // A BODY exists only with a positive max HP. Without one, the entity
-        // gets no hp/ep/attack pools — and with no hp component, nothing can
-        // target it (attacks require the target to have hp). Everything with a
-        // real body — creatures and breakable objects alike — gets its pools,
-        // still governed by the max-pool ratchet.
-        if stat_block.mhp > 0 {
-            let body = handle
-                .clone()
-                .upsert_new_attack(stat_block.attack)
-                .set_mhp(stat_block.mhp)
-                .set_defense(stat_block.defense);
-            if stat_block.mep > 0 {
-                body.set_mep(stat_block.mep);
-            }
-        }
         self
     }
 
-    // MAXIMUM POOLS ARE A RATCHET. Creation sets them freely (a tiny body
-    // is born with a tiny pool); afterwards a recomputed total can only
-    // RAISE them — and a raise carries the current value up with it, so
-    // gaining a maximum never fakes a damaged/spent state. Reductions are
-    // refused outright: every max-pool exploit is a raise/lower CYCLE
-    // (spend to zero, re-gain the max, repeat), and with the lowering half
-    // impossible the cycle never closes. The stored component is itself
-    // the before-value the comparison needs. The design half of the deal:
-    // mhp/mep sources must be LIMITED — permanent, progression-like grants,
-    // not swappable gear (each swappable source is a one-time permanent
-    // boost under this rule).
+    // THE MAXIMA ARE A RATCHET. Creation sets mhp/mep freely (a tiny body is
+    // born with tiny maxima); afterwards a recomputed total can only RAISE
+    // them — and a raise carries the current value up with it, so gaining a
+    // maximum never fakes a damaged/spent state. Reductions are refused
+    // outright: every max-value exploit is a raise/lower CYCLE (spend to zero,
+    // re-gain the max, repeat), and with the lowering half impossible the cycle
+    // never closes. The stored component is itself the before-value the
+    // comparison needs. The design half of the deal: mhp/mep sources must be
+    // LIMITED — permanent, progression-like grants, not swappable gear (each
+    // swappable source is a one-time permanent boost under this rule).
     //
-    // These writers fabricate pools freely; the gate against giving a
-    // bodiless thing a pool lives one level up — apply_stat_block calls them
-    // only when the computed max HP is positive, so a path (max HP 0) never
-    // reaches here.
+    // These writers create the hp/ep rows and thereafter only raise the
+    // maxima; every entity that derives a stat block gets them, its values
+    // coming from its baseline and traits.
     fn set_mhp(self, mhp: i16) -> Self {
         let e = self.to_handle();
         if let Some(mut hp) = e.hp() {

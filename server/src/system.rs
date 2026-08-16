@@ -3,6 +3,7 @@ use crate::{
     action::{
         action_rounds, actions, special_actions, ActionEffect, ActionHandle, SpecialActionKey,
     },
+    appearance::en_appearance_features,
     asset::ReducerContextExtension,
     asset::{
         armament::armaments,
@@ -125,21 +126,63 @@ pub fn death_system(ecs: Ecs) {
             .insert(ecs.new_event(entity_id, EventType::Shattered, entity_id));
         spill_contents(ecs, entity_id);
         let handle = ecs.find(entity_id);
-        if let Some(remains) = handle.remains() {
-            // REMAINS ARE NEW ENTITIES: the broken thing keeps its own
-            // name in every baked message (the last-known cache never
-            // sees a rename), and the debris arrives as fresh decoration.
+        // Every destroyed object leaves DEBRIS: its authored remains if it has
+        // any (ceramic shards, scrap wood), else the generic fallback. Debris
+        // is a NEW entity, so the broken thing keeps its own name in every
+        // baked message (the last-known cache never sees a rename) and the
+        // debris arrives as fresh decoration.
+        let debris_feature_ids = handle
+            .remains()
+            .map(|r| r.appearance_feature_ids)
+            .unwrap_or_else(|| generic_debris_feature_ids(ecs));
+        if !debris_feature_ids.is_empty() {
             let location = handle.location().map(|l| l.location_entity_id);
             if let Some(location_entity_id) = location {
                 ecs.new()
                     .upsert_new_location(location_entity_id, LocationKind::Interior)
                     .into_handle()
-                    .upsert_new_appearance_features(remains.appearance_feature_ids);
+                    .upsert_new_appearance_features(debris_feature_ids);
             }
         }
         // The broken thing is always removed — whether it left debris behind
         // or simply came apart into nothing.
         delete_entity_with_joins(ecs, entity_id);
+    }
+}
+
+/// The generic "(material) debris" a destroyed object leaves when it authored
+/// no specific remains — so breaking anything leaves something behind. For now
+/// one shared "debris" feature; a material system will later choose "stellar
+/// debris", "wood debris", and the like. Empty when the feature is unpushed.
+fn generic_debris_feature_ids(ecs: Ecs) -> Vec<u32> {
+    ecs.db
+        .en_appearance_features()
+        .iter()
+        .find(|f| f.name == "debris")
+        .map(|f| vec![f.index])
+        .unwrap_or_default()
+}
+
+/// Paired entities share ONE HP. Each tick, sync every partner down to the
+/// LOWER of the pair, so damage to either drops both and a lethal blow to one
+/// fells the other in the same tick (a crack smashed from one side collapses
+/// the whole crossing). Runs after hp settles and before death resolves, so
+/// both halves of a crossing perish together.
+pub fn hp_share_system(ecs: Ecs) {
+    for e in ecs.iter_hp_share() {
+        let handle = e.into_handle();
+        let Some(share) = handle.hp_share() else {
+            continue;
+        };
+        let Some(partner_hp) = ecs.find(share.partner_entity_id).hp().map(|h| h.hp) else {
+            continue;
+        };
+        if let Some(mut hp) = handle.hp() {
+            if partner_hp < hp.hp {
+                hp.hp = partner_hp;
+                handle.update_hp_row(hp);
+            }
+        }
     }
 }
 
@@ -584,7 +627,7 @@ pub fn entity_stats_system(ecs: Ecs) {
     // Quest progress contributes through its own cache like every other
     // source: each quest's per-bit block, added popcount times (saturating;
     // any granted ids dedup through the id-vec union rule). Bits only turn
-    // ON, so this contribution is monotonic — exactly what the max-pool
+    // ON, so this contribution is monotonic — exactly what the maxima
     // ratchet asks of mhp/mep sources.
     for f in ecs.iter_quest_stat_block_dirty_flag() {
         let entity_id = f.entity_id();
@@ -608,10 +651,10 @@ pub fn entity_stats_system(ecs: Ecs) {
 
     for f in ecs.iter_total_stat_block_dirty_flag() {
         // A baseline or trait is enough to derive a stat block — no opt-in
-        // flag. What comes of it is decided downstream: apply_stat_block gives
-        // pools only to a real body (positive max HP), so a bodiless feature
-        // (a path, an exit — baseline max HP 0) computes its look and grants
-        // but stays HP-less and un-targetable.
+        // flag, no special cases. Every derived block is applied in full;
+        // whether the entity reads as a threat, a breakable object, or a
+        // near-indestructible structural feature is simply a matter of the HP
+        // and defense its baseline and traits give it.
         log::debug!("Entity {} is computing total stat block.", f.entity_id());
         let mut stat_block = f.base_stat_block();
 
@@ -625,7 +668,7 @@ pub fn entity_stats_system(ecs: Ecs) {
         // rejects is granted but not currently usable, so it never reaches
         // the ActionsComponent. A posture into the stance ALREADY HELD is
         // no option either — you can't stand when already standing. The
-        // TOTAL keeps its full grants (clients build candidate pools from
+        // TOTAL keeps its full grants (clients build candidate sets from
         // it); only the AVAILABLE list is filtered. Swapping stances (or
         // any stat change) re-derives this through the same dirty flag.
         let active_stance_id = { f.active_stance() }.map(|active| active.stance_id);
@@ -1327,6 +1370,7 @@ pub fn execute_all_systems(ecs: Ecs) {
     crate::turn::turn_pause_system(ecs);
     action_system(ecs);
     hp_system(ecs);
+    hp_share_system(ecs);
     death_system(ecs);
     respawn_system(ecs);
     ep_system(ecs);

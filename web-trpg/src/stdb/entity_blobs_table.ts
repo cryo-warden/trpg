@@ -14,6 +14,7 @@ import {
   LocationComponentBlob,
   PathComponentBlob,
   PathBlockerComponentBlob,
+  HpShareComponentBlob,
   AllegianceComponentBlob,
   BaselineComponentBlob,
   TraitsComponentBlob,
@@ -66,6 +67,9 @@ export default __t.row({
   },
   get pathBlocker() {
     return __t.option(PathBlockerComponentBlob).name("path_blocker");
+  },
+  get hpShare() {
+    return __t.option(HpShareComponentBlob).name("hp_share");
   },
   get allegiance() {
     return __t.option(AllegianceComponentBlob);

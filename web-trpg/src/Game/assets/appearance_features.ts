@@ -86,6 +86,10 @@ export const APPEARANCE_FEATURES = {
   ceramic_shards: noun("ceramic shards", 4000),
   scrap_wood: noun("scrap wood", 4000),
   torn_cloth: noun("torn cloth", 4000),
+  // The generic remains any destroyed object leaves when it authored no
+  // specific debris. Looked up by name server-side (death_system); a material
+  // system will later refine it into "stellar debris", "wood debris", etc.
+  debris: noun("debris", 4000),
   red_cookie: noun("red cookie", 5000),
   blue_cookie: noun("blue cookie", 5000),
   rock: noun("rock", 10000),
