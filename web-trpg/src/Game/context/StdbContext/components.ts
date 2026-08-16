@@ -85,6 +85,21 @@ export const useTotalStatBlockComponent = createUseComponent(
 );
 export const useEpComponent = createUseComponent("ep_components");
 export const useHpComponent = createUseComponent("hp_components");
+const useEnemyControllerComponentOf = createUseComponent(
+  "enemy_controller_components",
+);
+const usePlayerControllerComponentOf = createUseComponent(
+  "player_controller_components",
+);
+/** An ACTOR is anything that takes turns: a player or an enemy. Everything
+ * else — scenery, containers, dropped gear — is a physical object that may
+ * well have hit points, but whose vitals stay out of the way until struck
+ * (see HPBar). Presentation only; the data model draws no such line. */
+export const useIsActor = (entityId: EntityId | null): boolean => {
+  const playerController = usePlayerControllerComponentOf(entityId);
+  const enemyController = useEnemyControllerComponentOf(entityId);
+  return playerController != null || enemyController != null;
+};
 const useLocationComponent = createUseComponent("location_components");
 /** The ordered action queue (automatic entries first, then at most one
  * manual). */
