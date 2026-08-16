@@ -183,6 +183,7 @@ export const mapGenPack = (): AssetPack => ({
     { name: "test_v1_mark", value: { text: "v1", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
     { name: "test_v2_mark", value: { text: "v2", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
     { name: "test_v3_mark", value: { text: "v3", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
+    { name: "test_deco_mark", value: { text: "deco", appearanceFeatureType: { tag: "Noun" }, priority: 5000, exclusionGroup: undefined } },
   ],
   // A differentiable pack: three creatures sharing a palette of three distinct
   // variety traits, forced to exactly one each — so the pack must come out with
@@ -227,9 +228,22 @@ export const mapGenPack = (): AssetPack => ({
       value: {
         // Nameless blobs: NameComponent.name is unique, so a generator that
         // stamps out many rooms/paths must not give them a fixed name.
-        decorationsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
-        minDecorationCount: 0,
-        maxDecorationCount: 1,
+        // A differentiable ITEM decoration (unflagged): the stat pipeline
+        // never runs for it, so apply_variety must MERGE a variety feature
+        // straight onto its appearance.
+        decorationsSelector: {
+          selections: [
+            {
+              weight: 1,
+              blob: blob({
+                appearanceFeatureNames: ["test_deco_mark"],
+                differentiable: { traitPaletteName: "test_variety" },
+              }),
+            },
+          ],
+        },
+        minDecorationCount: 1,
+        maxDecorationCount: 2,
         // Paths OFFER their crossing verb; no body knows moves innately.
         // Both directions of a generated pair are ONE authored fact.
         pathsSelector: {

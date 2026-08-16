@@ -12,6 +12,12 @@ export const TRAIT_PALETTES = {
     // occasionally none.
     countWeights: new Uint8Array([10, 70, 15, 5]),
   },
+  // Weapon condition: at most one (all share the "condition" exclusion group),
+  // some left plain. Appearance-only — decorative variety on the armory.
+  weapon_variety: {
+    traitNames: ["rusty", "gleaming", "notched", "pitted"],
+    countWeights: new Uint8Array([25, 75]),
+  },
 } satisfies Record<string, TraitPaletteAsset>;
 
 export type TraitPaletteName = keyof typeof TRAIT_PALETTES;

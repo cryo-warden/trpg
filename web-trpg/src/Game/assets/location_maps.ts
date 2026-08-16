@@ -156,6 +156,7 @@ export const LOCATION_MAP_THEMES = {
           blob: blob({
             appearanceFeatureNames: ["sword"],
             item: { tag: "Armament", value: "sword" },
+            differentiable: { traitPaletteName: "weapon_variety" },
           }),
         },
         {
@@ -170,6 +171,7 @@ export const LOCATION_MAP_THEMES = {
           blob: blob({
             appearanceFeatureNames: ["shield"],
             item: { tag: "Armament", value: "shield" },
+            differentiable: { traitPaletteName: "weapon_variety" },
           }),
         },
         {
@@ -191,6 +193,7 @@ export const LOCATION_MAP_THEMES = {
           blob: blob({
             appearanceFeatureNames: ["staff"],
             item: { tag: "Armament", value: "staff" },
+            differentiable: { traitPaletteName: "weapon_variety" },
           }),
         },
         {

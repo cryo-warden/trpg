@@ -29,6 +29,12 @@ export const TRAITS = {
   rangy: statBlock({ gait: 1, appearanceFeatureNames: ["rangy"] }),
   scrawny: statBlock({ mhp: -2, appearanceFeatureNames: ["scrawny"] }),
   scarred: statBlock({ appearanceFeatureNames: ["scarred"] }),
+  // Item variety: appearance-only condition. An item's mechanical worth rides
+  // its asset, not the entity, so these carry no stats — only a look.
+  rusty: statBlock({ appearanceFeatureNames: ["rusty"] }),
+  gleaming: statBlock({ appearanceFeatureNames: ["gleaming"] }),
+  notched: statBlock({ appearanceFeatureNames: ["notched"] }),
+  pitted: statBlock({ appearanceFeatureNames: ["pitted"] }),
   vampire: statBlock({ appearanceFeatureNames: ["vampiric"] }),
   ghost: statBlock({ appearanceFeatureNames: ["ghostly"] }),
   fire_nature: statBlock({ appearanceFeatureNames: ["fiery"] }),

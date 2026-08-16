@@ -123,6 +123,31 @@ test("a differentiable pack spawns with distinct variety traits", async () => {
   expect(distinctMarksOnPack().size).toBe(3);
 });
 
+test("a differentiable item decoration gets a variety feature merged", async () => {
+  // The decoration is UNFLAGGED (no stat block), so the trait's stats never
+  // apply — but apply_variety must still merge its appearance feature straight
+  // on. So every decoration carries its own mark plus one variety mark.
+  await waitFor(() => player.db.appearance_features.count() > 0, 30000);
+  const featureIndex = (name: string) =>
+    [...player.db.appearance_features.iter()].find((r) => r.name === name)
+      ?.index;
+  const decoMark = featureIndex("test_deco_mark");
+  const varietyMarks = new Set(
+    ["test_v1_mark", "test_v2_mark", "test_v3_mark"].map(featureIndex),
+  );
+  expect(decoMark).toBeDefined();
+
+  const decoHasVariety = () =>
+    [...player.db.appearance_features_components.iter()].some((row) => {
+      const indexes = [...row.appearanceFeatureIndexes];
+      return (
+        indexes.includes(decoMark!) && indexes.some((i) => varietyMarks.has(i))
+      );
+    });
+  await waitFor(decoHasVariety, 30000);
+  expect(decoHasVariety()).toBe(true);
+});
+
 test("the new player's allegiance resolved through the Named selector", async () => {
   const entityId = [
     ...player.db.player_controller_components.iter(),

@@ -124,14 +124,21 @@ impl LocationMapTheme {
         let decoration_count: usize =
             rng.get_range(self.min_decoration_count, self.max_decoration_count);
 
+        let mut decoration_ids: Vec<u64> = Vec::new();
         for _ in 0..decoration_count {
             if let Some(d) = self.decorations_selector.sample(rng) {
-                room.ecs()
+                let decoration = room
+                    .ecs()
                     .new()
-                    .instantiate_blob(d.to_owned(), &room.ecs().instantiation_scope())?
-                    .insert_new_location(room.entity_id(), LocationKind::Interior);
+                    .instantiate_blob(d.to_owned(), &room.ecs().instantiation_scope())?;
+                let decoration_id = decoration.entity_id();
+                decoration.insert_new_location(room.entity_id(), LocationKind::Interior);
+                decoration_ids.push(decoration_id);
             }
         }
+        // Item/scenery decorations that opted in (a differentiable component)
+        // get their decorative variety here, differentiated within the room.
+        crate::asset::encounter::apply_variety(room.ecs(), &decoration_ids);
         Ok(())
     }
 

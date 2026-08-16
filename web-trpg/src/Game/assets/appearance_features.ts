@@ -176,8 +176,12 @@ export const APPEARANCE_FEATURES = {
   ghostly: adjective("ghostly", 1000),
   fiery: adjective("fiery", 1000),
   icy: adjective("icy", 1000),
-  rusty: adjective("rusty", 1000),
-  gleaming: adjective("gleaming", 1000),
+  // Weapon condition: one exclusion group so a blade never reads as both
+  // rusty and gleaming. Used as item variety (rusty/gleaming/notched/pitted).
+  rusty: adjective("rusty", 1000, "condition"),
+  gleaming: adjective("gleaming", 1000, "condition"),
+  notched: adjective("notched", 1000, "condition"),
+  pitted: adjective("pitted", 1000, "condition"),
   ancient: adjective("ancient", 1000),
   mossy: adjective("mossy", 1000),
   crumbling: adjective("crumbling", 1000),
