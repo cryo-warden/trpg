@@ -307,10 +307,34 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         };
         let worn_armor_id = e.armor().map(|a| a.armor_id);
         let worn_relic_ids = e.relics().map(|r| r.relic_ids).unwrap_or_default();
-        // Preserve the staged item-entity list across convergence; the
-        // entity-based path becomes authoritative in a later stage.
-        let equipped_entity_ids =
-            { e.equipment() }.map(|q| q.equipped_entity_ids).unwrap_or_default();
+        // Resolve the asset-id worn reality into the concrete OWNED item
+        // entities behind it — the entity-based equipment cache sums these
+        // items' Equippable blocks. Each requested asset id claims one
+        // distinct owned item of that kind (the counted-multiset rule,
+        // expressed once here rather than at every mutator).
+        let ecs = e.ecs();
+        let mut owned: Vec<(u64, ItemRef)> = ecs
+            .db
+            .location_components()
+            .location_entity_id()
+            .filter(e.entity_id())
+            .filter_map(|l| ecs.find(l.entity_id).item().map(|i| (l.entity_id, i.item_ref)))
+            .collect();
+        let mut equipped_entity_ids: Vec<u64> = Vec::new();
+        let mut claim = |matches: &dyn Fn(&ItemRef) -> bool| {
+            if let Some(pos) = owned.iter().position(|(_, r)| matches(r)) {
+                equipped_entity_ids.push(owned.remove(pos).0);
+            }
+        };
+        for id in &armament_ids {
+            claim(&|r| matches!(r, ItemRef::Armament(a) if a == id));
+        }
+        if let Some(armor_id) = worn_armor_id {
+            claim(&|r| matches!(r, ItemRef::Armor(a) if *a == armor_id));
+        }
+        for id in &worn_relic_ids {
+            claim(&|r| matches!(r, ItemRef::Relic(a) if a == id));
+        }
         e.clone()
             .upsert_new_equipment(armament_ids, worn_armor_id, worn_relic_ids, equipped_entity_ids);
     }

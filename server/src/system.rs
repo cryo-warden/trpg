@@ -6,13 +6,10 @@ use crate::{
     appearance::en_appearance_features,
     asset::ReducerContextExtension,
     asset::{
-        armament::armaments,
-        armor::armors,
         location_map::{location_map_connections, location_maps},
         quest::quests,
         location_map_theme::location_map_themes,
         r#trait::traits,
-        relic::relics,
         stance::stances,
         stat_block::StatBlock,
         weighted_sampler::WeightedSampler,
@@ -733,25 +730,22 @@ pub fn entity_stats_system(ecs: Ecs) {
     for f in ecs.iter_equipment_stat_block_dirty_flag() {
         let e = ecs.find(f.entity_id());
         let mut stat_block = StatBlock::default();
-        // Stats derive from the CANONICAL equipment alone — the worn
-        // reality. The armor/relics CONFIGURATION components never feed
-        // stats; the reconciliation system converges reality to them.
+        // Equipment stats are the SUM of every equipped item's Equippable
+        // contribution — the one rule that replaced per-asset stat lookups.
+        // Players wield concrete item entities (equipped_entity_ids); NPCs
+        // carry the precomputed EquipmentBlobbed block instead of items. An
+        // entity may have either or both; the two are disjoint by
+        // construction (a player's blob is dropped when its items are
+        // spawned), so summing both is safe.
         if let Some(c) = e.equipment() {
-            for id in &c.armament_ids {
-                if let Some(a) = ecs.db.armaments().id().find(id) {
-                    stat_block += &a.stat_block;
+            for item_id in &c.equipped_entity_ids {
+                if let Some(q) = ecs.find(*item_id).equippable() {
+                    stat_block += &q.stat_block;
                 }
             }
-            if let Some(armor_id) = c.worn_armor_id {
-                if let Some(a) = ecs.db.armors().id().find(armor_id) {
-                    stat_block += &a.stat_block;
-                }
-            }
-            for id in &c.worn_relic_ids {
-                if let Some(r) = ecs.db.relics().id().find(id) {
-                    stat_block += &r.stat_block;
-                }
-            }
+        }
+        if let Some(blobbed) = e.equipment_blobbed() {
+            stat_block += &blobbed.stat_block;
         }
 
         // Upserting the cache auto-dirties the total stat block (its

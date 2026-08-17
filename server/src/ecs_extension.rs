@@ -140,12 +140,19 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
                     .into_handle();
                 equipped_entity_ids.push(item.entity_id());
             }
+            let has_items = !equipped_entity_ids.is_empty();
             self.find(player_entity_id).upsert_new_equipment(
                 equipment.armament_ids,
                 equipment.worn_armor_id,
                 equipment.worn_relic_ids,
                 equipped_entity_ids,
             );
+            // Real item entities now back the equipment: the authored
+            // EquipmentBlobbed contribution (the NPC-light path) would
+            // double-count, so it is dropped. Real gear wins over the blob.
+            if has_items {
+                self.find(player_entity_id).delete_equipment_blobbed();
+            }
         }
         Ok(player)
     }
