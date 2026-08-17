@@ -594,6 +594,18 @@ pub(crate) fn delete_entity_with_joins(ecs: Ecs, entity_id: u64) {
     ecs.find(entity_id).delete();
 }
 
+/// The CLEANUP tier: a SILENT deletion — no spill, no debris, no events. Used
+/// when a whole region vanishes (map teardown), where contents must NOT spill
+/// into a void: the teardown deletes them directly, so spilling would only emit
+/// stray "spilled" events into an empty, abandoned map. Join rows still die with
+/// the entity. NEVER for a player.
+pub(crate) fn cleanup_delete(ecs: Ecs, entity_id: u64) {
+    crate::visited::cleanup_visited_rows(ecs, entity_id);
+    crate::quest::cleanup_quest_rows(ecs, entity_id);
+    crate::quest::cleanup_quest_room_rows(ecs, entity_id);
+    ecs.find(entity_id).delete();
+}
+
 /// Anything an entity carries has that entity as its location; when the
 /// carrier is destroyed or deleted, the contents move OUT to the carrier's
 /// own location. A carrier with no location (map/room teardown) leaves
@@ -1166,7 +1178,7 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
             .map(|p| p.entity_id)
             .collect();
         for path_entity_id in inbound {
-            delete_entity_with_joins(ecs, path_entity_id);
+            cleanup_delete(ecs, path_entity_id);
         }
         // Contents, recursively.
         let mut stack = vec![*room_id];
@@ -1183,11 +1195,11 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
             }
         }
         for entity_id in contents {
-            delete_entity_with_joins(ecs, entity_id);
+            cleanup_delete(ecs, entity_id);
         }
-        delete_entity_with_joins(ecs, *room_id);
+        cleanup_delete(ecs, *room_id);
     }
-    delete_entity_with_joins(ecs, map_entity_id);
+    cleanup_delete(ecs, map_entity_id);
 }
 
 /// How many carried items of the given gear kind+asset the entity owns
