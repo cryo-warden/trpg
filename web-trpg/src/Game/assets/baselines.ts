@@ -20,6 +20,8 @@ export const BASELINES = {
     // The item verbs (take/drop/equip/unequip/eat) are NOT here: they
     // are derived offers, computed from the target's components against
     // the special-action registry — no body innately "knows" them.
+    // Rally IS here: an ordinary morale buff every person can reach for,
+    // the counterplay to fear (which enemies simply wait out).
     actionNames: [
       "attune",
       "stand",
@@ -29,6 +31,7 @@ export const BASELINES = {
       "square_up",
       "duel",
       "stride",
+      "rally",
     ],
     appearanceFeatureNames: ["human"],
   }),

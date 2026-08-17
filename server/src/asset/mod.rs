@@ -91,10 +91,8 @@ pub struct AssetPack {
     relics: Vec<NamedStatBlockAsset>,
     stances: Vec<NamedStanceAsset>,
     quests: Vec<NamedQuestAsset>,
-    /// Which stance intimidation forces entities into; a pack without
-    /// morale-relevant content may omit it (forcing then fails loudly).
-    cowering_stance_name: Option<String>,
-    /// Which stance a dive lands in; same omission semantics.
+    /// Which stance a dive lands in; a pack without morale-relevant content
+    /// may omit it (forcing then fails loudly).
     prone_stance_name: Option<String>,
     /// The DERIVED item verbs: which authored action serves each role
     /// (take/drop/equip/unequip/eat). Registered, never sniffed from
@@ -832,10 +830,7 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    let special_stance_entries = [
-        (SpecialStanceKey::Cowering, asset_pack.cowering_stance_name),
-        (SpecialStanceKey::Prone, asset_pack.prone_stance_name),
-    ];
+    let special_stance_entries = [(SpecialStanceKey::Prone, asset_pack.prone_stance_name)];
     for (key, name) in special_stance_entries {
         if let Some(name) = name {
             let row = SpecialStance {

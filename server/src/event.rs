@@ -545,51 +545,39 @@ secador::secador!(
                             if victim.active_stance().is_none() {
                                 false
                             } else if let Some(mut fear) = victim.fear_status() {
+                                // Already afraid: fear keeps the MAXIMUM
+                                // intensity. A stronger scare raises it and
+                                // refreshes the duration; a weaker one is
+                                // ignored entirely — not even a duration
+                                // reset — so a broken victim keeps ticking
+                                // toward recovery and can still rally.
                                 if *magnitude > fear.intimidation {
                                     fear.intimidation = *magnitude;
+                                    fear.duration = crate::system::FEAR_DURATION_TURNS;
                                     victim.update_fear_status_row(fear);
                                 }
                                 false
                             } else if i32::from(*magnitude) > victim.effective_morale() {
-                                match ecs
-                                    .db
-                                    .special_stances()
-                                    .key()
-                                    .find(SpecialStanceKey::Cowering)
-                                {
-                                    None => {
-                                        log::error!(
-                                            "Intimidation broke entity {} but no cowering stance is registered.",
-                                            target_entity_id
-                                        );
-                                        false
-                                    }
-                                    Some(cowering) => {
-                                        if victim.action_state().is_some() {
-                                            victim.delete_action_state();
-                                        }
-                                        if victim.action_queue().is_some() {
-                                            victim.delete_action_queue();
-                                        }
-                                        // FORCED entry: the stance changes
-                                        // but the hands DON'T — the
-                                        // forced-stance flag makes the
-                                        // reconciliation system skip this
-                                        // entity until a deliberate
-                                        // change clears it. Whatever was
-                                        // wielded stays.
-                                        victim
-                                            .clone()
-                                            .upsert_new_active_stance(cowering.stance_id)
-                                            .into_handle()
-                                            .clone()
-                                            .upsert_new_stance_forced()
-                                            .into_handle()
-                                            .insert_new_fear_status(*magnitude);
-                                        true
-                                    }
+                                // BROKEN: the action is canceled (flinching
+                                // is not a choice, interruptible or not) and
+                                // the fear lands for its full duration. No
+                                // stance is forced — fear alone sinks morale
+                                // below the action thresholds, leaving only
+                                // the morale-free rally until courage or time
+                                // restores the nerve.
+                                if victim.action_state().is_some() {
+                                    victim.delete_action_state();
                                 }
+                                if victim.action_queue().is_some() {
+                                    victim.delete_action_queue();
+                                }
+                                victim.insert_new_fear_status(
+                                    *magnitude,
+                                    crate::system::FEAR_DURATION_TURNS,
+                                );
+                                true
                             } else {
+                                // Nerve held (morale, courage folded in).
                                 false
                             }
                         }
@@ -691,32 +679,21 @@ secador::secador!(
                         // big enough to overcome the fear. No fear, or not
                         // enough effort left: nothing happens.
                         ActionEffect::Rally => {
+                            // An ordinary morale buff: STACK a courage surge.
+                            // The round it takes is its whole cost — no EP.
+                            // Courage is both its remaining duration and its
+                            // +morale, decaying a point per turn
+                            // (status_duration_system). Rally does not touch
+                            // fear — enough courage lifts effective morale
+                            // back over the action thresholds a fear sank it
+                            // under; otherwise you wait the fear out.
                             let target = ecs.find(target_entity_id);
-                            match (target.fear_status(), target.ep()) {
-                                // (Effective morale below reads the stored
-                                // total, courage already folded in.)
-                                (Some(fear), Some(mut ep_component)) => {
-                                    let deficit = i32::from(fear.intimidation) + 1
-                                        - target.effective_morale();
-                                    if deficit <= 0 {
-                                        // Already braced; the fear just
-                                        // has not been shaken off yet.
-                                        false
-                                    } else if i32::from(ep_component.ep) < deficit {
-                                        false
-                                    } else {
-                                        ep_component.ep -= deficit as i16;
-                                        target.update_ep_row(ep_component);
-                                        let courage = target
-                                            .courage_status()
-                                            .map_or(0, |c| c.morale)
-                                            .saturating_add(deficit as i16);
-                                        target.clone().upsert_new_courage_status(courage);
-                                        true
-                                    }
-                                }
-                                _ => false,
-                            }
+                            let courage = target
+                                .courage_status()
+                                .map_or(0, |c| c.morale)
+                                .saturating_add(crate::system::COURAGE_PER_RALLY);
+                            target.upsert_new_courage_status(courage);
+                            true
                         }
                     },
                 };

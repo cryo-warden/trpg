@@ -36,7 +36,6 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       relics: namedPairs(RELICS),
       stances: namedPairs(STANCES),
       quests: namedPairs(QUESTS),
-      coweringStanceName: "cowering",
       proneStanceName: "prone",
       // The derived item verbs: which authored action serves each role.
       // No baseline grants these — targets offer them (see the

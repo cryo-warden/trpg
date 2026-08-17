@@ -22,7 +22,13 @@ export const NO_REQUIREMENTS: StatRequirements = {
   mep: undefined,
 };
 
-/** Named minimum thresholds; anything not mentioned stays unchecked. */
+/** Named minimum thresholds; anything not mentioned stays unchecked. Morale
+ * is gated EXPLICITLY per action, never by default: committed/brave acts
+ * (weapon strikes, spells, heavies) require morale >= 3, basic/instinctive/
+ * defensive ones (bop, bite, guard, dive, move) require morale >= 1, and the
+ * rest stay morale-free. The fear status sinks morale (courage lifts it), so
+ * a feared entity loses its committed actions first, then everything but
+ * rally once morale hits 0. */
 export const requirements = (
   partial: Partial<StatRequirements>,
 ): StatRequirements => ({

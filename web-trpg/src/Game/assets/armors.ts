@@ -4,11 +4,12 @@ import { statBlock } from "./stat_block";
 // Clothing/armor: ONE global slot, applied across every stance (unlike
 // armaments, which are assigned per stance in the loadout menu).
 export const ARMORS = {
-  leather_jerkin: statBlock({ defense: 1 }),
-  chain_hauberk: statBlock({ defense: 2, gait: -1 }),
+  // Worn protection steadies the nerve a little (morale 1), early game.
+  leather_jerkin: statBlock({ defense: 1, morale: 1 }),
+  chain_hauberk: statBlock({ defense: 2, gait: -1, morale: 1 }),
   // NO mhp/mep on swappable gear: the maxima are a RATCHET (a swappable
   // source would be a one-time permanent boost). Kindred stats instead.
-  traveler_robe: statBlock({ focus: 1 }),
+  traveler_robe: statBlock({ focus: 1, morale: 1 }),
 } satisfies Record<string, StatBlockAsset>;
 
 export type ArmorName = keyof typeof ARMORS;

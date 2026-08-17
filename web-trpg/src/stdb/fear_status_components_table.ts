@@ -13,4 +13,5 @@ import {
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
   intimidation: __t.i16(),
+  duration: __t.i16(),
 });

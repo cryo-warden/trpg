@@ -362,18 +362,24 @@ entity!(
         pub stat_block: StatBlock,
     }
 
-    // FEAR: the first real status effect. Holds the HIGHEST intimidation
-    // received; its presence is what forces (and holds) the cower stance.
-    // Overcome by raising effective morale above it, then standing up.
-    #[component(fear_status in fear_status_components)]
+    // FEAR: a timed morale debuff. `intimidation` is the intensity (folded
+    // into the total as -morale through the status cache, exactly as courage
+    // folds +morale); `duration` counts down each turn and the status is
+    // removed at zero. Fear keeps the MAXIMUM intensity: a weaker fear
+    // arriving over a stronger one is ignored and does not even refresh the
+    // duration. Not cured by rally — you outlast it, or out-courage it.
+    #[component(fear_status in fear_status_components, dirties(status_stat_block_dirty_flag))]
     struct FearStatusComponent {
         pub intimidation: i16,
+        pub duration: i16,
     }
 
-    // COURAGE: rally's status effect, sized dynamically (EP spent 1:1) to
-    // lift effective morale just past the fear. Folds into the total stat
-    // block through the status cache, so rigid morale absorbs it. Cleared,
-    // with the fear, on standing up.
+    // COURAGE: rally's status effect. Its single value is BOTH the remaining
+    // duration AND the +morale bonus: it decays by 1 each turn (bonus
+    // shrinking with it) and is removed at zero. Rally STACKS it additively.
+    // Folds into the total through the status cache so rigid morale absorbs
+    // it, lifting effective morale back over the action thresholds a fear
+    // pushed it under.
     #[component(courage_status in courage_status_components, dirties(status_stat_block_dirty_flag))]
     struct CourageStatusComponent {
         pub morale: i16,

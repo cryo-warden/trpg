@@ -49,6 +49,58 @@ pub fn ep_system(ecs: Ecs) {
     }
 }
 
+/// Timed statuses count down ONCE PER TURN — gated on the instance's turn,
+/// like every other progression system, so a paused zone doesn't bleed
+/// durations in real time. Fear expires when its duration hits zero; courage
+/// fades a point at a time (its single value is both the remaining turns and
+/// the +morale bonus). Removing either re-dirties the status cache (via the
+/// component's `dirties`), so morale re-derives. Runs BEFORE the action
+/// system so a status applied this turn keeps its full duration.
+pub fn status_duration_system(ecs: Ecs) {
+    let feared: Vec<u64> = ecs.iter_fear_status().map(|e| e.entity_id()).collect();
+    for entity_id in feared {
+        if crate::turn::instance_is_paused(ecs, entity_id) {
+            continue;
+        }
+        let handle = ecs.find(entity_id);
+        let Some(mut fear) = handle.fear_status() else {
+            continue;
+        };
+        fear.duration -= 1;
+        if fear.duration <= 0 {
+            handle.delete_fear_status();
+        } else {
+            handle.update_fear_status_row(fear);
+        }
+    }
+    let couraged: Vec<u64> = ecs.iter_courage_status().map(|e| e.entity_id()).collect();
+    for entity_id in couraged {
+        if crate::turn::instance_is_paused(ecs, entity_id) {
+            continue;
+        }
+        let handle = ecs.find(entity_id);
+        let Some(mut courage) = handle.courage_status() else {
+            continue;
+        };
+        courage.morale -= 1;
+        if courage.morale <= 0 {
+            handle.delete_courage_status();
+        } else {
+            handle.update_courage_status_row(courage);
+        }
+    }
+}
+
+/// How many TURNS a fear lasts before it lifts on its own (the status
+/// duration system counts it down). Tunable; a stronger scare refreshes it
+/// to this each time it raises the intensity.
+pub const FEAR_DURATION_TURNS: i16 = 3;
+
+/// Courage a single rally stacks on (both its added duration and its added
+/// +morale). Tunable; base-5 morale under an early -5 fear needs one rally
+/// to reach the morale-3 action tier. Rally costs no EP — only its round.
+pub const COURAGE_PER_RALLY: i16 = 3;
+
 /// How long a dead player's body stays in the scene before the respawn
 /// takes them away. Unrelated to the checkpoint trance fiction — this is
 /// simply being dead for a moment where you fell.
@@ -715,9 +767,18 @@ pub fn entity_stats_system(ecs: Ecs) {
     for f in ecs.iter_status_stat_block_dirty_flag() {
         let e = ecs.find(f.entity_id());
         let mut stat_block = StatBlock::default();
+        // Courage lifts morale, fear sinks it — both fold into the one rigid
+        // morale stat that action requirements gate against, so a feared
+        // entity's committed actions drop out of its derived set until rally
+        // (courage) or time restores the morale. Braced adds defense.
+        let mut morale = 0i16;
         if let Some(c) = e.courage_status() {
-            stat_block.morale = c.morale.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8;
+            morale = morale.saturating_add(c.morale);
         }
+        if let Some(fear) = e.fear_status() {
+            morale = morale.saturating_sub(fear.intimidation);
+        }
+        stat_block.morale = morale.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8;
         if let Some(c) = e.braced_status() {
             stat_block.defense = c.defense.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8;
         }
@@ -1634,6 +1695,7 @@ pub fn execute_all_systems(ecs: Ecs) {
     action_validation_system(ecs);
     actionless_stamp_system(ecs);
     crate::turn::turn_pause_system(ecs);
+    status_duration_system(ecs);
     action_system(ecs);
     // Mirror shared-HP deltas onto partners BEFORE the deltas settle, so both
     // halves of a crossing take the same blow this same tick.

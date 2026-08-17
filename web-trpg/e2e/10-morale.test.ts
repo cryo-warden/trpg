@@ -43,11 +43,6 @@ const myEp = () =>
     (row) => row.entityId === playerEntityId,
   );
 
-const myLocation = (): bigint | undefined =>
-  [...player.db.location_components.iter()].find(
-    (row) => row.entityId === playerEntityId,
-  )?.locationEntityId;
-
 beforeAll(async () => {
   requirePrereqs();
   publishTestModule();
@@ -84,53 +79,57 @@ afterAll(() => {
   player?.disconnect();
 });
 
-test("the giant's attack breaks the mouse: fear status, forced cower, morale RIGID", async () => {
-  const coweringId = idByName(player.db.stances, "test_cowering");
-  await waitFor(() => myStanceId() === coweringId, 30000);
-  expect(myStanceId()).toBe(coweringId);
+const myAvailableActionIds = (): number[] =>
+  [...player.db.actions_components.iter()].find(
+    (row) => row.entityId === playerEntityId,
+  )?.actionIds ?? [];
+
+const myCourage = () =>
+  [...player.db.courage_status_components.iter()].find(
+    (row) => row.entityId === playerEntityId,
+  );
+
+test("the giant's attack breaks the mouse: a fear status lands, no forced stance", async () => {
+  const standingId = idByName(player.db.stances, "test_standing");
   // The fear records the highest intimidation received (size delta 4 +
-  // authored 3); rigid morale is untouched.
+  // authored 3 = 7). No stance is forced — the mouse stays standing; fear
+  // does its work through morale alone.
   await waitFor(() => myFear() != null, 30000);
   expect(myFear()?.intimidation).toBe(7);
-  expect(myMorale()).toBe(5);
+  expect(myStanceId()).toBe(standingId);
 }, 60000);
 
-test("standing up under the giant's looming pressure is refused", async () => {
-  await expect(
-    player.reducers.setStance({
-      stanceId: idByName(player.db.stances, "test_standing"),
-    }),
-  ).rejects.toThrow(/Too shaken/);
-}, 60000);
-
-test("rally spends EP dynamically: exactly the deficit against the fear", async () => {
+test("feared, the mouse's morale sinks: only rally is reachable, not move", async () => {
+  const moveId = idByName(player.db.actions, "test_move");
   const rallyId = idByName(player.db.actions, "test_rally");
+  // While the fear holds, base morale 5 minus fear 7 nets negative, under
+  // both thresholds: the committed move (morale >= 1) drops out of the
+  // derived set, while rally (no morale requirement) remains the way back.
+  await waitFor(
+    () =>
+      myFear() != null &&
+      myMorale() !== undefined &&
+      myMorale()! < 0 &&
+      myAvailableActionIds().includes(rallyId) &&
+      !myAvailableActionIds().includes(moveId),
+    30000,
+  );
+  expect(myMorale()!).toBeLessThan(0);
+  expect(myAvailableActionIds()).toContain(rallyId);
+  expect(myAvailableActionIds()).not.toContain(moveId);
+}, 60000);
+
+test("rally stacks a courage surge — folding into morale — at no EP cost", async () => {
+  const rallyId = idByName(player.db.actions, "test_rally");
+  await waitFor(() => myEp() != null, 30000);
   const epBefore = myEp()!.ep;
   await player.reducers.act({
     actionId: rallyId,
     targetEntityId: playerEntityId,
   });
-  // Deficit = fear 7 + 1 - morale 5 = 3: EP drops by 3, and the courage
-  // status folds through the status cache into the stored total (5 + 3 = 8).
-  await waitFor(() => myMorale() === 8, 30000);
-  expect(myEp()!.ep).toBe(epBefore - 3);
-}, 60000);
-
-test("crawling away from the pressure lets the mouse stand back up", async () => {
-  const moveId = idByName(player.db.actions, "test_move");
-  const pathEntityId = [...player.db.path_components.iter()][0].entityId;
-  await player.reducers.act({
-    actionId: moveId,
-    targetEntityId: pathEntityId,
-  });
-  await waitFor(() => myLocation() === 1000n, 30000);
-
-  const standingId = idByName(player.db.stances, "test_standing");
-  await player.reducers.setStance({ stanceId: standingId });
-  await waitFor(() => myStanceId() === standingId, 30000);
-  expect(myStanceId()).toBe(standingId);
-  // Standing up shed the statuses: fear gone, courage spent, morale back
-  // to its rigid 5.
-  await waitFor(() => myFear() == null, 30000);
-  await waitFor(() => myMorale() === 5, 30000);
+  // A courage status appears (its value both the +morale and the remaining
+  // duration), and rally spends no EP — its cost is the round it took.
+  await waitFor(() => myCourage() != null, 30000);
+  expect(myCourage()!.morale).toBeGreaterThan(0);
+  expect(myEp()!.ep).toBe(epBefore);
 }, 60000);

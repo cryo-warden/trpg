@@ -49,7 +49,6 @@ const emptyPack = (): AssetPack => ({
   relics: [],
   stances: [],
   quests: [],
-  coweringStanceName: undefined,
   proneStanceName: undefined,
   takeActionName: undefined,
   dropActionName: undefined,
@@ -563,10 +562,12 @@ export const loadoutPack = (): AssetPack => ({
 /**
  * A morale world: a small player (the mouse) shares a room with a huge
  * attacking enemy (the giant). Every round of the giant's attack carries the
- * implicit size-delta intimidation plus an authored bonus — enough to break
- * the mouse into the registered cowering stance. The cower grants rally
- * (EP -> morale), a path leads to safety, and standing back up is gated on
- * nerve beating the looming pressure.
+ * implicit size-delta intimidation plus an authored bonus — enough to BREAK
+ * the mouse: a fear status lands (no forced stance), sinking morale below
+ * what its actions need, so only rally survives. Rally stacks courage
+ * (morale) with no EP cost; enough of it lifts morale back over the action
+ * thresholds while the fear waits out its duration. test_move needs morale
+ * 1, so a rallied mouse can flee.
  */
 export const moralePack = (): AssetPack => ({
   ...emptyPack(),
@@ -601,7 +602,7 @@ export const moralePack = (): AssetPack => ({
       name: "test_move",
       value: {
         actionType: { tag: "Move" },
-        requirements: requirements({ gait: 1 }),
+        requirements: requirements({ gait: 1, morale: 1 }),
         rounds: [{ effects: [{ tag: "Move" }], interruptible: false }],
       },
     },
@@ -612,15 +613,7 @@ export const moralePack = (): AssetPack => ({
       name: "test_standing",
       value: { requirements: NO_REQUIREMENTS, statBlock: statBlock({}) },
     },
-    {
-      name: "test_cowering",
-      value: {
-        requirements: NO_REQUIREMENTS,
-        statBlock: statBlock({ actionNames: ["test_rally"] }),
-      },
-    },
   ],
-  coweringStanceName: "test_cowering",
   baselines: [
     {
       name: "test_mouse",
@@ -630,7 +623,9 @@ export const moralePack = (): AssetPack => ({
         gait: 2,
         size: 2,
         morale: 5,
-        actionNames: ["test_move", "test_stand"],
+        // Rally is an ordinary buff the mouse knows; fear leaves it as the
+        // one action still reachable (no morale requirement).
+        actionNames: ["test_move", "test_stand", "test_rally"],
       }),
     },
     {

@@ -88,6 +88,46 @@ pub fn test_death_destroys_an_object(ctx: &ReducerContext) -> Result<(), String>
     Ok(())
 }
 
+/// A fear counts down its duration and lifts on its own — no rally needed.
+/// An entity outside any map instance is never turn-paused, so the duration
+/// system ticks it.
+#[reducer]
+pub fn test_status_duration_expires_fear(ctx: &ReducerContext) -> Result<(), String> {
+    let ecs = ctx.ecs();
+    let entity = ecs.new();
+    let id = entity.entity_id();
+    // Intensity 5, one turn left: a single tick should end it.
+    entity.upsert_new_fear_status(5, 1);
+
+    crate::system::status_duration_system(ecs);
+
+    check!(
+        ecs.find(id).fear_status().is_none(),
+        "a fear with duration 1 should expire after one turn"
+    );
+    Ok(())
+}
+
+/// Courage fades a point at a time: its single value is both the remaining
+/// duration and the +morale bonus, so a tick decrements it without removing
+/// it until it reaches zero.
+#[reducer]
+pub fn test_status_duration_decays_courage(ctx: &ReducerContext) -> Result<(), String> {
+    let ecs = ctx.ecs();
+    let entity = ecs.new();
+    let id = entity.entity_id();
+    entity.upsert_new_courage_status(3);
+
+    crate::system::status_duration_system(ecs);
+
+    let courage = ecs.find(id).courage_status().map(|c| c.morale);
+    check!(
+        courage == Some(2),
+        "courage 3 should decay to 2 after one turn, got {courage:?}"
+    );
+    Ok(())
+}
+
 /// destruction_system deletes a destroyed entity outright.
 #[reducer]
 pub fn test_destruction_deletes_the_entity(ctx: &ReducerContext) -> Result<(), String> {

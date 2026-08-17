@@ -20,6 +20,8 @@ const SYSTEM_TEST_SETS = [
   "test_death_corpses_an_npc",
   "test_death_destroys_an_object",
   "test_destruction_deletes_the_entity",
+  "test_status_duration_expires_fear",
+  "test_status_duration_decays_courage",
 ];
 
 beforeAll(() => {

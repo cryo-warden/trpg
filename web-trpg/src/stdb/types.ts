@@ -326,7 +326,6 @@ export const AssetPack = __t.object("AssetPack", {
   get quests() {
     return __t.array(NamedQuestAsset);
   },
-  coweringStanceName: __t.option(__t.string()),
   proneStanceName: __t.option(__t.string()),
   takeActionName: __t.option(__t.string()),
   dropActionName: __t.option(__t.string()),
@@ -934,11 +933,13 @@ export type EventType = __Infer<typeof EventType>;
 export const FearStatusComponent = __t.object("FearStatusComponent", {
   entityId: __t.u64(),
   intimidation: __t.i16(),
+  duration: __t.i16(),
 });
 export type FearStatusComponent = __Infer<typeof FearStatusComponent>;
 
 export const FearStatusComponentBlob = __t.object("FearStatusComponentBlob", {
   intimidation: __t.i16(),
+  duration: __t.i16(),
 });
 export type FearStatusComponentBlob = __Infer<typeof FearStatusComponentBlob>;
 
@@ -1766,7 +1767,6 @@ export type SpecialStance = __Infer<typeof SpecialStance>;
 
 // The tagged union or sum type for the algebraic type `SpecialStanceKey`.
 export const SpecialStanceKey = __t.enum("SpecialStanceKey", {
-  Cowering: __t.unit(),
   Prone: __t.unit(),
 });
 export type SpecialStanceKey = __Infer<typeof SpecialStanceKey>;

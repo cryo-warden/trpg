@@ -353,17 +353,6 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             .id()
             .find(stance_id)
             .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
-        // A fear status holds the cower until effective morale overcomes
-        // the highest intimidation received.
-        if let Some(fear) = e.fear_status() {
-            let nerve = self.effective_morale();
-            if nerve <= i32::from(fear.intimidation) {
-                return Err(format!(
-                    "Too shaken to change stance: morale {} does not overcome the fear {}.",
-                    nerve, fear.intimidation
-                ));
-            }
-        }
         // Only REACHABLE stances may be adopted: some action this entity
         // could have — through its grants, its gear, or another reachable
         // stance — must adopt it. No separate "known stances" state exists.
@@ -381,14 +370,10 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                 stance.name
             ));
         }
-        // A deliberate stance change sheds the momentary statuses: the fear
-        // is overcome, the surge of courage spent, the brace abandoned.
-        if e.fear_status().is_some() {
-            e.delete_fear_status();
-        }
-        if e.courage_status().is_some() {
-            e.delete_courage_status();
-        }
+        // A deliberate stance change abandons the brace (dive's momentary
+        // defense). Courage and fear are TIMED statuses — they count down on
+        // their own (status_duration_system) and a posture change neither
+        // sheds nor sidesteps them.
         if e.braced_status().is_some() {
             e.delete_braced_status();
         }

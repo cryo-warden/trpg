@@ -38,7 +38,7 @@ const SetStance = (stanceName: string) =>
  * postures need footing (upright) to enter from. */
 const posture = (
   stanceName: string,
-  postureRequirements: StatRequirements = NO_REQUIREMENTS,
+  postureRequirements: StatRequirements = requirements({}),
 ) => ({
   actionType: { tag: "Posture" } as const,
   requirements: postureRequirements,
@@ -64,17 +64,17 @@ const interruptibleRound = (...effects: ActionEffectAsset[]) => ({
 export const ACTIONS = {
   move: {
     actionType: { tag: "Move" },
-    requirements: requirements({ gait: 1 }),
+    requirements: requirements({ gait: 1, morale: 1 }),
     rounds: [interruptibleRound(), round(Move)],
   },
   bop: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ hand: 1 }),
+    requirements: requirements({ hand: 1, morale: 1 }),
     rounds: [round(Attack(1))],
   },
   boppity_bop: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ hand: 1 }),
+    requirements: requirements({ hand: 1, morale: 3 }),
     // A heavy: interruptible preparation, then the double hit. The wind-up
     // IS the scary part: heavies author their extra intimidation onto the
     // telegraph round.
@@ -84,101 +84,101 @@ export const ACTIONS = {
   // The path decides which of these it offers; no body knows them.
   squeeze: {
     actionType: { tag: "Move" },
-    requirements: requirements({ gait: 1 }),
+    requirements: requirements({ gait: 1, morale: 1 }),
     rounds: [interruptibleRound(), interruptibleRound(), round(Move)],
   },
   climb_down: {
     actionType: { tag: "Move" },
-    requirements: requirements({ gait: 1 }),
+    requirements: requirements({ gait: 1, morale: 1 }),
     rounds: [interruptibleRound(), interruptibleRound(), round(Move)],
   },
   // The chasm's far side: a rock wall you climb back UP. Same cost as the
   // descent — the opposite verb for the opposite direction.
   climb_up: {
     actionType: { tag: "Move" },
-    requirements: requirements({ gait: 1 }),
+    requirements: requirements({ gait: 1, morale: 1 }),
     rounds: [interruptibleRound(), interruptibleRound(), round(Move)],
   },
   // The plain heal: restores 1 + the healer's focus (healing scales by
   // focus exactly as attacks scale by attack).
   heal: {
     actionType: { tag: "Buff" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(Heal(1))],
   },
   slime_spray: {
     actionType: { tag: "Attack" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({ morale: 1 }),
     // A heavy with a committed (uninterruptible) telegraph, then recovery.
     rounds: [round(Intimidate(1)), round(Attack(1)), round()],
   },
   scratch: {
     actionType: { tag: "Attack" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({ morale: 1 }),
     rounds: [round(Attack(1))],
   },
   guard: {
     actionType: { tag: "Buff" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({ morale: 1 }),
     rounds: [round(Guard(1))],
   },
   bite: {
     actionType: { tag: "Attack" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({ morale: 1 }),
     rounds: [round(Attack(1))],
   },
   // Armament basics: each armament grants its own attack, and the
   // requirement re-checks the property the armament provides.
   smash: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ blunt: 1 }),
+    requirements: requirements({ blunt: 1, morale: 3 }),
     rounds: [interruptibleRound(Intimidate(1)), round(Attack(2))],
   },
   slash: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ bladed: 1 }),
+    requirements: requirements({ bladed: 1, morale: 3 }),
     rounds: [round(Attack(2))],
   },
   stab: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ bladed: 1 }),
+    requirements: requirements({ bladed: 1, morale: 3 }),
     rounds: [round(Attack(1))],
   },
   cleave: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ bladed: 1 }),
+    requirements: requirements({ bladed: 1, morale: 3 }),
     // A heavy: interruptible wind-up, then the blow.
     rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
   thrust: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ pole: 1, reach: 1 }),
+    requirements: requirements({ pole: 1, reach: 1, morale: 3 }),
     rounds: [round(Attack(2))],
   },
   shield_bash: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ ward: 1 }),
+    requirements: requirements({ ward: 1, morale: 3 }),
     rounds: [round(Attack(1))],
   },
   lunge: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ bladed: 1 }),
+    requirements: requirements({ bladed: 1, morale: 3 }),
     // Committed footwork first, then the strike.
     rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
   fire_bolt: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ focus: 1 }),
+    requirements: requirements({ focus: 1, morale: 3 }),
     rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
   ice_shard: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ focus: 1 }),
+    requirements: requirements({ focus: 1, morale: 3 }),
     rounds: [round(Attack(2))],
   },
   lightning_arc: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ focus: 1 }),
+    requirements: requirements({ focus: 1, morale: 3 }),
     // Two strikes on the same tick.
     rounds: [round(Attack(1), Attack(1))],
   },
@@ -188,31 +188,31 @@ export const ACTIONS = {
   // fully-armed wielder can still pocket what they find.
   take: {
     actionType: { tag: "Inventory" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(Take)],
   },
   drop: {
     actionType: { tag: "Inventory" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(Drop)],
   },
   // Equip/unequip act on CARRIED items and mirror into the active stance's
   // loadout configuration — hands and configuration never disagree.
   equip: {
     actionType: { tag: "Equip" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(EquipEffect)],
   },
   unequip: {
     actionType: { tag: "Equip" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(UnequipEffect)],
   },
   // Eating a carried quest consumable sets its quest bit (permanent
   // progression through the ratchet) and destroys the item.
   eat: {
     actionType: { tag: "Eat" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(EatEffect)],
   },
   // The cower stance's counterplay: spends EP dynamically — exactly the
@@ -227,19 +227,19 @@ export const ACTIONS = {
   // gazing, then the binding.
   attune: {
     actionType: { tag: "Attune" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [interruptibleRound(), round(Attune)],
   },
   // OFFERED actions: no creature knows these — containers (later doors
   // and levers) offer them to whoever stands beside them.
   open: {
     actionType: { tag: "Interact" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(OpenEffect)],
   },
   dump: {
     actionType: { tag: "Interact" },
-    requirements: NO_REQUIREMENTS,
+    requirements: requirements({}),
     rounds: [round(DumpEffect)],
   },
   // SYSTEM-forced only (the equipment reconciliation), never offered or
@@ -273,7 +273,7 @@ export const ACTIONS = {
   // can itself overcome a fear.
   dive: {
     actionType: { tag: "Dive" },
-    requirements: requirements({ upright: 1 }),
+    requirements: requirements({ upright: 1, morale: 1 }),
     rounds: [round(Dive(2))],
   },
 } satisfies Record<string, ActionAsset>;

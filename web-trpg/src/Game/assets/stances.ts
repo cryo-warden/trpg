@@ -95,22 +95,6 @@ export const STANCES = {
     requirements: NO_REQUIREMENTS,
     statBlock: statBlock({}),
   },
-  // The FORCED stance intimidation breaks entities into (registered via
-  // coweringStanceName). Hands wrap around the head — hand-gated actions
-  // starve out — but a crawl survives, and rally is the way back up.
-  // Upright 1: huddled on knees, still able to throw yourself flat at a
-  // weapon (the dive grab whose wielded morale can overcome the fear).
-  cowering: {
-    requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({
-      attack: -1,
-      defense: -1,
-      hand: -2,
-      gait: -1,
-      upright: 1,
-      actionNames: ["rally", "dive"],
-    }),
-  },
 } satisfies Record<string, StanceAsset>;
 
 export type StanceName = keyof typeof STANCES;
@@ -132,5 +116,4 @@ export const STANCE_DISPLAY_NAMES: Record<StanceName, string> = {
   ice_casting: "Ice Casting",
   lightning_casting: "Lightning Casting",
   amorphous: "Amorphous",
-  cowering: "Cowering",
 };

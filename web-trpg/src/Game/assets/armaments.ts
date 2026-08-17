@@ -7,7 +7,7 @@ import { statBlock } from "./stat_block";
 // hands cannot wield what would drive hand negative in play: hand-gated
 // actions (like bop) simply drop out of the derived set.
 export const ARMAMENTS = {
-  club: statBlock({ blunt: 1, hand: -1, actionNames: ["smash"] }),
+  club: statBlock({ blunt: 1, hand: -1, morale: 1, actionNames: ["smash"] }),
   // A blade or an axe in hand steadies the nerves: morale is a stat, so a
   // wielded weapon's contribution can itself overcome a fear.
   sword: statBlock({ bladed: 1, hand: -1, morale: 1, actionNames: ["slash"] }),
@@ -16,15 +16,25 @@ export const ARMAMENTS = {
     focus: 1,
     blunt: 1,
     hand: -2,
+    morale: 1,
     actionNames: ["smash"],
   }),
+  // A shield at the ready steadies the nerve more than a blade: it is the
+  // posture of standing your ground.
   shield: statBlock({
     ward: 1,
     defense: 1,
     hand: -1,
+    morale: 2,
     actionNames: ["shield_bash"],
   }),
-  spear: statBlock({ pole: 1, reach: 1, hand: -2, actionNames: ["thrust"] }),
+  spear: statBlock({
+    pole: 1,
+    reach: 1,
+    hand: -2,
+    morale: 1,
+    actionNames: ["thrust"],
+  }),
   axe: statBlock({
     bladed: 1,
     attack: 1,
@@ -32,7 +42,7 @@ export const ARMAMENTS = {
     morale: 1,
     actionNames: ["cleave"],
   }),
-  dagger: statBlock({ bladed: 1, hand: -1, actionNames: ["stab"] }),
+  dagger: statBlock({ bladed: 1, hand: -1, morale: 1, actionNames: ["stab"] }),
 } satisfies Record<string, StatBlockAsset>;
 
 export type ArmamentName = keyof typeof ARMAMENTS;
