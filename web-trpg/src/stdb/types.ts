@@ -679,6 +679,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get perished() {
     return __t.option(FlagComponentBlob);
   },
+  get destroyed() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },

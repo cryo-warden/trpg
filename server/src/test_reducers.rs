@@ -46,3 +46,62 @@ pub fn test_party_leader_sanitation(ctx: &ReducerContext) -> Result<(), String> 
     );
     Ok(())
 }
+
+/// A dead NPC (has a controller) becomes a lingering CORPSE — perished, never
+/// flagged for destruction.
+#[reducer]
+pub fn test_death_corpses_an_npc(ctx: &ReducerContext) -> Result<(), String> {
+    let ecs = ctx.ecs();
+    let npc = ecs.new();
+    let id = npc.entity_id();
+    npc.upsert_new_hp(0, 10, 0, 0, 0)
+        .into_handle()
+        .upsert_new_enemy_controller();
+
+    crate::system::death_system(ecs);
+
+    let handle = ecs.find(id);
+    check!(handle.perished().is_some(), "dead NPC should be a corpse (perished)");
+    check!(
+        handle.destroyed().is_none(),
+        "dead NPC must not be flagged for destruction"
+    );
+    Ok(())
+}
+
+/// A dead controllerless OBJECT is flagged for destruction, never corpsed.
+#[reducer]
+pub fn test_death_destroys_an_object(ctx: &ReducerContext) -> Result<(), String> {
+    let ecs = ctx.ecs();
+    let object = ecs.new();
+    let id = object.entity_id();
+    object.upsert_new_hp(0, 10, 0, 0, 0);
+
+    crate::system::death_system(ecs);
+
+    let handle = ecs.find(id);
+    check!(
+        handle.destroyed().is_some(),
+        "dead object should be flagged for destruction"
+    );
+    check!(handle.perished().is_none(), "an object is not a corpse");
+    Ok(())
+}
+
+/// destruction_system deletes a destroyed entity outright.
+#[reducer]
+pub fn test_destruction_deletes_the_entity(ctx: &ReducerContext) -> Result<(), String> {
+    use spacetimedb::Table as _;
+    let ecs = ctx.ecs();
+    let object = ecs.new();
+    let id = object.entity_id();
+    object.upsert_new_hp(0, 10, 0, 0, 0).into_handle().upsert_new_destroyed();
+
+    crate::system::destruction_system(ecs);
+
+    check!(
+        ecs.db.entities().id().find(id).is_none(),
+        "destroyed entity should be gone"
+    );
+    Ok(())
+}

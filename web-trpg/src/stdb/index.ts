@@ -85,6 +85,7 @@ import CourageStatusComponentsRow from "./courage_status_components_table";
 import DefaultActionsComponentsRow from "./default_actions_components_table";
 import DefaultArmamentsComponentsRow from "./default_armaments_components_table";
 import DefeatDropComponentsRow from "./defeat_drop_components_table";
+import DestroyedComponentsRow from "./destroyed_components_table";
 import DifferentiableComponentsRow from "./differentiable_components_table";
 import EnemyControllerComponentsRow from "./enemy_controller_components_table";
 import EntitiesRow from "./entities_table";
@@ -490,6 +491,17 @@ const tablesSchema = __schema({
       { name: 'defeat_drop_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, DefeatDropComponentsRow),
+  destroyed_components: __table({
+    name: 'destroyed_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'destroyed_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'destroyed_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, DestroyedComponentsRow),
   differentiable_components: __table({
     name: 'differentiable_components',
     indexes: [

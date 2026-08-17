@@ -442,6 +442,7 @@ fn resolve_entity_blob(
         action_queue_dirty: None,
         // Runtime state: the death system's one-shot latch.
         perished: None,
+        destroyed: None,
         differentiable: author
             .differentiable
             .map(|d| {

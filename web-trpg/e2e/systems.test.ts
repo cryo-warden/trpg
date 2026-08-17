@@ -15,7 +15,12 @@ import {
 //
 // Add a test set: write `#[reducer] pub fn test_<name>` in test_reducers.rs and
 // add its name to SYSTEM_TEST_SETS below.
-const SYSTEM_TEST_SETS = ["test_party_leader_sanitation"];
+const SYSTEM_TEST_SETS = [
+  "test_party_leader_sanitation",
+  "test_death_corpses_an_npc",
+  "test_death_destroys_an_object",
+  "test_destruction_deletes_the_entity",
+];
 
 beforeAll(() => {
   requirePrereqs();

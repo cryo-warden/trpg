@@ -158,6 +158,9 @@ export default __t.row({
   get perished() {
     return __t.option(FlagComponentBlob);
   },
+  get destroyed() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },

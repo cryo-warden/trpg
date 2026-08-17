@@ -59,10 +59,12 @@ const RESPAWN_DELAY_MICROS: i64 = 3_000_000;
 /// their carried items into the room). A dead player's body stays where it
 /// fell, unable to act, until the respawn delay elapses and the wake at
 /// the checkpoint takes them out of the situation.
+/// TIER: DEATH. Everything at zero HP is resolved here into the next tier —
+/// players linger with a respawn timer (revived by respawn_system), NPCs become
+/// lingering corpses (the perished latch), and controllerless objects are flagged
+/// for DESTRUCTION (handled by destruction_system). Death itself spills nothing
+/// and deletes nothing.
 pub fn death_system(ecs: Ecs) {
-    // Breakables get collected first: shattering deletes their hp row, and
-    // the hp table must not be mutated mid-iteration.
-    let mut shattered: Vec<u64> = Vec::new();
     for e in ecs.iter_hp() {
         if e.hp().hp > 0 {
             continue;
@@ -73,8 +75,9 @@ pub fn death_system(ecs: Ecs) {
             continue;
         }
         // An NPC corpse is processed exactly once (the flag is its latch:
-        // narration and state-shedding never repeat while it lingers).
-        if handle.perished().is_some() {
+        // narration and state-shedding never repeat while it lingers). An
+        // object already flagged for destruction is likewise done here.
+        if handle.perished().is_some() || handle.destroyed().is_some() {
             continue;
         }
         let entity_id = handle.entity_id();
@@ -99,28 +102,34 @@ pub fn death_system(ecs: Ecs) {
                 .observable_events()
                 .insert(ecs.new_event(entity_id, EventType::Died, entity_id));
         } else if handle.enemy_controller().is_some() {
-            // A dead NPC becomes a CORPSE, never a deletion: the entity
+            // A dead NPC becomes a CORPSE, never destruction: the entity
             // remains — its name stays in every message — and the body is
             // there to see (and to target). The enemy controller also
             // REMAINS, dormant, so the threat panel keeps the fallen where
-            // they fell. Map cleanup eventually sweeps corpse and
-            // controller with the room. (Inventory stays INSIDE the
-            // corpse — loot is a future feature; only breakables spill.)
+            // they fell. Map cleanup eventually sweeps corpse and controller
+            // with the room. (Inventory stays INSIDE the corpse — loot is a
+            // future feature; only breakables spill.)
             ecs.db
                 .observable_events()
                 .insert(ecs.new_event(entity_id, EventType::Died, entity_id));
             ecs.find(entity_id).upsert_new_perished();
         } else {
-            // A pure physical OBJECT (no controller) breaks: any physical
-            // thing yields if you hit it hard enough. It shatters — leaving
-            // debris if it authored remains — and is removed, never left as a
-            // lingering "corpse".
-            shattered.push(entity_id);
+            // A pure physical OBJECT (no controller) yields if hit hard
+            // enough: flag it for the DESTRUCTION tier.
+            ecs.find(entity_id).upsert_new_destroyed();
         }
     }
-    for entity_id in shattered {
-        // The break narrates BEFORE anything changes, so the message
-        // names the jar — never the shards.
+}
+
+/// TIER: DESTRUCTION. A destroyed entity spills its contents, leaves debris, and
+/// is deleted — the noisy defeat (never a player). Death routes objects here,
+/// but anything can flag `destroyed` directly (a future "smash the wall").
+/// Collected first: deletion mutates tables this would otherwise iterate.
+pub fn destruction_system(ecs: Ecs) {
+    let destroyed: Vec<u64> = ecs.iter_destroyed().map(|e| e.entity_id()).collect();
+    for entity_id in destroyed {
+        // The break narrates BEFORE anything changes, so the message names the
+        // jar — never the shards.
         ecs.db
             .observable_events()
             .insert(ecs.new_event(entity_id, EventType::Shattered, entity_id));
@@ -1619,6 +1628,9 @@ pub fn execute_all_systems(ecs: Ecs) {
     hp_share_system(ecs);
     hp_system(ecs);
     death_system(ecs);
+    // Death flags controllerless objects destroyed; destruction spills + debris
+    // + deletes them, same tick.
+    destruction_system(ecs);
     respawn_system(ecs);
     ep_system(ecs);
     shift_queued_action_system(ecs);

@@ -247,6 +247,12 @@ entity!(
       // gate on their respawn timer instead (revival must not be
       // blocked by a permanent flag).
       perished in perished_components,
+      // DESTRUCTION requested: destruction_system spills this entity's
+      // contents, spawns its debris, and deletes it. Death sets it on a
+      // controllerless object (players respawn, NPCs corpse), but ANYTHING
+      // can set it — a future "smash the wall" attack destroys directly,
+      // no death required. The tier below cleanup, above nothing.
+      destroyed in destroyed_components,
     )]
     struct FlagComponent {}
 
