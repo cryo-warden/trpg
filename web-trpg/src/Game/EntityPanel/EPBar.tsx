@@ -9,7 +9,9 @@ export const EPBar = ({ entity }: { entity: EntityId }) => {
     Math.max(0, 100 * (epComponent?.ep ?? 0)) / (epComponent?.mep ?? 1);
   const isRising = useIsRising(0, epRatio ?? 0);
 
-  if (epComponent == null || epRatio == null) {
+  // No EP to speak of (mep 0): most entities now derive a full stat block, so
+  // without this every rock and path would draw an empty EP bar.
+  if (epComponent == null || epComponent.mep === 0) {
     return null;
   }
 

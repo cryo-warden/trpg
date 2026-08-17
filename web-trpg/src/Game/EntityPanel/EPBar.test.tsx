@@ -16,3 +16,11 @@ test("EPBar renders nothing when the entity has no ep component", () => {
   const { container } = render(<EPBar entity={1n} />, { wrapper });
   expect(container.textContent).toBe("");
 });
+
+test("EPBar renders nothing when max ep is zero", () => {
+  const wrapper = stdbWrapper({
+    ep_components: mockTable([{ entityId: 1n, ep: 0, mep: 0 }]),
+  });
+  const { container } = render(<EPBar entity={1n} />, { wrapper });
+  expect(container.textContent).toBe("");
+});
