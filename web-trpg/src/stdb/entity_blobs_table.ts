@@ -22,12 +22,14 @@ import {
   TraitsComponentBlob,
   ActiveStanceComponentBlob,
   EquipmentComponentBlob,
+  EquipmentBlobbedComponentBlob,
   RemainsComponentBlob,
   DefaultArmamentsComponentBlob,
   ArmorComponentBlob,
   RelicsComponentBlob,
   StanceCustomizationsComponentBlob,
   ItemComponentBlob,
+  EquippableComponentBlob,
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
   CheckpointComponentBlob,
@@ -95,6 +97,9 @@ export default __t.row({
   get equipment() {
     return __t.option(EquipmentComponentBlob);
   },
+  get equipmentBlobbed() {
+    return __t.option(EquipmentBlobbedComponentBlob).name("equipment_blobbed");
+  },
   get remains() {
     return __t.option(RemainsComponentBlob);
   },
@@ -112,6 +117,9 @@ export default __t.row({
   },
   get item() {
     return __t.option(ItemComponentBlob);
+  },
+  get equippable() {
+    return __t.option(EquippableComponentBlob);
   },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob).name("equipment_stat_block_cache");

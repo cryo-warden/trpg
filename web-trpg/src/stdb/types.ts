@@ -615,6 +615,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get equipment() {
     return __t.option(EquipmentComponentBlob);
   },
+  get equipmentBlobbed() {
+    return __t.option(EquipmentBlobbedComponentBlob);
+  },
   get remains() {
     return __t.option(RemainsComponentBlob);
   },
@@ -632,6 +635,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   },
   get item() {
     return __t.option(ItemComponentBlob);
+  },
+  get equippable() {
+    return __t.option(EquippableComponentBlob);
   },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob);
@@ -899,6 +905,21 @@ export const EpComponentBlob = __t.object("EpComponentBlob", {
 });
 export type EpComponentBlob = __Infer<typeof EpComponentBlob>;
 
+export const EquipmentBlobbedComponent = __t.object("EquipmentBlobbedComponent", {
+  entityId: __t.u64(),
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type EquipmentBlobbedComponent = __Infer<typeof EquipmentBlobbedComponent>;
+
+export const EquipmentBlobbedComponentBlob = __t.object("EquipmentBlobbedComponentBlob", {
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type EquipmentBlobbedComponentBlob = __Infer<typeof EquipmentBlobbedComponentBlob>;
+
 export const EquipmentComponent = __t.object("EquipmentComponent", {
   entityId: __t.u64(),
   armamentIds: __t.array(__t.u32()),
@@ -913,6 +934,21 @@ export const EquipmentComponentBlob = __t.object("EquipmentComponentBlob", {
   wornRelicIds: __t.array(__t.u32()),
 });
 export type EquipmentComponentBlob = __Infer<typeof EquipmentComponentBlob>;
+
+export const EquippableComponent = __t.object("EquippableComponent", {
+  entityId: __t.u64(),
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type EquippableComponent = __Infer<typeof EquippableComponent>;
+
+export const EquippableComponentBlob = __t.object("EquippableComponentBlob", {
+  get statBlock() {
+    return StatBlock;
+  },
+});
+export type EquippableComponentBlob = __Infer<typeof EquippableComponentBlob>;
 
 // The tagged union or sum type for the algebraic type `EventType`.
 export const EventType = __t.enum("EventType", {

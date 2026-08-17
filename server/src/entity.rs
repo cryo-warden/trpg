@@ -152,6 +152,18 @@ entity!(
         pub worn_relic_ids: Vec<u32>,
     }
 
+    // NPC equipment kept LIGHT: the summed stat block of an entity's
+    // authored gear (armaments + armor + relics), precomputed at push. No
+    // item entities, no configuration, no reconciliation — it just feeds the
+    // equipment cache the same total the per-item sum feeds for players. An
+    // entity uses this OR a real EquipmentComponent, never both: the conflict
+    // invariant strips this when a real EquipmentComponent appears (real gear
+    // wins), so an NPC can opt into item entities by gaining one.
+    #[component(equipment_blobbed in equipment_blobbed_components, dirties(equipment_stat_block_dirty_flag))]
+    struct EquipmentBlobbedComponent {
+        pub stat_block: StatBlock,
+    }
+
     // What a breakable leaves behind: on destruction (hp exhausted,
     // neither player nor enemy controller), the entity's contents SPILL
     // into its room, its appearance becomes these remains (rubble,
@@ -203,6 +215,16 @@ entity!(
     #[component(item in item_components)]
     struct ItemComponent {
         pub item_ref: ItemRef,
+    }
+
+    // What one item entity contributes WHEN EQUIPPED: its whole stat block
+    // (armament/armor/relic properties, hand cost, granted actions, morale,
+    // ...), stamped from the gear asset at instantiation. The equipment cache
+    // of whoever wields it sums the Equippable of every equipped item — the
+    // single rule that replaces per-asset stat lookups.
+    #[component(equippable in equippable_components)]
+    struct EquippableComponent {
+        pub stat_block: StatBlock,
     }
 
     #[component(

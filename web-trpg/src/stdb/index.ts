@@ -94,9 +94,11 @@ import EntitiesVisitedLocationsRow from "./entities_visited_locations_table";
 import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
 import EpComponentsRow from "./ep_components_table";
+import EquipmentBlobbedComponentsRow from "./equipment_blobbed_components_table";
 import EquipmentComponentsRow from "./equipment_components_table";
 import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_components_table";
 import EquipmentStatBlockDirtyFlagComponentsRow from "./equipment_stat_block_dirty_flag_components_table";
+import EquippableComponentsRow from "./equippable_components_table";
 import FearStatusComponentsRow from "./fear_status_components_table";
 import HpComponentsRow from "./hp_components_table";
 import HpShareAppliedComponentsRow from "./hp_share_applied_components_table";
@@ -598,6 +600,17 @@ const tablesSchema = __schema({
       { name: 'ep_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EpComponentsRow),
+  equipment_blobbed_components: __table({
+    name: 'equipment_blobbed_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equipment_blobbed_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equipment_blobbed_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquipmentBlobbedComponentsRow),
   equipment_components: __table({
     name: 'equipment_components',
     indexes: [
@@ -631,6 +644,17 @@ const tablesSchema = __schema({
       { name: 'equipment_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EquipmentStatBlockDirtyFlagComponentsRow),
+  equippable_components: __table({
+    name: 'equippable_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equippable_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equippable_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquippableComponentsRow),
   fear_status_components: __table({
     name: 'fear_status_components',
     indexes: [

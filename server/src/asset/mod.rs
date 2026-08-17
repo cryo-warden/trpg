@@ -41,7 +41,8 @@ use crate::{
         AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
         CheckpointBindingComponentBlob, CheckpointComponentBlob, DifferentiableComponentBlob,
         EntityBlob,
-        EquipmentComponentBlob, FindEntityHandle, FlagComponent, InstantiateEntityBlob,
+        EquipmentBlobbedComponentBlob, EquipmentComponentBlob, EquippableComponentBlob,
+        FindEntityHandle, FlagComponent, InstantiateEntityBlob,
         ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
         RemainsComponentBlob, TraitsComponentBlob,
     },
@@ -178,6 +179,13 @@ struct AssetNameMaps {
     stances: HashMap<String, u32>,
     quests: HashMap<String, u32>,
     location_maps: HashMap<String, u32>,
+    // Resolved gear stat blocks, keyed by asset id — filled once the gear
+    // assets are stored (see the fill below). Lets blob resolution stamp an
+    // item's Equippable and an NPC's summed EquipmentBlobbed without a
+    // second asset lookup.
+    armament_stat_blocks: HashMap<u32, StatBlock>,
+    armor_stat_blocks: HashMap<u32, StatBlock>,
+    relic_stat_blocks: HashMap<u32, StatBlock>,
 }
 
 /// Resolve an authored blob's asset-name references into the stored
@@ -187,6 +195,70 @@ fn resolve_entity_blob(
     author: EntityBlobAsset,
     maps: &AssetNameMaps,
 ) -> Result<EntityBlob, String> {
+    // The item's resolved reference, shared by the ItemComponent and the
+    // Equippable stamp below so a name resolves exactly once.
+    let item_ref: Option<ItemRef> = author
+        .item
+        .as_ref()
+        .map(|item| {
+            Ok::<_, String>(match item {
+                ItemRefAsset::Armament(n) => {
+                    ItemRef::Armament(resolve_name(&maps.armaments, "armament", n)?)
+                }
+                ItemRefAsset::Armor(n) => ItemRef::Armor(resolve_name(&maps.armors, "armor", n)?),
+                ItemRefAsset::Relic(n) => ItemRef::Relic(resolve_name(&maps.relics, "relic", n)?),
+                ItemRefAsset::QuestItem(q) => ItemRef::QuestItem(crate::item::QuestItemRef {
+                    quest_id: resolve_name(&maps.quests, "quest", &q.quest_name)?,
+                    index: q.index,
+                }),
+            })
+        })
+        .transpose()?;
+    // An equippable item entity carries its gear asset's whole stat block.
+    let equippable = item_ref.as_ref().and_then(|r| {
+        let stat_block = match r {
+            ItemRef::Armament(id) => maps.armament_stat_blocks.get(id),
+            ItemRef::Armor(id) => maps.armor_stat_blocks.get(id),
+            ItemRef::Relic(id) => maps.relic_stat_blocks.get(id),
+            ItemRef::QuestItem(_) => None,
+        }?;
+        Some(EquippableComponentBlob {
+            stat_block: stat_block.clone(),
+        })
+    });
+    // NPC gear kept light: the summed stat block of the authored armaments,
+    // armor, and relics — the same total a player's per-item Equippable sum
+    // produces.
+    let equipment_blobbed = {
+        let mut stat_block = StatBlock::default();
+        let mut any = false;
+        if let Some(names) = author.armament_names.as_ref() {
+            for n in names {
+                let id = resolve_name(&maps.armaments, "armament", n)?;
+                if let Some(b) = maps.armament_stat_blocks.get(&id) {
+                    stat_block += b;
+                    any = true;
+                }
+            }
+        }
+        if let Some(n) = author.armor_name.as_ref() {
+            let id = resolve_name(&maps.armors, "armor", n)?;
+            if let Some(b) = maps.armor_stat_blocks.get(&id) {
+                stat_block += b;
+                any = true;
+            }
+        }
+        if let Some(names) = author.relic_names.as_ref() {
+            for n in names {
+                let id = resolve_name(&maps.relics, "relic", n)?;
+                if let Some(b) = maps.relic_stat_blocks.get(&id) {
+                    stat_block += b;
+                    any = true;
+                }
+            }
+        }
+        any.then_some(EquipmentBlobbedComponentBlob { stat_block })
+    };
     Ok(EntityBlob {
         name: author.name,
         location: author.location,
@@ -280,30 +352,9 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        item: author
-            .item
-            .map(|item| {
-                Ok::<_, String>(ItemComponentBlob {
-                    item_ref: match item {
-                        ItemRefAsset::Armament(n) => {
-                            ItemRef::Armament(resolve_name(&maps.armaments, "armament", &n)?)
-                        }
-                        ItemRefAsset::Armor(n) => {
-                            ItemRef::Armor(resolve_name(&maps.armors, "armor", &n)?)
-                        }
-                        ItemRefAsset::Relic(n) => {
-                            ItemRef::Relic(resolve_name(&maps.relics, "relic", &n)?)
-                        }
-                        ItemRefAsset::QuestItem(q) => {
-                            ItemRef::QuestItem(crate::item::QuestItemRef {
-                                quest_id: resolve_name(&maps.quests, "quest", &q.quest_name)?,
-                                index: q.index,
-                            })
-                        }
-                    },
-                })
-            })
-            .transpose()?,
+        item: item_ref.map(|item_ref| ItemComponentBlob { item_ref }),
+        equippable,
+        equipment_blobbed,
         stance_customizations: None,
         checkpoint_object: author.checkpoint_object,
         checkpoint_binding: author
@@ -585,7 +636,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     // All name -> id maps come first: effect payloads (e.g. SetStance) may
     // reference any kind, so the action loop below already needs them.
-    let maps = AssetNameMaps {
+    let mut maps = AssetNameMaps {
+        // Filled after the gear assets are stored, below.
+        armament_stat_blocks: HashMap::new(),
+        armor_stat_blocks: HashMap::new(),
+        relic_stat_blocks: HashMap::new(),
         actions: match_names(
             "action",
             ctx.db.actions().iter().map(|a| (a.name, a.id)),
@@ -789,6 +844,13 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.relics().insert(row);
         }
     }
+
+    // The gear assets are now stored with their resolved stat blocks; index
+    // them by id so blob resolution can stamp per-item Equippable and summed
+    // NPC EquipmentBlobbed contributions.
+    maps.armament_stat_blocks = ctx.db.armaments().iter().map(|a| (a.id, a.stat_block)).collect();
+    maps.armor_stat_blocks = ctx.db.armors().iter().map(|a| (a.id, a.stat_block)).collect();
+    maps.relic_stat_blocks = ctx.db.relics().iter().map(|r| (r.id, r.stat_block)).collect();
 
     for q in asset_pack.quests {
         let id = maps.quests[&q.name];
