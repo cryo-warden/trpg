@@ -443,6 +443,14 @@ entity!(
         pub action_ids: Vec<ActionId>,
     }
 
+    // On an ENEMY: the last action its AI committed to, so enemy_control_system
+    // rotates to the NEXT action in its list each turn (skipping any with no
+    // valid target) instead of spamming the first — basic variety in a fight.
+    #[component(action_cursor in action_cursor_components)]
+    struct ActionCursorComponent {
+        pub last_action_id: ActionId,
+    }
+
     #[component(
       entity_deletion_timer in entity_deletion_timer_components,
       player_deactivation_timer in player_deactivation_timer_components,

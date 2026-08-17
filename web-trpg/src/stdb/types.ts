@@ -65,6 +65,17 @@ export const ActionAsset = __t.object("ActionAsset", {
 });
 export type ActionAsset = __Infer<typeof ActionAsset>;
 
+export const ActionCursorComponent = __t.object("ActionCursorComponent", {
+  entityId: __t.u64(),
+  lastActionId: __t.u32(),
+});
+export type ActionCursorComponent = __Infer<typeof ActionCursorComponent>;
+
+export const ActionCursorComponentBlob = __t.object("ActionCursorComponentBlob", {
+  lastActionId: __t.u32(),
+});
+export type ActionCursorComponentBlob = __Infer<typeof ActionCursorComponentBlob>;
+
 // The tagged union or sum type for the algebraic type `ActionEffect`.
 export const ActionEffect = __t.enum("ActionEffect", {
   get Buff() {
@@ -736,6 +747,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob);
+  },
+  get actionCursor() {
+    return __t.option(ActionCursorComponentBlob);
   },
   get entityDeletionTimer() {
     return __t.option(TimerComponentBlob);

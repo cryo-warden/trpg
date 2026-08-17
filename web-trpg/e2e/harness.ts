@@ -51,6 +51,9 @@ export const publishTestModule = (dbName: string = TEST_DB): void => {
 export const publishTestReducerModule = (
   dbName: string = TEST_REDUCER_DB,
 ): void => {
+  // A DEDICATED target dir: the feature-on build must not share target/ with
+  // the feature-off builds (check, the full-tick e2e), or toggling the feature
+  // invalidates cargo's cache and each publish pays a full recompile.
   const build = Bun.spawnSync({
     cmd: [
       "cargo",
@@ -62,6 +65,8 @@ export const publishTestReducerModule = (
       "--target",
       "wasm32-unknown-unknown",
       "--release",
+      "--target-dir",
+      "../target/testing",
     ],
   });
   if ((build.exitCode ?? 1) !== 0) {
@@ -73,7 +78,7 @@ export const publishTestReducerModule = (
   const { code, out } = spacetime([
     "publish",
     "--bin-path",
-    "../target/wasm32-unknown-unknown/release/server.wasm",
+    "../target/testing/wasm32-unknown-unknown/release/server.wasm",
     dbName,
     "--delete-data",
     "--yes",

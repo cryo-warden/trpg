@@ -60,6 +60,7 @@ import SetStanceReducer from "./set_stance_reducer";
 import AccountIdentitiesRow from "./account_identities_table";
 import AccountRolesRow from "./account_roles_table";
 import AccountsRow from "./accounts_table";
+import ActionCursorComponentsRow from "./action_cursor_components_table";
 import ActionQueueComponentsRow from "./action_queue_components_table";
 import ActionQueueDirtyComponentsRow from "./action_queue_dirty_components_table";
 import ActionRoundsRow from "./action_rounds_table";
@@ -191,6 +192,17 @@ const tablesSchema = __schema({
       { name: 'accounts_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, AccountsRow),
+  action_cursor_components: __table({
+    name: 'action_cursor_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'action_cursor_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'action_cursor_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ActionCursorComponentsRow),
   action_queue_components: __table({
     name: 'action_queue_components',
     indexes: [

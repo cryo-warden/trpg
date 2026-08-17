@@ -51,6 +51,7 @@ import {
   ActionQueueComponentBlob,
   ActionsComponentBlob,
   PinnedActionsComponentBlob,
+  ActionCursorComponentBlob,
   TimerComponentBlob,
   LocationMapComponentBlob,
   AppearanceFeaturesComponentBlob,
@@ -225,6 +226,9 @@ export default __t.row({
   },
   get pinnedActions() {
     return __t.option(PinnedActionsComponentBlob).name("pinned_actions");
+  },
+  get actionCursor() {
+    return __t.option(ActionCursorComponentBlob).name("action_cursor");
   },
   get entityDeletionTimer() {
     return __t.option(TimerComponentBlob).name("entity_deletion_timer");

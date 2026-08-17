@@ -428,6 +428,8 @@ fn resolve_entity_blob(
         total_stat_block_dirty_flag: None,
         action_state: None,
         action_queue: None,
+        // The enemy AI's rotation cursor is runtime-only.
+        action_cursor: None,
         entity_deletion_timer: None,
         player_deactivation_timer: None,
         actionless_since: None,

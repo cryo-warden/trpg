@@ -1537,38 +1537,62 @@ pub fn enemy_control_system(ecs: Ecs) {
     let mut players: Vec<_> = ecs.iter_player_controller().with_location().collect();
     let mut player_shuffle_rng = ecs.rng();
     for e in ecs.iter_enemy_controller().with_location().with_actions() {
-        if e.action_state().is_some() {
+        // Already acting OR already holding a plan: leave it — re-enqueuing an
+        // identical action every tick re-dirties the queue, which re-fires the
+        // "hesitated" (TargetLost) event forever.
+        if e.action_state().is_some() || e.action_queue().is_some() {
             continue;
         }
         // A corpse keeps its controller (dormant will) but never acts.
         if { e.hp() }.is_some_and(|hp| hp.hp <= 0) {
             continue;
         }
+        let entity_id = e.entity_id();
+        // Frozen while its instance is turn-paused — it must not queue (and so
+        // must not hesitate) during a pause.
+        if crate::turn::instance_is_paused(ecs, entity_id) {
+            continue;
+        }
 
+        let my_location = e.location();
         let mut p = None;
         players.shuffle(&mut player_shuffle_rng);
         for t in &players {
-            if t.location().location_entity_id == e.location().location_entity_id
-                && t.location().kind == e.location().kind
+            if t.location().location_entity_id == my_location.location_entity_id
+                && t.location().kind == my_location.kind
             {
                 p = Some(t);
                 break;
             }
         }
-        let target_entity_id = if let Some(p) = p {
-            p.entity_id()
-        } else {
+        let Some(p) = p else {
             continue;
         };
-        // TODO Select action.
-        let action_id = if let Some(a) = e.actions().action_ids.first() {
-            a
-        } else {
-            break;
+        let target_entity_id = p.entity_id();
+
+        // Rotate through this enemy's actions: start just AFTER the one it last
+        // committed to, wrap around, and take the first with a valid target —
+        // so it cycles its moves for variety and skips any that can't hit (a
+        // move, an attack whose requirements it doesn't meet). No usable action
+        // anywhere: it simply waits. (continue, not break: one actionless enemy
+        // must not stop the rest.)
+        let handle = ecs.find(entity_id);
+        let action_ids = &e.actions().action_ids;
+        let count = action_ids.len();
+        let start = handle
+            .action_cursor()
+            .and_then(|cursor| action_ids.iter().position(|&id| id == cursor.last_action_id))
+            .map_or(0, |i| i + 1);
+        let Some(action_id) = (0..count)
+            .map(|k| action_ids[(start + k) % count])
+            .find(|&action_id| handle.can_target_other(target_entity_id, action_id))
+        else {
+            continue;
         };
 
-        e.clone()
-            .enqueue_manual_action(*action_id, target_entity_id);
+        ecs.find(entity_id).upsert_new_action_cursor(action_id);
+        ecs.find(entity_id)
+            .enqueue_manual_action(action_id, target_entity_id);
     }
 }
 
