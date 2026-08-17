@@ -19,7 +19,7 @@ pub enum ItemRef {
     QuestItem(QuestItemRef),
 }
 
-/// One stance's loadout inside a player's assignments. INTENT IS EXPLICIT
+/// One stance's customization inside a player's assignments. INTENT IS EXPLICIT
 /// in the type, never inferred from emptiness:
 /// - `armament_ids: None` — no override; the stance fights with the
 ///   DEFAULT wielded set. `Some(vec![])` — deliberately BARE HANDS.
@@ -32,7 +32,7 @@ pub enum ItemRef {
 /// blades need two owned blades — the counted-multiset rule). Actions are
 /// validated against the stance's candidate set.
 #[derive(Debug, Clone, SpacetimeType)]
-pub struct StanceLoadout {
+pub struct StanceCustomization {
     pub stance_id: u32,
     pub armament_ids: Option<Vec<u32>>,
     pub action_ids: Option<Vec<u32>>,

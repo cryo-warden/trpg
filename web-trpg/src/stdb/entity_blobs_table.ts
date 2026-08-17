@@ -26,7 +26,7 @@ import {
   DefaultArmamentsComponentBlob,
   ArmorComponentBlob,
   RelicsComponentBlob,
-  StanceLoadoutsComponentBlob,
+  StanceCustomizationsComponentBlob,
   ItemComponentBlob,
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
@@ -107,8 +107,8 @@ export default __t.row({
   get relics() {
     return __t.option(RelicsComponentBlob);
   },
-  get stanceLoadouts() {
-    return __t.option(StanceLoadoutsComponentBlob).name("stance_loadouts");
+  get stanceCustomizations() {
+    return __t.option(StanceCustomizationsComponentBlob).name("stance_customizations");
   },
   get item() {
     return __t.option(ItemComponentBlob);

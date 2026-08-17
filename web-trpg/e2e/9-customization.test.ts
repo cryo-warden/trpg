@@ -4,10 +4,10 @@ import { requirePrereqs } from "./prereqs";
 import { publishTestModule } from "./harness";
 import { connect, playerEntityIdFor, waitFor } from "./client";
 import { claimAdmin } from "./admin";
-import { loadoutPack } from "./testAssets";
+import { customizationPack } from "./testAssets";
 
-// Phase 9: inventory + loadouts. Carrying IS location: taking a room item
-// pulls it into the player. Loadouts: one armor slot and up to four relics
+// Phase 9: inventory + customizations. Carrying IS location: taking a room item
+// pulls it into the player. Customizations: one armor slot and up to four relics
 // across all stances. Armaments resolve OVERRIDE-OR-DEFAULT: the equip
 // menu builds a DEFAULT wielded set (take's auto-wield and the
 // equip/unequip item actions edit it), and a stance's assignment OVERRIDES
@@ -44,7 +44,7 @@ beforeAll(async () => {
 
   admin = (await connect()).connection;
   await claimAdmin(admin);
-  await admin.reducers.pushAssets({ assetPack: loadoutPack() });
+  await admin.reducers.pushAssets({ assetPack: customizationPack() });
 
   player = (await connect()).connection;
   player
@@ -60,7 +60,7 @@ beforeAll(async () => {
       "SELECT * FROM equipment_components",
       "SELECT * FROM default_armaments_components",
       "SELECT * FROM pinned_actions_components",
-      "SELECT * FROM stance_loadouts_components",
+      "SELECT * FROM stance_customizations_components",
       "SELECT * FROM armor_components",
       "SELECT * FROM relics_components",
       "SELECT * FROM item_components",

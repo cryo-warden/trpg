@@ -627,8 +627,8 @@ export const EntityBlob = __t.object("EntityBlob", {
   get relics() {
     return __t.option(RelicsComponentBlob);
   },
-  get stanceLoadouts() {
-    return __t.option(StanceLoadoutsComponentBlob);
+  get stanceCustomizations() {
+    return __t.option(StanceCustomizationsComponentBlob);
   },
   get item() {
     return __t.option(ItemComponentBlob);
@@ -1793,27 +1793,27 @@ export const StanceAsset = __t.object("StanceAsset", {
 });
 export type StanceAsset = __Infer<typeof StanceAsset>;
 
-export const StanceLoadout = __t.object("StanceLoadout", {
+export const StanceCustomization = __t.object("StanceCustomization", {
   stanceId: __t.u32(),
   armamentIds: __t.option(__t.array(__t.u32())),
   actionIds: __t.option(__t.array(__t.u32())),
 });
-export type StanceLoadout = __Infer<typeof StanceLoadout>;
+export type StanceCustomization = __Infer<typeof StanceCustomization>;
 
-export const StanceLoadoutsComponent = __t.object("StanceLoadoutsComponent", {
+export const StanceCustomizationsComponent = __t.object("StanceCustomizationsComponent", {
   entityId: __t.u64(),
   get assignments() {
-    return __t.array(StanceLoadout);
+    return __t.array(StanceCustomization);
   },
 });
-export type StanceLoadoutsComponent = __Infer<typeof StanceLoadoutsComponent>;
+export type StanceCustomizationsComponent = __Infer<typeof StanceCustomizationsComponent>;
 
-export const StanceLoadoutsComponentBlob = __t.object("StanceLoadoutsComponentBlob", {
+export const StanceCustomizationsComponentBlob = __t.object("StanceCustomizationsComponentBlob", {
   get assignments() {
-    return __t.array(StanceLoadout);
+    return __t.array(StanceCustomization);
   },
 });
-export type StanceLoadoutsComponentBlob = __Infer<typeof StanceLoadoutsComponentBlob>;
+export type StanceCustomizationsComponentBlob = __Infer<typeof StanceCustomizationsComponentBlob>;
 
 export const StatBlock = __t.object("StatBlock", {
   attack: __t.i8(),

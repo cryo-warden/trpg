@@ -1,7 +1,7 @@
 use crate::{
     action::ActionId,
     asset::stat_block::StatBlock,
-    item::{ItemRef, StanceLoadout},
+    item::{ItemRef, StanceCustomization},
 };
 use ecs::entity;
 use spacetimedb::Timestamp;
@@ -139,7 +139,7 @@ entity!(
     // Wielded armaments; their stat blocks merge through the equipment cache
     // exactly as traits merge through theirs. THE CANONICAL worn/wielded
     // reality — the one representation stats derive from. The various
-    // CONFIGURATIONS (default armaments, stance loadouts, the armor and
+    // CONFIGURATIONS (default armaments, stance customizations, the armor and
     // relics choices) are intent; the reconciliation system detects
     // divergence and forces the re-arm action, while intentional acts
     // (stance changes, equip/unequip) converge immediately themselves.
@@ -164,7 +164,7 @@ entity!(
     }
 
     // The DEFAULT wielded set: what the hands hold whenever the active
-    // stance's loadout assigns NO armaments — a stance assignment is an
+    // stance's customization assigns NO armaments — a stance assignment is an
     // OVERRIDE of this default, never a requirement. Edited by the
     // equip/unequip item actions and take's auto-wield ("the item goes to
     // the default slot"); resolution into actual hands lives in
@@ -193,13 +193,13 @@ entity!(
     // counting owned items at assignment time). Never authored by blobs; no
     // dirty flag because assignments only take effect when a reducer
     // rewrites EquipmentComponent (on assignment or stance swap).
-    #[component(stance_loadouts in stance_loadouts_components)]
-    struct StanceLoadoutsComponent {
-        pub assignments: Vec<StanceLoadout>,
+    #[component(stance_customizations in stance_customizations_components)]
+    struct StanceCustomizationsComponent {
+        pub assignments: Vec<StanceCustomization>,
     }
 
     // An entity that IS an item: takeable, droppable, and referenced by the
-    // loadout menu through its gear asset.
+    // customization menu through its gear asset.
     #[component(item in item_components)]
     struct ItemComponent {
         pub item_ref: ItemRef,

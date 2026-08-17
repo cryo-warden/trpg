@@ -25,7 +25,7 @@ import {
   useMyDefaultArmamentIds,
   useMyStanceAssignments,
   useOwnedItems,
-} from "./context/StdbContext/loadout";
+} from "./context/StdbContext/customization";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { reachableStanceIds } from "./domain/stanceReachability";
 import { signedStatSummary } from "./domain/statSummary";
@@ -40,7 +40,7 @@ import { StatGroupsView } from "./StatGroupsView";
  * here and in the server's adoption gate. Cards snap-scroll horizontally,
  * each free to scroll vertically on its own. A card leads with the FULL
  * stat totals the player would have in that stance with its assigned
- * loadout, then assigns its armaments — the actions the stance will fight
+ * customization, then assigns its armaments — the actions the stance will fight
  * with. Armament assignments to the ACTIVE stance equip and unequip
  * automatically (hands and configuration never disagree about the stance
  * you are in); other stances' assignments — and every ACTION assignment —
@@ -82,7 +82,7 @@ export const StancesMenu = () => {
   // The stance-free, armament-free base of every stat and grant — the
   // shared derivation the equip menu builds on too, so the two menus can
   // never show different bases. Each card shows the FULL TOTALS the
-  // player would have in that stance with its assigned loadout.
+  // player would have in that stance with its assigned customization.
   const { baseStats, baseActionIds } = useStanceFreeBase();
   const armamentStatSum = (armamentIds: number[], key: IntStatKey): number =>
     armamentIds.reduce(
@@ -130,12 +130,12 @@ export const StancesMenu = () => {
     <div className="StancesMenu">
       <div className="cards" ref={cardsRef} onScroll={handleScroll}>
         {shown.map((stance) => {
-        const loadout = assignments.find((a) => a.stanceId === stance.id);
-        // INTENT IS EXPLICIT in the loadout: null = no override / no bar
+        const customization = assignments.find((a) => a.stanceId === stance.id);
+        // INTENT IS EXPLICIT in the customization: null = no override / no bar
         // assignment; [] = deliberately bare hands / a deliberately blank
         // bar.
-        const armamentOverride = loadout?.armamentIds ?? null;
-        const barAssignment = loadout?.actionIds ?? null;
+        const armamentOverride = customization?.armamentIds ?? null;
+        const barAssignment = customization?.actionIds ?? null;
         const usesDefault = armamentOverride == null;
         const usesDefaultBar = barAssignment == null;
         const resolvedArmaments = armamentOverride ?? defaultArmamentIds;

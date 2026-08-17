@@ -146,7 +146,7 @@ export const LOCATION_MAP_THEMES = {
   encampment: {
     // The training ground: dummies to hit (hp makes scenery attackable) and
     // an armory's worth of REAL practice gear to take and assign in the
-    // loadout menu.
+    // customization menu.
     decorationsSelector: {
       selections: [
         // Camp scenery, not cave rubble: the exterior training ground reads

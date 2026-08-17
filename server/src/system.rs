@@ -726,7 +726,7 @@ pub fn entity_stats_system(ecs: Ecs) {
         }
     }
 
-    // Gear merges three sources: wielded armaments (per-stance via loadouts,
+    // Gear merges three sources: wielded armaments (per-stance via customizations,
     // or blob-authored for NPCs), the one global armor slot, and the worn
     // relics. Always processed — an entity stripped of its last gear
     // component still needs its (now empty) cache recomputed.
@@ -1447,8 +1447,8 @@ pub fn configuration_sanitation_system(ecs: Ecs) {
                 ecs.find(entity_id).upsert_new_default_armaments(trimmed);
             }
         }
-        if let Some(loadouts) = handle.stance_loadouts() {
-            let mut assignments = loadouts.assignments;
+        if let Some(customizations) = handle.stance_customizations() {
+            let mut assignments = customizations.assignments;
             let mut changed = false;
             for assignment in &mut assignments {
                 if let Some(override_ids) = &assignment.armament_ids {
@@ -1459,7 +1459,7 @@ pub fn configuration_sanitation_system(ecs: Ecs) {
                 }
             }
             if changed {
-                ecs.find(entity_id).upsert_new_stance_loadouts(assignments);
+                ecs.find(entity_id).upsert_new_stance_customizations(assignments);
             }
         }
         if let Some(armor) = handle.armor() {
@@ -1566,7 +1566,7 @@ pub fn equipment_reconciliation_system(ecs: Ecs) {
         }
         // Only CONFIGURATION carriers: flat authored equipment with no
         // config is not a divergence.
-        let has_configuration = handle.stance_loadouts().is_some()
+        let has_configuration = handle.stance_customizations().is_some()
             || handle.default_armaments().is_some()
             || handle.armor().is_some()
             || handle.relics().is_some();
@@ -1576,7 +1576,7 @@ pub fn equipment_reconciliation_system(ecs: Ecs) {
         // PER KIND, mirroring apply_resolved_equipment: a kind with no
         // configuration keeps its current canonical state.
         let has_armament_config =
-            handle.stance_loadouts().is_some() || handle.default_armaments().is_some();
+            handle.stance_customizations().is_some() || handle.default_armaments().is_some();
         let intent_armaments = if has_armament_config {
             handle.resolved_armament_ids()
         } else {

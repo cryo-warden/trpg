@@ -9,7 +9,7 @@ import {
   useMyEquipmentArmamentIds,
   useMyRelicIds,
   useOwnedItems,
-} from "./context/StdbContext/loadout";
+} from "./context/StdbContext/customization";
 import {
   usePlayerEntity,
   useTotalStatBlockComponent,
@@ -39,7 +39,7 @@ import { StatBlockSummary } from "./StatBlockSummary";
  * now renders visibly disabled, re-enabling live as gear changes. All
  * rules are enforced server-side; this menu only proposes.
  */
-export const LoadoutPanel = () => {
+export const CustomizationPanel = () => {
   const connection = useStdbConnection();
   const owned = useOwnedItems();
   const armorId = useMyArmorId();
@@ -130,8 +130,8 @@ export const LoadoutPanel = () => {
   };
 
   return (
-    <div className="Loadout stanceCard">
-      <h3>Loadout</h3>
+    <div className="Customization stanceCard">
+      <h3>Customization</h3>
       {/* The SAME detailed stats view stance cards render — DEFAULT
           configuration values, no deltas: this is the base the deltas
           compare to. */}

@@ -9,7 +9,7 @@ use crate::{
     },
     ecs_extension::EcsExtension,
     entity::*,
-    item::{ItemRef, StanceLoadout},
+    item::{ItemRef, StanceCustomization},
 };
 use spacetimedb::Table;
 
@@ -153,7 +153,7 @@ fn geared_stat_block(
     geared
 }
 
-/// The candidate context a stance loadout would produce: the geared base
+/// The candidate context a stance customization would produce: the geared base
 /// plus the stance itself. Its action_ids are the stance's full
 /// candidate action set.
 fn candidate_stat_block(
@@ -167,29 +167,29 @@ fn candidate_stat_block(
     candidate
 }
 
-/// Replace one stance's loadout entry via `update`, preserving the rest.
-fn update_stance_loadout(
+/// Replace one stance's customization entry via `update`, preserving the rest.
+fn update_stance_customization(
     ctx: &ReducerContext,
     player_entity_id: u64,
     stance_id: u32,
-    update: impl FnOnce(StanceLoadout) -> StanceLoadout,
+    update: impl FnOnce(StanceCustomization) -> StanceCustomization,
 ) {
     let handle = ctx.ecs().find(player_entity_id);
-    let mut assignments = { handle.stance_loadouts() }
+    let mut assignments = { handle.stance_customizations() }
         .map(|c| c.assignments)
         .unwrap_or_default();
     let existing = assignments
         .iter()
         .find(|a| a.stance_id == stance_id)
         .cloned()
-        .unwrap_or(StanceLoadout {
+        .unwrap_or(StanceCustomization {
             stance_id,
             armament_ids: None,
             action_ids: None,
         });
     assignments.retain(|a| a.stance_id != stance_id);
     assignments.push(update(existing));
-    handle.upsert_new_stance_loadouts(assignments);
+    handle.upsert_new_stance_customizations(assignments);
 }
 
 /// Assign one stance's armament OVERRIDE — explicit intent, never inferred
@@ -200,7 +200,7 @@ fn update_stance_loadout(
 /// candidate context (base + gear + stance) must keep every counted
 /// property non-negative — two hands cannot hold three one-handed blades.
 /// Assigning the ACTIVE stance takes effect immediately; other stances'
-/// loadouts apply as data now and arm when a stance change adopts them
+/// customizations apply as data now and arm when a stance change adopts them
 /// (paying its round).
 #[reducer]
 pub fn assign_stance_armaments(
@@ -238,7 +238,7 @@ pub fn assign_stance_armaments(
         let candidate = candidate_stat_block(ctx, p.entity_id(), &stance, override_ids);
         if candidate.hand < 0 {
             return Err(format!(
-                "This loadout needs {} more grip than the body provides.",
+                "This customization needs {} more grip than the body provides.",
                 -i32::from(candidate.hand)
             ));
         }
@@ -248,9 +248,9 @@ pub fn assign_stance_armaments(
     // ACTIVE one, the reconciliation system sees the divergence and
     // forces the re-arm round; other stances arm when a change adopts
     // them. Consistency is system-imposed, never per-mutator.
-    update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
+    update_stance_customization(ctx, p.entity_id(), stance_id, |customization| StanceCustomization {
         armament_ids,
-        ..loadout
+        ..customization
     });
     Ok(())
 }
@@ -290,7 +290,7 @@ pub fn set_default_armaments(
     let geared = geared_stat_block(ctx, player_entity_id, &armament_ids);
     if geared.hand < 0 {
         return Err(format!(
-            "This loadout needs {} more grip than the body provides.",
+            "This customization needs {} more grip than the body provides.",
             -i32::from(geared.hand)
         ));
     }
@@ -352,7 +352,7 @@ pub fn assign_stance_actions(
         // with: its armament override when it has one, else the default
         // wielded set.
         let handle = ecs.find(p.entity_id());
-        let stance_armament_ids = { handle.stance_loadouts() }
+        let stance_armament_ids = { handle.stance_customizations() }
             .map(|c| c.assignments)
             .unwrap_or_default()
             .iter()
@@ -381,9 +381,9 @@ pub fn assign_stance_actions(
         }
     }
 
-    update_stance_loadout(ctx, p.entity_id(), stance_id, |loadout| StanceLoadout {
+    update_stance_customization(ctx, p.entity_id(), stance_id, |customization| StanceCustomization {
         action_ids: action_ids.clone(),
-        ..loadout
+        ..customization
     });
     // Everything the stance menu derives applies IMMEDIATELY for the
     // ACTIVE stance: a bar assignment (Some, even empty) becomes the
@@ -446,8 +446,8 @@ pub fn set_default_actions(ctx: &ReducerContext, action_ids: Vec<u32>) -> Result
     // The active stance without a bar override rides the default: apply now.
     let handle = ecs.find(player_entity_id);
     let active_has_override = { handle.active_stance() }.is_some_and(|active| {
-        { handle.stance_loadouts() }.is_some_and(|loadouts| {
-            loadouts
+        { handle.stance_customizations() }.is_some_and(|customizations| {
+            customizations
                 .assignments
                 .iter()
                 .any(|a| a.stance_id == active.stance_id && a.action_ids.is_some())

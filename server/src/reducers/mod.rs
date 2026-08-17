@@ -9,7 +9,7 @@ use crate::{
 };
 
 mod act;
-mod loadout;
+mod customization;
 mod system;
 mod system_timer;
 

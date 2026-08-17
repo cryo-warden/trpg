@@ -304,7 +304,7 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        stance_loadouts: None,
+        stance_customizations: None,
         checkpoint_object: author.checkpoint_object,
         checkpoint_binding: author
             .checkpoint_binding

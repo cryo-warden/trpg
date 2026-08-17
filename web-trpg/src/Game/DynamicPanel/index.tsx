@@ -14,7 +14,7 @@ import {
   usePlayerEntity,
   useVisibleOuterEntities,
 } from "../context/StdbContext/components";
-import { LoadoutPanel } from "../LoadoutPanel";
+import { CustomizationPanel } from "../CustomizationPanel";
 import { StancesMenu } from "../StancesMenu";
 import { targetHotkeyFor } from "../domain/hotkeys";
 import { EntityId } from "../trpg";
@@ -79,7 +79,7 @@ export const DynamicPanel = (props: ComponentPropsWithRef<typeof Panel>) => {
     return (
       <Panel {...props}>
         <Scroller>
-          <LoadoutPanel />
+          <CustomizationPanel />
         </Scroller>
       </Panel>
     );

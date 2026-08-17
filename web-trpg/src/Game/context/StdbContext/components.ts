@@ -48,7 +48,7 @@ export const componentQueries = [
   "select * from checkpoint_object_components",
   "select * from armor_components",
   "select * from relics_components",
-  "select * from stance_loadouts_components",
+  "select * from stance_customizations_components",
   "select * from equipment_components",
   "select * from default_armaments_components",
   "select * from default_actions_components",

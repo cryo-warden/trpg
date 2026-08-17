@@ -9,7 +9,7 @@ import { displayNameFrom } from "../../assets/display_names";
 import { usePlayerEntity } from "./components";
 import { useTableData } from "./useTableData";
 
-// The gear asset tables are public precisely so the loadout menu can turn
+// The gear asset tables are public precisely so the customization menu can turn
 // the ids found in item components back into names — the backward half of
 // the name/id asymmetry, same as actions.
 export const gearQueries = [
@@ -154,7 +154,7 @@ export const useMyRelicIds = (): number[] => {
 };
 
 /** The armaments ACTUALLY in hand right now (the equipment cache), as
- * opposed to the configured loadout assignments. */
+ * opposed to the configured customization assignments. */
 export const useMyEquipmentArmamentIds = (): number[] => {
   const playerEntity = usePlayerEntity();
   return useTableData(
@@ -215,7 +215,7 @@ export const useArmamentStatBlocks = (): Map<number, StatBlock> =>
   useStatBlockMap("armaments");
 
 /** All three gear kinds' asset stat blocks, for surfaces summing a worn
- * set (the loadout menu's equipped-contribution line). */
+ * set (the customization menu's equipped-contribution line). */
 export const useGearStatBlocks = (): {
   armaments: Map<number, StatBlock>;
   armors: Map<number, StatBlock>;
@@ -262,19 +262,19 @@ export type StanceAssignment = {
 export const useMyStanceAssignments = (): StanceAssignment[] => {
   const playerEntity = usePlayerEntity();
   return useTableData(
-    "stance_loadouts_components",
+    "stance_customizations_components",
     (t) => {
       if (playerEntity == null) return [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const row = (t.entityId as any).find(playerEntity);
-      type WireLoadout = {
+      type WireCustomization = {
         stanceId: number;
         armamentIds?: number[];
         actionIds?: number[];
       };
       return row == null
         ? []
-        : (row.assignments as WireLoadout[]).map((a) => ({
+        : (row.assignments as WireCustomization[]).map((a) => ({
             stanceId: a.stanceId,
             armamentIds: a.armamentIds == null ? null : [...a.armamentIds],
             actionIds: a.actionIds == null ? null : [...a.actionIds],

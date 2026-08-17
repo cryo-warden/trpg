@@ -11,7 +11,7 @@ pub enum ActionType {
     Move,
     Inventory,
     /// Targets a CARRIED item: wield/wear it or put it away. Equipping and
-    /// unequipping mirror into the active stance's loadout configuration.
+    /// unequipping mirror into the active stance's customization configuration.
     Equip,
     /// Targets a CARRIED consumable (quest items first): eating sets the
     /// item's quest bit and destroys the item.

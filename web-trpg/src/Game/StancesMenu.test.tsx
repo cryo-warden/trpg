@@ -61,7 +61,7 @@ const tables = () => ({
     { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
     { entityId: 8n, itemRef: { tag: "Armament", value: armamentIdOf("spear") } },
   ]),
-  stance_loadouts_components: mockTable([
+  stance_customizations_components: mockTable([
     {
       entityId: 1n,
       assignments: [
@@ -284,7 +284,7 @@ test("the bar lists assigned actions in hotkey order; a tap removes", () => {
   const assignStanceActions = mock(() => {});
   const withBar = {
     ...tables(),
-    stance_loadouts_components: mockTable([
+    stance_customizations_components: mockTable([
       {
         entityId: 1n,
         assignments: [
@@ -360,7 +360,7 @@ test("assigned armaments highlight and unassign; overweight ones disable", () =>
   // Grip 2, sword already holds 1: the two-handed spear cannot also fit.
   expect(spear.disabled).toBe(true);
 
-  // Clicking the equipped sword UNassigns it from this stance's loadout.
+  // Clicking the equipped sword UNassigns it from this stance's customization.
   fireEvent.click(sword);
   expect(assignStanceArmaments).toHaveBeenCalledWith({
     stanceId: stanceIdOf("dueling"),

@@ -2,7 +2,7 @@
  * THE stat-block summary: the non-zero elements of a stat block, in one
  * canonical order. Pure and shared by every surface that summarizes a
  * block — event narration, an item's entity-card line, stance cards, the
- * loadout menu — so no surface hand-rolls its own stat formatting.
+ * customization menu — so no surface hand-rolls its own stat formatting.
  */
 
 /** Every int stat a block carries, in display order. The id vecs

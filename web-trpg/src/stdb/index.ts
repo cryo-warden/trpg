@@ -134,8 +134,8 @@ import RemainsComponentsRow from "./remains_components_table";
 import RespawnTimerComponentsRow from "./respawn_timer_components_table";
 import RolesRow from "./roles_table";
 import SpecialActionsRow from "./special_actions_table";
+import StanceCustomizationsComponentsRow from "./stance_customizations_components_table";
 import StanceForcedComponentsRow from "./stance_forced_components_table";
-import StanceLoadoutsComponentsRow from "./stance_loadouts_components_table";
 import StancesRow from "./stances_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import StatusStatBlockDirtyFlagComponentsRow from "./status_stat_block_dirty_flag_components_table";
@@ -1093,6 +1093,17 @@ const tablesSchema = __schema({
       { name: 'special_actions_key_key', constraint: 'unique', columns: ['key'] },
     ],
   }, SpecialActionsRow),
+  stance_customizations_components: __table({
+    name: 'stance_customizations_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'stance_customizations_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'stance_customizations_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, StanceCustomizationsComponentsRow),
   stance_forced_components: __table({
     name: 'stance_forced_components',
     indexes: [
@@ -1104,17 +1115,6 @@ const tablesSchema = __schema({
       { name: 'stance_forced_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, StanceForcedComponentsRow),
-  stance_loadouts_components: __table({
-    name: 'stance_loadouts_components',
-    indexes: [
-      { accessor: 'entity_id', name: 'stance_loadouts_components_entity_id_idx_btree', algorithm: 'btree', columns: [
-        'entityId',
-      ] },
-    ],
-    constraints: [
-      { name: 'stance_loadouts_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
-    ],
-  }, StanceLoadoutsComponentsRow),
   stances: __table({
     name: 'stances',
     indexes: [

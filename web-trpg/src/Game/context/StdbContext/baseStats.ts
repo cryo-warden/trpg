@@ -9,7 +9,7 @@ import {
 import {
   useArmamentStatBlocks,
   useMyEquipmentArmamentIds,
-} from "./loadout";
+} from "./customization";
 
 /**
  * The stance-free, armament-free BASE of every stat and action grant:

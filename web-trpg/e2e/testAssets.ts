@@ -416,11 +416,11 @@ export const stancePack = (): AssetPack => ({
 });
 
 /**
- * A loadout world: a body with hands, take/drop plus a sword attack, a
+ * A customization world: a body with hands, take/drop plus a sword attack, a
  * dueling-like stance requiring a blade, and REAL item entities lying in the
  * shared room — a sword to take and assign, armor and a relic to wear.
  */
-export const loadoutPack = (): AssetPack => ({
+export const customizationPack = (): AssetPack => ({
   ...emptyPack(),
   // Menu-driven configuration changes converge through the forced
   // re-arm round; without this registration they would never land.

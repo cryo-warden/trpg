@@ -9,7 +9,7 @@ import "./StatBlockSummary.css";
  * THE stat-block summary element: the non-zero elements of a block, as
  * one compact line. Deltas render signed ("+2 mhp, -1 gait"); totals
  * render plain ("mhp 12, gait 2"). Every surface that summarizes a
- * block — entity cards, stance cards, the loadout menu — renders this,
+ * block — entity cards, stance cards, the customization menu — renders this,
  * never its own formatting. (Event narration shares the same domain
  * functions through the language plugins.)
  */

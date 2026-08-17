@@ -197,7 +197,7 @@ export const ACTIONS = {
     rounds: [round(Drop)],
   },
   // Equip/unequip act on CARRIED items and mirror into the active stance's
-  // loadout configuration — hands and configuration never disagree.
+  // customization configuration — hands and configuration never disagree.
   equip: {
     actionType: { tag: "Equip" },
     requirements: requirements({}),

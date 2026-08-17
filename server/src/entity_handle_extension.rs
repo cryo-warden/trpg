@@ -27,7 +27,7 @@ pub trait EntityHandleExtension {
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
     /// The armaments the hands should hold RIGHT NOW: the active stance's
-    /// loadout override when it assigns any, else the DEFAULT set (what
+    /// customization override when it assigns any, else the DEFAULT set (what
     /// the equip menu built). A stance assignment overrides the default —
     /// it is never a requirement.
     fn resolved_armament_ids(&self) -> Vec<u32>;
@@ -57,7 +57,7 @@ pub trait EntityHandleExtension {
     /// Gates: the fear gate (nerve must overcome a held fear), REACHABLE
     /// stances only, and the stance's own requirements against the
     /// stance-free base. Success sheds the momentary statuses and re-arms
-    /// from the stance loadouts. Forced transitions (intimidation, dive)
+    /// from the stance customizations. Forced transitions (intimidation, dive)
     /// bypass this on purpose.
     fn try_adopt_stance(&self, stance_id: u32) -> Result<(), String>;
     /// The morale that counts against intimidation: the best rigid morale
@@ -198,7 +198,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         // stale): the posture back into your previous stance must count as
         // reachable even while it is filtered out of your usable actions.
         // Plus every carried item's granted actions (gear reaches its
-        // stances without being wielded — the loadout menu must let you
+        // stances without being wielded — the customization menu must let you
         // configure toward them).
         let mut action_queue: Vec<ActionId> = {
             let mut grants = self.base_stat_block();
@@ -270,8 +270,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         // The override's INTENT is explicit: None falls through to the
         // default set; Some(vec![]) is deliberately bare hands.
         let override_ids = { e.active_stance() }.and_then(|active| {
-            { e.stance_loadouts() }.and_then(|loadouts| {
-                loadouts
+            { e.stance_customizations() }.and_then(|customizations| {
+                customizations
                     .assignments
                     .iter()
                     .find(|a| a.stance_id == active.stance_id)
@@ -287,7 +287,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let e = self.to_handle();
         // Only CONFIGURATION carriers converge; an entity with flat
         // authored equipment and no config keeps it untouched.
-        let has_configuration = e.stance_loadouts().is_some()
+        let has_configuration = e.stance_customizations().is_some()
             || e.default_armaments().is_some()
             || e.armor().is_some()
             || e.relics().is_some();
@@ -299,7 +299,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         // lose it to an unrelated config (wearing a relic must not strip
         // authored hands).
         let has_armament_config =
-            e.stance_loadouts().is_some() || e.default_armaments().is_some();
+            e.stance_customizations().is_some() || e.default_armaments().is_some();
         let armament_ids = if has_armament_config {
             self.resolved_armament_ids()
         } else {
@@ -390,8 +390,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         // The bar: a bar assignment (Some, even empty) pins, else the
         // DEFAULT action bar pins when one is configured; entities with
         // neither keep their bar.
-        let stance_bar = { handle.stance_loadouts() }.and_then(|loadouts| {
-            loadouts
+        let stance_bar = { handle.stance_customizations() }.and_then(|customizations| {
+            customizations
                 .assignments
                 .iter()
                 .find(|a| a.stance_id == stance_id)

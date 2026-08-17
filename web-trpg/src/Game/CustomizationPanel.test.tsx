@@ -12,7 +12,7 @@ import { gameWrapper } from "../testSupport/gameWrapper";
 import { ARMAMENT_DISPLAY_NAMES } from "./assets/armaments";
 import { ARMOR_DISPLAY_NAMES } from "./assets/armors";
 import { RELIC_DISPLAY_NAMES } from "./assets/relics";
-import { LoadoutPanel } from "./LoadoutPanel";
+import { CustomizationPanel } from "./CustomizationPanel";
 
 // The player (entity 1) carries a sword item (entity 5), a jerkin (6), and
 // a charm (7): carrying IS location.
@@ -30,13 +30,13 @@ const tables = () => ({
   ]),
   armor_components: mockTable([]),
   relics_components: mockTable([]),
-  stance_loadouts_components: mockTable([]),
+  stance_customizations_components: mockTable([]),
   active_stance_components: mockTable([]),
 });
 
-test("LoadoutPanel lists owned gear by kind with resolved DISPLAY names", () => {
+test("CustomizationPanel lists owned gear by kind with resolved DISPLAY names", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
-  const { container } = render(<LoadoutPanel />, { wrapper });
+  const { container } = render(<CustomizationPanel />, { wrapper });
 
   // PROPER display names, never the internal underscored key.
   expect(container.querySelector(".armor")?.textContent).toContain(
@@ -71,7 +71,7 @@ test("of two identical armors, only the FIRST instance draws as worn", () => {
     ]),
   };
   const wrapper = gameWrapper(twoJerkins, { identity: {} as Identity });
-  const { container } = render(<LoadoutPanel />, { wrapper });
+  const { container } = render(<CustomizationPanel />, { wrapper });
 
   const activeArmorButtons = [
     ...container.querySelectorAll(".armor button.active"),
@@ -91,7 +91,7 @@ test("the menu shows totals, the equipped contribution, and the default armament
     total_stat_block_components: mockTable([]),
   };
   const wrapper = gameWrapper(equipped, { identity: {} as Identity });
-  const { container } = render(<LoadoutPanel />, { wrapper });
+  const { container } = render(<CustomizationPanel />, { wrapper });
 
   // The worn jerkin (+1 defense) and default sword (+1 bladed, -1 hand)
   // fold into one signed contribution line.
@@ -118,7 +118,7 @@ test("an armament button CONFIGURES the default set: toggled on when off, off wh
       { entityId: 1n, statBlock: { hand: 2 } },
     ]),
   };
-  const off = render(<LoadoutPanel />, {
+  const off = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withTotals, {
       identity: {} as Identity,
       reducers: { setDefaultArmaments },
@@ -142,7 +142,7 @@ test("an armament button CONFIGURES the default set: toggled on when off, off wh
       { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
     ]),
   };
-  const on = render(<LoadoutPanel />, {
+  const on = render(<CustomizationPanel />, {
     wrapper: gameWrapper(assigned, {
       identity: {} as Identity,
       reducers: { setDefaultArmaments: setOn },
@@ -184,7 +184,7 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
       { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
     ]),
   };
-  const { container } = render(<LoadoutPanel />, {
+  const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withStaff, {
       identity: {} as Identity,
       reducers: { setDefaultArmaments },
@@ -212,7 +212,7 @@ test("the equip menu lays the stance card's detailed stats out — deltaless", (
       { entityId: 1n, statBlock: { attack: 1, hand: 2 } },
     ]),
   };
-  const { container } = render(<LoadoutPanel />, {
+  const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withTotals, { identity: {} as Identity }),
   });
   const groupsText = [...container.querySelectorAll(".statGroup")]
@@ -237,7 +237,7 @@ test("the DEFAULT action bar proposes set_default_actions from its candidates", 
       },
     ]),
   };
-  const { container } = render(<LoadoutPanel />, {
+  const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withCandidates, {
       identity: {} as Identity,
       reducers: { setDefaultActions },
@@ -269,7 +269,7 @@ test("a candidate click STACKS onto the default bar, never replaces it", () => {
       { entityId: 1n, actionIds: [actionIdOf("take")] },
     ]),
   };
-  const { container } = render(<LoadoutPanel />, {
+  const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withBar, {
       identity: {} as Identity,
       reducers: { setDefaultActions },
@@ -299,7 +299,7 @@ test("owned items render in stable ENTITY order regardless of row order", () => 
       { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
     ]),
   };
-  const { container } = render(<LoadoutPanel />, {
+  const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(reversedRows, { identity: {} as Identity }),
   });
   const labels = [
@@ -327,7 +327,7 @@ test("a fifth relic renders visibly disabled at the four-cap", () => {
       },
     ]),
   };
-  const { container } = render(<LoadoutPanel />, {
+  const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(atCap, { identity: {} as Identity }),
   });
   const charm = [...container.querySelectorAll(".relics button")].find((button) =>
@@ -342,7 +342,7 @@ test("toggling a relic on proposes the extended relic set", () => {
     identity: {} as Identity,
     reducers: { setRelics },
   });
-  const { container } = render(<LoadoutPanel />, { wrapper });
+  const { container } = render(<CustomizationPanel />, { wrapper });
 
   // Buttons carry the stat summary after the name now: match by prefix.
   const charm = [...container.querySelectorAll(".relics button")].find((button) =>

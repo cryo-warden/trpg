@@ -111,11 +111,11 @@
       ],
       "dir": "web-trpg"
     },
-    "test-e2e-loadout": {
+    "test-e2e-customization": {
       "command": [
         "bun",
         "test",
-        "e2e/9-loadout.test.ts"
+        "e2e/9-customization.test.ts"
       ],
       "dir": "web-trpg"
     },
@@ -248,7 +248,7 @@
         "test-e2e-login",
         "test-e2e-stances",
         "test-e2e-production",
-        "test-e2e-loadout",
+        "test-e2e-customization",
         "test-e2e-morale",
         "test-e2e-dive",
         "test-e2e-death",

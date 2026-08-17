@@ -10,13 +10,13 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  StanceLoadout,
+  StanceCustomization,
 } from "./types";
 
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
   get assignments() {
-    return __t.array(StanceLoadout);
+    return __t.array(StanceCustomization);
   },
 });

@@ -2,7 +2,7 @@ import { StatBlockAsset } from "../../stdb/types";
 import { statBlock } from "./stat_block";
 
 // Clothing/armor: ONE global slot, applied across every stance (unlike
-// armaments, which are assigned per stance in the loadout menu).
+// armaments, which are assigned per stance in the customization menu).
 export const ARMORS = {
   // Worn protection steadies the nerve a little (morale 1), early game.
   leather_jerkin: statBlock({ defense: 1, morale: 1 }),
