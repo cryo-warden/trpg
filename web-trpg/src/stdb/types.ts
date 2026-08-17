@@ -925,6 +925,7 @@ export const EquipmentComponent = __t.object("EquipmentComponent", {
   armamentIds: __t.array(__t.u32()),
   wornArmorId: __t.option(__t.u32()),
   wornRelicIds: __t.array(__t.u32()),
+  equippedEntityIds: __t.array(__t.u64()),
 });
 export type EquipmentComponent = __Infer<typeof EquipmentComponent>;
 
@@ -932,6 +933,7 @@ export const EquipmentComponentBlob = __t.object("EquipmentComponentBlob", {
   armamentIds: __t.array(__t.u32()),
   wornArmorId: __t.option(__t.u32()),
   wornRelicIds: __t.array(__t.u32()),
+  equippedEntityIds: __t.array(__t.u64()),
 });
 export type EquipmentComponentBlob = __Infer<typeof EquipmentComponentBlob>;
 

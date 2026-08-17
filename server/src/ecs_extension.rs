@@ -1,7 +1,11 @@
 use crate::{
     account::{account_of, AccountId},
-    asset::ReducerContextExtension,
+    asset::{
+        armament::armaments, armor::armors, relic::relics, stat_block::StatBlock,
+        ReducerContextExtension,
+    },
     entity::*,
+    item::ItemRef,
 };
 use ecs::Ecs;
 use spacetimedb::Identity;
@@ -103,7 +107,46 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // party_leader starts at 0 (no live entity); party_leader_sanitation_system
         // repoints it at the player itself, so a lone player is their own leader.
         // Added on a fresh handle so new_player's return type stays unchanged.
-        self.find(player.entity_id()).upsert_new_party(0);
+        let player_entity_id = player.entity_id();
+        self.find(player_entity_id).upsert_new_party(0);
+        // Authored starting gear becomes OWNED item entities located in the
+        // player: customization equips concrete entities, so the worn reality
+        // needs real items behind it. Each carries its Equippable stamp; their
+        // ids are staged on the equipment component beside the asset ids.
+        if let Some(equipment) = self.find(player_entity_id).equipment() {
+            let mut to_spawn: Vec<(ItemRef, StatBlock)> = Vec::new();
+            for id in &equipment.armament_ids {
+                if let Some(a) = self.db.armaments().id().find(id) {
+                    to_spawn.push((ItemRef::Armament(*id), a.stat_block));
+                }
+            }
+            if let Some(armor_id) = equipment.worn_armor_id {
+                if let Some(a) = self.db.armors().id().find(armor_id) {
+                    to_spawn.push((ItemRef::Armor(armor_id), a.stat_block));
+                }
+            }
+            for id in &equipment.worn_relic_ids {
+                if let Some(r) = self.db.relics().id().find(id) {
+                    to_spawn.push((ItemRef::Relic(*id), r.stat_block));
+                }
+            }
+            let mut equipped_entity_ids = equipment.equipped_entity_ids.clone();
+            for (item_ref, stat_block) in to_spawn {
+                let item = self
+                    .new()
+                    .upsert_new_item(item_ref)
+                    .upsert_new_equippable(stat_block)
+                    .upsert_new_location(player_entity_id, LocationKind::Interior)
+                    .into_handle();
+                equipped_entity_ids.push(item.entity_id());
+            }
+            self.find(player_entity_id).upsert_new_equipment(
+                equipment.armament_ids,
+                equipment.worn_armor_id,
+                equipment.worn_relic_ids,
+                equipped_entity_ids,
+            );
+        }
         Ok(player)
     }
 }

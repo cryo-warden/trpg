@@ -307,8 +307,12 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         };
         let worn_armor_id = e.armor().map(|a| a.armor_id);
         let worn_relic_ids = e.relics().map(|r| r.relic_ids).unwrap_or_default();
+        // Preserve the staged item-entity list across convergence; the
+        // entity-based path becomes authoritative in a later stage.
+        let equipped_entity_ids =
+            { e.equipment() }.map(|q| q.equipped_entity_ids).unwrap_or_default();
         e.clone()
-            .upsert_new_equipment(armament_ids, worn_armor_id, worn_relic_ids);
+            .upsert_new_equipment(armament_ids, worn_armor_id, worn_relic_ids, equipped_entity_ids);
     }
 
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {

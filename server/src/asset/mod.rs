@@ -326,6 +326,10 @@ fn resolve_entity_blob(
                     armament_ids: armament_ids.clone().unwrap_or_default(),
                     worn_armor_id,
                     worn_relic_ids: worn_relic_ids.unwrap_or_default(),
+                    // Authored blobs carry asset ids only; players get their
+                    // owned item entities spawned at provisioning, NPCs stay
+                    // on the blobbed/asset path.
+                    equipped_entity_ids: Vec::new(),
                 })
             }
         },

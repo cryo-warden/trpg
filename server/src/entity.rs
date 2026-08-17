@@ -150,6 +150,11 @@ entity!(
         pub armament_ids: Vec<u32>,
         pub worn_armor_id: Option<u32>,
         pub worn_relic_ids: Vec<u32>,
+        // The concrete item entities behind the worn reality (armaments +
+        // armor + relics). Staged beside the asset ids during the migration
+        // to entity-based equipment; players own these, spawned from authored
+        // gear at provisioning.
+        pub equipped_entity_ids: Vec<EntityId>,
     }
 
     // NPC equipment kept LIGHT: the summed stat block of an entity's
