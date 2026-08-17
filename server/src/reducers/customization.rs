@@ -3,79 +3,50 @@ use spacetimedb::{reducer, ReducerContext};
 
 use crate::{
     action::{actions, special_actions},
-    asset::{
-        armament::armaments, armor::armors, baseline::baselines, relic::relics,
-        stance::stances, stat_block::StatBlock,
-    },
+    asset::{baseline::baselines, stance::stances, stat_block::StatBlock},
     ecs_extension::EcsExtension,
     entity::*,
     item::{ItemRef, StanceCustomization},
 };
 use spacetimedb::Table;
 
-/// Counts the gear the entity carries (carrying IS location), per matching
-/// asset id. Duplicated asset ids in a request need that many owned items —
-/// the counted-multiset rule.
-fn owned_count(ecs: &Ecs, owner_entity_id: u64, wanted: &ItemRef) -> usize {
-    ecs.db
-        .location_components()
-        .location_entity_id()
-        .filter(owner_entity_id)
-        .filter(|carried| {
-            ecs.db
-                .item_components()
-                .entity_id()
-                .find(carried.entity_id)
-                .is_some_and(|item| match (&item.item_ref, wanted) {
-                    (ItemRef::Armament(a), ItemRef::Armament(b)) => a == b,
-                    (ItemRef::Armor(a), ItemRef::Armor(b)) => a == b,
-                    (ItemRef::Relic(a), ItemRef::Relic(b)) => a == b,
-                    _ => false,
-                })
-        })
-        .count()
-}
-
-/// Every requested asset id must be covered by that many owned items.
-fn require_owned(
+/// Gear validation, whole and entire: the item ENTITY must be OWNED (located
+/// in the wielder — carrying IS location) and of the expected kind. An item
+/// is one thing, so there is no counting; two swords are two entities.
+fn owned_item_ref(
     ecs: &Ecs,
     owner_entity_id: u64,
-    requested: &[ItemRef],
-) -> Result<(), String> {
-    for wanted in requested {
-        let needed = requested
-            .iter()
-            .filter(|r| match (*r, wanted) {
-                (ItemRef::Armament(a), ItemRef::Armament(b)) => a == b,
-                (ItemRef::Armor(a), ItemRef::Armor(b)) => a == b,
-                (ItemRef::Relic(a), ItemRef::Relic(b)) => a == b,
-                _ => false,
-            })
-            .count();
-        if owned_count(ecs, owner_entity_id, wanted) < needed {
-            return Err(format!(
-                "Not enough owned items to cover {:?} x{}.",
-                wanted, needed
-            ));
-        }
+    item_entity_id: u64,
+) -> Result<ItemRef, String> {
+    let located_here = ecs
+        .db
+        .location_components()
+        .entity_id()
+        .find(item_entity_id)
+        .is_some_and(|l| l.location_entity_id == owner_entity_id);
+    if !located_here {
+        return Err(format!("Item {} is not owned.", item_entity_id));
     }
-    Ok(())
+    ecs.db
+        .item_components()
+        .entity_id()
+        .find(item_entity_id)
+        .map(|i| i.item_ref)
+        .ok_or_else(|| format!("Entity {} is not an item.", item_entity_id))
 }
 
-/// Equip the single global clothing/armor slot from an owned armor item.
+/// Equip the single global clothing/armor slot from an owned armor ITEM.
 #[reducer]
-pub fn set_armor(ctx: &ReducerContext, armor_id: u32) -> Result<(), String> {
+pub fn set_armor(ctx: &ReducerContext, item_entity_id: u64) -> Result<(), String> {
     let ecs = ctx.ecs();
     let p = ecs
         .from_player_identity(ctx.sender())
         .ok_or("Cannot find a player entity.")?;
-    ctx.db
-        .armors()
-        .id()
-        .find(armor_id)
-        .ok_or_else(|| format!("Unknown armor id {}.", armor_id))?;
-    require_owned(&ecs, p.entity_id(), &[ItemRef::Armor(armor_id)])?;
-    p.into_handle().upsert_new_armor(armor_id);
+    match owned_item_ref(&ecs, p.entity_id(), item_entity_id)? {
+        ItemRef::Armor(_) => {}
+        other => return Err(format!("Item {} is not armor ({:?}).", item_entity_id, other)),
+    }
+    p.into_handle().upsert_new_armor(item_entity_id);
     Ok(())
 }
 
@@ -89,30 +60,27 @@ pub fn clear_armor(ctx: &ReducerContext) -> Result<(), String> {
     Ok(())
 }
 
-/// Wear up to four relics, all from owned relic items; applied across every
+/// Wear up to four relics, all from owned relic ITEMS; applied across every
 /// stance.
 #[reducer]
-pub fn set_relics(ctx: &ReducerContext, relic_ids: Vec<u32>) -> Result<(), String> {
-    if relic_ids.len() > 4 {
+pub fn set_relics(ctx: &ReducerContext, relic_entity_ids: Vec<u64>) -> Result<(), String> {
+    if relic_entity_ids.len() > 4 {
         return Err(format!(
             "At most 4 relics may be worn; {} requested.",
-            relic_ids.len()
+            relic_entity_ids.len()
         ));
     }
     let ecs = ctx.ecs();
     let p = ecs
         .from_player_identity(ctx.sender())
         .ok_or("Cannot find a player entity.")?;
-    for id in &relic_ids {
-        ctx.db
-            .relics()
-            .id()
-            .find(id)
-            .ok_or_else(|| format!("Unknown relic id {}.", id))?;
+    for id in &relic_entity_ids {
+        match owned_item_ref(&ecs, p.entity_id(), *id)? {
+            ItemRef::Relic(_) => {}
+            other => return Err(format!("Item {} is not a relic ({:?}).", id, other)),
+        }
     }
-    let requested: Vec<ItemRef> = relic_ids.iter().map(|id| ItemRef::Relic(*id)).collect();
-    require_owned(&ecs, p.entity_id(), &requested)?;
-    p.into_handle().upsert_new_relics(relic_ids);
+    p.into_handle().upsert_new_relics(relic_entity_ids);
     Ok(())
 }
 
@@ -120,10 +88,11 @@ pub fn set_relics(ctx: &ReducerContext, relic_ids: Vec<u32>) -> Result<(), Strin
 /// traits, worn armor/relics, and the given armaments) — never the
 /// current equipment cache, and no stance: the base every stance
 /// compares to. Its action_ids are the DEFAULT bar's candidate set.
+/// Every gear contribution is the item's own Equippable stat block.
 fn geared_stat_block(
     ctx: &ReducerContext,
     player_entity_id: u64,
-    armament_ids: &[u32],
+    armament_entity_ids: &[u64],
 ) -> StatBlock {
     let ecs = ctx.ecs();
     let handle = ecs.find(player_entity_id);
@@ -133,22 +102,21 @@ fn geared_stat_block(
     if let Some(c) = handle.traits_stat_block_cache() {
         geared += &c.stat_block;
     }
-    if let Some(c) = handle.armor() {
-        if let Some(a) = ctx.db.armors().id().find(c.armor_id) {
-            geared += &a.stat_block;
+    let mut add_item = |item_entity_id: u64| {
+        if let Some(q) = ecs.find(item_entity_id).equippable() {
+            geared += &q.stat_block;
         }
+    };
+    if let Some(c) = handle.armor() {
+        add_item(c.armor_entity_id);
     }
     if let Some(c) = handle.relics() {
-        for id in &c.relic_ids {
-            if let Some(r) = ctx.db.relics().id().find(id) {
-                geared += &r.stat_block;
-            }
+        for id in &c.relic_entity_ids {
+            add_item(*id);
         }
     }
-    for id in armament_ids {
-        if let Some(a) = ctx.db.armaments().id().find(id) {
-            geared += &a.stat_block;
-        }
+    for id in armament_entity_ids {
+        add_item(*id);
     }
     geared
 }
@@ -160,9 +128,9 @@ fn candidate_stat_block(
     ctx: &ReducerContext,
     player_entity_id: u64,
     stance: &crate::asset::stance::Stance,
-    armament_ids: &[u32],
+    armament_entity_ids: &[u64],
 ) -> StatBlock {
-    let mut candidate = geared_stat_block(ctx, player_entity_id, armament_ids);
+    let mut candidate = geared_stat_block(ctx, player_entity_id, armament_entity_ids);
     candidate += &stance.stat_block;
     candidate
 }
@@ -184,7 +152,7 @@ fn update_stance_customization(
         .cloned()
         .unwrap_or(StanceCustomization {
             stance_id,
-            armament_ids: None,
+            armament_entity_ids: None,
             action_ids: None,
         });
     assignments.retain(|a| a.stance_id != stance_id);
@@ -195,52 +163,34 @@ fn update_stance_customization(
 /// Assign one stance's armament OVERRIDE — explicit intent, never inferred
 /// from emptiness: None removes the override (the stance fights with the
 /// DEFAULT set), Some(vec![]) is deliberately bare hands, Some(ids) is an
-/// override. Preparation-time validation happens HERE, where the player
-/// can read the outcome: overriding armaments must be owned, and the
-/// candidate context (base + gear + stance) must keep every counted
-/// property non-negative — two hands cannot hold three one-handed blades.
-/// Assigning the ACTIVE stance takes effect immediately; other stances'
-/// customizations apply as data now and arm when a stance change adopts them
-/// (paying its round).
+/// override naming exactly these owned item ENTITIES. Over-equipping is
+/// allowed: the summed hand simply goes negative and hand-gated actions drop
+/// out of the derived set. Assigning the ACTIVE stance takes effect
+/// immediately; other stances' customizations apply as data now and arm when a
+/// stance change adopts them (paying its round).
 #[reducer]
 pub fn assign_stance_armaments(
     ctx: &ReducerContext,
     stance_id: u32,
-    armament_ids: Option<Vec<u32>>,
+    armament_entity_ids: Option<Vec<u64>>,
 ) -> Result<(), String> {
     let ecs = ctx.ecs();
     let p = ecs
         .from_player_identity(ctx.sender())
         .ok_or("Cannot find a player entity.")?;
-    let stance = ctx
-        .db
+    ctx.db
         .stances()
         .id()
         .find(stance_id)
         .ok_or_else(|| format!("Unknown stance id {}.", stance_id))?;
-    if let Some(override_ids) = &armament_ids {
+    if let Some(override_ids) = &armament_entity_ids {
         for id in override_ids {
-            ctx.db
-                .armaments()
-                .id()
-                .find(id)
-                .ok_or_else(|| format!("Unknown armament id {}.", id))?;
-        }
-        let requested: Vec<ItemRef> = override_ids
-            .iter()
-            .map(|id| ItemRef::Armament(*id))
-            .collect();
-        require_owned(&ecs, p.entity_id(), &requested)?;
-
-        // The grip rule: two hands cannot hold three one-handed blades.
-        // (Other counted properties gain their own feasibility rules as
-        // they need them.)
-        let candidate = candidate_stat_block(ctx, p.entity_id(), &stance, override_ids);
-        if candidate.hand < 0 {
-            return Err(format!(
-                "This customization needs {} more grip than the body provides.",
-                -i32::from(candidate.hand)
-            ));
+            match owned_item_ref(&ecs, p.entity_id(), *id)? {
+                ItemRef::Armament(_) => {}
+                other => {
+                    return Err(format!("Item {} is not an armament ({:?}).", id, other))
+                }
+            }
         }
     }
 
@@ -248,57 +198,44 @@ pub fn assign_stance_armaments(
     // ACTIVE one, the reconciliation system sees the divergence and
     // forces the re-arm round; other stances arm when a change adopts
     // them. Consistency is system-imposed, never per-mutator.
-    update_stance_customization(ctx, p.entity_id(), stance_id, |customization| StanceCustomization {
-        armament_ids,
-        ..customization
+    update_stance_customization(ctx, p.entity_id(), stance_id, |customization| {
+        StanceCustomization {
+            armament_entity_ids,
+            ..customization
+        }
     });
     Ok(())
 }
 
-/// Assign the DEFAULT armament set — what the hands hold when the active
-/// stance assigns no override. A MENU path: core configuration changes
-/// IMMEDIATELY (the menu reflects it at once), and the SERVER alone
-/// decides whether the change also queues any in-fiction action as a
-/// consequence — today the swap is instant; a future combat rule may
-/// queue a re-arm here without the client changing at all. The
-/// equip/unequip ACTS remain the in-world item path (offered on items),
-/// editing this same slot from the fiction's side.
+/// Assign the DEFAULT armament set — the owned item ENTITIES the hands hold
+/// when the active stance assigns no override. A MENU path: core
+/// configuration changes IMMEDIATELY (the menu reflects it at once), and the
+/// SERVER alone decides whether the change also queues any in-fiction action
+/// as a consequence — today the swap is instant; a future combat rule may
+/// queue a re-arm here without the client changing at all. The equip/unequip
+/// ACTS remain the in-world item path (offered on items), editing this same
+/// slot from the fiction's side.
 #[reducer]
 pub fn set_default_armaments(
     ctx: &ReducerContext,
-    armament_ids: Vec<u32>,
+    armament_entity_ids: Vec<u64>,
 ) -> Result<(), String> {
     let ecs = ctx.ecs();
     let p = ecs
         .from_player_identity(ctx.sender())
         .ok_or("Cannot find a player entity.")?;
     let player_entity_id = p.entity_id();
-    for id in &armament_ids {
-        ctx.db
-            .armaments()
-            .id()
-            .find(id)
-            .ok_or_else(|| format!("Unknown armament id {}.", id))?;
-    }
-    let requested: Vec<ItemRef> = armament_ids
-        .iter()
-        .map(|id| ItemRef::Armament(*id))
-        .collect();
-    require_owned(&ecs, player_entity_id, &requested)?;
-    // The grip rule against the configuration being edited: the DEFAULT
-    // set (stance-free), same basis the equip action uses.
-    let geared = geared_stat_block(ctx, player_entity_id, &armament_ids);
-    if geared.hand < 0 {
-        return Err(format!(
-            "This customization needs {} more grip than the body provides.",
-            -i32::from(geared.hand)
-        ));
+    for id in &armament_entity_ids {
+        match owned_item_ref(&ecs, player_entity_id, *id)? {
+            ItemRef::Armament(_) => {}
+            other => return Err(format!("Item {} is not an armament ({:?}).", id, other)),
+        }
     }
     // Configuration only — applied immediately; the reconciliation
     // system converges the hands (forcing the re-arm round when the
     // active stance rides the defaults). Consistency is system-imposed.
     ecs.find(player_entity_id)
-        .upsert_new_default_armaments(armament_ids);
+        .upsert_new_default_armaments(armament_entity_ids);
     Ok(())
 }
 
@@ -352,16 +289,16 @@ pub fn assign_stance_actions(
         // with: its armament override when it has one, else the default
         // wielded set.
         let handle = ecs.find(p.entity_id());
-        let stance_armament_ids = { handle.stance_customizations() }
+        let stance_armament_entity_ids = { handle.stance_customizations() }
             .map(|c| c.assignments)
             .unwrap_or_default()
             .iter()
             .find(|a| a.stance_id == stance_id)
-            .and_then(|a| a.armament_ids.clone())
-            .or_else(|| handle.default_armaments().map(|d| d.armament_ids))
+            .and_then(|a| a.armament_entity_ids.clone())
+            .or_else(|| handle.default_armaments().map(|d| d.armament_entity_ids))
             .unwrap_or_default();
         let mut candidates =
-            candidate_stat_block(ctx, p.entity_id(), &stance, &stance_armament_ids)
+            candidate_stat_block(ctx, p.entity_id(), &stance, &stance_armament_entity_ids)
                 .action_ids;
         // The common verbs are always pinnable: their slot is the point.
         candidates.extend(common_pinnable_action_ids(ctx));
@@ -381,9 +318,11 @@ pub fn assign_stance_actions(
         }
     }
 
-    update_stance_customization(ctx, p.entity_id(), stance_id, |customization| StanceCustomization {
-        action_ids: action_ids.clone(),
-        ..customization
+    update_stance_customization(ctx, p.entity_id(), stance_id, |customization| {
+        StanceCustomization {
+            action_ids: action_ids.clone(),
+            ..customization
+        }
     });
     // Everything the stance menu derives applies IMMEDIATELY for the
     // ACTIVE stance: a bar assignment (Some, even empty) becomes the
@@ -420,11 +359,11 @@ pub fn set_default_actions(ctx: &ReducerContext, action_ids: Vec<u32>) -> Result
         .ok_or("Cannot find a player entity.")?;
     let player_entity_id = p.entity_id();
     let handle = ecs.find(player_entity_id);
-    let default_armament_ids = { handle.default_armaments() }
-        .map(|d| d.armament_ids)
+    let default_armament_entity_ids = { handle.default_armaments() }
+        .map(|d| d.armament_entity_ids)
         .unwrap_or_default();
     let mut candidates =
-        geared_stat_block(ctx, player_entity_id, &default_armament_ids).action_ids;
+        geared_stat_block(ctx, player_entity_id, &default_armament_entity_ids).action_ids;
     // The common verbs are always pinnable: their slot is the point.
     candidates.extend(common_pinnable_action_ids(ctx));
     for id in &action_ids {

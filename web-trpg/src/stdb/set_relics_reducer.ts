@@ -11,5 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  relicIds: __t.array(__t.u32()),
+  relicEntityIds: __t.array(__t.u64()),
 };

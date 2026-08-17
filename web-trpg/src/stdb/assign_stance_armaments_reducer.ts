@@ -12,5 +12,5 @@ import {
 
 export default {
   stanceId: __t.u32(),
-  armamentIds: __t.option(__t.array(__t.u32())),
+  armamentEntityIds: __t.option(__t.array(__t.u64())),
 };

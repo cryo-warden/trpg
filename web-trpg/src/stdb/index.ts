@@ -139,6 +139,7 @@ import SpecialActionsRow from "./special_actions_table";
 import StanceCustomizationsComponentsRow from "./stance_customizations_components_table";
 import StanceForcedComponentsRow from "./stance_forced_components_table";
 import StancesRow from "./stances_table";
+import StartingGearComponentsRow from "./starting_gear_components_table";
 import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
 import StatusStatBlockDirtyFlagComponentsRow from "./status_stat_block_dirty_flag_components_table";
 import TotalStatBlockComponentsRow from "./total_stat_block_components_table";
@@ -1154,6 +1155,17 @@ const tablesSchema = __schema({
       { name: 'stances_name_key', constraint: 'unique', columns: ['name'] },
     ],
   }, StancesRow),
+  starting_gear_components: __table({
+    name: 'starting_gear_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'starting_gear_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'starting_gear_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, StartingGearComponentsRow),
   status_stat_block_cache_components: __table({
     name: 'status_stat_block_cache_components',
     indexes: [

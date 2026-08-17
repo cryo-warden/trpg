@@ -81,7 +81,9 @@ test("diving at a sword lands prone, braced, holding the sword — morale includ
   // Wielded immediately: equipment lists the armament, and its stats flow —
   // morale 5 (body) + 3 (brave sword), defense 0 + 2 (braced).
   await waitFor(
-    () => (myRow(player.db.equipment_components.iter())?.armamentIds.length ?? 0) > 0,
+    () =>
+      (myRow(player.db.equipment_components.iter())?.equippedEntityIds.length ??
+        0) > 0,
     30000,
   );
   await waitFor(

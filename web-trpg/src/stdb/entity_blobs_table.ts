@@ -22,6 +22,7 @@ import {
   TraitsComponentBlob,
   ActiveStanceComponentBlob,
   EquipmentComponentBlob,
+  StartingGearComponentBlob,
   EquipmentBlobbedComponentBlob,
   RemainsComponentBlob,
   DefaultArmamentsComponentBlob,
@@ -96,6 +97,9 @@ export default __t.row({
   },
   get equipment() {
     return __t.option(EquipmentComponentBlob);
+  },
+  get startingGear() {
+    return __t.option(StartingGearComponentBlob).name("starting_gear");
   },
   get equipmentBlobbed() {
     return __t.option(EquipmentBlobbedComponentBlob).name("equipment_blobbed");

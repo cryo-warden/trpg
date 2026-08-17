@@ -12,5 +12,5 @@ import {
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  relicIds: __t.array(__t.u32()).name("relic_ids"),
+  relicEntityIds: __t.array(__t.u64()).name("relic_entity_ids"),
 });

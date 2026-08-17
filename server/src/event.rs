@@ -44,36 +44,12 @@ secador::secador!(
             Spilled,
         }
 
-        /// The free hand of the DEFAULT configuration: the stored total
-        /// with the in-hand set swapped for the default set. Equip and
-        /// the take auto-wield edit the DEFAULT slot, so their grip rule
-        /// evaluates the configuration they edit — never whatever stance
-        /// override happens to be in hand right now.
-        fn default_configuration_hand(ecs: Ecs, owner_entity_id: u64) -> i32 {
-            let owner = ecs.find(owner_entity_id);
-            let total = owner
-                .total_stat_block()
-                .map_or(0, |t| i32::from(t.stat_block.hand));
-            let hand_of = |armament_id: &u32| {
-                ecs.db
-                    .armaments()
-                    .id()
-                    .find(armament_id)
-                    .map_or(0, |a| i32::from(a.stat_block.hand))
-            };
-            let in_hand: i32 = { owner.equipment() }
-                .map(|e| e.armament_ids.iter().map(hand_of).sum())
-                .unwrap_or(0);
-            let of_default: i32 = { owner.default_armaments() }
-                .map(|d| d.armament_ids.iter().map(hand_of).sum())
-                .unwrap_or(0);
-            total - in_hand + of_default
-        }
-
         /// THE take: shared verbatim by the Take effect and Dive's grab so
         /// the two can never drift. A co-located item moves into the taker
         /// (carrying IS location — pocketing needs no free hand), and an
-        /// armament is additionally WIELDED when the grip allows it.
+        /// armament is additionally WIELDED. There is no grip gate: over-
+        /// equipping simply drives the summed hand negative, and hand-gated
+        /// actions drop out of the derived set on their own.
         /// FUTURE (user note): a fighter with unarmed bonuses may prefer
         /// empty hands — once "unarmed bonus" is a definable predicate, it
         /// becomes an additional no-auto-wield condition.
@@ -112,32 +88,21 @@ secador::secador!(
                     item_location.location_entity_id = taker_entity_id;
                     item_location.kind = LocationKind::Interior;
                     ecs.db.location_components().entity_id().update(item_location);
-                    if let crate::item::ItemRef::Armament(armament_id) = item.item_ref {
+                    if let crate::item::ItemRef::Armament(_) = item.item_ref {
+                        // The auto-wield goes to the DEFAULT slot as this
+                        // concrete item ENTITY; the hands re-resolve (an
+                        // active stance override keeps winning).
                         let taker = ecs.find(taker_entity_id);
-                        let default_hand =
-                            default_configuration_hand(ecs, taker_entity_id);
-                        let armament_hand = ecs
-                            .db
-                            .armaments()
-                            .id()
-                            .find(armament_id)
-                            .map_or(0, |a| i32::from(a.stat_block.hand));
-                        if default_hand + armament_hand >= 0 {
-                            // The auto-wield goes to the DEFAULT slot; the
-                            // hands re-resolve (an active stance override
-                            // keeps winning).
-                            let mut armament_ids = taker
-                                .default_armaments()
-                                .map(|c| c.armament_ids)
-                                .unwrap_or_default();
-                            armament_ids.push(armament_id);
-                            taker.upsert_new_default_armaments(armament_ids);
-                            // An intentional act converges immediately —
-                            // its own round was the cost; the
-                            // reconciliation system then finds no
-                            // mismatch and skips.
-                            ecs.find(taker_entity_id).apply_resolved_equipment();
-                        }
+                        let mut armament_entity_ids = taker
+                            .default_armaments()
+                            .map(|c| c.armament_entity_ids)
+                            .unwrap_or_default();
+                        armament_entity_ids.push(item_entity_id);
+                        taker.upsert_new_default_armaments(armament_entity_ids);
+                        // An intentional act converges immediately — its own
+                        // round was the cost; the reconciliation system then
+                        // finds no mismatch and skips.
+                        ecs.find(taker_entity_id).apply_resolved_equipment();
                     }
                     true
                 }
@@ -145,11 +110,11 @@ secador::secador!(
             }
         }
 
-        /// Equip a CARRIED item: wield an armament (grip permitting), wear
-        /// armor (replacing what is worn), or add a relic (cap 4). An
-        /// armament goes into the DEFAULT slot — the set the hands hold
-        /// whenever the active stance assigns no override — and the hands
-        /// re-resolve.
+        /// Equip a CARRIED item ENTITY: wield an armament, wear armor
+        /// (replacing what is worn), or add a relic (cap 4). An armament
+        /// goes into the DEFAULT slot — the set the hands hold whenever the
+        /// active stance assigns no override. No grip gate; the hands
+        /// re-resolve immediately.
         fn equip_item(ecs: Ecs, owner_entity_id: u64, item_entity_id: u64) -> bool {
             let carried = ecs
                 .db
@@ -166,39 +131,30 @@ secador::secador!(
             }
             let owner = ecs.find(owner_entity_id);
             match item.item_ref {
-                crate::item::ItemRef::Armament(armament_id) => {
-                    let default_hand = default_configuration_hand(ecs, owner_entity_id);
-                    let armament_hand = ecs
-                        .db
-                        .armaments()
-                        .id()
-                        .find(armament_id)
-                        .map_or(0, |a| i32::from(a.stat_block.hand));
-                    if default_hand + armament_hand < 0 {
-                        return false;
-                    }
-                    let mut armament_ids = owner
+                crate::item::ItemRef::Armament(_) => {
+                    let mut armament_entity_ids = owner
                         .default_armaments()
-                        .map(|c| c.armament_ids)
+                        .map(|c| c.armament_entity_ids)
                         .unwrap_or_default();
-                    armament_ids.push(armament_id);
-                    owner.upsert_new_default_armaments(armament_ids);
-                    // An intentional act converges immediately.
+                    armament_entity_ids.push(item_entity_id);
+                    owner.upsert_new_default_armaments(armament_entity_ids);
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
-                crate::item::ItemRef::Armor(armor_id) => {
-                    owner.upsert_new_armor(armor_id);
+                crate::item::ItemRef::Armor(_) => {
+                    owner.upsert_new_armor(item_entity_id);
+                    ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
-                crate::item::ItemRef::Relic(relic_id) => {
-                    let mut relic_ids =
-                        owner.relics().map(|c| c.relic_ids).unwrap_or_default();
-                    if relic_ids.len() >= 4 {
+                crate::item::ItemRef::Relic(_) => {
+                    let mut relic_entity_ids =
+                        owner.relics().map(|c| c.relic_entity_ids).unwrap_or_default();
+                    if relic_entity_ids.len() >= 4 {
                         return false;
                     }
-                    relic_ids.push(relic_id);
-                    owner.upsert_new_relics(relic_ids);
+                    relic_entity_ids.push(item_entity_id);
+                    owner.upsert_new_relics(relic_entity_ids);
+                    ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
                 // Quest items are eaten, never worn.
@@ -206,9 +162,9 @@ secador::secador!(
             }
         }
 
-        /// Unequip a CARRIED, currently equipped item: take the armament
-        /// out of the DEFAULT slot (hands re-resolve), shed the worn
-        /// armor, or remove the relic. The item stays owned.
+        /// Unequip a CARRIED, currently equipped item ENTITY: take the
+        /// armament out of the DEFAULT slot (hands re-resolve), shed the
+        /// worn armor, or remove the relic. The item stays owned.
         fn unequip_item(ecs: Ecs, owner_entity_id: u64, item_entity_id: u64) -> bool {
             let carried = ecs
                 .db
@@ -225,40 +181,41 @@ secador::secador!(
             }
             let owner = ecs.find(owner_entity_id);
             match item.item_ref {
-                crate::item::ItemRef::Armament(armament_id) => {
-                    let mut armament_ids = owner
+                crate::item::ItemRef::Armament(_) => {
+                    let mut armament_entity_ids = owner
                         .default_armaments()
-                        .map(|c| c.armament_ids)
+                        .map(|c| c.armament_entity_ids)
                         .unwrap_or_default();
                     let Some(position) =
-                        armament_ids.iter().position(|id| *id == armament_id)
+                        armament_entity_ids.iter().position(|id| *id == item_entity_id)
                     else {
                         return false;
                     };
-                    armament_ids.remove(position);
-                    owner.upsert_new_default_armaments(armament_ids);
-                    // An intentional act converges immediately.
+                    armament_entity_ids.remove(position);
+                    owner.upsert_new_default_armaments(armament_entity_ids);
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
-                crate::item::ItemRef::Armor(armor_id) => {
-                    if { owner.armor() }.is_some_and(|c| c.armor_id == armor_id) {
+                crate::item::ItemRef::Armor(_) => {
+                    if { owner.armor() }.is_some_and(|c| c.armor_entity_id == item_entity_id) {
                         owner.delete_armor();
+                        ecs.find(owner_entity_id).apply_resolved_equipment();
                         true
                     } else {
                         false
                     }
                 }
-                crate::item::ItemRef::Relic(relic_id) => {
-                    let mut relic_ids =
-                        owner.relics().map(|c| c.relic_ids).unwrap_or_default();
+                crate::item::ItemRef::Relic(_) => {
+                    let mut relic_entity_ids =
+                        owner.relics().map(|c| c.relic_entity_ids).unwrap_or_default();
                     let Some(position) =
-                        relic_ids.iter().position(|id| *id == relic_id)
+                        relic_entity_ids.iter().position(|id| *id == item_entity_id)
                     else {
                         return false;
                     };
-                    relic_ids.remove(position);
-                    owner.upsert_new_relics(relic_ids);
+                    relic_entity_ids.remove(position);
+                    owner.upsert_new_relics(relic_entity_ids);
+                    ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
                 // Quest items are eaten, never worn.

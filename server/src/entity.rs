@@ -136,25 +136,31 @@ entity!(
         pub stance_id: u32,
     }
 
-    // Wielded armaments; their stat blocks merge through the equipment cache
-    // exactly as traits merge through theirs. THE CANONICAL worn/wielded
-    // reality — the one representation stats derive from. The various
+    // THE CANONICAL worn/wielded reality: the concrete item entities in hand
+    // and worn (armaments + armor + relics, distinguished by each item's
+    // ItemRef kind). The equipment cache sums every listed item's Equippable
+    // stat block — the one representation stats derive from. The various
     // CONFIGURATIONS (default armaments, stance customizations, the armor and
-    // relics choices) are intent; the reconciliation system detects
-    // divergence and forces the re-arm action, while intentional acts
-    // (stance changes, equip/unequip) converge immediately themselves.
-    // Authored entities are born converged (blobs fill this alongside
-    // their configs).
+    // relics choices — all ENTITY-id lists) are intent; the reconciliation
+    // system detects divergence and forces the re-arm action, while
+    // intentional acts (stance changes, equip/unequip) converge immediately
+    // themselves. Players carry this; NPCs use the lighter EquipmentBlobbed.
     #[component(equipment in equipment_components, dirties(equipment_stat_block_dirty_flag))]
     struct EquipmentComponent {
+        pub equipped_entity_ids: Vec<EntityId>,
+    }
+
+    // The AUTHORED starting gear (gear ASSET ids) an entity is born with —
+    // a provisioning MANIFEST, never the runtime reality. Player provisioning
+    // (new_player) spawns one owned item entity per listed asset, records
+    // their entity ids on EquipmentComponent, then deletes this. Stats never
+    // read it. Present but inert on authored NPCs, whose stats come from the
+    // summed EquipmentBlobbed instead — they never provision.
+    #[component(starting_gear in starting_gear_components)]
+    struct StartingGearComponent {
         pub armament_ids: Vec<u32>,
         pub worn_armor_id: Option<u32>,
         pub worn_relic_ids: Vec<u32>,
-        // The concrete item entities behind the worn reality (armaments +
-        // armor + relics). Staged beside the asset ids during the migration
-        // to entity-based equipment; players own these, spawned from authored
-        // gear at provisioning.
-        pub equipped_entity_ids: Vec<EntityId>,
     }
 
     // NPC equipment kept LIGHT: the summed stat block of an entity's
@@ -180,36 +186,35 @@ entity!(
         pub appearance_feature_ids: Vec<u32>,
     }
 
-    // The DEFAULT wielded set: what the hands hold whenever the active
-    // stance's customization assigns NO armaments — a stance assignment is an
-    // OVERRIDE of this default, never a requirement. Edited by the
-    // equip/unequip item actions and take's auto-wield ("the item goes to
-    // the default slot"); resolution into actual hands lives in
-    // resolved_armament_ids.
+    // The DEFAULT wielded set: the owned item ENTITIES the hands hold
+    // whenever the active stance's customization assigns NO armaments — a
+    // stance assignment is an OVERRIDE of this default, never a requirement.
+    // Edited by the equip/unequip item actions and take's auto-wield ("the
+    // item goes to the default slot"); resolution into actual hands lives in
+    // resolved_armament_entity_ids.
     #[component(default_armaments in default_armaments_components)]
     struct DefaultArmamentsComponent {
-        pub armament_ids: Vec<u32>,
+        pub armament_entity_ids: Vec<EntityId>,
     }
 
-    // CONFIGURATION: the chosen clothing/armor slot, applied across every
-    // stance. Stats never read this — the worn reality lives on
+    // CONFIGURATION: the chosen clothing/armor ITEM entity, applied across
+    // every stance. Stats never read this — the worn reality lives on
     // EquipmentComponent, converged by the reconciliation system.
     #[component(armor in armor_components)]
     struct ArmorComponent {
-        pub armor_id: u32,
+        pub armor_entity_id: EntityId,
     }
 
-    // CONFIGURATION: up to four chosen relics (enforced at the reducer),
-    // applied across every stance. Same convergence as armor.
+    // CONFIGURATION: up to four chosen relic ITEM entities (enforced at the
+    // reducer), applied across every stance. Same convergence as armor.
     #[component(relics in relics_components)]
     struct RelicsComponent {
-        pub relic_ids: Vec<u32>,
+        pub relic_entity_ids: Vec<EntityId>,
     }
 
-    // The player's per-stance armament assignments (asset ids, validated by
-    // counting owned items at assignment time). Never authored by blobs; no
-    // dirty flag because assignments only take effect when a reducer
-    // rewrites EquipmentComponent (on assignment or stance swap).
+    // The player's per-stance armament assignments (item ENTITY ids). Never
+    // authored by blobs; no dirty flag because assignments only take effect
+    // when a reducer rewrites EquipmentComponent (on assignment or stance swap).
     #[component(stance_customizations in stance_customizations_components)]
     struct StanceCustomizationsComponent {
         pub assignments: Vec<StanceCustomization>,

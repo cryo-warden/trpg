@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Button } from "../structural/Button";
 import "./StancesMenu.css";
+import { EntityId } from "./trpg";
 import { ActionsBarEditor } from "./ActionsBarEditor";
 import {
   useActionDisplayNameOf,
@@ -16,13 +17,11 @@ import {
 } from "./context/StdbContext/components";
 import { STANCE_DISPLAY_NAMES } from "./assets/stances";
 import { displayNameFrom } from "./assets/display_names";
-import { assetInstanceIsOn, toggledAssetIds } from "./domain/countedAssets";
 import {
   OwnedItem,
-  useArmamentStatBlocks,
   useGearStatBlockOf,
   useMyDefaultActionIds,
-  useMyDefaultArmamentIds,
+  useMyDefaultArmamentEntityIds,
   useMyStanceAssignments,
   useOwnedItems,
 } from "./context/StdbContext/customization";
@@ -33,6 +32,10 @@ import { ALL_STATS, IntStatKey } from "./statGroups";
 import { StatBlockSummary } from "./StatBlockSummary";
 import { StatGroupsView } from "./StatGroupsView";
 
+/** Toggle one item ENTITY in a set — membership is the whole rule. */
+const toggle = (ids: readonly EntityId[], id: EntityId): EntityId[] =>
+  ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+
 /**
  * The standalone stances menu: one card per REACHABLE stance. There is no
  * "known stances" state anywhere — reachability (the closure from the
@@ -40,11 +43,10 @@ import { StatGroupsView } from "./StatGroupsView";
  * here and in the server's adoption gate. Cards snap-scroll horizontally,
  * each free to scroll vertically on its own. A card leads with the FULL
  * stat totals the player would have in that stance with its assigned
- * customization, then assigns its armaments — the actions the stance will fight
- * with. Armament assignments to the ACTIVE stance equip and unequip
- * automatically (hands and configuration never disagree about the stance
- * you are in); other stances' assignments — and every ACTION assignment —
- * take effect when a stance change pays its round.
+ * customization, then assigns its armaments — each button one owned item
+ * ENTITY. Armament assignments to the ACTIVE stance equip and unequip
+ * automatically; other stances' assignments — and every ACTION assignment
+ * — take effect when a stance change pays its round.
  */
 export const StancesMenu = () => {
   const connection = useStdbConnection();
@@ -56,12 +58,20 @@ export const StancesMenu = () => {
   const assignments = useMyStanceAssignments();
   const owned = useOwnedItems();
   const gearStatBlockOf = useGearStatBlockOf();
-  const defaultArmamentIds = useMyDefaultArmamentIds();
+  const defaultArmamentEntityIds = useMyDefaultArmamentEntityIds();
   const defaultActionIds = useMyDefaultActionIds();
-  const armamentStats = useArmamentStatBlocks();
   // Buttons render PROPER names, never the internal underscored key.
   const actionDisplayName = useActionDisplayNameOf();
   const commonPinnable = useCommonPinnableActionIds();
+
+  const ownedByEntityId = useMemo(
+    () => new Map(owned.map((item) => [item.entityId, item])),
+    [owned],
+  );
+  const statOfEntityId = (id: EntityId) => {
+    const item = ownedByEntityId.get(id);
+    return item == null ? null : gearStatBlockOf(item);
+  };
 
   const totalStatBlock = total?.statBlock ?? null;
   const reachable = useMemo(() => {
@@ -84,9 +94,12 @@ export const StancesMenu = () => {
   // never show different bases. Each card shows the FULL TOTALS the
   // player would have in that stance with its assigned customization.
   const { baseStats, baseActionIds } = useStanceFreeBase();
-  const armamentStatSum = (armamentIds: number[], key: IntStatKey): number =>
-    armamentIds.reduce(
-      (sum, id) => sum + (armamentStats.get(id)?.[key] ?? 0),
+  const armamentStatSum = (
+    armamentEntityIds: readonly EntityId[],
+    key: IntStatKey,
+  ): number =>
+    armamentEntityIds.reduce(
+      (sum, id) => sum + (statOfEntityId(id)?.[key] ?? 0),
       0,
     );
 
@@ -134,11 +147,11 @@ export const StancesMenu = () => {
         // INTENT IS EXPLICIT in the customization: null = no override / no bar
         // assignment; [] = deliberately bare hands / a deliberately blank
         // bar.
-        const armamentOverride = customization?.armamentIds ?? null;
+        const armamentOverride = customization?.armamentEntityIds ?? null;
         const barAssignment = customization?.actionIds ?? null;
         const usesDefault = armamentOverride == null;
         const usesDefaultBar = barAssignment == null;
-        const resolvedArmaments = armamentOverride ?? defaultArmamentIds;
+        const resolvedArmaments = armamentOverride ?? defaultArmamentEntityIds;
         // The bar mirrors the armament rule: no assignment = the DEFAULT
         // action bar rides in.
         const assignedActions = barAssignment ?? defaultActionIds;
@@ -163,7 +176,7 @@ export const StancesMenu = () => {
             ...baseActionIds,
             ...stance.statBlock.actionIds,
             ...resolvedArmaments.flatMap((id) => [
-              ...(armamentStats.get(id)?.actionIds ?? []),
+              ...(statOfEntityId(id)?.actionIds ?? []),
             ]),
             // The common verbs are always pinnable: their slot is the
             // point.
@@ -174,11 +187,7 @@ export const StancesMenu = () => {
         // one exists, the default items otherwise. Clicking an item while
         // on defaults copy-on-writes the visible set into a new override.
         const isOn = (item: OwnedItem) =>
-          assetInstanceIsOn({
-            ids: resolvedArmaments,
-            item,
-            items: ownedArmaments,
-          });
+          resolvedArmaments.includes(item.entityId);
         const stanceName = displayNameFrom(STANCE_DISPLAY_NAMES, stance.name);
         return (
           <section className="stanceCard" key={stance.id}>
@@ -209,29 +218,23 @@ export const StancesMenu = () => {
                 // default set (None).
                 connection.reducers.assignStanceArmaments({
                   stanceId: stance.id,
-                  armamentIds: usesDefault ? [] : undefined,
+                  armamentEntityIds: usesDefault ? [] : undefined,
                 })
               }
             >
               use default
             </Button>
             {ownedArmaments.map((item) => {
-              const itemHand = armamentStats.get(item.assetId)?.hand ?? 0;
               const on = isOn(item);
               return (
                 <Button
                   key={item.entityId.toString()}
                   className={on ? "active" : ""}
                   interesting={on}
-                  disabled={!on && freeHand + itemHand < 0}
                   onClick={() =>
                     connection.reducers.assignStanceArmaments({
                       stanceId: stance.id,
-                      armamentIds: toggledAssetIds({
-                        ids: resolvedArmaments,
-                        item,
-                        items: ownedArmaments,
-                      }),
+                      armamentEntityIds: toggle(resolvedArmaments, item.entityId),
                     })
                   }
                 >

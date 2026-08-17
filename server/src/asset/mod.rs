@@ -38,13 +38,13 @@ use crate::{
         quest_stat_block_dirty_flag_components, total_stat_block_dirty_flag_components,
         traits_stat_block_dirty_flag_components,
         ActionsComponentBlob, ActiveStanceComponentBlob,
-        AppearanceFeaturesComponentBlob, ArmorComponentBlob, BaselineComponentBlob,
+        AppearanceFeaturesComponentBlob, BaselineComponentBlob,
         CheckpointBindingComponentBlob, CheckpointComponentBlob, DifferentiableComponentBlob,
         EntityBlob,
-        EquipmentBlobbedComponentBlob, EquipmentComponentBlob, EquippableComponentBlob,
+        EquipmentBlobbedComponentBlob, EquippableComponentBlob,
         FindEntityHandle, FlagComponent, InstantiateEntityBlob,
-        ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob, RelicsComponentBlob,
-        RemainsComponentBlob, TraitsComponentBlob,
+        ItemComponentBlob, NewEntityHandle, PinnedActionsComponentBlob,
+        RemainsComponentBlob, StartingGearComponentBlob, TraitsComponentBlob,
     },
     item::ItemRef,
 };
@@ -289,11 +289,15 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        // Authored gear lands as CONFIGURATION *and* born-converged
-        // CANONICAL equipment: the reconciliation system then finds no
-        // mismatch at birth, and every later divergence is a real one.
-        equipment: {
-            let armament_ids: Option<Vec<u32>> = author
+        // Blobs never author the runtime EquipmentComponent (concrete item
+        // entities): players spawn their owned items from the manifest below
+        // at provisioning; NPCs run stat-only on EquipmentBlobbed. Born
+        // config-less, so the reconciliation system finds nothing to converge.
+        equipment: None,
+        // The authored starting-gear MANIFEST (gear asset ids): player
+        // provisioning spawns owned item entities from it. Inert on NPCs.
+        starting_gear: {
+            let armament_ids: Vec<u32> = author
                 .armament_names
                 .as_ref()
                 .map(|names| {
@@ -302,13 +306,14 @@ fn resolve_entity_blob(
                         .map(|n| resolve_name(&maps.armaments, "armament", n))
                         .collect::<Result<_, _>>()
                 })
-                .transpose()?;
+                .transpose()?
+                .unwrap_or_default();
             let worn_armor_id: Option<u32> = author
                 .armor_name
                 .as_ref()
                 .map(|n| resolve_name(&maps.armors, "armor", n))
                 .transpose()?;
-            let worn_relic_ids: Option<Vec<u32>> = author
+            let worn_relic_ids: Vec<u32> = author
                 .relic_names
                 .as_ref()
                 .map(|names| {
@@ -317,45 +322,25 @@ fn resolve_entity_blob(
                         .map(|n| resolve_name(&maps.relics, "relic", n))
                         .collect::<Result<_, _>>()
                 })
-                .transpose()?;
-            if armament_ids.is_none() && worn_armor_id.is_none() && worn_relic_ids.is_none()
+                .transpose()?
+                .unwrap_or_default();
+            if armament_ids.is_empty() && worn_armor_id.is_none() && worn_relic_ids.is_empty()
             {
                 None
             } else {
-                Some(EquipmentComponentBlob {
-                    armament_ids: armament_ids.clone().unwrap_or_default(),
+                Some(StartingGearComponentBlob {
+                    armament_ids,
                     worn_armor_id,
-                    worn_relic_ids: worn_relic_ids.unwrap_or_default(),
-                    // Authored blobs carry asset ids only; players get their
-                    // owned item entities spawned at provisioning, NPCs stay
-                    // on the blobbed/asset path.
-                    equipped_entity_ids: Vec::new(),
+                    worn_relic_ids,
                 })
             }
         },
-        // NO configuration from blobs: non-player entities operate fully
-        // on the canonical equipment alone; configurations exist only
-        // where something reconfigures (players, via menus and acts).
+        // NO configuration from blobs: configurations (all entity-id lists)
+        // exist only where something reconfigures — players, via menus and
+        // acts. NPC gear stats come from EquipmentBlobbed alone.
         default_armaments: None,
-        armor: author
-            .armor_name
-            .map(|n| {
-                Ok::<_, String>(ArmorComponentBlob {
-                    armor_id: resolve_name(&maps.armors, "armor", &n)?,
-                })
-            })
-            .transpose()?,
-        relics: author
-            .relic_names
-            .map(|names| {
-                Ok::<_, String>(RelicsComponentBlob {
-                    relic_ids: names
-                        .iter()
-                        .map(|n| resolve_name(&maps.relics, "relic", n))
-                        .collect::<Result<_, _>>()?,
-                })
-            })
-            .transpose()?,
+        armor: None,
+        relics: None,
         item: item_ref.map(|item_ref| ItemComponentBlob { item_ref }),
         equippable,
         equipment_blobbed,

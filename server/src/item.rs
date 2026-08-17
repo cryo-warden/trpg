@@ -21,19 +21,21 @@ pub enum ItemRef {
 
 /// One stance's customization inside a player's assignments. INTENT IS EXPLICIT
 /// in the type, never inferred from emptiness:
-/// - `armament_ids: None` — no override; the stance fights with the
+/// - `armament_entity_ids: None` — no override; the stance fights with the
 ///   DEFAULT wielded set. `Some(vec![])` — deliberately BARE HANDS.
-///   `Some(ids)` — override with exactly these.
+///   `Some(ids)` — override with exactly these item entities.
 /// - `action_ids: None` — no bar assignment; adoption leaves the pinned
 ///   bar alone. `Some(vec![])` — deliberately CLEAR the bar. `Some(ids)`
 ///   — the bar, in hotkey order.
-/// Armaments reference armament ASSET ids; ownership is validated by
-/// counting the player's item entities at assignment time (two one-handed
-/// blades need two owned blades — the counted-multiset rule). Actions are
-/// validated against the stance's candidate set.
+///
+/// Armaments reference concrete ITEM ENTITY ids (never gear asset ids):
+/// each override names the exact owned items to wield. Ownership needs no
+/// counting — an entity is one thing — and the location invariant drops any
+/// referenced item that leaves the wielder. Actions are validated against
+/// the stance's candidate set.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct StanceCustomization {
     pub stance_id: u32,
-    pub armament_ids: Option<Vec<u32>>,
+    pub armament_entity_ids: Option<Vec<u64>>,
     pub action_ids: Option<Vec<u32>>,
 }

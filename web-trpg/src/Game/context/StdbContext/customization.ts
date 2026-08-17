@@ -125,45 +125,48 @@ export const useOwnedItems = (): OwnedItem[] => {
   ]);
 };
 
-export const useMyArmorId = (): number | null => {
+/** The worn armor ITEM entity, if any. */
+export const useMyArmorEntityId = (): EntityId | null => {
   const playerEntity = usePlayerEntity();
   return useTableData(
     "armor_components",
     (t) => {
       if (playerEntity == null) return null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return ((t.entityId as any).find(playerEntity)?.armorId ?? null) as
-        | number
+      return ((t.entityId as any).find(playerEntity)?.armorEntityId ?? null) as
+        | EntityId
         | null;
     },
     [playerEntity],
   );
 };
 
-export const useMyRelicIds = (): number[] => {
+/** The worn relic ITEM entities. */
+export const useMyRelicEntityIds = (): EntityId[] => {
   const playerEntity = usePlayerEntity();
   return useTableData(
     "relics_components",
     (t) => {
       if (playerEntity == null) return [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (((t.entityId as any).find(playerEntity)?.relicIds ?? []) as number[]).slice();
+      return (((t.entityId as any).find(playerEntity)?.relicEntityIds ??
+        []) as EntityId[]).slice();
     },
     [playerEntity],
   );
 };
 
-/** The armaments ACTUALLY in hand right now (the equipment cache), as
- * opposed to the configured customization assignments. */
-export const useMyEquipmentArmamentIds = (): number[] => {
+/** The item ENTITIES actually equipped right now (the equipment cache's
+ * source), across all kinds — as opposed to the configured assignments. */
+export const useMyEquippedEntityIds = (): EntityId[] => {
   const playerEntity = usePlayerEntity();
   return useTableData(
     "equipment_components",
     (t) => {
       if (playerEntity == null) return [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (((t.entityId as any).find(playerEntity)?.armamentIds ??
-        []) as number[]).slice();
+      return (((t.entityId as any).find(playerEntity)?.equippedEntityIds ??
+        []) as EntityId[]).slice();
     },
     [playerEntity],
   );
@@ -185,17 +188,17 @@ export const useMyDefaultActionIds = (): number[] => {
   );
 };
 
-/** The DEFAULT wielded set (the equip menu's): what the hands hold when
- * the active stance assigns no override. */
-export const useMyDefaultArmamentIds = (): number[] => {
+/** The DEFAULT wielded set (the equip menu's): the item ENTITIES the hands
+ * hold when the active stance assigns no override. */
+export const useMyDefaultArmamentEntityIds = (): EntityId[] => {
   const playerEntity = usePlayerEntity();
   return useTableData(
     "default_armaments_components",
     (t) => {
       if (playerEntity == null) return [];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (((t.entityId as any).find(playerEntity)?.armamentIds ??
-        []) as number[]).slice();
+      return (((t.entityId as any).find(playerEntity)?.armamentEntityIds ??
+        []) as EntityId[]).slice();
     },
     [playerEntity],
   );
@@ -210,25 +213,6 @@ const useStatBlockMap = (table: "armaments" | "armors" | "relics") =>
       ),
     [],
   );
-
-export const useArmamentStatBlocks = (): Map<number, StatBlock> =>
-  useStatBlockMap("armaments");
-
-/** All three gear kinds' asset stat blocks, for surfaces summing a worn
- * set (the customization menu's equipped-contribution line). */
-export const useGearStatBlocks = (): {
-  armaments: Map<number, StatBlock>;
-  armors: Map<number, StatBlock>;
-  relics: Map<number, StatBlock>;
-} => {
-  const armaments = useStatBlockMap("armaments");
-  const armors = useStatBlockMap("armors");
-  const relics = useStatBlockMap("relics");
-  return useMemo(
-    () => ({ armaments, armors, relics }),
-    [armaments, armors, relics],
-  );
-};
 
 /** Resolves any owned item to its gear asset's stat block. */
 export const useGearStatBlockOf = (): ((
@@ -252,8 +236,9 @@ export const useGearStatBlockOf = (): ((
 export type StanceAssignment = {
   stanceId: number;
   /** INTENT IS EXPLICIT: null = no override (the stance fights with the
-   * DEFAULT set); [] = deliberately bare hands; ids = the override. */
-  armamentIds: number[] | null;
+   * DEFAULT set); [] = deliberately bare hands; ids = the override item
+   * ENTITIES. */
+  armamentEntityIds: EntityId[] | null;
   /** null = no bar assignment (adoption leaves the bar alone); [] =
    * deliberately clear the bar; ids = the bar, in hotkey order. */
   actionIds: number[] | null;
@@ -269,14 +254,15 @@ export const useMyStanceAssignments = (): StanceAssignment[] => {
       const row = (t.entityId as any).find(playerEntity);
       type WireCustomization = {
         stanceId: number;
-        armamentIds?: number[];
+        armamentEntityIds?: EntityId[];
         actionIds?: number[];
       };
       return row == null
         ? []
         : (row.assignments as WireCustomization[]).map((a) => ({
             stanceId: a.stanceId,
-            armamentIds: a.armamentIds == null ? null : [...a.armamentIds],
+            armamentEntityIds:
+              a.armamentEntityIds == null ? null : [...a.armamentEntityIds],
             actionIds: a.actionIds == null ? null : [...a.actionIds],
           }));
     },

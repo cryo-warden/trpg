@@ -7,8 +7,9 @@ import {
   useTotalStatBlockComponent,
 } from "./components";
 import {
-  useArmamentStatBlocks,
-  useMyEquipmentArmamentIds,
+  useGearStatBlockOf,
+  useMyEquippedEntityIds,
+  useOwnedItems,
 } from "./customization";
 
 /**
@@ -28,18 +29,24 @@ export const useStanceFreeBase = (): {
   const total = useTotalStatBlockComponent(playerEntity);
   const activeStanceId = useMyActiveStanceId();
   const stanceRows = useStanceDetailRows();
-  const equippedArmamentIds = useMyEquipmentArmamentIds();
-  const armamentStats = useArmamentStatBlocks();
+  const equippedEntityIds = useMyEquippedEntityIds();
+  const owned = useOwnedItems();
+  const gearStatBlockOf = useGearStatBlockOf();
 
   return useMemo(() => {
     const totalStatBlock = total?.statBlock ?? null;
     const activeStanceBlock =
       stanceRows.find((row) => row.id === activeStanceId)?.statBlock ?? null;
+    const ownedByEntityId = new Map(owned.map((item) => [item.entityId, item]));
+    // Only ARMAMENTS vary per stance, so only their in-hand contribution is
+    // peeled off; worn armor and relics stay part of the base.
+    const inHandArmaments = equippedEntityIds
+      .map((id) => ownedByEntityId.get(id))
+      .filter((item) => item != null && item.kind === "Armament")
+      .map((item) => gearStatBlockOf(item!))
+      .filter((block) => block != null);
     const armamentStatSum = (key: IntStatKey): number =>
-      equippedArmamentIds.reduce(
-        (sum, id) => sum + (armamentStats.get(id)?.[key] ?? 0),
-        0,
-      );
+      inHandArmaments.reduce((sum, block) => sum + (block![key] ?? 0), 0);
     const baseStats = Object.fromEntries(
       ALL_STATS.map(([key]) => [
         key,
@@ -53,11 +60,11 @@ export const useStanceFreeBase = (): {
     for (const id of activeStanceBlock?.actionIds ?? []) {
       ids.delete(id);
     }
-    for (const armamentId of equippedArmamentIds) {
-      for (const id of armamentStats.get(armamentId)?.actionIds ?? []) {
+    for (const block of inHandArmaments) {
+      for (const id of block!.actionIds ?? []) {
         ids.delete(id);
       }
     }
     return { baseStats, baseActionIds: [...ids] };
-  }, [total, stanceRows, activeStanceId, equippedArmamentIds, armamentStats]);
+  }, [total, stanceRows, activeStanceId, equippedEntityIds, owned, gearStatBlockOf]);
 };

@@ -12,8 +12,5 @@ import {
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  armamentIds: __t.array(__t.u32()).name("armament_ids"),
-  wornArmorId: __t.option(__t.u32()).name("worn_armor_id"),
-  wornRelicIds: __t.array(__t.u32()).name("worn_relic_ids"),
   equippedEntityIds: __t.array(__t.u64()).name("equipped_entity_ids"),
 });

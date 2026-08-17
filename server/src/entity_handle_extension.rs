@@ -26,18 +26,23 @@ pub trait EntityHandleExtension {
     fn set_mep(self, mep: i16) -> Self;
     fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
-    /// The armaments the hands should hold RIGHT NOW: the active stance's
-    /// customization override when it assigns any, else the DEFAULT set (what
-    /// the equip menu built). A stance assignment overrides the default —
-    /// it is never a requirement.
-    fn resolved_armament_ids(&self) -> Vec<u32>;
-    /// Rewrites the CANONICAL equipment (armaments in hand, worn armor,
-    /// worn relics) from the configurations. Called by the paths that
-    /// converge IMMEDIATELY — the Rearm effect, intentional stance
-    /// changes, the equip/unequip/take acts; menu reducers never call it
-    /// (the reconciliation system forces the re-arm round instead).
-    /// Gated on configuration components existing: blob-equipped
-    /// config-less entities keep their flat equipment untouched.
+    /// The armament ITEM ENTITIES the hands should hold RIGHT NOW: the active
+    /// stance's customization override when it assigns any, else the DEFAULT
+    /// set (what the equip menu built). A stance assignment overrides the
+    /// default — it is never a requirement.
+    fn resolved_armament_entity_ids(&self) -> Vec<u64>;
+    /// The full set of item ENTITIES this entity's configurations say it
+    /// should have equipped: the resolved armaments plus the worn armor and
+    /// relics. None when the entity carries NO configuration at all (a
+    /// blob-equipped, config-less entity is never a divergence). Shared by
+    /// apply_resolved_equipment and the reconciliation system so hands and
+    /// intent can never disagree about what "converged" means.
+    fn intended_equipped_entity_ids(&self) -> Option<Vec<u64>>;
+    /// Rewrites the CANONICAL equipment (the equipped item entities) from the
+    /// configurations. Called by the paths that converge IMMEDIATELY — the
+    /// Rearm effect, intentional stance changes, the equip/unequip/take acts;
+    /// menu reducers never call it (the reconciliation system forces the
+    /// re-arm round instead). No-op for config-less entities.
     fn apply_resolved_equipment(&self);
     /// There is NO concept of known stances: a stance is available exactly
     /// when it is REACHABLE — the closure seeded by the entity's granted
@@ -265,7 +270,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         }
     }
 
-    fn resolved_armament_ids(&self) -> Vec<u32> {
+    fn resolved_armament_entity_ids(&self) -> Vec<u64> {
         let e = self.to_handle();
         // The override's INTENT is explicit: None falls through to the
         // default set; Some(vec![]) is deliberately bare hands.
@@ -275,68 +280,66 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                     .assignments
                     .iter()
                     .find(|a| a.stance_id == active.stance_id)
-                    .and_then(|a| a.armament_ids.clone())
+                    .and_then(|a| a.armament_entity_ids.clone())
             })
         });
         override_ids
-            .or_else(|| e.default_armaments().map(|d| d.armament_ids))
+            .or_else(|| e.default_armaments().map(|d| d.armament_entity_ids))
             .unwrap_or_default()
     }
 
-    fn apply_resolved_equipment(&self) {
+    fn intended_equipped_entity_ids(&self) -> Option<Vec<u64>> {
         let e = self.to_handle();
-        // Only CONFIGURATION carriers converge; an entity with flat
-        // authored equipment and no config keeps it untouched.
+        // Only CONFIGURATION carriers converge; an entity with flat authored
+        // equipment and no config is never a divergence.
         let has_configuration = e.stance_customizations().is_some()
             || e.default_armaments().is_some()
             || e.armor().is_some()
             || e.relics().is_some();
         if !has_configuration {
-            return;
+            return None;
         }
-        // PER KIND: a kind with no configuration keeps its current
-        // canonical state — an entity wielding authored gear does not
-        // lose it to an unrelated config (wearing a relic must not strip
-        // authored hands).
+        let ecs = e.ecs();
+        let is_armament = |id: u64| {
+            matches!(
+                ecs.find(id).item().map(|i| i.item_ref),
+                Some(ItemRef::Armament(_))
+            )
+        };
+        // ARMAMENTS: the resolved override-or-default set when this entity
+        // configures armaments; otherwise the armament-kind items already
+        // equipped are preserved (wearing a relic must not strip authored
+        // hands).
         let has_armament_config =
             e.stance_customizations().is_some() || e.default_armaments().is_some();
-        let armament_ids = if has_armament_config {
-            self.resolved_armament_ids()
+        let mut equipped: Vec<u64> = if has_armament_config {
+            self.resolved_armament_entity_ids()
         } else {
-            { e.equipment() }.map(|q| q.armament_ids).unwrap_or_default()
+            { e.equipment() }
+                .map(|q| {
+                    q.equipped_entity_ids
+                        .into_iter()
+                        .filter(|id| is_armament(*id))
+                        .collect()
+                })
+                .unwrap_or_default()
         };
-        let worn_armor_id = e.armor().map(|a| a.armor_id);
-        let worn_relic_ids = e.relics().map(|r| r.relic_ids).unwrap_or_default();
-        // Resolve the asset-id worn reality into the concrete OWNED item
-        // entities behind it — the entity-based equipment cache sums these
-        // items' Equippable blocks. Each requested asset id claims one
-        // distinct owned item of that kind (the counted-multiset rule,
-        // expressed once here rather than at every mutator).
-        let ecs = e.ecs();
-        let mut owned: Vec<(u64, ItemRef)> = ecs
-            .db
-            .location_components()
-            .location_entity_id()
-            .filter(e.entity_id())
-            .filter_map(|l| ecs.find(l.entity_id).item().map(|i| (l.entity_id, i.item_ref)))
-            .collect();
-        let mut equipped_entity_ids: Vec<u64> = Vec::new();
-        let mut claim = |matches: &dyn Fn(&ItemRef) -> bool| {
-            if let Some(pos) = owned.iter().position(|(_, r)| matches(r)) {
-                equipped_entity_ids.push(owned.remove(pos).0);
-            }
-        };
-        for id in &armament_ids {
-            claim(&|r| matches!(r, ItemRef::Armament(a) if a == id));
+        // ARMOR + RELICS: the non-armament worn items, straight from their
+        // configs (frozen across stances).
+        if let Some(armor) = e.armor() {
+            equipped.push(armor.armor_entity_id);
         }
-        if let Some(armor_id) = worn_armor_id {
-            claim(&|r| matches!(r, ItemRef::Armor(a) if *a == armor_id));
+        if let Some(relics) = e.relics() {
+            equipped.extend(relics.relic_entity_ids);
         }
-        for id in &worn_relic_ids {
-            claim(&|r| matches!(r, ItemRef::Relic(a) if a == id));
+        Some(equipped)
+    }
+
+    fn apply_resolved_equipment(&self) {
+        let e = self.to_handle();
+        if let Some(equipped_entity_ids) = self.intended_equipped_entity_ids() {
+            e.clone().upsert_new_equipment(equipped_entity_ids);
         }
-        e.clone()
-            .upsert_new_equipment(armament_ids, worn_armor_id, worn_relic_ids, equipped_entity_ids);
     }
 
     fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
@@ -601,14 +604,15 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                     }
                     carried
                         && match gear_ref {
-                            crate::item::ItemRef::Armament(id) => { e.default_armaments() }
-                                .is_some_and(|d| d.armament_ids.contains(&id)),
-                            crate::item::ItemRef::Armor(id) => {
-                                { e.armor() }.is_some_and(|a| a.armor_id == id)
+                            crate::item::ItemRef::Armament(_) => { e.default_armaments() }
+                                .is_some_and(|d| {
+                                    d.armament_entity_ids.contains(&other_entity_id)
+                                }),
+                            crate::item::ItemRef::Armor(_) => {
+                                { e.armor() }.is_some_and(|a| a.armor_entity_id == other_entity_id)
                             }
-                            crate::item::ItemRef::Relic(id) => {
-                                { e.relics() }.is_some_and(|r| r.relic_ids.contains(&id))
-                            }
+                            crate::item::ItemRef::Relic(_) => { e.relics() }
+                                .is_some_and(|r| r.relic_entity_ids.contains(&other_entity_id)),
                             crate::item::ItemRef::QuestItem(_) => false,
                         }
                 }

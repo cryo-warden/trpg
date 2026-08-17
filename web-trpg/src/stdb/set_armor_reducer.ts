@@ -11,5 +11,5 @@ import {
 } from "spacetimedb";
 
 export default {
-  armorId: __t.u32(),
+  itemEntityId: __t.u64(),
 };

@@ -12,5 +12,5 @@ import {
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  armorId: __t.u32().name("armor_id"),
+  armorEntityId: __t.u64().name("armor_entity_id"),
 });

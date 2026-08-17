@@ -109,28 +109,28 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // Added on a fresh handle so new_player's return type stays unchanged.
         let player_entity_id = player.entity_id();
         self.find(player_entity_id).upsert_new_party(0);
-        // Authored starting gear becomes OWNED item entities located in the
-        // player: customization equips concrete entities, so the worn reality
-        // needs real items behind it. Each carries its Equippable stamp; their
-        // ids are staged on the equipment component beside the asset ids.
-        if let Some(equipment) = self.find(player_entity_id).equipment() {
+        // The authored starting-gear MANIFEST becomes OWNED item entities
+        // located in the player: customization equips concrete entities, so
+        // the worn reality needs real items behind it. Each carries its
+        // Equippable stamp; their ids form the canonical EquipmentComponent.
+        if let Some(manifest) = self.find(player_entity_id).starting_gear() {
             let mut to_spawn: Vec<(ItemRef, StatBlock)> = Vec::new();
-            for id in &equipment.armament_ids {
+            for id in &manifest.armament_ids {
                 if let Some(a) = self.db.armaments().id().find(id) {
                     to_spawn.push((ItemRef::Armament(*id), a.stat_block));
                 }
             }
-            if let Some(armor_id) = equipment.worn_armor_id {
+            if let Some(armor_id) = manifest.worn_armor_id {
                 if let Some(a) = self.db.armors().id().find(armor_id) {
                     to_spawn.push((ItemRef::Armor(armor_id), a.stat_block));
                 }
             }
-            for id in &equipment.worn_relic_ids {
+            for id in &manifest.worn_relic_ids {
                 if let Some(r) = self.db.relics().id().find(id) {
                     to_spawn.push((ItemRef::Relic(*id), r.stat_block));
                 }
             }
-            let mut equipped_entity_ids = equipment.equipped_entity_ids.clone();
+            let mut equipped_entity_ids: Vec<u64> = Vec::new();
             for (item_ref, stat_block) in to_spawn {
                 let item = self
                     .new()
@@ -140,17 +140,14 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
                     .into_handle();
                 equipped_entity_ids.push(item.entity_id());
             }
-            let has_items = !equipped_entity_ids.is_empty();
-            self.find(player_entity_id).upsert_new_equipment(
-                equipment.armament_ids,
-                equipment.worn_armor_id,
-                equipment.worn_relic_ids,
-                equipped_entity_ids,
-            );
-            // Real item entities now back the equipment: the authored
-            // EquipmentBlobbed contribution (the NPC-light path) would
-            // double-count, so it is dropped. Real gear wins over the blob.
-            if has_items {
+            // The manifest is consumed once: real items now stand for it.
+            self.find(player_entity_id).delete_starting_gear();
+            if !equipped_entity_ids.is_empty() {
+                self.find(player_entity_id)
+                    .upsert_new_equipment(equipped_entity_ids);
+                // Real item entities back the equipment: the summed
+                // EquipmentBlobbed (the NPC-light path) would double-count,
+                // so it is dropped. Real gear wins over the blob.
                 self.find(player_entity_id).delete_equipment_blobbed();
             }
         }

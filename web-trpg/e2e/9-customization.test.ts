@@ -7,12 +7,13 @@ import { claimAdmin } from "./admin";
 import { customizationPack } from "./testAssets";
 
 // Phase 9: inventory + customizations. Carrying IS location: taking a room item
-// pulls it into the player. Customizations: one armor slot and up to four relics
-// across all stances. Armaments resolve OVERRIDE-OR-DEFAULT: the equip
-// menu builds a DEFAULT wielded set (take's auto-wield and the
-// equip/unequip item actions edit it), and a stance's assignment OVERRIDES
-// it — never a requirement. Everything the stance menu derives applies
-// immediately for the ACTIVE stance.
+// pulls it into the player. EVERYTHING equipped is a concrete item ENTITY —
+// the reducers take entity ids, never gear asset ids. One armor slot and up to
+// four relics across all stances. Armaments resolve OVERRIDE-OR-DEFAULT: the
+// equip menu builds a DEFAULT wielded set (take's auto-wield and the
+// equip/unequip item actions edit it), and a stance's assignment OVERRIDES it.
+// Ownership is presence: an item is one entity, so there is no counting and no
+// grip gate — over-equipping just drives hand negative.
 
 let admin: DbConnection;
 let player: DbConnection;
@@ -82,12 +83,16 @@ const armamentItemId = (armamentAssetId: number): bigint =>
       row.itemRef.tag === "Armament" && row.itemRef.value === armamentAssetId,
   )!.entityId;
 
+const soleItemIdOfKind = (tag: "Armor" | "Relic"): bigint =>
+  [...player.db.item_components.iter()].find((row) => row.itemRef.tag === tag)!
+    .entityId;
+
 afterAll(() => {
   admin?.disconnect();
   player?.disconnect();
 });
 
-test("taking a sword pockets it AND wields it while the grip allows", async () => {
+test("taking a sword pockets it AND wields it", async () => {
   const swordItemId = armamentItemId(idByName(player.db.armaments, "test_sword"));
   expect(carriedItemIds()).not.toContain(swordItemId);
 
@@ -97,34 +102,28 @@ test("taking a sword pockets it AND wields it while the grip allows", async () =
     targetEntityId: swordItemId,
   });
   await waitFor(() => carriedItemIds().includes(swordItemId), 30000);
-  // The auto-wield: a free hand means the blade goes straight into it —
-  // its granted attack appears without any menu step.
+  // The auto-wield: the blade goes straight into hand — its granted attack
+  // appears without any menu step.
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
 }, 60000);
 
 test("armor and relics require ownership; owned ones equip", async () => {
-  const jerkinId = idByName(player.db.armors, "test_jerkin");
+  const jerkinItemId = soleItemIdOfKind("Armor");
+  const charmItemId = soleItemIdOfKind("Relic");
+
   // The jerkin still lies in the room: not owned, so wearing it fails.
   await expect(
-    player.reducers.setArmor({ armorId: jerkinId }),
+    player.reducers.setArmor({ itemEntityId: jerkinItemId }),
   ).rejects.toThrow(/owned/);
 
-  const jerkinItemId = [...player.db.item_components.iter()].find(
-    (row) => row.itemRef.tag === "Armor",
-  )!.entityId;
-  const charmItemId = [...player.db.item_components.iter()].find(
-    (row) => row.itemRef.tag === "Relic",
-  )!.entityId;
   const takeId = idByName(player.db.actions, "test_take");
   await player.reducers.act({ actionId: takeId, targetEntityId: jerkinItemId });
   await waitFor(() => carriedItemIds().includes(jerkinItemId), 30000);
   await player.reducers.act({ actionId: takeId, targetEntityId: charmItemId });
   await waitFor(() => carriedItemIds().includes(charmItemId), 30000);
 
-  await player.reducers.setArmor({ armorId: jerkinId });
-  await player.reducers.setRelics({
-    relicIds: [idByName(player.db.relics, "test_charm")],
-  });
+  await player.reducers.setArmor({ itemEntityId: jerkinItemId });
+  await player.reducers.setRelics({ relicEntityIds: [charmItemId] });
   await waitFor(() => player.db.armor_components.count() > 0, 30000);
   // Armor defense flows into the hp component through the equipment cache.
   await waitFor(
@@ -138,15 +137,13 @@ test("armor and relics require ownership; owned ones equip", async () => {
 
 test("a stance assignment OVERRIDES the default set; clearing it falls back", async () => {
   const clubId = idByName(player.db.armaments, "test_club");
+  const clubItemId = armamentItemId(clubId);
   const duelingId = idByName(player.db.stances, "test_dueling");
   const standingId = idByName(player.db.stances, "test_standing");
 
   // The club joins the DEFAULT set beside the sword.
   const takeId = idByName(player.db.actions, "test_take");
-  await player.reducers.act({
-    actionId: takeId,
-    targetEntityId: armamentItemId(clubId),
-  });
+  await player.reducers.act({ actionId: takeId, targetEntityId: clubItemId });
   await waitFor(
     () =>
       myActionNames().includes("test_slash") &&
@@ -154,11 +151,11 @@ test("a stance assignment OVERRIDES the default set; clearing it falls back", as
     30000,
   );
 
-  // Overriding the ACTIVE stance with the club alone applies IMMEDIATELY:
-  // no stance change, the blade leaves the hands.
+  // Overriding the ACTIVE stance with the club ITEM alone applies
+  // IMMEDIATELY: no stance change, the blade leaves the hands.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
-    armamentIds: [clubId],
+    armamentEntityIds: [clubItemId],
   });
   await waitFor(() => !myActionNames().includes("test_slash"), 30000);
   expect(myActionNames()).toContain("test_smash");
@@ -171,7 +168,7 @@ test("a stance assignment OVERRIDES the default set; clearing it falls back", as
   // Some([]) is DELIBERATELY BARE HANDS — explicit intent, not fallback.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
-    armamentIds: [],
+    armamentEntityIds: [],
   });
   await waitFor(() => !myActionNames().includes("test_smash"), 30000);
   expect(myActionNames()).not.toContain("test_slash");
@@ -180,7 +177,7 @@ test("a stance assignment OVERRIDES the default set; clearing it falls back", as
   // club both return.
   await player.reducers.assignStanceArmaments({
     stanceId: standingId,
-    armamentIds: undefined,
+    armamentEntityIds: undefined,
   });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
   expect(myActionNames()).toContain("test_smash");
@@ -243,10 +240,11 @@ test("unequip/equip actions edit the DEFAULT slot; hands re-resolve", async () =
   const swordId = idByName(player.db.armaments, "test_sword");
   const clubId = idByName(player.db.armaments, "test_club");
   const swordItemId = armamentItemId(swordId);
-  const myDefaults = () => [
+  const clubItemId = armamentItemId(clubId);
+  const myDefaults = (): bigint[] => [
     ...([...player.db.default_armaments_components.iter()].find(
       (row) => row.entityId === playerEntityId,
-    )?.armamentIds ?? []),
+    )?.armamentEntityIds ?? []),
   ];
 
   // Standing holds the default set (no override). Unequipping the sword
@@ -257,7 +255,7 @@ test("unequip/equip actions edit the DEFAULT slot; hands re-resolve", async () =
     targetEntityId: swordItemId,
   });
   await waitFor(() => !myActionNames().includes("test_slash"), 30000);
-  expect(myDefaults()).toEqual([clubId]);
+  expect(myDefaults()).toEqual([clubItemId]);
   expect(myActionNames()).toContain("test_smash");
 
   // Equipping it back returns it to the default slot.
@@ -267,7 +265,7 @@ test("unequip/equip actions edit the DEFAULT slot; hands re-resolve", async () =
     targetEntityId: swordItemId,
   });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
-  expect(myDefaults()).toEqual([clubId, swordId]);
+  expect(myDefaults()).toEqual([clubItemId, swordItemId]);
 }, 60000);
 
 test("the DEFAULT action bar: set-validated, pinned by stances without a bar of their own", async () => {
@@ -302,38 +300,47 @@ test("the DEFAULT action bar: set-validated, pinned by stances without a bar of 
 test("set_default_armaments configures IMMEDIATELY: the menu path, hands re-resolving", async () => {
   const swordId = idByName(player.db.armaments, "test_sword");
   const clubId = idByName(player.db.armaments, "test_club");
-  const myDefaults = () => [
+  const swordItemId = armamentItemId(swordId);
+  const clubItemId = armamentItemId(clubId);
+  const jerkinItemId = soleItemIdOfKind("Armor");
+  const myDefaults = (): bigint[] => [
     ...([...player.db.default_armaments_components.iter()].find(
       (row) => row.entityId === playerEntityId,
-    )?.armamentIds ?? []),
+    )?.armamentEntityIds ?? []),
   ];
 
-  // Ownership is counted: two swords cannot come from one.
+  // Kind is checked: an armor item is not a wieldable armament.
   await expect(
-    player.reducers.setDefaultArmaments({ armamentIds: [swordId, swordId] }),
-  ).rejects.toThrow(/Not enough owned/);
+    player.reducers.setDefaultArmaments({ armamentEntityIds: [jerkinItemId] }),
+  ).rejects.toThrow(/armament/);
 
   // Club alone: the configuration row lands AT ONCE, and the hands
   // follow (dueling holds no override — it rides the defaults). Whether
   // any in-fiction action queues is the server's business; the client
   // only configured.
-  await player.reducers.setDefaultArmaments({ armamentIds: [clubId] });
-  await waitFor(() => myDefaults().join(",") === `${clubId}`, 30000);
+  await player.reducers.setDefaultArmaments({ armamentEntityIds: [clubItemId] });
+  await waitFor(() => myDefaults().join(",") === `${clubItemId}`, 30000);
   await waitFor(() => !myActionNames().includes("test_slash"), 30000);
   expect(myActionNames()).toContain("test_smash");
 
   // Both back, for whatever follows.
   await player.reducers.setDefaultArmaments({
-    armamentIds: [clubId, swordId],
+    armamentEntityIds: [clubItemId, swordItemId],
   });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
 }, 60000);
 
 test("the four-relic cap is enforced", async () => {
-  const charmId = idByName(player.db.relics, "test_charm");
+  const charmItemId = soleItemIdOfKind("Relic");
   await expect(
     player.reducers.setRelics({
-      relicIds: [charmId, charmId, charmId, charmId, charmId],
+      relicEntityIds: [
+        charmItemId,
+        charmItemId,
+        charmItemId,
+        charmItemId,
+        charmItemId,
+      ],
     }),
   ).rejects.toThrow(/At most 4/);
 }, 60000);

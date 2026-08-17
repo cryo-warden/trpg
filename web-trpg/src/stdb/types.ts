@@ -286,12 +286,14 @@ export type Armor = __Infer<typeof Armor>;
 
 export const ArmorComponent = __t.object("ArmorComponent", {
   entityId: __t.u64(),
-  armorId: __t.u32(),
+  armorEntityId: __t.u64(),
 });
 export type ArmorComponent = __Infer<typeof ArmorComponent>;
 
 export const ArmorComponentBlob = __t.object("ArmorComponentBlob", {
-  armorId: __t.u32(),
+  get armorEntityId() {
+    return EntityIdSelector;
+  },
 });
 export type ArmorComponentBlob = __Infer<typeof ArmorComponentBlob>;
 
@@ -474,12 +476,12 @@ export type CourageStatusComponentBlob = __Infer<typeof CourageStatusComponentBl
 
 export const DefaultArmamentsComponent = __t.object("DefaultArmamentsComponent", {
   entityId: __t.u64(),
-  armamentIds: __t.array(__t.u32()),
+  armamentEntityIds: __t.array(__t.u64()),
 });
 export type DefaultArmamentsComponent = __Infer<typeof DefaultArmamentsComponent>;
 
 export const DefaultArmamentsComponentBlob = __t.object("DefaultArmamentsComponentBlob", {
-  armamentIds: __t.array(__t.u32()),
+  armamentEntityIds: __t.array(__t.u64()),
 });
 export type DefaultArmamentsComponentBlob = __Infer<typeof DefaultArmamentsComponentBlob>;
 
@@ -614,6 +616,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   },
   get equipment() {
     return __t.option(EquipmentComponentBlob);
+  },
+  get startingGear() {
+    return __t.option(StartingGearComponentBlob);
   },
   get equipmentBlobbed() {
     return __t.option(EquipmentBlobbedComponentBlob);
@@ -922,17 +927,11 @@ export type EquipmentBlobbedComponentBlob = __Infer<typeof EquipmentBlobbedCompo
 
 export const EquipmentComponent = __t.object("EquipmentComponent", {
   entityId: __t.u64(),
-  armamentIds: __t.array(__t.u32()),
-  wornArmorId: __t.option(__t.u32()),
-  wornRelicIds: __t.array(__t.u32()),
   equippedEntityIds: __t.array(__t.u64()),
 });
 export type EquipmentComponent = __Infer<typeof EquipmentComponent>;
 
 export const EquipmentComponentBlob = __t.object("EquipmentComponentBlob", {
-  armamentIds: __t.array(__t.u32()),
-  wornArmorId: __t.option(__t.u32()),
-  wornRelicIds: __t.array(__t.u32()),
   equippedEntityIds: __t.array(__t.u64()),
 });
 export type EquipmentComponentBlob = __Infer<typeof EquipmentComponentBlob>;
@@ -1725,12 +1724,12 @@ export type Relic = __Infer<typeof Relic>;
 
 export const RelicsComponent = __t.object("RelicsComponent", {
   entityId: __t.u64(),
-  relicIds: __t.array(__t.u32()),
+  relicEntityIds: __t.array(__t.u64()),
 });
 export type RelicsComponent = __Infer<typeof RelicsComponent>;
 
 export const RelicsComponentBlob = __t.object("RelicsComponentBlob", {
-  relicIds: __t.array(__t.u32()),
+  relicEntityIds: __t.array(__t.u64()),
 });
 export type RelicsComponentBlob = __Infer<typeof RelicsComponentBlob>;
 
@@ -1833,7 +1832,7 @@ export type StanceAsset = __Infer<typeof StanceAsset>;
 
 export const StanceCustomization = __t.object("StanceCustomization", {
   stanceId: __t.u32(),
-  armamentIds: __t.option(__t.array(__t.u32())),
+  armamentEntityIds: __t.option(__t.array(__t.u64())),
   actionIds: __t.option(__t.array(__t.u32())),
 });
 export type StanceCustomization = __Infer<typeof StanceCustomization>;
@@ -1852,6 +1851,21 @@ export const StanceCustomizationsComponentBlob = __t.object("StanceCustomization
   },
 });
 export type StanceCustomizationsComponentBlob = __Infer<typeof StanceCustomizationsComponentBlob>;
+
+export const StartingGearComponent = __t.object("StartingGearComponent", {
+  entityId: __t.u64(),
+  armamentIds: __t.array(__t.u32()),
+  wornArmorId: __t.option(__t.u32()),
+  wornRelicIds: __t.array(__t.u32()),
+});
+export type StartingGearComponent = __Infer<typeof StartingGearComponent>;
+
+export const StartingGearComponentBlob = __t.object("StartingGearComponentBlob", {
+  armamentIds: __t.array(__t.u32()),
+  wornArmorId: __t.option(__t.u32()),
+  wornRelicIds: __t.array(__t.u32()),
+});
+export type StartingGearComponentBlob = __Infer<typeof StartingGearComponentBlob>;
 
 export const StatBlock = __t.object("StatBlock", {
   attack: __t.i8(),

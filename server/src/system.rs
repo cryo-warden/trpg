@@ -1257,56 +1257,6 @@ fn cleanup_map_instance(ecs: Ecs, map_entity_id: u64) {
     cleanup_delete(ecs, map_entity_id);
 }
 
-/// How many carried items of the given gear kind+asset the entity owns
-/// (carrying IS location): the counted-multiset supply configurations
-/// must stay within.
-fn owned_gear_count(ecs: Ecs, owner_entity_id: u64, wanted: &crate::item::ItemRef) -> usize {
-    ecs.db
-        .location_components()
-        .location_entity_id()
-        .filter(owner_entity_id)
-        .filter(|carried| {
-            ecs.db
-                .item_components()
-                .entity_id()
-                .find(carried.entity_id)
-                .is_some_and(|item| match (&item.item_ref, wanted) {
-                    (crate::item::ItemRef::Armament(a), crate::item::ItemRef::Armament(b)) => {
-                        a == b
-                    }
-                    (crate::item::ItemRef::Armor(a), crate::item::ItemRef::Armor(b)) => a == b,
-                    (crate::item::ItemRef::Relic(a), crate::item::ItemRef::Relic(b)) => a == b,
-                    _ => false,
-                })
-        })
-        .count()
-}
-
-/// The id list trimmed to what ownership can cover, counted: the first
-/// N configured copies of an asset survive when N are owned. None when
-/// nothing changed.
-fn trim_to_owned(ids: &[u32], mut owned_of: impl FnMut(u32) -> usize) -> Option<Vec<u32>> {
-    let mut used: std::collections::HashMap<u32, usize> = std::collections::HashMap::new();
-    let trimmed: Vec<u32> = ids
-        .iter()
-        .filter(|id| {
-            let seen = used.entry(**id).or_insert(0);
-            if *seen < owned_of(**id) {
-                *seen += 1;
-                true
-            } else {
-                false
-            }
-        })
-        .copied()
-        .collect();
-    if trimmed.len() == ids.len() {
-        None
-    } else {
-        Some(trimmed)
-    }
-}
-
 /// INVALID ACTIONS LEAVE THE QUEUE before they progress — and only
 /// where the queue CHANGED: every queue mutation flows through the
 /// generated ActionStateComponent methods, which dirty the flag this
@@ -1376,45 +1326,24 @@ pub fn gear_location_system(ecs: Ecs) {
         let Some(equipment) = handle.equipment() else {
             continue;
         };
-        // The worn multiset, keyed by gear kind + asset id.
-        let mut worn: std::collections::HashMap<(u8, u32), usize> =
-            std::collections::HashMap::new();
-        for id in &equipment.armament_ids {
-            *worn.entry((0, *id)).or_insert(0) += 1;
-        }
-        if let Some(armor_id) = equipment.worn_armor_id {
-            *worn.entry((1, armor_id)).or_insert(0) += 1;
-        }
-        for id in &equipment.worn_relic_ids {
-            *worn.entry((2, *id)).or_insert(0) += 1;
-        }
-        // Carried gear in stable entity order — the same counted order
-        // every menu highlight uses.
-        let mut carried: Vec<_> = ecs
+        // The worn reality IS the equipped item entities: each rides the
+        // exterior, everything else the owner carries stays pocketed.
+        let equipped: std::collections::HashSet<u64> =
+            equipment.equipped_entity_ids.iter().copied().collect();
+        for mut row in ecs
             .db
             .location_components()
             .location_entity_id()
             .filter(owner_entity_id)
-            .collect();
-        carried.sort_unstable_by_key(|row| row.entity_id);
-        for mut row in carried {
-            let Some(item) = ecs.db.item_components().entity_id().find(row.entity_id)
-            else {
+        {
+            // Only items relocate; occupants and the like are left alone.
+            if ecs.db.item_components().entity_id().find(row.entity_id).is_none() {
                 continue;
-            };
-            let key = match item.item_ref {
-                crate::item::ItemRef::Armament(id) => (0u8, id),
-                crate::item::ItemRef::Armor(id) => (1u8, id),
-                crate::item::ItemRef::Relic(id) => (2u8, id),
-                crate::item::ItemRef::QuestItem(_) => continue,
-            };
-            let remaining = worn.get_mut(&key);
-            let kind = match remaining {
-                Some(count) if *count > 0 => {
-                    *count -= 1;
-                    LocationKind::Exterior
-                }
-                _ => LocationKind::Interior,
+            }
+            let kind = if equipped.contains(&row.entity_id) {
+                LocationKind::Exterior
+            } else {
+                LocationKind::Interior
             };
             if row.kind != kind {
                 row.kind = kind;
@@ -1424,30 +1353,54 @@ pub fn gear_location_system(ecs: Ecs) {
     }
 }
 
-/// CONFIGURATIONS FOLLOW THE INVENTORY: gear that leaves the bags leaves
-/// every configuration naming it, trimmed by the counted rule (two
-/// configured clubs need two owned clubs). Runs BEFORE reconciliation,
-/// so the auto-equip only ever converges toward a satisfiable intent.
-/// PLAYERS only: NPC gear is authored as pure asset references with no
-/// item entities behind it — their configurations are their supply.
-pub fn configuration_sanitation_system(ecs: Ecs) {
+/// LOCATION INVARIANT: an equipped or configured item must still be located
+/// in its wielder. Gear that leaves the bags — dropped, taken away, destroyed
+/// — leaves the canonical equipment AND every configuration naming it. This
+/// is the whole of ownership validation: an item is one entity, so there is
+/// no counting, only presence. Runs BEFORE reconciliation, so the auto-equip
+/// only ever converges toward a satisfiable intent. PLAYERS only: NPC gear is
+/// a summed blob with no item entities behind it.
+pub fn equipment_location_invariant_system(ecs: Ecs) {
     for p in ecs.iter_player_controller() {
         let handle = p.into_handle();
         let entity_id = handle.entity_id();
-        let owned_armament =
-            |id: u32| owned_gear_count(ecs, entity_id, &crate::item::ItemRef::Armament(id));
+        let owns = |item_entity_id: &u64| {
+            ecs.db
+                .location_components()
+                .entity_id()
+                .find(*item_entity_id)
+                .is_some_and(|l| l.location_entity_id == entity_id)
+        };
+        if let Some(equipment) = handle.equipment() {
+            let kept: Vec<u64> = equipment
+                .equipped_entity_ids
+                .iter()
+                .copied()
+                .filter(owns)
+                .collect();
+            if kept.len() != equipment.equipped_entity_ids.len() {
+                ecs.find(entity_id).upsert_new_equipment(kept);
+            }
+        }
         if let Some(defaults) = handle.default_armaments() {
-            if let Some(trimmed) = trim_to_owned(&defaults.armament_ids, owned_armament) {
-                ecs.find(entity_id).upsert_new_default_armaments(trimmed);
+            let kept: Vec<u64> = defaults
+                .armament_entity_ids
+                .iter()
+                .copied()
+                .filter(owns)
+                .collect();
+            if kept.len() != defaults.armament_entity_ids.len() {
+                ecs.find(entity_id).upsert_new_default_armaments(kept);
             }
         }
         if let Some(customizations) = handle.stance_customizations() {
             let mut assignments = customizations.assignments;
             let mut changed = false;
             for assignment in &mut assignments {
-                if let Some(override_ids) = &assignment.armament_ids {
-                    if let Some(trimmed) = trim_to_owned(override_ids, owned_armament) {
-                        assignment.armament_ids = Some(trimmed);
+                if let Some(override_ids) = &assignment.armament_entity_ids {
+                    let kept: Vec<u64> = override_ids.iter().copied().filter(owns).collect();
+                    if kept.len() != override_ids.len() {
+                        assignment.armament_entity_ids = Some(kept);
                         changed = true;
                     }
                 }
@@ -1457,19 +1410,32 @@ pub fn configuration_sanitation_system(ecs: Ecs) {
             }
         }
         if let Some(armor) = handle.armor() {
-            if owned_gear_count(ecs, entity_id, &crate::item::ItemRef::Armor(armor.armor_id))
-                == 0
-            {
+            if !owns(&armor.armor_entity_id) {
                 ecs.find(entity_id).delete_armor();
             }
         }
         if let Some(relics) = handle.relics() {
-            let owned_relic =
-                |id: u32| owned_gear_count(ecs, entity_id, &crate::item::ItemRef::Relic(id));
-            if let Some(trimmed) = trim_to_owned(&relics.relic_ids, owned_relic) {
-                ecs.find(entity_id).upsert_new_relics(trimmed);
+            let kept: Vec<u64> =
+                relics.relic_entity_ids.iter().copied().filter(owns).collect();
+            if kept.len() != relics.relic_entity_ids.len() {
+                ecs.find(entity_id).upsert_new_relics(kept);
             }
         }
+    }
+}
+
+/// CONFLICT INVARIANT: real item entities win over the summed blob. An
+/// entity carrying BOTH a real EquipmentComponent and an EquipmentBlobbed
+/// (an NPC that gained real gear, say) sheds the blob so its stats are never
+/// double-counted. Two-pass to avoid mutating the table under its iterator.
+pub fn equipment_blob_conflict_system(ecs: Ecs) {
+    let conflicted: Vec<u64> = ecs
+        .iter_equipment()
+        .map(|e| e.into_handle().entity_id())
+        .filter(|id| ecs.find(*id).equipment_blobbed().is_some())
+        .collect();
+    for entity_id in conflicted {
+        ecs.find(entity_id).delete_equipment_blobbed();
     }
 }
 
@@ -1505,9 +1471,9 @@ fn party_leader_of(ecs: Ecs, entity_id: u64) -> Option<u64> {
     ecs.db.entities().id().find(leader).is_some().then_some(leader)
 }
 
-/// Order-insensitive multiset equality over asset id lists: two id lists
-/// hold the same gear regardless of ordering.
-fn armament_multisets_match(a: &[u32], b: &[u32]) -> bool {
+/// Order-insensitive multiset equality over entity id lists: two lists hold
+/// the same equipped items regardless of ordering.
+fn entity_id_multisets_match(a: &[u64], b: &[u64]) -> bool {
     if a.len() != b.len() {
         return false;
     }
@@ -1559,29 +1525,13 @@ pub fn equipment_reconciliation_system(ecs: Ecs) {
             continue;
         }
         // Only CONFIGURATION carriers: flat authored equipment with no
-        // config is not a divergence.
-        let has_configuration = handle.stance_customizations().is_some()
-            || handle.default_armaments().is_some()
-            || handle.armor().is_some()
-            || handle.relics().is_some();
-        if !has_configuration {
+        // config is not a divergence. The intent is the full set of item
+        // entities the configurations say should be equipped — shared with
+        // apply_resolved_equipment so "converged" means one thing.
+        let Some(intent) = handle.intended_equipped_entity_ids() else {
             continue;
-        }
-        // PER KIND, mirroring apply_resolved_equipment: a kind with no
-        // configuration keeps its current canonical state.
-        let has_armament_config =
-            handle.stance_customizations().is_some() || handle.default_armaments().is_some();
-        let intent_armaments = if has_armament_config {
-            handle.resolved_armament_ids()
-        } else {
-            equipment.armament_ids.clone()
         };
-        let intent_armor = handle.armor().map(|a| a.armor_id);
-        let intent_relics = handle.relics().map(|r| r.relic_ids).unwrap_or_default();
-        if armament_multisets_match(&equipment.armament_ids, &intent_armaments)
-            && equipment.worn_armor_id == intent_armor
-            && armament_multisets_match(&equipment.worn_relic_ids, &intent_relics)
-        {
+        if entity_id_multisets_match(&equipment.equipped_entity_ids, &intent) {
             continue;
         }
         // Already converging? One matching action suffices (the enqueue
@@ -1683,7 +1633,11 @@ pub fn execute_all_systems(ecs: Ecs) {
     // Then seat any player whose room doesn't exist (new player or voided out)
     // at their checkpoint — with a now-valid leader to own the party's instance.
     player_location_sanitation_system(ecs);
-    configuration_sanitation_system(ecs);
+    // Real item entities win over the summed blob before anything sums stats.
+    equipment_blob_conflict_system(ecs);
+    // Gear that left the wielder leaves its configs and canonical equipment,
+    // so reconciliation only ever converges toward a satisfiable intent.
+    equipment_location_invariant_system(ecs);
     equipment_reconciliation_system(ecs);
     gear_location_system(ecs);
     action_validation_system(ecs);
@@ -1713,26 +1667,13 @@ pub fn execute_all_systems(ecs: Ecs) {
 
 #[cfg(test)]
 mod tests {
-    use super::{armament_multisets_match, trim_to_owned};
+    use super::entity_id_multisets_match;
 
     #[test]
     fn multisets_match_regardless_of_order_never_of_count() {
-        assert!(armament_multisets_match(&[1, 2, 2], &[2, 1, 2]));
-        assert!(armament_multisets_match(&[], &[]));
-        assert!(!armament_multisets_match(&[1, 2], &[1, 2, 2]));
-        assert!(!armament_multisets_match(&[1], &[2]));
-    }
-
-    #[test]
-    fn trimming_keeps_the_first_owned_copies_and_reports_no_change() {
-        // Two clubs configured, one owned: the first survives.
-        assert_eq!(
-            trim_to_owned(&[7, 7, 9], |id| if id == 7 { 1 } else { 1 }),
-            Some(vec![7, 9])
-        );
-        // Fully covered: no change proposed at all.
-        assert_eq!(trim_to_owned(&[7, 9], |_| 2), None);
-        // Nothing owned: everything trims away.
-        assert_eq!(trim_to_owned(&[7, 9], |_| 0), Some(vec![]));
+        assert!(entity_id_multisets_match(&[1, 2, 2], &[2, 1, 2]));
+        assert!(entity_id_multisets_match(&[], &[]));
+        assert!(!entity_id_multisets_match(&[1, 2], &[1, 2, 2]));
+        assert!(!entity_id_multisets_match(&[1], &[2]));
     }
 }

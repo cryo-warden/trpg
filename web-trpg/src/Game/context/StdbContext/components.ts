@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getActionOptions } from "../../domain/actionOptions";
 import { bitIsSet } from "../../domain/bitset";
-import { assetInstanceIsOn } from "../../domain/countedAssets";
 import { ActionId, EntityId } from "../../trpg";
 import { useMyAccountId } from "./account";
 import { useActionAssetOf, useSpecialActionIds } from "./assetLookup";
@@ -369,18 +368,13 @@ export const useItemAssetStatBlock = (entityId: EntityId | null) => {
   }, [item, armaments, armors, relics, quests]);
 };
 
-/** This carried item INSTANCE counts as equipped/worn: the same counted-
- * multiset rule the menus use, so an item's Equip/Unequip options can
- * never disagree with its highlight anywhere else. */
+/** This carried item ENTITY counts as equipped/worn: membership in the
+ * DEFAULT armament slot or the worn armor/relic configs — so an item's
+ * Equip/Unequip options can never disagree with its highlight anywhere
+ * else. An item is one entity; membership is the whole rule. */
 const useTargetIsEquipped = (focus: Focus): boolean => {
   const playerEntity = usePlayerEntity();
   const targetItem = useItemComponent(focus);
-  const locationRows = useTableData(
-    "location_components",
-    (table) => [...table.iter()],
-    [],
-  );
-  const itemRows = useTableData("item_components", (table) => [...table.iter()], []);
   // Equip/unequip edit the DEFAULT slot, so "equipped" here means
   // membership in the default set — not whatever a stance override
   // currently holds in hand.
@@ -421,51 +415,18 @@ const useTargetIsEquipped = (focus: Focus): boolean => {
       // Quest items are eaten, never worn.
       return false;
     }
-    // Counted kinds — armor included: which instances of this asset the
-    // player carries, in stable row order, decides whether THIS instance
-    // is on. Two identical armors are two entities; only the first
-    // counts as worn.
-    const carried = new Set(
-      locationRows
-        .filter((row) => row.locationEntityId === playerEntity)
-        .map((row) => row.entityId),
-    );
-    // Sorted by entity id: the same stable order every owned-items
-    // surface uses, so "the first instance is on" answers identically
-    // here and in the menus.
-    const carriedSameKind = itemRows
-      .flatMap((row) => {
-        const rowRef = row.itemRef;
-        return carried.has(row.entityId) &&
-          rowRef.tag !== "QuestItem" &&
-          rowRef.tag === ref.tag
-          ? [{ entityId: row.entityId, assetId: rowRef.value }]
-          : [];
-      })
-      .sort((a, b) => (a.entityId < b.entityId ? -1 : 1));
-    const onIds: number[] =
+    // The focused item ENTITY is on when its id is in the matching config:
+    // the default armaments, the worn armor, or the worn relics.
+    const equipped: EntityId[] =
       ref.tag === "Armament"
-        ? [...(defaultArmaments?.armamentIds ?? [])]
+        ? [...(defaultArmaments?.armamentEntityIds ?? [])]
         : ref.tag === "Armor"
           ? armor == null
             ? []
-            : [armor.armorId]
-          : [...(relics?.relicIds ?? [])];
-    return assetInstanceIsOn({
-      ids: onIds,
-      item: { entityId: focus, assetId: ref.value },
-      items: carriedSameKind,
-    });
-  }, [
-    focus,
-    playerEntity,
-    targetItem,
-    locationRows,
-    itemRows,
-    defaultArmaments,
-    armor,
-    relics,
-  ]);
+            : [armor.armorEntityId]
+          : [...(relics?.relicEntityIds ?? [])];
+    return equipped.includes(focus);
+  }, [focus, playerEntity, targetItem, defaultArmaments, armor, relics]);
 };
 
 /** Actions valid with the focused entity as their would-be target. */

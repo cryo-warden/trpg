@@ -1,19 +1,15 @@
 import { Button } from "../structural/Button";
-import { assetInstanceIsOn, toggledAssetIds } from "./domain/countedAssets";
+import { EntityId } from "./trpg";
 import { summedStats } from "./domain/statSummary";
 import {
-  useGearStatBlocks,
-  useMyArmorId,
+  OwnedItem,
+  useGearStatBlockOf,
+  useMyArmorEntityId,
   useMyDefaultActionIds,
-  useMyDefaultArmamentIds,
-  useMyEquipmentArmamentIds,
-  useMyRelicIds,
+  useMyDefaultArmamentEntityIds,
+  useMyRelicEntityIds,
   useOwnedItems,
 } from "./context/StdbContext/customization";
-import {
-  usePlayerEntity,
-  useTotalStatBlockComponent,
-} from "./context/StdbContext/components";
 import {
   useActionDisplayNameOf,
   useCommonPinnableActionIds,
@@ -25,30 +21,29 @@ import { IntStatKey } from "./statGroups";
 import { StatGroupsView } from "./StatGroupsView";
 import { StatBlockSummary } from "./StatBlockSummary";
 
+/** Toggle one item ENTITY in a set — an entity is one thing, so membership
+ * is the whole rule (no counting). */
+const toggle = (ids: readonly EntityId[], id: EntityId): EntityId[] =>
+  ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
+
 /**
  * The equip menu: the SAME card shape as a single stance card — the
  * categorized detailed stats, the armament buttons, the action bar —
- * plus the armor and relics sections only worn gear has. Its numbers
- * are the DEFAULT configuration (base + worn gear + default armaments,
- * no stance): the base every stance card's deltas compare against, so
- * no deltas render here at all. Everything visible here toggles here:
- * armament buttons queue the registered equip/unequip ACTION against
- * the item entity — a round like any act — the DEFAULT action bar
- * proposes set_default_actions (what a stance change pins when the
- * stance has no bar of its own), and a button that cannot be used right
- * now renders visibly disabled, re-enabling live as gear changes. All
- * rules are enforced server-side; this menu only proposes.
+ * plus the armor and relics sections only worn gear has. Every button
+ * equips one specific owned item ENTITY, rendered with that entity's
+ * name. Its numbers are the DEFAULT configuration (base + worn gear +
+ * default armaments, no stance): the base every stance card's deltas
+ * compare against, so no deltas render here at all. Everything visible
+ * here toggles here; all rules are enforced server-side.
  */
 export const CustomizationPanel = () => {
   const connection = useStdbConnection();
   const owned = useOwnedItems();
-  const armorId = useMyArmorId();
-  const relicIds = useMyRelicIds();
-  const defaultArmamentIds = useMyDefaultArmamentIds();
+  const armorEntityId = useMyArmorEntityId();
+  const relicEntityIds = useMyRelicEntityIds();
+  const defaultArmamentEntityIds = useMyDefaultArmamentEntityIds();
   const defaultActionIds = useMyDefaultActionIds();
-  const gearStats = useGearStatBlocks();
-  const playerEntity = usePlayerEntity();
-  const total = useTotalStatBlockComponent(playerEntity);
+  const gearStatBlockOf = useGearStatBlockOf();
   const { baseStats, baseActionIds } = useStanceFreeBase();
   const actionDisplayName = useActionDisplayNameOf();
 
@@ -56,30 +51,19 @@ export const CustomizationPanel = () => {
   const ownedRelics = owned.filter((item) => item.kind === "Relic");
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
 
-  // The counted-multiset rule for EVERY kind — armor included: two
-  // identical armors are two entities, and only the first reads as worn.
-  const armorOnIds = armorId == null ? [] : [armorId];
-
-  // The grip rule evaluates the configuration these buttons EDIT: the
-  // stats you would have using the DEFAULT set — the total with the
-  // in-hand set swapped for the defaults — never whatever stance
-  // override happens to be in hand right now. Mirror of the server's
-  // default_configuration_hand.
-  const equipmentArmamentIds = useMyEquipmentArmamentIds();
-  const armamentHandOf = (assetId: number) =>
-    gearStats.armaments.get(assetId)?.hand ?? 0;
-  const defaultConfigurationHand =
-    (total?.statBlock.hand ?? 0) -
-    equipmentArmamentIds.reduce((sum, id) => sum + armamentHandOf(id), 0) +
-    defaultArmamentIds.reduce((sum, id) => sum + armamentHandOf(id), 0);
+  const ownedByEntityId = new Map(owned.map((item) => [item.entityId, item]));
+  const statOfEntityId = (id: EntityId) => {
+    const item = ownedByEntityId.get(id);
+    return item == null ? null : gearStatBlockOf(item);
+  };
 
   // The DEFAULT configuration's stats: the stance-free base (worn gear
   // included) plus the default armaments — the values the detailed view
   // shows, with no deltas: this IS the base stances compare to.
   const defaultConfigStat = (key: IntStatKey): number =>
     baseStats[key] +
-    defaultArmamentIds.reduce(
-      (sum, id) => sum + (gearStats.armaments.get(id)?.[key] ?? 0),
+    defaultArmamentEntityIds.reduce(
+      (sum, id) => sum + (statOfEntityId(id)?.[key] ?? 0),
       0,
     );
   // The default bar's candidate set: the base grants plus the default
@@ -90,37 +74,26 @@ export const CustomizationPanel = () => {
   const defaultCandidateActionIds = [
     ...new Set([
       ...baseActionIds,
-      ...defaultArmamentIds.flatMap((id) => [
-        ...(gearStats.armaments.get(id)?.actionIds ?? []),
+      ...defaultArmamentEntityIds.flatMap((id) => [
+        ...(statOfEntityId(id)?.actionIds ?? []),
       ]),
       ...commonPinnable,
     ]),
   ];
 
   // What the current gear set adds up to: worn armor + worn relics + the
-  // default wielded set, summed from the ASSET blocks.
-  const equippedContribution = summedStats([
-    ...(armorId == null ? [] : [gearStats.armors.get(armorId)]).flatMap(
-      (block) => (block == null ? [] : [block]),
-    ),
-    ...relicIds.flatMap((id) => {
-      const block = gearStats.relics.get(id);
-      return block == null ? [] : [block];
-    }),
-    ...defaultArmamentIds.flatMap((id) => {
-      const block = gearStats.armaments.get(id);
-      return block == null ? [] : [block];
-    }),
-  ]);
+  // default wielded set, summed from each item's Equippable-equivalent
+  // asset block.
+  const equippedContribution = summedStats(
+    [
+      armorEntityId == null ? null : statOfEntityId(armorEntityId),
+      ...relicEntityIds.map(statOfEntityId),
+      ...defaultArmamentEntityIds.map(statOfEntityId),
+    ].flatMap((block) => (block == null ? [] : [block])),
+  );
 
-  const summaryOf = (kind: "Armament" | "Armor" | "Relic", assetId: number) => {
-    const block = (
-      kind === "Armament"
-        ? gearStats.armaments
-        : kind === "Armor"
-          ? gearStats.armors
-          : gearStats.relics
-    ).get(assetId);
+  const summaryOf = (item: OwnedItem) => {
+    const block = gearStatBlockOf(item);
     return block == null ? null : (
       <>
         {" "}
@@ -144,103 +117,73 @@ export const CustomizationPanel = () => {
       <section className="armor">
         <h3>Armor</h3>
         <Button
-          className={armorId == null ? "active" : ""}
+          className={armorEntityId == null ? "active" : ""}
           onClick={() => connection.reducers.clearArmor({})}
         >
           none
         </Button>
         {ownedArmors.map((item) => {
-          const on = assetInstanceIsOn({
-            ids: armorOnIds,
-            item,
-            items: ownedArmors,
-          });
+          const on = armorEntityId === item.entityId;
           return (
             <Button
               key={item.entityId.toString()}
               className={on ? "active" : ""}
               interesting={on}
               onClick={() =>
-                connection.reducers.setArmor({ armorId: item.assetId })
+                connection.reducers.setArmor({ itemEntityId: item.entityId })
               }
             >
               {item.name}
-              {summaryOf("Armor", item.assetId)}
+              {summaryOf(item)}
             </Button>
           );
         })}
       </section>
       <section className="relics">
-        <h3>Relics ({relicIds.length}/4)</h3>
-        {ownedRelics.map((item) => (
-          <Button
-            key={item.entityId.toString()}
-            className={
-              assetInstanceIsOn({ ids: relicIds, item, items: ownedRelics })
-                ? "active"
-                : ""
-            }
-            interesting={assetInstanceIsOn({
-              ids: relicIds,
-              item,
-              items: ownedRelics,
-            })}
-            disabled={
-              !assetInstanceIsOn({ ids: relicIds, item, items: ownedRelics }) &&
-              relicIds.length >= 4
-            }
-            onClick={() =>
-              connection.reducers.setRelics({
-                relicIds: toggledAssetIds({
-                  ids: relicIds,
-                  item,
-                  items: ownedRelics,
-                }),
-              })
-            }
-          >
-            {item.name}
-            {summaryOf("Relic", item.assetId)}
-          </Button>
-        ))}
-      </section>
-      <section className="defaultArmaments">
-        <h4>
-          Default armaments (free hand: {defaultConfigurationHand})
-        </h4>
-        {ownedArmaments.map((item) => {
-          const on = assetInstanceIsOn({
-            ids: defaultArmamentIds,
-            item,
-            items: ownedArmaments,
-          });
-          // Mirror of the server's grip rule: wielding this must keep
-          // the DEFAULT configuration's hands non-negative. Unequipping
-          // always frees.
-          const overweight =
-            !on && defaultConfigurationHand + armamentHandOf(item.assetId) < 0;
+        <h3>Relics ({relicEntityIds.length}/4)</h3>
+        {ownedRelics.map((item) => {
+          const on = relicEntityIds.includes(item.entityId);
           return (
             <Button
               key={item.entityId.toString()}
               className={on ? "active" : ""}
               interesting={on}
-              disabled={overweight}
+              disabled={!on && relicEntityIds.length >= 4}
               onClick={() =>
-                // CONFIGURATION, applied immediately — the menu's state
-                // is true the moment the row lands. Whether the change
-                // also queues an in-fiction action is the server's
-                // decision alone.
-                connection.reducers.setDefaultArmaments({
-                  armamentIds: toggledAssetIds({
-                    ids: defaultArmamentIds,
-                    item,
-                    items: ownedArmaments,
-                  }),
+                connection.reducers.setRelics({
+                  relicEntityIds: toggle(relicEntityIds, item.entityId),
                 })
               }
             >
               {item.name}
-              {summaryOf("Armament", item.assetId)}
+              {summaryOf(item)}
+            </Button>
+          );
+        })}
+      </section>
+      <section className="defaultArmaments">
+        <h4>Default armaments (free hand: {defaultConfigStat("hand")})</h4>
+        {ownedArmaments.map((item) => {
+          const on = defaultArmamentEntityIds.includes(item.entityId);
+          return (
+            <Button
+              key={item.entityId.toString()}
+              className={on ? "active" : ""}
+              interesting={on}
+              onClick={() =>
+                // CONFIGURATION, applied immediately — the menu's state is
+                // true the moment the row lands. Whether the change also
+                // queues an in-fiction action is the server's decision.
+                connection.reducers.setDefaultArmaments({
+                  armamentEntityIds: toggle(
+                    defaultArmamentEntityIds,
+                    item.entityId,
+                  ),
+                })
+              }
+            >
+              {item.name}
+              {summaryOf(item)}
             </Button>
           );
         })}
