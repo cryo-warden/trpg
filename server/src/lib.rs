@@ -25,5 +25,9 @@ mod map_materialization;
 mod reducers;
 mod role;
 mod system;
+// The test-module entrypoint: extra reducers (one per test set) compiled ONLY
+// under the `testing` feature, never into production. See src/test_reducers.rs.
+#[cfg(feature = "testing")]
+mod test_reducers;
 mod turn;
 mod visited;

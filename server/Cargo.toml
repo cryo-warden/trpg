@@ -8,6 +8,12 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+# The TEST module entrypoint: the same production code PLUS one reducer per test
+# set (see src/test_reducers.rs). Off in production; the e2e harness publishes a
+# separate test database with it on. Stateful, real-DB testing — no mocks.
+testing = []
+
 [dependencies]
 spacetimedb = "2.8.1"
 log = "0.4"

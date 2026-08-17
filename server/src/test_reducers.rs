@@ -1,0 +1,48 @@
+//! TEST-ONLY reducers, compiled ONLY under the `testing` feature into a
+//! separate test-module entrypoint (never shipped to production). Each reducer
+//! is one test SET: it seeds a minimal fixture, runs the specific system(s)
+//! under test against the REAL database, asserts, and returns Ok (pass) or Err
+//! (fail, with a message). A reducer names exactly the systems it exercises, so
+//! it is immune to systems it does not name — adding a new global system can't
+//! break it. Testing is fully STATEFUL on purpose: a game engine's behavior IS
+//! its DB semantics (transactions, indexes, event tables), so we run the real
+//! systems on the real store rather than mocking anything.
+//!
+//! A TS runner (web-trpg/e2e) publishes the test module, then calls each
+//! reducer and maps Ok -> pass, Err -> fail (surfacing the message). One
+//! full-tick integration test (the existing e2e over execute_all_systems) stays
+//! the single place unnamed cross-system interactions are in scope.
+
+use ecs::WithEcs;
+use spacetimedb::{reducer, ReducerContext};
+
+use crate::entity::*;
+
+/// Fail the test set with a formatted message. Returns Err, which aborts the
+/// reducer's transaction — so a failed test also rolls back its fixture.
+macro_rules! check {
+    ($cond:expr, $($msg:tt)*) => {
+        if !($cond) {
+            return ::core::result::Result::Err(::std::format!($($msg)*));
+        }
+    };
+}
+
+/// party_leader_sanitation_system repoints a leader that isn't a live entity
+/// (here: 0) at the member itself — with NOTHING else in the tick running.
+#[reducer]
+pub fn test_party_leader_sanitation(ctx: &ReducerContext) -> Result<(), String> {
+    let ecs = ctx.ecs();
+    let member = ecs.new();
+    let member_id = member.entity_id();
+    member.upsert_new_party(0);
+
+    crate::system::party_leader_sanitation_system(ecs);
+
+    let leader = ecs.find(member_id).party().map(|p| p.party_leader);
+    check!(
+        leader == Some(member_id),
+        "expected party_leader {member_id}, got {leader:?}"
+    );
+    Ok(())
+}

@@ -225,8 +225,17 @@
         "check",
         "clippy",
         "test",
+        "test-unit",
         "test-e2e"
       ]
+    },
+    "test-unit": {
+      "command": [
+        "bun",
+        "test",
+        "e2e/systems.test.ts"
+      ],
+      "dir": "web-trpg"
     },
     "test-e2e": {
       "bundle": [
