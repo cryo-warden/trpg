@@ -165,6 +165,14 @@ export const APPEARANCE_FEATURES = {
   big: adjective("big", 900),
   huge: adjective("huge", 1000),
   leather: adjective("leather", 1000),
+  // Gear-variety adjectives: each pairs with a gear noun to name the item
+  // entity ("chain hauberk", "ember charm"). Standalone — no exclusion group.
+  chain: adjective("chain", 1000),
+  traveler: adjective("traveler", 1000),
+  ember: adjective("ember", 1000),
+  frost: adjective("frost", 1000),
+  storm: adjective("storm", 1000),
+  sun: adjective("sun", 1000),
   training: adjective("training", 1000),
   scrying: adjective("scrying", 1000),
   fate: adjective("fate", 1000),

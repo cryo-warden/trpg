@@ -272,6 +272,7 @@ export const Armament = __t.object("Armament", {
   get statBlock() {
     return StatBlock;
   },
+  appearanceFeatureIds: __t.array(__t.u32()),
 });
 export type Armament = __Infer<typeof Armament>;
 
@@ -281,6 +282,7 @@ export const Armor = __t.object("Armor", {
   get statBlock() {
     return StatBlock;
   },
+  appearanceFeatureIds: __t.array(__t.u32()),
 });
 export type Armor = __Infer<typeof Armor>;
 
@@ -314,13 +316,13 @@ export const AssetPack = __t.object("AssetPack", {
     return __t.array(NamedTraitPaletteAsset);
   },
   get armaments() {
-    return __t.array(NamedStatBlockAsset);
+    return __t.array(NamedGearAsset);
   },
   get armors() {
-    return __t.array(NamedStatBlockAsset);
+    return __t.array(NamedGearAsset);
   },
   get relics() {
-    return __t.array(NamedStatBlockAsset);
+    return __t.array(NamedGearAsset);
   },
   get stances() {
     return __t.array(NamedStanceAsset);
@@ -1002,6 +1004,14 @@ export type FlagComponent = __Infer<typeof FlagComponent>;
 export const FlagComponentBlob = __t.object("FlagComponentBlob", {});
 export type FlagComponentBlob = __Infer<typeof FlagComponentBlob>;
 
+export const GearAsset = __t.object("GearAsset", {
+  get statBlock() {
+    return StatBlockAsset;
+  },
+  appearanceFeatureNames: __t.array(__t.string()),
+});
+export type GearAsset = __Infer<typeof GearAsset>;
+
 export const HpComponent = __t.object("HpComponent", {
   entityId: __t.u64(),
   hp: __t.i16(),
@@ -1426,6 +1436,14 @@ export const NamedEntityBlobAsset = __t.object("NamedEntityBlobAsset", {
 });
 export type NamedEntityBlobAsset = __Infer<typeof NamedEntityBlobAsset>;
 
+export const NamedGearAsset = __t.object("NamedGearAsset", {
+  name: __t.string(),
+  get value() {
+    return GearAsset;
+  },
+});
+export type NamedGearAsset = __Infer<typeof NamedGearAsset>;
+
 export const NamedLocationMapAsset = __t.object("NamedLocationMapAsset", {
   name: __t.string(),
   get value() {
@@ -1733,6 +1751,7 @@ export const Relic = __t.object("Relic", {
   get statBlock() {
     return StatBlock;
   },
+  appearanceFeatureIds: __t.array(__t.u32()),
 });
 export type Relic = __Infer<typeof Relic>;
 

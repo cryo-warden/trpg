@@ -1,17 +1,17 @@
-import { StatBlockAsset } from "../../stdb/types";
-import { statBlock } from "./stat_block";
+import { GearAsset } from "../../stdb/types";
+import { gear, statBlock } from "./stat_block";
 
 // Relics: up to four worn at once, applied across every stance. Each consumes
 // one relic slot (relic: -1), so a body with relic capacity 4 applies at most
 // four at a time. NO mhp/mep on swappable gear: the maxima are a RATCHET (a
 // swappable source would be a one-time permanent boost). Kindred stats instead.
 export const RELICS = {
-  ember_charm: statBlock({ attack: 1, relic: -1 }),
-  frost_talisman: statBlock({ defense: 1, relic: -1 }),
-  storm_bead: statBlock({ gait: 1, relic: -1 }),
-  bone_idol: statBlock({ defense: 1, relic: -1 }),
-  sun_medallion: statBlock({ focus: 1, relic: -1 }),
-} satisfies Record<string, StatBlockAsset>;
+  ember_charm: gear(statBlock({ attack: 1, relic: -1 }), ["ember", "charm"]),
+  frost_talisman: gear(statBlock({ defense: 1, relic: -1 }), ["frost", "talisman"]),
+  storm_bead: gear(statBlock({ gait: 1, relic: -1 }), ["storm", "bead"]),
+  bone_idol: gear(statBlock({ defense: 1, relic: -1 }), ["bone", "idol"]),
+  sun_medallion: gear(statBlock({ focus: 1, relic: -1 }), ["sun", "medallion"]),
+} satisfies Record<string, GearAsset>;
 
 export type RelicName = keyof typeof RELICS;
 

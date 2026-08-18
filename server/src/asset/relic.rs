@@ -13,4 +13,6 @@ pub struct Relic {
     #[unique]
     pub name: String,
     pub stat_block: StatBlock,
+    /// The item ENTITY's own appearance features (see Armament).
+    pub appearance_feature_ids: Vec<u32>,
 }

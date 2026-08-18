@@ -122,6 +122,17 @@ pub struct StatBlockAsset {
     pub appearance_feature_names: Vec<String>,
 }
 
+/// A piece of gear as authored: armament, armor, or relic. Its `stat_block` is
+/// the GRANT it confers when equipped (the Equippable); its
+/// `appearance_feature_names` are the ITEM entity's OWN look, stamped onto the
+/// spawned item and never mixed into the Equippable — the wielder's appearance
+/// is its own, not the sword's it holds.
+#[derive(Debug, Clone, SpacetimeType)]
+pub struct GearAsset {
+    pub stat_block: StatBlockAsset,
+    pub appearance_feature_names: Vec<String>,
+}
+
 /// A stance as authored. Its stat block contributes to the entity's total
 /// like a baseline or trait — including granted action_ids, the stance's
 /// techniques (at most 6; enforced at push). Its requirements gate adopting
@@ -412,6 +423,7 @@ secador::secador!(
         (ActionAsset, NamedActionAsset),
         (AppearanceFeatureAsset, NamedAppearanceFeatureAsset),
         (StatBlockAsset, NamedStatBlockAsset),
+        (GearAsset, NamedGearAsset),
         (StanceAsset, NamedStanceAsset),
         (QuestAsset, NamedQuestAsset),
         (EntityBlobAsset, NamedEntityBlobAsset),

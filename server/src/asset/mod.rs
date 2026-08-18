@@ -10,7 +10,7 @@ use crate::{
         types::{
             EntityBlobAsset, EntityBlobsSamplerAsset, ItemRefAsset, NamedActionAsset,
             NamedAppearanceFeatureAsset, NamedEncounterAsset, NamedEntityBlobAsset,
-            NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedQuestAsset,
+            NamedGearAsset, NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedQuestAsset,
             NamedStanceAsset, NamedStatBlockAsset, NamedTraitPaletteAsset, StatBlockAsset,
         },
         quest::{quests, Quest},
@@ -87,9 +87,9 @@ pub struct AssetPack {
     baselines: Vec<NamedStatBlockAsset>,
     traits: Vec<NamedStatBlockAsset>,
     trait_palettes: Vec<NamedTraitPaletteAsset>,
-    armaments: Vec<NamedStatBlockAsset>,
-    armors: Vec<NamedStatBlockAsset>,
-    relics: Vec<NamedStatBlockAsset>,
+    armaments: Vec<NamedGearAsset>,
+    armors: Vec<NamedGearAsset>,
+    relics: Vec<NamedGearAsset>,
     stances: Vec<NamedStanceAsset>,
     quests: Vec<NamedQuestAsset>,
     /// Which stance a dive lands in; a pack without morale-relevant content
@@ -186,6 +186,11 @@ struct AssetNameMaps {
     armament_stat_blocks: HashMap<u32, StatBlock>,
     armor_stat_blocks: HashMap<u32, StatBlock>,
     relic_stat_blocks: HashMap<u32, StatBlock>,
+    // Each gear kind's OWN appearance features, keyed by asset id: stamped onto
+    // a spawned item entity, kept out of the Equippable grant entirely.
+    armament_appearance_ids: HashMap<u32, Vec<u32>>,
+    armor_appearance_ids: HashMap<u32, Vec<u32>>,
+    relic_appearance_ids: HashMap<u32, Vec<u32>>,
 }
 
 /// Resolve an authored blob's asset-name references into the stored
@@ -214,7 +219,8 @@ fn resolve_entity_blob(
             })
         })
         .transpose()?;
-    // An equippable item entity carries its gear asset's whole stat block.
+    // An equippable item entity carries its gear asset's stat block (the GRANT
+    // it confers when worn). Appearance is NOT part of the grant.
     let equippable = item_ref.as_ref().and_then(|r| {
         let stat_block = match r {
             ItemRef::Armament(id) => maps.armament_stat_blocks.get(id),
@@ -226,6 +232,18 @@ fn resolve_entity_blob(
             stat_block: stat_block.clone(),
         })
     });
+    // The gear item's OWN appearance features — its look, a separate channel
+    // from the Equippable grant above.
+    let gear_appearance_ids: Vec<u32> = item_ref
+        .as_ref()
+        .and_then(|r| match r {
+            ItemRef::Armament(id) => maps.armament_appearance_ids.get(id),
+            ItemRef::Armor(id) => maps.armor_appearance_ids.get(id),
+            ItemRef::Relic(id) => maps.relic_appearance_ids.get(id),
+            ItemRef::QuestItem(_) => None,
+        })
+        .cloned()
+        .unwrap_or_default();
     // NPC gear kept light: the summed stat block of the authored armaments,
     // armor, and relics — the same total a player's per-item Equippable sum
     // produces.
@@ -434,17 +452,20 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        appearance_features: author
-            .appearance_feature_names
-            .map(|names| {
-                Ok::<_, String>(AppearanceFeaturesComponentBlob {
-                    appearance_feature_indexes: names
-                        .iter()
-                        .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
-                        .collect::<Result<_, _>>()?,
+        // An entity's own look: the authored features when given, else — for a
+        // gear item with none authored — the gear asset's own appearance
+        // features, so an authored dropped sword still renders as a sword.
+        appearance_features: match author.appearance_feature_names {
+            Some(names) => Some(AppearanceFeaturesComponentBlob {
+                appearance_feature_indexes: resolve_appearance_names(&names, maps)?,
+            }),
+            None if !gear_appearance_ids.is_empty() => {
+                Some(AppearanceFeaturesComponentBlob {
+                    appearance_feature_indexes: gear_appearance_ids.clone(),
                 })
-            })
-            .transpose()?,
+            }
+            None => None,
+        },
         remains: author
             .remains_appearance_feature_names
             .map(|names| {
@@ -551,6 +572,16 @@ fn resolve_action_effect(
     })
 }
 
+fn resolve_appearance_names(
+    names: &[String],
+    maps: &AssetNameMaps,
+) -> Result<Vec<u32>, String> {
+    names
+        .iter()
+        .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
+        .collect()
+}
+
 fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<StatBlock, String> {
     let StatBlockAsset {
         attack,
@@ -637,6 +668,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         armament_stat_blocks: HashMap::new(),
         armor_stat_blocks: HashMap::new(),
         relic_stat_blocks: HashMap::new(),
+        armament_appearance_ids: HashMap::new(),
+        armor_appearance_ids: HashMap::new(),
+        relic_appearance_ids: HashMap::new(),
         actions: match_names(
             "action",
             ctx.db.actions().iter().map(|a| (a.name, a.id)),
@@ -804,7 +838,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         let row = Armament {
             id,
             name: a.name,
-            stat_block: resolve_stat_block(a.value, &maps)?,
+            stat_block: resolve_stat_block(a.value.stat_block, &maps)?,
+            appearance_feature_ids: resolve_appearance_names(
+                &a.value.appearance_feature_names,
+                &maps,
+            )?,
         };
         if ctx.db.armaments().id().find(id).is_some() {
             ctx.db.armaments().id().update(row);
@@ -818,7 +856,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         let row = Armor {
             id,
             name: a.name,
-            stat_block: resolve_stat_block(a.value, &maps)?,
+            stat_block: resolve_stat_block(a.value.stat_block, &maps)?,
+            appearance_feature_ids: resolve_appearance_names(
+                &a.value.appearance_feature_names,
+                &maps,
+            )?,
         };
         if ctx.db.armors().id().find(id).is_some() {
             ctx.db.armors().id().update(row);
@@ -832,7 +874,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         let row = Relic {
             id,
             name: r.name,
-            stat_block: resolve_stat_block(r.value, &maps)?,
+            stat_block: resolve_stat_block(r.value.stat_block, &maps)?,
+            appearance_feature_ids: resolve_appearance_names(
+                &r.value.appearance_feature_names,
+                &maps,
+            )?,
         };
         if ctx.db.relics().id().find(id).is_some() {
             ctx.db.relics().id().update(row);
@@ -847,6 +893,12 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     maps.armament_stat_blocks = ctx.db.armaments().iter().map(|a| (a.id, a.stat_block)).collect();
     maps.armor_stat_blocks = ctx.db.armors().iter().map(|a| (a.id, a.stat_block)).collect();
     maps.relic_stat_blocks = ctx.db.relics().iter().map(|r| (r.id, r.stat_block)).collect();
+    maps.armament_appearance_ids =
+        ctx.db.armaments().iter().map(|a| (a.id, a.appearance_feature_ids)).collect();
+    maps.armor_appearance_ids =
+        ctx.db.armors().iter().map(|a| (a.id, a.appearance_feature_ids)).collect();
+    maps.relic_appearance_ids =
+        ctx.db.relics().iter().map(|r| (r.id, r.appearance_feature_ids)).collect();
 
     for q in asset_pack.quests {
         let id = maps.quests[&q.name];

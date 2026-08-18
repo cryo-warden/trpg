@@ -1,5 +1,5 @@
-import { StatBlockAsset } from "../../stdb/types";
-import { statBlock } from "./stat_block";
+import { GearAsset } from "../../stdb/types";
+import { gear, statBlock } from "./stat_block";
 
 // Clothing/armor: ONE global slot, applied across every stance (unlike
 // armaments, which are assigned per stance in the customization menu). Each
@@ -7,12 +7,21 @@ import { statBlock } from "./stat_block";
 // applies at most one worn armor at a time.
 export const ARMORS = {
   // Worn protection steadies the nerve a little (morale 1), early game.
-  leather_jerkin: statBlock({ defense: 1, morale: 1, body: -1 }),
-  chain_hauberk: statBlock({ defense: 2, gait: -1, morale: 1, body: -1 }),
+  leather_jerkin: gear(statBlock({ defense: 1, morale: 1, body: -1 }), [
+    "leather",
+    "jerkin",
+  ]),
+  chain_hauberk: gear(statBlock({ defense: 2, gait: -1, morale: 1, body: -1 }), [
+    "chain",
+    "hauberk",
+  ]),
   // NO mhp/mep on swappable gear: the maxima are a RATCHET (a swappable
   // source would be a one-time permanent boost). Kindred stats instead.
-  traveler_robe: statBlock({ focus: 1, morale: 1, body: -1 }),
-} satisfies Record<string, StatBlockAsset>;
+  traveler_robe: gear(statBlock({ focus: 1, morale: 1, body: -1 }), [
+    "traveler",
+    "robe",
+  ]),
+} satisfies Record<string, GearAsset>;
 
 export type ArmorName = keyof typeof ARMORS;
 

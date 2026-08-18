@@ -20,4 +20,5 @@ export default __t.row({
   get statBlock() {
     return StatBlock.name("stat_block");
   },
+  appearanceFeatureIds: __t.array(__t.u32()).name("appearance_feature_ids"),
 });

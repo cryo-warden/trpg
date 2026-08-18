@@ -17,4 +17,8 @@ pub struct Armament {
     #[unique]
     pub name: String,
     pub stat_block: StatBlock,
+    /// The item ENTITY's own appearance features, stamped onto each spawned
+    /// instance. Separate from `stat_block` (the Equippable grant): a wielder
+    /// never takes on the look of the gear it holds.
+    pub appearance_feature_ids: Vec<u32>,
 }

@@ -114,30 +114,37 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // the worn reality needs real items behind it. Each carries its
         // Equippable stamp; their ids form the canonical EquipmentComponent.
         if let Some(manifest) = self.find(player_entity_id).starting_gear() {
-            let mut to_spawn: Vec<(ItemRef, StatBlock)> = Vec::new();
+            // Each spawn carries the gear's Equippable stat block (the grant)
+            // and, separately, the gear's OWN appearance features (the item's
+            // look) — two distinct channels that never mix.
+            let mut to_spawn: Vec<(ItemRef, StatBlock, Vec<u32>)> = Vec::new();
             for id in &manifest.armament_ids {
                 if let Some(a) = self.db.armaments().id().find(id) {
-                    to_spawn.push((ItemRef::Armament(*id), a.stat_block));
+                    to_spawn.push((ItemRef::Armament(*id), a.stat_block, a.appearance_feature_ids));
                 }
             }
             if let Some(armor_id) = manifest.worn_armor_id {
                 if let Some(a) = self.db.armors().id().find(armor_id) {
-                    to_spawn.push((ItemRef::Armor(armor_id), a.stat_block));
+                    to_spawn.push((ItemRef::Armor(armor_id), a.stat_block, a.appearance_feature_ids));
                 }
             }
             for id in &manifest.worn_relic_ids {
                 if let Some(r) = self.db.relics().id().find(id) {
-                    to_spawn.push((ItemRef::Relic(*id), r.stat_block));
+                    to_spawn.push((ItemRef::Relic(*id), r.stat_block, r.appearance_feature_ids));
                 }
             }
             let mut equipped_entity_ids: Vec<u64> = Vec::new();
-            for (item_ref, stat_block) in to_spawn {
+            for (item_ref, stat_block, appearance_feature_ids) in to_spawn {
                 let item = self
                     .new()
                     .upsert_new_item(item_ref)
                     .upsert_new_equippable(stat_block)
                     .upsert_new_location(player_entity_id, LocationKind::Interior)
                     .into_handle();
+                if !appearance_feature_ids.is_empty() {
+                    item.clone()
+                        .upsert_new_appearance_features(appearance_feature_ids);
+                }
                 equipped_entity_ids.push(item.entity_id());
             }
             // The manifest is consumed once: real items now stand for it.
