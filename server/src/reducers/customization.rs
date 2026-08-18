@@ -6,6 +6,7 @@ use crate::{
     asset::{baseline::baselines, stance::stances, stat_block::StatBlock},
     ecs_extension::EcsExtension,
     entity::*,
+    entity_handle_extension::EntityHandleExtension,
     item::{ItemRef, StanceCustomization},
 };
 use spacetimedb::Table;
@@ -35,6 +36,19 @@ fn owned_item_ref(
         .ok_or_else(|| format!("Entity {} is not an item.", item_entity_id))
 }
 
+/// The one refusal message when a configuration would over-run a STEADY
+/// capacity (grip, the body slot, the relic slots). Over-equipping is allowed
+/// only to outrun a transient STATUS — never a steadier stat source — so an
+/// item that will not fit the steady base is refused outright, not silently
+/// dropped from the stats.
+fn over_capacity_error(item_entity_id: u64) -> String {
+    format!(
+        "Item {} would exceed a steady capacity (grip, body, or relic slots); \
+         over-equipping may only outrun a temporary status effect.",
+        item_entity_id
+    )
+}
+
 /// Equip the single global clothing/armor slot from an owned armor ITEM.
 #[reducer]
 pub fn set_armor(ctx: &ReducerContext, item_entity_id: u64) -> Result<(), String> {
@@ -45,6 +59,12 @@ pub fn set_armor(ctx: &ReducerContext, item_entity_id: u64) -> Result<(), String
     match owned_item_ref(&ecs, p.entity_id(), item_entity_id)? {
         ItemRef::Armor(_) => {}
         other => return Err(format!("Item {} is not armor ({:?}).", item_entity_id, other)),
+    }
+    let ph = ecs.find(p.entity_id());
+    if let Some(overflow) =
+        ph.first_overflowing_equipment(ph.steady_capacity_base(None), &[item_entity_id])
+    {
+        return Err(over_capacity_error(overflow));
     }
     p.into_handle().upsert_new_armor(item_entity_id);
     Ok(())
@@ -79,6 +99,12 @@ pub fn set_relics(ctx: &ReducerContext, relic_entity_ids: Vec<u64>) -> Result<()
             ItemRef::Relic(_) => {}
             other => return Err(format!("Item {} is not a relic ({:?}).", id, other)),
         }
+    }
+    let ph = ecs.find(p.entity_id());
+    if let Some(overflow) =
+        ph.first_overflowing_equipment(ph.steady_capacity_base(None), &relic_entity_ids)
+    {
+        return Err(over_capacity_error(overflow));
     }
     p.into_handle().upsert_new_relics(relic_entity_ids);
     Ok(())
@@ -163,9 +189,9 @@ fn update_stance_customization(
 /// Assign one stance's armament OVERRIDE — explicit intent, never inferred
 /// from emptiness: None removes the override (the stance fights with the
 /// DEFAULT set), Some(vec![]) is deliberately bare hands, Some(ids) is an
-/// override naming exactly these owned item ENTITIES. Over-equipping is
-/// allowed: the summed hand simply goes negative and hand-gated actions drop
-/// out of the derived set. Assigning the ACTIVE stance takes effect
+/// override naming exactly these owned item ENTITIES. The override is GATED
+/// against this stance's steady capacity (status excluded): it must fit the
+/// grip the stance leaves. Assigning the ACTIVE stance takes effect
 /// immediately; other stances' customizations apply as data now and arm when a
 /// stance change adopts them (paying its round).
 #[reducer]
@@ -178,7 +204,8 @@ pub fn assign_stance_armaments(
     let p = ecs
         .from_player_identity(ctx.sender())
         .ok_or("Cannot find a player entity.")?;
-    ctx.db
+    let stance = ctx
+        .db
         .stances()
         .id()
         .find(stance_id)
@@ -191,6 +218,18 @@ pub fn assign_stance_armaments(
                     return Err(format!("Item {} is not an armament ({:?}).", id, other))
                 }
             }
+        }
+        // The stance is a steadier source than equipment, so the override is
+        // gated against this stance's own capacity (status excluded). Adopting
+        // a penalizing stance can still leave the DEFAULT set over capacity —
+        // that transient invalidity is allowed and drops stats live — but a
+        // deliberate per-stance override must fit that stance outright.
+        let ph = ecs.find(p.entity_id());
+        if let Some(overflow) = ph.first_overflowing_equipment(
+            ph.steady_capacity_base(Some(&stance.stat_block)),
+            override_ids,
+        ) {
+            return Err(over_capacity_error(overflow));
         }
     }
 
@@ -230,6 +269,16 @@ pub fn set_default_armaments(
             ItemRef::Armament(_) => {}
             other => return Err(format!("Item {} is not an armament ({:?}).", id, other)),
         }
+    }
+    // The DEFAULT set is stance-free — the base every stance rides — so it is
+    // gated against the stance-free steady base (status excluded). This is the
+    // grip gate that keeps a hundred weapons off the hands; a penalizing
+    // stance may later drop some of these stats, but the set itself must fit.
+    let ph = ecs.find(player_entity_id);
+    if let Some(overflow) =
+        ph.first_overflowing_equipment(ph.steady_capacity_base(None), &armament_entity_ids)
+    {
+        return Err(over_capacity_error(overflow));
     }
     // Configuration only — applied immediately; the reconciliation
     // system converges the hands (forcing the re-arm round when the

@@ -91,18 +91,30 @@ secador::secador!(
                     if let crate::item::ItemRef::Armament(_) = item.item_ref {
                         // The auto-wield goes to the DEFAULT slot as this
                         // concrete item ENTITY; the hands re-resolve (an
-                        // active stance override keeps winning).
+                        // active stance override keeps winning). But the grip
+                        // gate applies: a taken armament is only WIELDED when
+                        // it fits the stance-free steady capacity. When it does
+                        // not, the item is still POCKETED (taken) — it just
+                        // stays in the bags rather than over-filling the hands.
                         let taker = ecs.find(taker_entity_id);
                         let mut armament_entity_ids = taker
                             .default_armaments()
                             .map(|c| c.armament_entity_ids)
                             .unwrap_or_default();
                         armament_entity_ids.push(item_entity_id);
-                        taker.upsert_new_default_armaments(armament_entity_ids);
-                        // An intentional act converges immediately — its own
-                        // round was the cost; the reconciliation system then
-                        // finds no mismatch and skips.
-                        ecs.find(taker_entity_id).apply_resolved_equipment();
+                        let fits = taker
+                            .first_overflowing_equipment(
+                                taker.steady_capacity_base(None),
+                                &armament_entity_ids,
+                            )
+                            .is_none();
+                        if fits {
+                            taker.upsert_new_default_armaments(armament_entity_ids);
+                            // An intentional act converges immediately — its own
+                            // round was the cost; the reconciliation system then
+                            // finds no mismatch and skips.
+                            ecs.find(taker_entity_id).apply_resolved_equipment();
+                        }
                     }
                     true
                 }
@@ -130,6 +142,15 @@ secador::secador!(
                 return false;
             }
             let owner = ecs.find(owner_entity_id);
+            // The grip/slot gate: an equip only takes when the item fits the
+            // steady capacity (status excluded). A steadier source that leaves
+            // no room refuses the equip; only a transient status may leave gear
+            // over capacity, and that drops stats live rather than at equip.
+            let fits = |extra: &[u64]| {
+                owner
+                    .first_overflowing_equipment(owner.steady_capacity_base(None), extra)
+                    .is_none()
+            };
             match item.item_ref {
                 crate::item::ItemRef::Armament(_) => {
                     let mut armament_entity_ids = owner
@@ -137,11 +158,17 @@ secador::secador!(
                         .map(|c| c.armament_entity_ids)
                         .unwrap_or_default();
                     armament_entity_ids.push(item_entity_id);
+                    if !fits(&armament_entity_ids) {
+                        return false;
+                    }
                     owner.upsert_new_default_armaments(armament_entity_ids);
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
                 crate::item::ItemRef::Armor(_) => {
+                    if !fits(&[item_entity_id]) {
+                        return false;
+                    }
                     owner.upsert_new_armor(item_entity_id);
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
@@ -153,6 +180,9 @@ secador::secador!(
                         return false;
                     }
                     relic_entity_ids.push(item_entity_id);
+                    if !fits(&relic_entity_ids) {
+                        return false;
+                    }
                     owner.upsert_new_relics(relic_entity_ids);
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true

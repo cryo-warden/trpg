@@ -16,6 +16,22 @@ pub trait EntityHandleExtension {
     /// on and the context stance-adoption requirements are checked against —
     /// a stance never provides the properties needed to enter itself.
     fn base_stat_block(&self) -> StatBlock;
+    /// The STEADY capacity base an equip is gated against: the stance-free
+    /// context minus the two mutable rungs (equipment and status), i.e.
+    /// baseline plus traits plus quest, and the given stance's own block when
+    /// a per-stance override is being checked. Over-equipping may only outrun
+    /// a transient STATUS penalty (whose stats drop live); it must fit every
+    /// steadier source, so status and equipment are both excluded here.
+    fn steady_capacity_base(&self, stance_stat_block: Option<&StatBlock>) -> StatBlock;
+    /// The first configured item ENTITY that would NOT fit when its Equippable
+    /// is folded onto `base` in order (apply-if-fits, no drop tolerated). None
+    /// means the whole set is fully applicable against the steady base — the
+    /// invariant every equip mutator preserves.
+    fn first_overflowing_equipment(
+        &self,
+        base: StatBlock,
+        item_entity_ids: &[u64],
+    ) -> Option<u64>;
     fn apply_stat_block(
         self,
         stat_block: StatBlock,
@@ -104,6 +120,42 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             stat_block += &c.stat_block;
         }
         stat_block
+    }
+
+    fn steady_capacity_base(&self, stance_stat_block: Option<&StatBlock>) -> StatBlock {
+        let e = self.to_handle();
+        let mut base = e
+            .baseline()
+            .and_then(|b| e.ecs().db.baselines().id().find(b.baseline_id))
+            .map_or_else(StatBlock::default, |b| b.stat_block);
+        if let Some(c) = e.traits_stat_block_cache() {
+            base += &c.stat_block;
+        }
+        if let Some(c) = e.quest_stat_block_cache() {
+            base += &c.stat_block;
+        }
+        if let Some(s) = stance_stat_block {
+            base += s;
+        }
+        base
+    }
+
+    fn first_overflowing_equipment(
+        &self,
+        base: StatBlock,
+        item_entity_ids: &[u64],
+    ) -> Option<u64> {
+        let ecs = self.to_handle().ecs();
+        let mut running = base;
+        for id in item_entity_ids {
+            if let Some(q) = ecs.find(*id).equippable() {
+                if !running.admits_equipment_item(&q.stat_block) {
+                    return Some(*id);
+                }
+                running += &q.stat_block;
+            }
+        }
+        None
     }
 
     /// The published total keeps its FULL grants (action_ids unfiltered):
