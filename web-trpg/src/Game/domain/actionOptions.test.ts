@@ -123,8 +123,9 @@ test("a path offers its crossing verb: no knowledge needed, and knowledge alone 
     targetQuestItemFreshness: null,
     targetOfferedActionIds: [moveId],
     targetCoLocatedWithPlayer: true,
-    // The requirements mirror applies to offers: move wants gait 1.
-    actorStats: { gait: 2 },
+    // The requirements mirror applies to offers: move wants gait 1 and
+    // morale 1.
+    actorStats: { gait: 2, morale: 1 },
   };
   // The player knows NOTHING; the path offers move.
   expect(getActionOptions(path)).toEqual([moveId]);
@@ -428,7 +429,8 @@ test("item verbs DERIVE from the target: no actor knowledge required", () => {
 
 test("an unmet actor requirement hides a derived or offered option", () => {
   // A requirements-carrying asset stands in as the registered take: move
-  // requires gait 1.
+  // requires gait 1 and morale 1. Morale is held constant so gait is the
+  // isolated gate under test.
   const gatedTake = actionIdOf("move");
   const floorItem = {
     ...enemy,
@@ -445,13 +447,13 @@ test("an unmet actor requirement hides a derived or offered option", () => {
     targetWithinTakeReach: true,
     targetCoLocatedWithPlayer: true,
   };
-  // gait 0 fails the shuffle's gait 1 requirement; gait 1 meets it.
-  expect(getActionOptions({ ...floorItem, actorStats: { gait: 0 } })).toEqual(
-    [],
-  );
-  expect(getActionOptions({ ...floorItem, actorStats: { gait: 1 } })).toEqual([
-    gatedTake,
-  ]);
+  // gait 0 fails move's gait 1 requirement; gait 1 meets it (morale 1 held).
+  expect(
+    getActionOptions({ ...floorItem, actorStats: { gait: 0, morale: 1 } }),
+  ).toEqual([]);
+  expect(
+    getActionOptions({ ...floorItem, actorStats: { gait: 1, morale: 1 } }),
+  ).toEqual([gatedTake]);
 });
 
 test("getActionOptions drops unknown action ids", () => {
