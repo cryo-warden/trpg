@@ -68,6 +68,13 @@ pub fn set_quest_bit(ecs: Ecs, entity_id: u64, quest_id: u32, index: u32) -> boo
     if flags.entity_id().find(entity_id).is_none() {
         flags.insert(FlagComponent { entity_id });
     }
+    // Equipment validates against every other stat source (quest included), so
+    // a quest-stat change must re-derive equipment too — the same dependency
+    // baseline/traits/status/stance declare via dirties(equipment_...).
+    let equipment_flags = ecs.db.equipment_stat_block_dirty_flag_components();
+    if equipment_flags.entity_id().find(entity_id).is_none() {
+        equipment_flags.insert(FlagComponent { entity_id });
+    }
     true
 }
 

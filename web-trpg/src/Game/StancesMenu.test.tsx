@@ -17,6 +17,8 @@ const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
   attack: 0,
   defense: 0,
   hand: 0,
+  body: 0,
+  relic: 0,
   gait: 0,
   reach: 0,
   blunt: 0,

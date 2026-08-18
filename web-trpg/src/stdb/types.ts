@@ -644,6 +644,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get equippable() {
     return __t.option(EquippableComponentBlob);
   },
+  get equipmentDisabled() {
+    return __t.option(EquipmentDisabledComponentBlob);
+  },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob);
   },
@@ -935,6 +938,17 @@ export const EquipmentComponentBlob = __t.object("EquipmentComponentBlob", {
   equippedEntityIds: __t.array(__t.u64()),
 });
 export type EquipmentComponentBlob = __Infer<typeof EquipmentComponentBlob>;
+
+export const EquipmentDisabledComponent = __t.object("EquipmentDisabledComponent", {
+  entityId: __t.u64(),
+  disabledEntityIds: __t.array(__t.u64()),
+});
+export type EquipmentDisabledComponent = __Infer<typeof EquipmentDisabledComponent>;
+
+export const EquipmentDisabledComponentBlob = __t.object("EquipmentDisabledComponentBlob", {
+  disabledEntityIds: __t.array(__t.u64()),
+});
+export type EquipmentDisabledComponentBlob = __Infer<typeof EquipmentDisabledComponentBlob>;
 
 export const EquippableComponent = __t.object("EquippableComponent", {
   entityId: __t.u64(),
@@ -1871,6 +1885,8 @@ export const StatBlock = __t.object("StatBlock", {
   attack: __t.i8(),
   defense: __t.i8(),
   hand: __t.i8(),
+  body: __t.i8(),
+  relic: __t.i8(),
   gait: __t.i8(),
   reach: __t.i8(),
   blunt: __t.i8(),
@@ -1895,6 +1911,8 @@ export const StatBlockAsset = __t.object("StatBlockAsset", {
   defense: __t.i8(),
   mep: __t.i16(),
   hand: __t.i8(),
+  body: __t.i8(),
+  relic: __t.i8(),
   gait: __t.i8(),
   reach: __t.i8(),
   blunt: __t.i8(),
@@ -1930,6 +1948,8 @@ export const StatRequirements = __t.object("StatRequirements", {
   attack: __t.option(__t.i8()),
   defense: __t.option(__t.i8()),
   hand: __t.option(__t.i8()),
+  body: __t.option(__t.i8()),
+  relic: __t.option(__t.i8()),
   gait: __t.option(__t.i8()),
   reach: __t.option(__t.i8()),
   blunt: __t.option(__t.i8()),

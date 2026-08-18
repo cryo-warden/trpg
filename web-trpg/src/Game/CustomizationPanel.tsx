@@ -7,6 +7,7 @@ import {
   useMyArmorEntityId,
   useMyDefaultActionIds,
   useMyDefaultArmamentEntityIds,
+  useMyDisabledEntityIds,
   useMyRelicEntityIds,
   useOwnedItems,
 } from "./context/StdbContext/customization";
@@ -50,6 +51,17 @@ export const CustomizationPanel = () => {
   const ownedArmors = owned.filter((item) => item.kind === "Armor");
   const ownedRelics = owned.filter((item) => item.kind === "Relic");
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
+
+  // Equipped-but-unapplied items: worn, but their stats aren't in the total
+  // right now because a capacity ran out (a bigger status/stance debuff, an
+  // over-full slot). Marked TEMPORARILY disabled — still removable.
+  const disabled = new Set(useMyDisabledEntityIds());
+  const className = (on: boolean, id: EntityId): string =>
+    [on ? "active" : "", disabled.has(id) ? "temporarilyDisabled" : ""]
+      .join(" ")
+      .trim();
+  const disabledMark = (id: EntityId) =>
+    disabled.has(id) ? <span className="disabledMark"> (disabled)</span> : null;
 
   const ownedByEntityId = new Map(owned.map((item) => [item.entityId, item]));
   const statOfEntityId = (id: EntityId) => {
@@ -127,7 +139,7 @@ export const CustomizationPanel = () => {
           return (
             <Button
               key={item.entityId.toString()}
-              className={on ? "active" : ""}
+              className={className(on, item.entityId)}
               interesting={on}
               onClick={() =>
                 connection.reducers.setArmor({ itemEntityId: item.entityId })
@@ -135,6 +147,7 @@ export const CustomizationPanel = () => {
             >
               {item.name}
               {summaryOf(item)}
+              {disabledMark(item.entityId)}
             </Button>
           );
         })}
@@ -146,7 +159,7 @@ export const CustomizationPanel = () => {
           return (
             <Button
               key={item.entityId.toString()}
-              className={on ? "active" : ""}
+              className={className(on, item.entityId)}
               interesting={on}
               disabled={!on && relicEntityIds.length >= 4}
               onClick={() =>
@@ -157,6 +170,7 @@ export const CustomizationPanel = () => {
             >
               {item.name}
               {summaryOf(item)}
+              {disabledMark(item.entityId)}
             </Button>
           );
         })}
@@ -168,7 +182,7 @@ export const CustomizationPanel = () => {
           return (
             <Button
               key={item.entityId.toString()}
-              className={on ? "active" : ""}
+              className={className(on, item.entityId)}
               interesting={on}
               onClick={() =>
                 // CONFIGURATION, applied immediately — the menu's state is
@@ -184,6 +198,7 @@ export const CustomizationPanel = () => {
             >
               {item.name}
               {summaryOf(item)}
+              {disabledMark(item.entityId)}
             </Button>
           );
         })}

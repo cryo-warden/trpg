@@ -22,6 +22,7 @@ import {
   useGearStatBlockOf,
   useMyDefaultActionIds,
   useMyDefaultArmamentEntityIds,
+  useMyDisabledEntityIds,
   useMyStanceAssignments,
   useOwnedItems,
 } from "./context/StdbContext/customization";
@@ -60,6 +61,9 @@ export const StancesMenu = () => {
   const gearStatBlockOf = useGearStatBlockOf();
   const defaultArmamentEntityIds = useMyDefaultArmamentEntityIds();
   const defaultActionIds = useMyDefaultActionIds();
+  // Equipped-but-unapplied armaments (a capacity ran out under the LIVE
+  // status/stance): marked temporarily disabled on the active stance's card.
+  const disabled = new Set(useMyDisabledEntityIds());
   // Buttons render PROPER names, never the internal underscored key.
   const actionDisplayName = useActionDisplayNameOf();
   const commonPinnable = useCommonPinnableActionIds();
@@ -226,10 +230,16 @@ export const StancesMenu = () => {
             </Button>
             {ownedArmaments.map((item) => {
               const on = isOn(item);
+              // Only the ACTIVE stance's armaments are actually equipped, so
+              // only its card can show a live "temporarily disabled" mark.
+              const isDisabled =
+                stance.id === activeStanceId && disabled.has(item.entityId);
               return (
                 <Button
                   key={item.entityId.toString()}
-                  className={on ? "active" : ""}
+                  className={[on ? "active" : "", isDisabled ? "temporarilyDisabled" : ""]
+                    .join(" ")
+                    .trim()}
                   interesting={on}
                   onClick={() =>
                     connection.reducers.assignStanceArmaments({
@@ -239,6 +249,7 @@ export const StancesMenu = () => {
                   }
                 >
                   {item.name}
+                  {isDisabled && <span className="disabledMark"> (disabled)</span>}
                 </Button>
               );
             })}

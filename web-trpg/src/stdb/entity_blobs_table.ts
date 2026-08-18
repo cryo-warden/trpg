@@ -31,6 +31,7 @@ import {
   StanceCustomizationsComponentBlob,
   ItemComponentBlob,
   EquippableComponentBlob,
+  EquipmentDisabledComponentBlob,
   StatBlockCacheComponentBlob,
   FlagComponentBlob,
   CheckpointComponentBlob,
@@ -124,6 +125,9 @@ export default __t.row({
   },
   get equippable() {
     return __t.option(EquippableComponentBlob);
+  },
+  get equipmentDisabled() {
+    return __t.option(EquipmentDisabledComponentBlob).name("equipment_disabled");
   },
   get equipmentStatBlockCache() {
     return __t.option(StatBlockCacheComponentBlob).name("equipment_stat_block_cache");

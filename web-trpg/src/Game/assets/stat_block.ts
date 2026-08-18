@@ -8,6 +8,8 @@ export const statBlock = (partial: Partial<StatBlockAsset>): StatBlockAsset => (
   defense: 0,
   mep: 0,
   hand: 0,
+  body: 0,
+  relic: 0,
   gait: 0,
   reach: 0,
   blunt: 0,

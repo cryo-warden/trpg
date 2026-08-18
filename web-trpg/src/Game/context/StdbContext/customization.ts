@@ -172,6 +172,25 @@ export const useMyEquippedEntityIds = (): EntityId[] => {
   );
 };
 
+/** The equipped item ENTITIES whose stats are NOT currently applied — an
+ * equipped item is TEMPORARILY disabled when applying it would drive a
+ * capacity (hand/body/relic) negative against everything else, transient
+ * status and the active stance included. Server-derived; present only while
+ * something is unapplied. */
+export const useMyDisabledEntityIds = (): EntityId[] => {
+  const playerEntity = usePlayerEntity();
+  return useTableData(
+    "equipment_disabled_components",
+    (t) => {
+      if (playerEntity == null) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (((t.entityId as any).find(playerEntity)?.disabledEntityIds ??
+        []) as EntityId[]).slice();
+    },
+    [playerEntity],
+  );
+};
+
 /** The DEFAULT action bar (the equip menu's): what a stance change pins
  * when the adopted stance carries no bar assignment of its own. */
 export const useMyDefaultActionIds = (): number[] => {

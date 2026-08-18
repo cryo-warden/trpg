@@ -7,11 +7,17 @@
 // reach, ...): bodies, traits, stances, and equipment provide them as
 // positive contributions, circumstances consume them as negative ones, and
 // action/stance requirements check thresholds against the merged total.
+//
+// Three of them are equipment CAPACITY stats — hand (armaments), body (the
+// lone worn-armor slot), and relic (four relic slots): the body provides the
+// positive capacity, each equipped item consumes one (negative), and the
+// equipment stat computation applies an item only while the running capacity
+// stays >= 0 (see capacity_requirements / entity_stats_system).
 secador::secador_multi!(
     seca_small_int!(
         stat,
         [
-            attack, defense, hand, gait, reach, blunt, bladed, pole, ward, focus, wing,
+            attack, defense, hand, body, relic, gait, reach, blunt, bladed, pole, ward, focus, wing,
             upright, size, morale
         ]
     ),
@@ -56,6 +62,30 @@ secador::secador_multi!(
         }
 
         impl StatBlock {
+            /// Whether an equipped item's block applies on top of `self` (the
+            /// running total of everything applied so far — every other stat
+            /// source plus the equipment already kept). An item applies unless
+            /// it would drive a CAPACITY stat it CONSUMES below zero: hand
+            /// (grip), body (the lone worn-armor slot), or relic (the four
+            /// relic slots) — the three stats named explicitly here, the one
+            /// place that knows which stats gate equipment.
+            ///
+            /// The test is per-item CAUSATION, not "is the total valid": a
+            /// capacity already spent below zero by non-equipment sources (a
+            /// stacked hand debuff, say) never disables an item that doesn't
+            /// consume that capacity — a hand curse drops an armament, never
+            /// your armor. An item whose contribution to a capacity is
+            /// non-negative can never be the cause, so only consumed
+            /// capacities are checked.
+            pub fn admits_equipment_item(&self, item: &StatBlock) -> bool {
+                let admits = |running: i8, delta: i8| {
+                    delta >= 0 || running.saturating_add(delta) >= 0
+                };
+                admits(self.hand, item.hand)
+                    && admits(self.body, item.body)
+                    && admits(self.relic, item.relic)
+            }
+
             /// The sign-flipped copy of the INT stats (id vecs stay empty):
             /// the delta an unequip applies. Saturating — i8::MIN flips to
             /// i8::MAX rather than panicking.
@@ -103,6 +133,57 @@ secador::secador_multi!(
 #[cfg(test)]
 mod tests {
     use super::{StatBlock, StatRequirements};
+
+    #[test]
+    fn admits_item_that_leaves_capacity_at_zero() {
+        let mut running = StatBlock::default();
+        running.hand = 1; // one free hand
+        let mut item = StatBlock::default();
+        item.hand = -1; // a one-handed armament
+        assert!(running.admits_equipment_item(&item));
+    }
+
+    #[test]
+    fn rejects_item_that_drives_a_capacity_it_consumes_below_zero() {
+        let mut running = StatBlock::default();
+        running.hand = 0; // no free hands left
+        let mut item = StatBlock::default();
+        item.hand = -1;
+        assert!(!running.admits_equipment_item(&item));
+    }
+
+    #[test]
+    fn a_spent_capacity_never_blocks_an_item_that_does_not_consume_it() {
+        // Grip is exhausted (a hand debuff dug it below zero), but armor
+        // consumes the BODY slot, not hands — a hand curse must not strip it.
+        let mut running = StatBlock::default();
+        running.hand = -1;
+        running.body = 1;
+        let mut armor = StatBlock::default();
+        armor.body = -1;
+        armor.defense = 2;
+        assert!(running.admits_equipment_item(&armor));
+    }
+
+    #[test]
+    fn rejects_relic_when_all_four_relic_slots_are_spent() {
+        let mut running = StatBlock::default();
+        running.relic = 0; // four relics already applied
+        let mut relic = StatBlock::default();
+        relic.relic = -1;
+        assert!(!running.admits_equipment_item(&relic));
+    }
+
+    #[test]
+    fn admits_item_that_grants_capacity() {
+        // A non-negative contribution to a capacity can never be the cause of
+        // a violation, so it always passes that stat's gate.
+        let mut running = StatBlock::default();
+        running.hand = -3;
+        let mut item = StatBlock::default();
+        item.hand = 1; // grants grip rather than consuming it
+        assert!(running.admits_equipment_item(&item));
+    }
 
     #[test]
     fn meets_checks_only_named_thresholds() {

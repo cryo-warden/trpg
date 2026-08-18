@@ -336,6 +336,36 @@ test("a fifth relic renders visibly disabled at the four-cap", () => {
   expect(charm.hasAttribute("disabled")).toBe(true);
 });
 
+test("an equipped-but-unapplied item renders TEMPORARILY disabled, still removable", () => {
+  // The jerkin (entity 6) is worn but the server reports it unapplied — a
+  // capacity ran out. It stays on (worn) and clickable (removable), but is
+  // struck through and labeled, never the :disabled attribute that would
+  // trap it on.
+  const setArmor = mock(() => {});
+  const unapplied = {
+    ...tables(),
+    armor_components: mockTable([{ entityId: 1n, armorEntityId: 6n }]),
+    equipment_disabled_components: mockTable([
+      { entityId: 1n, disabledEntityIds: [6n] },
+    ]),
+  };
+  const { container } = render(<CustomizationPanel />, {
+    wrapper: gameWrapper(unapplied, {
+      identity: {} as Identity,
+      reducers: { setArmor },
+    }),
+  });
+  const jerkin = [...container.querySelectorAll(".armor button")].find((button) =>
+    button.textContent!.startsWith(ARMOR_DISPLAY_NAMES.leather_jerkin),
+  )!;
+  expect(jerkin.className).toContain("temporarilyDisabled");
+  expect(jerkin.textContent).toContain("(disabled)");
+  // Worn and still removable — NOT the html disabled attribute.
+  expect(jerkin.hasAttribute("disabled")).toBe(false);
+  fireEvent.click(jerkin);
+  expect(setArmor).toHaveBeenCalled();
+});
+
 test("toggling a relic on proposes the extended relic set", () => {
   const setRelics = mock(() => {});
   const wrapper = gameWrapper(tables(), {

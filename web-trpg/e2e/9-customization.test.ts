@@ -59,6 +59,8 @@ beforeAll(async () => {
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
       "SELECT * FROM equipment_components",
+      "SELECT * FROM equipment_disabled_components",
+      "SELECT * FROM total_stat_block_components",
       "SELECT * FROM default_armaments_components",
       "SELECT * FROM pinned_actions_components",
       "SELECT * FROM stance_customizations_components",
@@ -74,7 +76,7 @@ beforeAll(async () => {
 
   playerEntityId = await playerEntityIdFor(player, "collector");
   await waitFor(() => myActionNames().length > 0, 30000);
-  await waitFor(() => player.db.item_components.count() === 4n, 30000);
+  await waitFor(() => player.db.item_components.count() === 5n, 30000);
 }, 60000);
 
 const armamentItemId = (armamentAssetId: number): bigint =>
@@ -328,6 +330,57 @@ test("set_default_armaments configures IMMEDIATELY: the menu path, hands re-reso
     armamentEntityIds: [clubItemId, swordItemId],
   });
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
+}, 60000);
+
+test("over-capacity gear stays equipped but its stats drop out (temporarily disabled)", async () => {
+  const swordId = idByName(player.db.armaments, "test_sword");
+  const greatId = idByName(player.db.armaments, "test_greatsword");
+  const swordItemId = armamentItemId(swordId);
+  const greatItemId = armamentItemId(greatId);
+  const takeId = idByName(player.db.actions, "test_take");
+
+  // Bring the two-handed greatsword into the bags.
+  await player.reducers.act({ actionId: takeId, targetEntityId: greatItemId });
+  await waitFor(() => carriedItemIds().includes(greatItemId), 30000);
+
+  const myEquipped = (): bigint[] => [
+    ...([...player.db.equipment_components.iter()].find(
+      (row) => row.entityId === playerEntityId,
+    )?.equippedEntityIds ?? []),
+  ];
+  const myDisabled = (): bigint[] => [
+    ...([...player.db.equipment_disabled_components.iter()].find(
+      (row) => row.entityId === playerEntityId,
+    )?.disabledEntityIds ?? []),
+  ];
+  const myBladed = (): number =>
+    [...player.db.total_stat_block_components.iter()].find(
+      (row) => row.entityId === playerEntityId,
+    )?.statBlock.bladed ?? -1;
+
+  // Wield the greatsword FIRST, then a one-hander: the two hands are spent on
+  // the greatsword, so the sword stays equipped but unapplied. Both are worn;
+  // exactly the sword is dropped from the stats — the greatsword's bladed
+  // applies, the sword's does not, so the total shows one bladed, not two.
+  await player.reducers.setDefaultArmaments({
+    armamentEntityIds: [greatItemId, swordItemId],
+  });
+  await waitFor(
+    () => myEquipped().includes(greatItemId) && myEquipped().includes(swordItemId),
+    30000,
+  );
+  await waitFor(() => myDisabled().length === 1, 30000);
+  // Exactly one of the two wielded blades is dropped (which one depends on
+  // the applied order) — never the armor or relic, which have their own slots.
+  expect([greatItemId, swordItemId]).toContain(myDisabled()[0]);
+  await waitFor(() => myBladed() === 1, 30000);
+
+  // Free a hand — drop the greatsword from the set — and the sword's stats
+  // come back at once; nothing stays disabled.
+  await player.reducers.setDefaultArmaments({ armamentEntityIds: [swordItemId] });
+  await waitFor(() => myDisabled().length === 0, 30000);
+  expect(myEquipped()).toContain(swordItemId);
+  expect(myBladed()).toBe(1);
 }, 60000);
 
 test("the four-relic cap is enforced", async () => {

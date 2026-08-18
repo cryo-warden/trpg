@@ -13,6 +13,10 @@ export const BASELINES = {
     defense: 0,
     mep: 5,
     hand: 2,
+    // Equipment capacity: one worn-armor slot and four relic slots — the
+    // positive side of the body/relic capacity stats worn gear consumes.
+    body: 1,
+    relic: 4,
     gait: 2,
     reach: 1,
     size: 0,
@@ -65,6 +69,8 @@ export const BASELINES = {
     defense: 0,
     mep: 4,
     hand: 2,
+    body: 1,
+    relic: 4,
     gait: 2,
     reach: 1,
     size: 0,

@@ -483,6 +483,10 @@ export const customizationPack = (): AssetPack => ({
       value: statBlock({
         mhp: 5,
         hand: 2,
+        // Equipment capacity, matching the real body plan: one armor slot,
+        // four relic slots (worn gear consumes them).
+        body: 1,
+        relic: 4,
         gait: 2,
         actionNames: [
           "test_take",
@@ -504,9 +508,16 @@ export const customizationPack = (): AssetPack => ({
       name: "test_club",
       value: statBlock({ blunt: 1, hand: -1, actionNames: ["test_smash"] }),
     },
+    // Two-handed: consumes BOTH hands, so it and a one-hander cannot both be
+    // applied on a two-hand body — the second wielded stays equipped but its
+    // stats drop out (the capacity-validation case).
+    {
+      name: "test_greatsword",
+      value: statBlock({ bladed: 1, hand: -2 }),
+    },
   ],
-  armors: [{ name: "test_jerkin", value: statBlock({ defense: 1 }) }],
-  relics: [{ name: "test_charm", value: statBlock({ attack: 1 }) }],
+  armors: [{ name: "test_jerkin", value: statBlock({ defense: 1, body: -1 }) }],
+  relics: [{ name: "test_charm", value: statBlock({ attack: 1, relic: -1 }) }],
   stances: [
     {
       name: "test_standing",
@@ -537,6 +548,13 @@ export const customizationPack = (): AssetPack => ({
     }),
     blob({
       item: { tag: "Armament", value: "test_club" },
+      location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
+    }),
+    blob({
+      item: { tag: "Armament", value: "test_greatsword" },
       location: {
       locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
       kind: { tag: "Interior" },

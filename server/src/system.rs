@@ -6,6 +6,7 @@ use crate::{
     appearance::en_appearance_features,
     asset::ReducerContextExtension,
     asset::{
+        baseline::baselines,
         location_map::{location_map_connections, location_maps},
         quest::quests,
         location_map_theme::location_map_themes,
@@ -723,38 +724,6 @@ pub fn entity_stats_system(ecs: Ecs) {
         }
     }
 
-    // Gear merges three sources: wielded armaments (per-stance via customizations,
-    // or blob-authored for NPCs), the one global armor slot, and the worn
-    // relics. Always processed — an entity stripped of its last gear
-    // component still needs its (now empty) cache recomputed.
-    for f in ecs.iter_equipment_stat_block_dirty_flag() {
-        let e = ecs.find(f.entity_id());
-        let mut stat_block = StatBlock::default();
-        // Equipment stats are the SUM of every equipped item's Equippable
-        // contribution — the one rule that replaced per-asset stat lookups.
-        // Players wield concrete item entities (equipped_entity_ids); NPCs
-        // carry the precomputed EquipmentBlobbed block instead of items. An
-        // entity may have either or both; the two are disjoint by
-        // construction (a player's blob is dropped when its items are
-        // spawned), so summing both is safe.
-        if let Some(c) = e.equipment() {
-            for item_id in &c.equipped_entity_ids {
-                if let Some(q) = ecs.find(*item_id).equippable() {
-                    stat_block += &q.stat_block;
-                }
-            }
-        }
-        if let Some(blobbed) = e.equipment_blobbed() {
-            stat_block += &blobbed.stat_block;
-        }
-
-        // Upserting the cache auto-dirties the total stat block (its
-        // declared dirty flag) — no manual flag here.
-        f.upsert_new_equipment_stat_block_cache(stat_block)
-            .delete_equipment_stat_block_dirty_flag()
-            .into_handle();
-    }
-
     // Status effects contribute stat blocks like everything else: courage
     // folds into rigid morale, braced into defense. The cache upsert
     // auto-dirties the total.
@@ -804,6 +773,76 @@ pub fn entity_stats_system(ecs: Ecs) {
         f.upsert_new_quest_stat_block_cache(stat_block)
             .delete_quest_stat_block_dirty_flag()
             .into_handle();
+    }
+
+    // Equipment is the BOTTOM, most-mutable rung: it validates against the
+    // running total of every OTHER stat source, so it is computed LAST among
+    // the sources (after traits/status/quest above) and re-dirtied whenever
+    // any of those change (see the source components' dirties()). Players
+    // wield concrete item entities (equipped_entity_ids); NPCs carry the
+    // precomputed EquipmentBlobbed instead. An entity may have either or both;
+    // the two are disjoint by construction, so summing both is safe.
+    for f in ecs.iter_equipment_stat_block_dirty_flag() {
+        let e = ecs.find(f.entity_id());
+
+        // The fixed context: baseline + trait/status/quest caches + the active
+        // stance's block — everything the total has EXCEPT equipment itself.
+        let mut running = e
+            .baseline()
+            .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
+            .map_or_else(StatBlock::default, |b| b.stat_block);
+        if let Some(c) = e.traits_stat_block_cache() {
+            running += &c.stat_block;
+        }
+        if let Some(c) = e.status_stat_block_cache() {
+            running += &c.stat_block;
+        }
+        if let Some(c) = e.quest_stat_block_cache() {
+            running += &c.stat_block;
+        }
+        if let Some(s) =
+            { e.active_stance() }.and_then(|active| ecs.db.stances().id().find(active.stance_id))
+        {
+            running += &s.stat_block;
+        }
+
+        // Apply each equipped item in stored order, keeping it only while it
+        // does not drive a capacity it consumes below zero (hand/body/relic).
+        // A rejected item stays equipped but contributes nothing — its entity
+        // id goes to the disabled list so the client can mark it TEMPORARILY
+        // disabled. The first item to violate a capacity is the one dropped;
+        // later items that still fit are applied.
+        let mut applied = StatBlock::default();
+        let mut disabled: Vec<u64> = Vec::new();
+        if let Some(c) = e.equipment() {
+            for item_id in &c.equipped_entity_ids {
+                let Some(q) = ecs.find(*item_id).equippable() else {
+                    continue;
+                };
+                if running.admits_equipment_item(&q.stat_block) {
+                    running += &q.stat_block;
+                    applied += &q.stat_block;
+                } else {
+                    disabled.push(*item_id);
+                }
+            }
+        }
+        // NPC blob gear is precomputed, always applied, never validated.
+        if let Some(blobbed) = e.equipment_blobbed() {
+            applied += &blobbed.stat_block;
+        }
+
+        // Upserting the cache auto-dirties the total stat block (its declared
+        // dirty flag) — no manual flag here.
+        let handle = f
+            .upsert_new_equipment_stat_block_cache(applied)
+            .delete_equipment_stat_block_dirty_flag()
+            .into_handle();
+        if disabled.is_empty() {
+            handle.delete_equipment_disabled();
+        } else {
+            handle.upsert_new_equipment_disabled(disabled);
+        }
     }
 
     for f in ecs.iter_total_stat_block_dirty_flag() {

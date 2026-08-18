@@ -7,6 +7,8 @@ export const NO_REQUIREMENTS: StatRequirements = {
   attack: undefined,
   defense: undefined,
   hand: undefined,
+  body: undefined,
+  relic: undefined,
   gait: undefined,
   reach: undefined,
   blunt: undefined,

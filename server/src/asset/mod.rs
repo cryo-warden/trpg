@@ -294,6 +294,9 @@ fn resolve_entity_blob(
         // at provisioning; NPCs run stat-only on EquipmentBlobbed. Born
         // config-less, so the reconciliation system finds nothing to converge.
         equipment: None,
+        // Derived state only — the equipment stat computation writes it when
+        // something is unapplied; never authored.
+        equipment_disabled: None,
         // The authored starting-gear MANIFEST (gear asset ids): player
         // provisioning spawns owned item entities from it. Inert on NPCs.
         starting_gear: {
@@ -555,6 +558,8 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         defense,
         mep,
         hand,
+        body,
+        relic,
         gait,
         reach,
         blunt,
@@ -575,6 +580,8 @@ fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<St
         defense,
         mep,
         hand,
+        body,
+        relic,
         gait,
         reach,
         blunt,

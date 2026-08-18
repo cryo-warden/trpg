@@ -93,6 +93,12 @@ pub struct StatBlockAsset {
     pub defense: i8,
     pub mep: i16,
     pub hand: i8,
+    /// Equipment CAPACITY: the lone worn-armor slot (body provides 1, worn
+    /// armor consumes 1).
+    pub body: i8,
+    /// Equipment CAPACITY: the four relic slots (body provides 4, each worn
+    /// relic consumes 1).
+    pub relic: i8,
     pub gait: i8,
     pub reach: i8,
     pub blunt: i8,

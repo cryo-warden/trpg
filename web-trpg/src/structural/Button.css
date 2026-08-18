@@ -7,6 +7,20 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
+
+  /* TEMPORARILY disabled: the item is still equipped and still removable
+   * (so the button stays clickable — never the :disabled attribute), but its
+   * stats are not being applied right now because a capacity ran out. Faded
+   * and struck through to say "worn, not working". */
+  &.temporarilyDisabled {
+    opacity: 0.55;
+    text-decoration: line-through;
+  }
+  .disabledMark {
+    text-decoration: none;
+    font-style: italic;
+    opacity: 0.85;
+  }
   margin: 4px;
   padding: 1em;
   min-width: 16mm;

@@ -118,20 +118,25 @@ entity!(
         pub party_leader: EntityId,
     }
 
-    #[component(baseline in baseline_components, dirties(total_stat_block_dirty_flag))]
+    // Equipment validates against every other stat source, so each of them
+    // ALSO dirties the equipment flag: equipment is the bottom, most-mutable
+    // rung and must re-derive whenever anything above it moves.
+    #[component(baseline in baseline_components, dirties(total_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
     struct BaselineComponent {
         pub baseline_id: u32,
     }
 
-    #[component(traits in traits_components, dirties(traits_stat_block_dirty_flag))]
+    #[component(traits in traits_components, dirties(traits_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
     struct TraitsComponent {
         pub trait_ids: Vec<u32>,
     }
 
     // The exclusive posture the entity fights from: its stance's stat block
     // joins the total (including granted action_ids), so swapping recomputes
-    // stats and available actions through the ordinary dirty-flag path.
-    #[component(active_stance in active_stance_components, dirties(total_stat_block_dirty_flag))]
+    // stats and available actions through the ordinary dirty-flag path. It
+    // also gates equipment (a stance can reduce a capacity), so it dirties
+    // equipment too.
+    #[component(active_stance in active_stance_components, dirties(total_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
     struct ActiveStanceComponent {
         pub stance_id: u32,
     }
@@ -235,6 +240,19 @@ entity!(
     #[component(equippable in equippable_components)]
     struct EquippableComponent {
         pub stat_block: StatBlock,
+    }
+
+    // Derived by the equipment stat computation: the equipped item ENTITIES
+    // whose stats are NOT currently applied because applying them would drive
+    // a capacity requirement (hand/body/relic) negative against the running
+    // total of every other stat source — including transient status and the
+    // active stance. The item stays equipped; it just contributes nothing
+    // until capacity frees up. Present only while something is unapplied
+    // (deleted when everything fits), so the client marks exactly these as
+    // TEMPORARILY disabled.
+    #[component(equipment_disabled in equipment_disabled_components)]
+    struct EquipmentDisabledComponent {
+        pub disabled_entity_ids: Vec<EntityId>,
     }
 
     #[component(
@@ -400,7 +418,7 @@ entity!(
     // removed at zero. Fear keeps the MAXIMUM intensity: a weaker fear
     // arriving over a stronger one is ignored and does not even refresh the
     // duration. Not cured by rally — you outlast it, or out-courage it.
-    #[component(fear_status in fear_status_components, dirties(status_stat_block_dirty_flag))]
+    #[component(fear_status in fear_status_components, dirties(status_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
     struct FearStatusComponent {
         pub intimidation: i16,
         pub duration: i16,
@@ -412,14 +430,14 @@ entity!(
     // Folds into the total through the status cache so rigid morale absorbs
     // it, lifting effective morale back over the action thresholds a fear
     // pushed it under.
-    #[component(courage_status in courage_status_components, dirties(status_stat_block_dirty_flag))]
+    #[component(courage_status in courage_status_components, dirties(status_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
     struct CourageStatusComponent {
         pub morale: i16,
     }
 
     // BRACED: dive's status effect — bonus defense, folded through the
     // status cache exactly like courage. Cleared on the next stance change.
-    #[component(braced_status in braced_status_components, dirties(status_stat_block_dirty_flag))]
+    #[component(braced_status in braced_status_components, dirties(status_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
     struct BracedStatusComponent {
         pub defense: i16,
     }
