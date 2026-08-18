@@ -36,8 +36,8 @@ export const STAT_GROUPS: readonly StatGroup[] = [
     label: "Body",
     stats: [
       ["hand", "Hand"],
-      ["body", "Armor slot"],
-      ["relic", "Relic slots"],
+      ["body", "Body"],
+      ["relic", "Relic"],
       ["gait", "Gait"],
       ["reach", "Reach"],
       ["wing", "Wing"],

@@ -125,24 +125,24 @@ export const mockAssetTables = () => ({
     })),
   ),
   armaments: mockTable(
-    Object.entries(ARMAMENTS).map(([name, statBlock], id) => ({
+    Object.entries(ARMAMENTS).map(([name, gear], id) => ({
       id,
       name,
-      statBlock: resolveMockStatBlock(statBlock),
+      statBlock: resolveMockStatBlock(gear.statBlock),
     })),
   ),
   armors: mockTable(
-    Object.entries(ARMORS).map(([name, statBlock], id) => ({
+    Object.entries(ARMORS).map(([name, gear], id) => ({
       id,
       name,
-      statBlock: resolveMockStatBlock(statBlock),
+      statBlock: resolveMockStatBlock(gear.statBlock),
     })),
   ),
   relics: mockTable(
-    Object.entries(RELICS).map(([name, statBlock], id) => ({
+    Object.entries(RELICS).map(([name, gear], id) => ({
       id,
       name,
-      statBlock: resolveMockStatBlock(statBlock),
+      statBlock: resolveMockStatBlock(gear.statBlock),
     })),
   ),
   quests: mockTable(
@@ -212,6 +212,8 @@ export const stdbWrapper = (
       actions_components: mockTable([]),
       active_stance_components: mockTable([]),
       total_stat_block_components: mockTable([]),
+      equipment_stat_block_cache_components: mockTable([]),
+      status_stat_block_cache_components: mockTable([]),
       fear_status_components: mockTable([]),
       courage_status_components: mockTable([]),
       action_state_components: mockTable([]),

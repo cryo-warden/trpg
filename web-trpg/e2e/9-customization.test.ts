@@ -332,7 +332,7 @@ test("set_default_armaments configures IMMEDIATELY: the menu path, hands re-reso
   await waitFor(() => myActionNames().includes("test_slash"), 30000);
 }, 60000);
 
-test("over-capacity gear stays equipped but its stats drop out (temporarily disabled)", async () => {
+test("the equip gate refuses gear that overruns a steady capacity", async () => {
   const swordId = idByName(player.db.armaments, "test_sword");
   const greatId = idByName(player.db.armaments, "test_greatsword");
   const swordItemId = armamentItemId(swordId);
@@ -342,6 +342,23 @@ test("over-capacity gear stays equipped but its stats drop out (temporarily disa
   // Bring the two-handed greatsword into the bags.
   await player.reducers.act({ actionId: takeId, targetEntityId: greatItemId });
   await waitFor(() => carriedItemIds().includes(greatItemId), 30000);
+
+  // A two-handed greatsword AND a one-hander cannot both fit a two-hand body:
+  // the whole set is refused (over-equipping may only outrun a STATUS, never
+  // the steady base), so the hands never overfill.
+  await expect(
+    player.reducers.setDefaultArmaments({
+      armamentEntityIds: [greatItemId, swordItemId],
+    }),
+  ).rejects.toThrow(/capacity/i);
+}, 60000);
+
+test("a stance that taxes the grip drops a wielded stat (temporarily disabled)", async () => {
+  const greatId = idByName(player.db.armaments, "test_greatsword");
+  const greatItemId = armamentItemId(greatId);
+  const burdenedId = idByName(player.db.stances, "test_burdened");
+  const standingId = idByName(player.db.stances, "test_standing");
+  // The greatsword is already in the bags from the gate test above.
 
   const myEquipped = (): bigint[] => [
     ...([...player.db.equipment_components.iter()].find(
@@ -358,29 +375,28 @@ test("over-capacity gear stays equipped but its stats drop out (temporarily disa
       (row) => row.entityId === playerEntityId,
     )?.statBlock.bladed ?? -1;
 
-  // Wield the greatsword FIRST, then a one-hander: the two hands are spent on
-  // the greatsword, so the sword stays equipped but unapplied. Both are worn;
-  // exactly the sword is dropped from the stats — the greatsword's bladed
-  // applies, the sword's does not, so the total shows one bladed, not two.
+  // Wield the two-handed greatsword alone: it FITS the stance-free base (two
+  // hands, grip -2), so the gate accepts it and its bladed applies.
   await player.reducers.setDefaultArmaments({
-    armamentEntityIds: [greatItemId, swordItemId],
+    armamentEntityIds: [greatItemId],
   });
-  await waitFor(
-    () => myEquipped().includes(greatItemId) && myEquipped().includes(swordItemId),
-    30000,
-  );
-  await waitFor(() => myDisabled().length === 1, 30000);
-  // Exactly one of the two wielded blades is dropped (which one depends on
-  // the applied order) — never the armor or relic, which have their own slots.
-  expect([greatItemId, swordItemId]).toContain(myDisabled()[0]);
+  await waitFor(() => myEquipped().includes(greatItemId), 30000);
+  await waitFor(() => myDisabled().length === 0, 30000);
   await waitFor(() => myBladed() === 1, 30000);
 
-  // Free a hand — drop the greatsword from the set — and the sword's stats
-  // come back at once; nothing stays disabled.
-  await player.reducers.setDefaultArmaments({ armamentEntityIds: [swordItemId] });
+  // Adopt the hand-taxing posture: base + stance leaves one grip, the
+  // greatsword needs two — it stays WORN but its stats drop out.
+  await player.reducers.setStance({ stanceId: burdenedId });
+  await waitFor(() => myDisabled().length === 1, 30000);
+  expect(myDisabled()[0]).toBe(greatItemId);
+  expect(myEquipped()).toContain(greatItemId);
+  await waitFor(() => myBladed() === 0, 30000);
+
+  // Stand back up: the grip returns and the greatsword's stats reapply at
+  // once; nothing stays disabled.
+  await player.reducers.setStance({ stanceId: standingId });
   await waitFor(() => myDisabled().length === 0, 30000);
-  expect(myEquipped()).toContain(swordItemId);
-  expect(myBladed()).toBe(1);
+  await waitFor(() => myBladed() === 1, 30000);
 }, 60000);
 
 test("the four-relic cap is enforced", async () => {

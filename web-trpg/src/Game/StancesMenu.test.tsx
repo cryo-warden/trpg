@@ -4,13 +4,14 @@ import type { Identity } from "spacetimedb";
 import type { StatBlock } from "../stdb/types";
 import {
   actionIdOf,
+  appearanceFeatureIndexOf,
   armamentIdOf,
   mockTable,
   stanceIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { STANCE_DISPLAY_NAMES, StanceName } from "./assets/stances";
-import { ARMAMENT_DISPLAY_NAMES, ArmamentName } from "./assets/armaments";
+import { AppearanceFeatureName } from "./assets/appearance_features";
 import { StancesMenu } from "./StancesMenu";
 
 const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
@@ -35,6 +36,12 @@ const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
   actionIds: [],
   appearanceFeatureIds: [],
   ...partial,
+});
+
+// Each item ENTITY names itself by its own appearance features.
+const appearanceRow = (entityId: bigint, names: AppearanceFeatureName[]) => ({
+  entityId,
+  appearanceFeatureIndexes: names.map(appearanceFeatureIndexOf),
 });
 
 // The player (entity 1) stands with empty hands (grip 2); standing and
@@ -63,13 +70,17 @@ const tables = () => ({
     { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
     { entityId: 8n, itemRef: { tag: "Armament", value: armamentIdOf("spear") } },
   ]),
+  appearance_features_components: mockTable([
+    appearanceRow(5n, ["sword"]),
+    appearanceRow(8n, ["spear"]),
+  ]),
   stance_customizations_components: mockTable([
     {
       entityId: 1n,
       assignments: [
         {
           stanceId: stanceIdOf("dueling"),
-          armamentIds: [armamentIdOf("sword")],
+          armamentEntityIds: [5n],
           actionIds: [],
         },
       ],
@@ -86,20 +97,17 @@ const cardOf = (container: HTMLElement, stance: StanceName) =>
       .textContent!.startsWith(STANCE_DISPLAY_NAMES[stance]),
   );
 
-const armamentLabel = (name: ArmamentName) => ARMAMENT_DISPLAY_NAMES[name];
+// Armament buttons render the item ENTITY's appearance name.
+const armamentLabel = (name: "sword" | "spear" | "club" | "staff") => name;
 
 test("shows exactly the REACHABLE stances, marking the active one", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  // The card title reads the PROPER display name, never the raw key.
   expect(cardOf(container, "standing")?.querySelector("h3")?.textContent).toBe(
     "Standing (active)",
   );
-  // Dueling is reachable through the duel posture — no "known" state
-  // exists; reachability alone decides.
   expect(cardOf(container, "dueling")).toBeDefined();
-  // No action anywhere in the seeds adopts perched: out of the menu.
   expect(cardOf(container, "perched")).toBeUndefined();
 });
 
@@ -107,7 +115,7 @@ test("a stance with NO override lights 'use default' and shows the default items
   const withDefault = {
     ...tables(),
     default_armaments_components: mockTable([
-      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+      { entityId: 1n, armamentEntityIds: [5n] },
     ]),
   };
   const wrapper = gameWrapper(withDefault, { identity: {} as Identity });
@@ -128,8 +136,8 @@ test("a stance with NO override lights 'use default' and shows the default items
   expect(standing.textContent).toContain("Hand 1 (-1)");
   expect(standing.textContent).toContain("Morale 1 (+1)");
 
-  // Dueling OVERRIDES with its own sword assignment: same numbers, but by
-  // override — its "use default" button is unlit.
+  // Dueling OVERRIDES with its own sword assignment: its "use default"
+  // button is unlit.
   const dueling = cardOf(container, "dueling")!;
   const duelingUseDefault = [...dueling.querySelectorAll("button")].find(
     (button) => button.textContent === "use default",
@@ -142,7 +150,7 @@ test("'use default' toggles: active proposes an EMPTY custom set, an override pr
   const withDefault = {
     ...tables(),
     default_armaments_components: mockTable([
-      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+      { entityId: 1n, armamentEntityIds: [5n] },
     ]),
   };
   const wrapper = gameWrapper(withDefault, {
@@ -151,8 +159,6 @@ test("'use default' toggles: active proposes an EMPTY custom set, an override pr
   });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  // Standing rides the defaults: clicking its lit "use default" moves it
-  // to a custom set with nothing assigned yet.
   const standing = cardOf(container, "standing")!;
   const standingUseDefault = [...standing.querySelectorAll("button")].find(
     (button) => button.textContent === "use default",
@@ -160,11 +166,9 @@ test("'use default' toggles: active proposes an EMPTY custom set, an override pr
   fireEvent.click(standingUseDefault);
   expect(assignStanceArmaments).toHaveBeenCalledWith({
     stanceId: stanceIdOf("standing"),
-    armamentIds: [],
+    armamentEntityIds: [],
   });
 
-  // Dueling holds an override: clicking its unlit "use default" returns
-  // it to the default set.
   const dueling = cardOf(container, "dueling")!;
   const duelingUseDefault = [...dueling.querySelectorAll("button")].find(
     (button) => button.textContent === "use default",
@@ -172,7 +176,7 @@ test("'use default' toggles: active proposes an EMPTY custom set, an override pr
   fireEvent.click(duelingUseDefault);
   expect(assignStanceArmaments).toHaveBeenCalledWith({
     stanceId: stanceIdOf("dueling"),
-    armamentIds: undefined,
+    armamentEntityIds: undefined,
   });
 });
 
@@ -188,8 +192,12 @@ test("clicking an active-by-default item enters custom mode WITHOUT it, keeping 
       { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
       { entityId: 6n, itemRef: { tag: "Armament", value: armamentIdOf("club") } },
     ]),
+    appearance_features_components: mockTable([
+      appearanceRow(5n, ["sword"]),
+      appearanceRow(6n, ["club"]),
+    ]),
     default_armaments_components: mockTable([
-      { entityId: 1n, armamentIds: [armamentIdOf("sword"), armamentIdOf("club")] },
+      { entityId: 1n, armamentEntityIds: [5n, 6n] },
     ]),
   };
   const wrapper = gameWrapper(twoDefaults, {
@@ -198,8 +206,6 @@ test("clicking an active-by-default item enters custom mode WITHOUT it, keeping 
   });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  // Standing rides the defaults; clicking the club (active by default)
-  // copy-on-writes the visible set minus the club into a new override.
   const standing = cardOf(container, "standing")!;
   const club = [...standing.querySelectorAll("button")].find(
     (button) => button.textContent === armamentLabel("club"),
@@ -208,7 +214,7 @@ test("clicking an active-by-default item enters custom mode WITHOUT it, keeping 
   fireEvent.click(club);
   expect(assignStanceArmaments).toHaveBeenCalledWith({
     stanceId: stanceIdOf("standing"),
-    armamentIds: [armamentIdOf("sword")],
+    armamentEntityIds: [5n],
   });
 });
 
@@ -226,14 +232,11 @@ test("a stance with no bar of its own rides the DEFAULT bar; its toggle enters a
   });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  // Standing assigns no bar: the DEFAULT bar rides in, counted and shown.
   const standing = cardOf(container, "standing")!;
   expect(standing.textContent).toContain("Actions (1/10)");
   const chips = [...standing.querySelectorAll(".actionBar .actionChip")];
   expect(chips.map((chip) => chip.textContent)).toEqual(["j Take"]);
 
-  // Two "use default" toggles per card now — armaments first, then the
-  // bar's. Clicking the bar's while on defaults enters a BLANK custom bar.
   const useDefaultButtons = [...standing.querySelectorAll("button")].filter(
     (button) => button.textContent === "use default",
   );
@@ -263,19 +266,18 @@ test("cards show categorized totals with deltas from the no-stance base", () => 
 
   // Dueling with the assigned sword: base attack 0 + stance 1, base hand 2
   // + sword -1, and the sword's own morale ride along — each with its
-  // parenthesized delta against the no-stance value.
+  // parenthesized delta against the geared no-stance base.
   const dueling = cardOf(container, "dueling")!;
   expect(dueling.textContent).toContain("Attack 1 (+1)");
   expect(dueling.textContent).toContain("Hand 1 (-1)");
   expect(dueling.textContent).toContain("Morale 1 (+1)");
   // Proper display names, never the internal underscored key.
   expect(dueling.textContent).toContain("Grants: Lunge");
-  // The category headings structure the list.
   expect(dueling.textContent).toContain("Combat");
   expect(dueling.textContent).toContain("Body");
 
   // Standing assigns nothing: bare-body totals — and a zero delta shows
-  // NO parenthetical at all ("(0)" is noise, nowhere).
+  // NO parenthetical at all.
   const standing = cardOf(container, "standing")!;
   expect(standing.textContent).toContain("Hand 2");
   expect(standing.textContent).toContain("Attack 0");
@@ -292,7 +294,7 @@ test("the bar lists assigned actions in hotkey order; a tap removes", () => {
         assignments: [
           {
             stanceId: stanceIdOf("dueling"),
-            armamentIds: [armamentIdOf("sword")],
+            armamentEntityIds: [5n],
             actionIds: [actionIdOf("duel"), actionIdOf("stand")],
           },
         ],
@@ -311,13 +313,11 @@ test("the bar lists assigned actions in hotkey order; a tap removes", () => {
     "j Duel",
     "k Stand",
   ]);
-  // Assigned actions live in the bar, not the candidates.
   const candidateLabels = [...dueling.querySelectorAll("button")]
     .filter((button) => !button.className.includes("actionChip"))
     .map((button) => button.textContent);
   expect(candidateLabels).not.toContain("Duel");
 
-  // A plain tap removes, preserving the rest of the order.
   fireEvent.click(chips[0]);
   expect(assignStanceActions).toHaveBeenCalledWith({
     stanceId: stanceIdOf("dueling"),
@@ -333,7 +333,6 @@ test("assigning an action pins it into the stance's bar order", () => {
   });
   const { container } = render(<StancesMenu />, { wrapper });
 
-  // Dueling's candidate set includes its own grant, lunge.
   const dueling = cardOf(container, "dueling")!;
   const lunge = [...dueling.querySelectorAll("button")].find((button) =>
     button.textContent!.includes("Lunge"),
@@ -360,12 +359,12 @@ test("assigned armaments highlight and unassign; overweight ones disable", () =>
 
   expect(sword.className).toContain("active");
   // Grip 2, sword already holds 1: the two-handed spear cannot also fit.
-  expect(spear.disabled).toBe(true);
+  expect(spear.hasAttribute("disabled")).toBe(true);
 
   // Clicking the equipped sword UNassigns it from this stance's customization.
   fireEvent.click(sword);
   expect(assignStanceArmaments).toHaveBeenCalledWith({
     stanceId: stanceIdOf("dueling"),
-    armamentIds: [],
+    armamentEntityIds: [],
   });
 });

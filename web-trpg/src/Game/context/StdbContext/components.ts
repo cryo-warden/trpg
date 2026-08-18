@@ -43,6 +43,10 @@ export const componentQueries = [
   "select * from actions_components",
   "select * from active_stance_components",
   "select * from total_stat_block_components",
+  // The per-source stat caches the menus PEEL off the total to recover a
+  // steady base for their hypothetical, configuration-driven numbers.
+  "select * from equipment_stat_block_cache_components",
+  "select * from status_stat_block_cache_components",
   "select * from item_components",
   "select * from checkpoint_object_components",
   "select * from armor_components",
@@ -82,6 +86,15 @@ export const useActionsComponent = createUseComponent("actions_components");
  * straight from here rather than per-stat components. */
 export const useTotalStatBlockComponent = createUseComponent(
   "total_stat_block_components",
+);
+/** The applied EQUIPMENT contribution and the STATUS contribution, peeled off
+ * the total to recover the steady base (baseline + traits + quest) the equip
+ * and stance menus build their hypothetical, config-driven totals on. */
+export const useEquipmentStatBlockCache = createUseComponent(
+  "equipment_stat_block_cache_components",
+);
+export const useStatusStatBlockCache = createUseComponent(
+  "status_stat_block_cache_components",
 );
 export const useEpComponent = createUseComponent("ep_components");
 export const useHpComponent = createUseComponent("hp_components");

@@ -1,6 +1,11 @@
 import { Button } from "../structural/Button";
 import { EntityId } from "./trpg";
-import { summedStats } from "./domain/statSummary";
+import {
+  admitsEquipmentItem,
+  applyEquipmentIfFits,
+  EquipCandidate,
+  subtractStatBlocks,
+} from "./domain/statBlock";
 import {
   OwnedItem,
   useGearStatBlockOf,
@@ -18,6 +23,7 @@ import {
 import { useStanceFreeBase } from "./context/StdbContext/baseStats";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { ActionsBarEditor } from "./ActionsBarEditor";
+import { EntityName } from "./EntityName";
 import { IntStatKey } from "./statGroups";
 import { StatGroupsView } from "./StatGroupsView";
 import { StatBlockSummary } from "./StatBlockSummary";
@@ -31,11 +37,16 @@ const toggle = (ids: readonly EntityId[], id: EntityId): EntityId[] =>
  * The equip menu: the SAME card shape as a single stance card — the
  * categorized detailed stats, the armament buttons, the action bar —
  * plus the armor and relics sections only worn gear has. Every button
- * equips one specific owned item ENTITY, rendered with that entity's
- * name. Its numbers are the DEFAULT configuration (base + worn gear +
- * default armaments, no stance): the base every stance card's deltas
- * compare against, so no deltas render here at all. Everything visible
- * here toggles here; all rules are enforced server-side.
+ * equips one specific owned item ENTITY, rendered with that entity's own
+ * appearance name. Its numbers are the HYPOTHETICAL totals the DEFAULT
+ * configuration WOULD produce (steady base + worn gear + default armaments,
+ * no stance): computed from the configuration, so they update the instant a
+ * selection changes — never waiting for the actual equipment to converge on
+ * a later action. This is also the base every stance card's deltas compare
+ * against, so no deltas render here. What a menu shows it modifies; a gear
+ * choice that would over-run a STEADY capacity is disabled outright (the
+ * server refuses it too), while an equipped item the LIVE status/stance has
+ * dropped is marked temporarily disabled and stays removable.
  */
 export const CustomizationPanel = () => {
   const connection = useStdbConnection();
@@ -45,7 +56,7 @@ export const CustomizationPanel = () => {
   const defaultArmamentEntityIds = useMyDefaultArmamentEntityIds();
   const defaultActionIds = useMyDefaultActionIds();
   const gearStatBlockOf = useGearStatBlockOf();
-  const { baseStats, baseActionIds } = useStanceFreeBase();
+  const { baseStats } = useStanceFreeBase();
   const actionDisplayName = useActionDisplayNameOf();
 
   const ownedArmors = owned.filter((item) => item.kind === "Armor");
@@ -53,8 +64,8 @@ export const CustomizationPanel = () => {
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
 
   // Equipped-but-unapplied items: worn, but their stats aren't in the total
-  // right now because a capacity ran out (a bigger status/stance debuff, an
-  // over-full slot). Marked TEMPORARILY disabled — still removable.
+  // right now because a capacity ran out under the LIVE status/stance. Marked
+  // TEMPORARILY disabled — still removable — separate from the add-guard below.
   const disabled = new Set(useMyDisabledEntityIds());
   const className = (on: boolean, id: EntityId): string =>
     [on ? "active" : "", disabled.has(id) ? "temporarilyDisabled" : ""]
@@ -68,41 +79,53 @@ export const CustomizationPanel = () => {
     const item = ownedByEntityId.get(id);
     return item == null ? null : gearStatBlockOf(item);
   };
+  const candidateOf = (id: EntityId): EquipCandidate | null => {
+    const block = statOfEntityId(id);
+    return block == null ? null : { entityId: id, block };
+  };
+  const candidatesOf = (ids: readonly EntityId[]): EquipCandidate[] =>
+    ids.flatMap((id) => {
+      const candidate = candidateOf(id);
+      return candidate == null ? [] : [candidate];
+    });
 
-  // The DEFAULT configuration's stats: the stance-free base (worn gear
-  // included) plus the default armaments — the values the detailed view
-  // shows, with no deltas: this IS the base stances compare to.
-  const defaultConfigStat = (key: IntStatKey): number =>
-    baseStats[key] +
-    defaultArmamentEntityIds.reduce(
-      (sum, id) => sum + (statOfEntityId(id)?.[key] ?? 0),
-      0,
-    );
-  // The default bar's candidate set: the base grants plus the default
-  // armaments' grants — no stance — plus the COMMON verbs (take, move,
-  // …): offered or derived in play, absent from any granted set, but
-  // pinnable for a stable slot all the same.
+  // The DEFAULT configuration's HYPOTHETICAL totals: the steady base with worn
+  // armor, worn relics, and the default armaments applied (apply-if-fits, so an
+  // over-capacity item drops out just as it would live). This IS the base
+  // stances compare to, so it renders with no deltas.
+  const configCandidates: EquipCandidate[] = [
+    ...(armorEntityId == null ? [] : candidatesOf([armorEntityId])),
+    ...candidatesOf(relicEntityIds),
+    ...candidatesOf(defaultArmamentEntityIds),
+  ];
+  const { total: configTotal } = applyEquipmentIfFits(baseStats, configCandidates);
+  const defaultConfigStat = (key: IntStatKey): number => configTotal[key];
+  // What the applied gear adds up to (dropped gear excluded), for the summary.
+  const equippedContribution = subtractStatBlocks(configTotal, baseStats);
+
+  // The default bar's candidate set: everything the applied configuration
+  // grants plus the COMMON verbs (take, move, …) — offered or derived in play,
+  // absent from any granted set, but pinnable for a stable slot all the same.
   const commonPinnable = useCommonPinnableActionIds();
   const defaultCandidateActionIds = [
-    ...new Set([
-      ...baseActionIds,
-      ...defaultArmamentEntityIds.flatMap((id) => [
-        ...(statOfEntityId(id)?.actionIds ?? []),
-      ]),
-      ...commonPinnable,
-    ]),
+    ...new Set([...configTotal.actionIds, ...commonPinnable]),
   ];
 
-  // What the current gear set adds up to: worn armor + worn relics + the
-  // default wielded set, summed from each item's Equippable-equivalent
-  // asset block.
-  const equippedContribution = summedStats(
-    [
-      armorEntityId == null ? null : statOfEntityId(armorEntityId),
-      ...relicEntityIds.map(statOfEntityId),
-      ...defaultArmamentEntityIds.map(statOfEntityId),
-    ].flatMap((block) => (block == null ? [] : [block])),
-  );
+  // Add-guards: the capacity a further pick of each kind would face. An item
+  // not yet chosen is disabled when applying it would drive a capacity it
+  // consumes negative — the client mirror of the server's equip gate.
+  const armamentRunning = applyEquipmentIfFits(
+    baseStats,
+    candidatesOf(defaultArmamentEntityIds),
+  ).total;
+  const relicRunning = applyEquipmentIfFits(
+    baseStats,
+    candidatesOf(relicEntityIds),
+  ).total;
+  const wouldOverflow = (running: typeof baseStats, id: EntityId): boolean => {
+    const block = statOfEntityId(id);
+    return block != null && !admitsEquipmentItem(running, block);
+  };
 
   const summaryOf = (item: OwnedItem) => {
     const block = gearStatBlockOf(item);
@@ -117,8 +140,8 @@ export const CustomizationPanel = () => {
   return (
     <div className="Customization stanceCard">
       <h3>Customization</h3>
-      {/* The SAME detailed stats view stance cards render — DEFAULT
-          configuration values, no deltas: this is the base the deltas
+      {/* The SAME detailed stats view stance cards render — HYPOTHETICAL
+          DEFAULT configuration totals, no deltas: this is the base the deltas
           compare to. */}
       <StatGroupsView statOf={defaultConfigStat} />
       <section className="totals">
@@ -141,11 +164,12 @@ export const CustomizationPanel = () => {
               key={item.entityId.toString()}
               className={className(on, item.entityId)}
               interesting={on}
+              disabled={!on && wouldOverflow(baseStats, item.entityId)}
               onClick={() =>
                 connection.reducers.setArmor({ itemEntityId: item.entityId })
               }
             >
-              {item.name}
+              <EntityName entityId={item.entityId} />
               {summaryOf(item)}
               {disabledMark(item.entityId)}
             </Button>
@@ -161,14 +185,18 @@ export const CustomizationPanel = () => {
               key={item.entityId.toString()}
               className={className(on, item.entityId)}
               interesting={on}
-              disabled={!on && relicEntityIds.length >= 4}
+              disabled={
+                !on &&
+                (relicEntityIds.length >= 4 ||
+                  wouldOverflow(relicRunning, item.entityId))
+              }
               onClick={() =>
                 connection.reducers.setRelics({
                   relicEntityIds: toggle(relicEntityIds, item.entityId),
                 })
               }
             >
-              {item.name}
+              <EntityName entityId={item.entityId} />
               {summaryOf(item)}
               {disabledMark(item.entityId)}
             </Button>
@@ -184,6 +212,7 @@ export const CustomizationPanel = () => {
               key={item.entityId.toString()}
               className={className(on, item.entityId)}
               interesting={on}
+              disabled={!on && wouldOverflow(armamentRunning, item.entityId)}
               onClick={() =>
                 // CONFIGURATION, applied immediately — the menu's state is
                 // true the moment the row lands. Whether the change also
@@ -196,7 +225,7 @@ export const CustomizationPanel = () => {
                 })
               }
             >
-              {item.name}
+              <EntityName entityId={item.entityId} />
               {summaryOf(item)}
               {disabledMark(item.entityId)}
             </Button>

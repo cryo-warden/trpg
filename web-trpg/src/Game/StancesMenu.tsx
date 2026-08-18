@@ -20,16 +20,23 @@ import { displayNameFrom } from "./assets/display_names";
 import {
   OwnedItem,
   useGearStatBlockOf,
+  useMyArmorEntityId,
   useMyDefaultActionIds,
   useMyDefaultArmamentEntityIds,
   useMyDisabledEntityIds,
+  useMyRelicEntityIds,
   useMyStanceAssignments,
   useOwnedItems,
 } from "./context/StdbContext/customization";
 import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { reachableStanceIds } from "./domain/stanceReachability";
 import { signedStatSummary } from "./domain/statSummary";
-import { ALL_STATS, IntStatKey } from "./statGroups";
+import {
+  addStatBlocks,
+  applyEquipmentIfFits,
+  EquipCandidate,
+} from "./domain/statBlock";
+import { EntityName } from "./EntityName";
 import { StatBlockSummary } from "./StatBlockSummary";
 import { StatGroupsView } from "./StatGroupsView";
 
@@ -43,11 +50,13 @@ const toggle = (ids: readonly EntityId[], id: EntityId): EntityId[] =>
  * player's granted actions and carried items' grants) IS availability,
  * here and in the server's adoption gate. Cards snap-scroll horizontally,
  * each free to scroll vertically on its own. A card leads with the FULL
- * stat totals the player would have in that stance with its assigned
- * customization, then assigns its armaments — each button one owned item
- * ENTITY. Armament assignments to the ACTIVE stance equip and unequip
- * automatically; other stances' assignments — and every ACTION assignment
- * — take effect when a stance change pays its round.
+ * HYPOTHETICAL totals the player WOULD have in that stance with its assigned
+ * customization — computed from the configuration, so they update the instant
+ * a selection changes, never waiting for the actual equipment to converge on a
+ * later action. Then it assigns its armaments — each button one owned item
+ * ENTITY, named by its own appearance. Armament assignments to the ACTIVE
+ * stance equip and unequip automatically; other stances' assignments — and
+ * every ACTION assignment — take effect when a stance change pays its round.
  */
 export const StancesMenu = () => {
   const connection = useStdbConnection();
@@ -59,6 +68,8 @@ export const StancesMenu = () => {
   const assignments = useMyStanceAssignments();
   const owned = useOwnedItems();
   const gearStatBlockOf = useGearStatBlockOf();
+  const armorEntityId = useMyArmorEntityId();
+  const relicEntityIds = useMyRelicEntityIds();
   const defaultArmamentEntityIds = useMyDefaultArmamentEntityIds();
   const defaultActionIds = useMyDefaultActionIds();
   // Equipped-but-unapplied armaments (a capacity ran out under the LIVE
@@ -76,6 +87,11 @@ export const StancesMenu = () => {
     const item = ownedByEntityId.get(id);
     return item == null ? null : gearStatBlockOf(item);
   };
+  const candidatesOf = (ids: readonly EntityId[]): EquipCandidate[] =>
+    ids.flatMap((id) => {
+      const block = statOfEntityId(id);
+      return block == null ? [] : [{ entityId: id, block }];
+    });
 
   const totalStatBlock = total?.statBlock ?? null;
   const reachable = useMemo(() => {
@@ -93,19 +109,18 @@ export const StancesMenu = () => {
   }, [totalStatBlock, owned, gearStatBlockOf, graph, activeStanceId]);
   const shown = stanceRows.filter((row) => reachable.has(row.id));
 
-  // The stance-free, armament-free base of every stat and grant — the
-  // shared derivation the equip menu builds on too, so the two menus can
-  // never show different bases. Each card shows the FULL TOTALS the
-  // player would have in that stance with its assigned customization.
-  const { baseStats, baseActionIds } = useStanceFreeBase();
-  const armamentStatSum = (
-    armamentEntityIds: readonly EntityId[],
-    key: IntStatKey,
-  ): number =>
-    armamentEntityIds.reduce(
-      (sum, id) => sum + (statOfEntityId(id)?.[key] ?? 0),
-      0,
-    );
+  // The stance-free, armament-free base of every stat and grant — steady
+  // (baseline + traits + quest), status-free, and shared with the equip menu
+  // so the two menus can never show different bases. The GEARED base adds the
+  // worn armor and relics (constant across stances): each stance card shows
+  // the full would-be totals it produces with its wielded armaments, and its
+  // DELTAS are measured against this geared base, so worn gear never reads as
+  // a per-stance change.
+  const { baseStats } = useStanceFreeBase();
+  const gearedBase = applyEquipmentIfFits(baseStats, [
+    ...(armorEntityId == null ? [] : candidatesOf([armorEntityId])),
+    ...candidatesOf(relicEntityIds),
+  ]).total;
 
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
 
@@ -159,39 +174,39 @@ export const StancesMenu = () => {
         // The bar mirrors the armament rule: no assignment = the DEFAULT
         // action bar rides in.
         const assignedActions = barAssignment ?? defaultActionIds;
-        const candidate = Object.fromEntries(
-          ALL_STATS.map(([key]) => [
-            key,
-            baseStats[key] +
-              stance.statBlock[key] +
-              armamentStatSum(resolvedArmaments, key),
-          ]),
-        ) as Record<IntStatKey, number>;
+        // The card's HYPOTHETICAL totals: the geared base plus this stance,
+        // with its wielded armaments applied (apply-if-fits, so an armament
+        // this stance leaves no grip for drops out of the numbers just as it
+        // would live). Delta is measured against the geared base.
+        const candidateBase = addStatBlocks(gearedBase, stance.statBlock);
+        const armamentCandidates = candidatesOf(resolvedArmaments);
+        const { total: candidate } = applyEquipmentIfFits(
+          candidateBase,
+          armamentCandidates,
+        );
         const freeHand = candidate.hand;
         const grantedActionNames = [...stance.statBlock.actionIds].map(
           (id) => actionDisplayName(id),
         );
-        // The stance's candidate ACTION set: base grants (the total minus
-        // the active stance's and in-hand armaments' grants) plus this
-        // stance's grants plus its assigned armaments' grants. Assigning
-        // picks the pinned bar this stance carries in, in hotkey order.
+        // The stance's candidate ACTION set: everything the would-be
+        // configuration grants (base + worn gear + this stance + its applied
+        // armaments) plus the always-pinnable common verbs.
         const candidateActionIds = [
-          ...new Set([
-            ...baseActionIds,
-            ...stance.statBlock.actionIds,
-            ...resolvedArmaments.flatMap((id) => [
-              ...(statOfEntityId(id)?.actionIds ?? []),
-            ]),
-            // The common verbs are always pinnable: their slot is the
-            // point.
-            ...commonPinnable,
-          ]),
+          ...new Set([...candidate.actionIds, ...commonPinnable]),
         ];
         // Highlighting always shows the EFFECTIVE set: the override when
         // one exists, the default items otherwise. Clicking an item while
         // on defaults copy-on-writes the visible set into a new override.
         const isOn = (item: OwnedItem) =>
           resolvedArmaments.includes(item.entityId);
+        // Add-guard: an armament not yet wielded is disabled when adding it
+        // would leave the resulting override over this stance's grip — the
+        // client mirror of the server's per-stance equip gate.
+        const fitsAsOverride = (itemId: EntityId): boolean =>
+          applyEquipmentIfFits(
+            candidateBase,
+            candidatesOf([...resolvedArmaments, itemId]),
+          ).unappliedEntityIds.length === 0;
         const stanceName = displayNameFrom(STANCE_DISPLAY_NAMES, stance.name);
         return (
           <section className="stanceCard" key={stance.id}>
@@ -206,7 +221,7 @@ export const StancesMenu = () => {
             )}
             <StatGroupsView
               statOf={(key) => candidate[key]}
-              deltaOf={(key) => candidate[key] - baseStats[key]}
+              deltaOf={(key) => candidate[key] - gearedBase[key]}
             />
             {grantedActionNames.length > 0 && (
               <div>Grants: {grantedActionNames.join(", ")}</div>
@@ -241,6 +256,7 @@ export const StancesMenu = () => {
                     .join(" ")
                     .trim()}
                   interesting={on}
+                  disabled={!on && !fitsAsOverride(item.entityId)}
                   onClick={() =>
                     connection.reducers.assignStanceArmaments({
                       stanceId: stance.id,
@@ -248,7 +264,7 @@ export const StancesMenu = () => {
                     })
                   }
                 >
-                  {item.name}
+                  <EntityName entityId={item.entityId} />
                   {isDisabled && <span className="disabledMark"> (disabled)</span>}
                 </Button>
               );

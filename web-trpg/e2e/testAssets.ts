@@ -3,7 +3,7 @@ import {
   NO_REQUIREMENTS,
   requirements,
 } from "../src/Game/assets/stat_requirements";
-import { statBlock } from "../src/Game/assets/stat_block";
+import { gear, statBlock } from "../src/Game/assets/stat_block";
 
 /**
  * Test-specific asset bundles for E2E scenarios — deliberately tiny and
@@ -452,6 +452,10 @@ export const customizationPack = (): AssetPack => ({
     },
     postureAction("test_stand", "test_standing"),
     postureAction("test_duel", "test_dueling"),
+    // A hand-taxing posture: entering it leaves one less grip, so a
+    // steady-valid wielded set can outrun the grip this stance leaves —
+    // the "changing stance drops a wielded stat" case.
+    postureAction("test_burden", "test_burdened"),
     {
       name: "test_rearm",
       value: {
@@ -493,6 +497,7 @@ export const customizationPack = (): AssetPack => ({
           "test_slash",
           "test_stand",
           "test_duel",
+          "test_burden",
           "test_equip",
           "test_unequip",
         ],
@@ -502,22 +507,22 @@ export const customizationPack = (): AssetPack => ({
   armaments: [
     {
       name: "test_sword",
-      value: statBlock({ bladed: 1, hand: -1 }),
+      value: gear(statBlock({ bladed: 1, hand: -1 }), []),
     },
     {
       name: "test_club",
-      value: statBlock({ blunt: 1, hand: -1, actionNames: ["test_smash"] }),
+      value: gear(statBlock({ blunt: 1, hand: -1, actionNames: ["test_smash"] }), []),
     },
     // Two-handed: consumes BOTH hands, so it and a one-hander cannot both be
     // applied on a two-hand body — the second wielded stays equipped but its
     // stats drop out (the capacity-validation case).
     {
       name: "test_greatsword",
-      value: statBlock({ bladed: 1, hand: -2 }),
+      value: gear(statBlock({ bladed: 1, hand: -2 }), []),
     },
   ],
-  armors: [{ name: "test_jerkin", value: statBlock({ defense: 1, body: -1 }) }],
-  relics: [{ name: "test_charm", value: statBlock({ attack: 1, relic: -1 }) }],
+  armors: [{ name: "test_jerkin", value: gear(statBlock({ defense: 1, body: -1 }), []) }],
+  relics: [{ name: "test_charm", value: gear(statBlock({ attack: 1, relic: -1 }), []) }],
   stances: [
     {
       name: "test_standing",
@@ -528,6 +533,15 @@ export const customizationPack = (): AssetPack => ({
       value: {
         requirements: requirements({ bladed: 1 }),
         statBlock: statBlock({ attack: 1 }),
+      },
+    },
+    // Costs a hand: a two-handed wield that fits the stance-free base no
+    // longer fits once this posture is held, so its stats drop out.
+    {
+      name: "test_burdened",
+      value: {
+        requirements: NO_REQUIREMENTS,
+        statBlock: statBlock({ hand: -1 }),
       },
     },
   ],
@@ -995,7 +1009,7 @@ export const divePack = (): AssetPack => ({
   armaments: [
     {
       name: "test_brave_sword",
-      value: statBlock({ bladed: 1, hand: -1, morale: 3 }),
+      value: gear(statBlock({ bladed: 1, hand: -1, morale: 3 }), []),
     },
   ],
   stances: [

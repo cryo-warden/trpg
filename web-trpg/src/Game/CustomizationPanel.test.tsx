@@ -3,21 +3,62 @@ import { fireEvent, render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
 import {
   actionIdOf,
+  appearanceFeatureIndexOf,
   armamentIdOf,
   armorIdOf,
   mockTable,
   relicIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
-import { ARMAMENT_DISPLAY_NAMES } from "./assets/armaments";
-import { ARMOR_DISPLAY_NAMES } from "./assets/armors";
-import { RELIC_DISPLAY_NAMES } from "./assets/relics";
+import type { StatBlock } from "../stdb/types";
+import { AppearanceFeatureName } from "./assets/appearance_features";
 import { CustomizationPanel } from "./CustomizationPanel";
 
+// A full runtime StatBlock over the wire shape: the published total the menu
+// peels to its steady base carries every field, so tests do too.
+const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
+  attack: 0,
+  defense: 0,
+  hand: 0,
+  body: 0,
+  relic: 0,
+  gait: 0,
+  reach: 0,
+  blunt: 0,
+  bladed: 0,
+  pole: 0,
+  ward: 0,
+  focus: 0,
+  wing: 0,
+  upright: 0,
+  size: 0,
+  morale: 0,
+  mhp: 0,
+  mep: 0,
+  actionIds: [],
+  appearanceFeatureIds: [],
+  ...partial,
+});
+
+// The steady body plan: one armor slot, four relic slots, two hands — the
+// capacities the base carries before any gear is worn.
+const baseCapacities = { hand: 2, body: 1, relic: 4 };
+
+// Item ENTITIES render their OWN appearance name (getName over their
+// appearance features), never the gear asset's vocabulary name.
+const appearanceRow = (entityId: bigint, names: AppearanceFeatureName[]) => ({
+  entityId,
+  appearanceFeatureIndexes: names.map(appearanceFeatureIndexOf),
+});
+
 // The player (entity 1) carries a sword item (entity 5), a jerkin (6), and
-// a charm (7): carrying IS location.
+// a charm (7): carrying IS location. Each item names itself by its own
+// appearance features.
 const tables = () => ({
   player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
+  total_stat_block_components: mockTable([
+    { entityId: 1n, statBlock: runtimeStatBlock(baseCapacities) },
+  ]),
   location_components: mockTable([
     { entityId: 5n, locationEntityId: 1n },
     { entityId: 6n, locationEntityId: 1n },
@@ -28,25 +69,30 @@ const tables = () => ({
     { entityId: 6n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
     { entityId: 7n, itemRef: { tag: "Relic", value: relicIdOf("ember_charm") } },
   ]),
+  appearance_features_components: mockTable([
+    appearanceRow(5n, ["sword"]),
+    appearanceRow(6n, ["leather", "jerkin"]),
+    appearanceRow(7n, ["ember", "charm"]),
+  ]),
   armor_components: mockTable([]),
   relics_components: mockTable([]),
   stance_customizations_components: mockTable([]),
   active_stance_components: mockTable([]),
 });
 
-test("CustomizationPanel lists owned gear by kind with resolved DISPLAY names", () => {
+test("CustomizationPanel lists owned gear by kind with its ENTITY appearance name", () => {
   const wrapper = gameWrapper(tables(), { identity: {} as Identity });
   const { container } = render(<CustomizationPanel />, { wrapper });
 
-  // PROPER display names, never the internal underscored key.
+  // The item's own appearance name, never the internal underscored key.
   expect(container.querySelector(".armor")?.textContent).toContain(
-    ARMOR_DISPLAY_NAMES.leather_jerkin,
+    "leather jerkin",
   );
   expect(container.querySelector(".armor")?.textContent).not.toContain(
     "leather_jerkin",
   );
   expect(container.querySelector(".relics")?.textContent).toContain(
-    RELIC_DISPLAY_NAMES.ember_charm,
+    "ember charm",
   );
   // Armaments moved to the stances menu; this menu is worn gear only.
   expect(container.querySelector(".stanceArmaments")).toBeNull();
@@ -54,8 +100,8 @@ test("CustomizationPanel lists owned gear by kind with resolved DISPLAY names", 
 
 test("of two identical armors, only the FIRST instance draws as worn", () => {
   // Regression: the armor highlight once compared asset ids alone, so
-  // both jerkin ENTITIES lit up when one was worn. The counted-multiset
-  // rule (stable entity order) decides for armor exactly like relics.
+  // both jerkin ENTITIES lit up when one was worn. The worn armor is one
+  // specific ENTITY, so exactly its button lights.
   const twoJerkins = {
     ...tables(),
     location_components: mockTable([
@@ -66,9 +112,11 @@ test("of two identical armors, only the FIRST instance draws as worn", () => {
       { entityId: 6n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
       { entityId: 8n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
     ]),
-    armor_components: mockTable([
-      { entityId: 1n, armorId: armorIdOf("leather_jerkin") },
+    appearance_features_components: mockTable([
+      appearanceRow(6n, ["leather", "jerkin"]),
+      appearanceRow(8n, ["leather", "jerkin"]),
     ]),
+    armor_components: mockTable([{ entityId: 1n, armorEntityId: 6n }]),
   };
   const wrapper = gameWrapper(twoJerkins, { identity: {} as Identity });
   const { container } = render(<CustomizationPanel />, { wrapper });
@@ -82,35 +130,33 @@ test("of two identical armors, only the FIRST instance draws as worn", () => {
 test("the menu shows totals, the equipped contribution, and the default armaments", () => {
   const equipped = {
     ...tables(),
-    armor_components: mockTable([
-      { entityId: 1n, armorId: armorIdOf("leather_jerkin") },
-    ]),
+    armor_components: mockTable([{ entityId: 1n, armorEntityId: 6n }]),
     default_armaments_components: mockTable([
-      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+      { entityId: 1n, armamentEntityIds: [5n] },
     ]),
-    total_stat_block_components: mockTable([]),
   };
   const wrapper = gameWrapper(equipped, { identity: {} as Identity });
   const { container } = render(<CustomizationPanel />, { wrapper });
 
   // The worn jerkin (+1 defense) and default sword (+1 bladed, -1 hand)
-  // fold into one signed contribution line.
+  // fold into one signed contribution line — the applied configuration's
+  // delta over the steady base.
   expect(container.querySelector("section.totals")?.textContent).toContain(
     "+1 defense",
   );
   expect(container.querySelector("section.totals")?.textContent).toContain(
     "+1 bladed",
   );
-  // The default slot lists the sword as held.
+  // The default slot lists the sword as held, named by its appearance.
   const defaults = container.querySelector(".defaultArmaments");
-  expect(defaults?.textContent).toContain(ARMAMENT_DISPLAY_NAMES.sword);
+  expect(defaults?.textContent).toContain("sword");
   expect(defaults?.querySelectorAll("button.active").length).toBe(1);
 });
 
 test("an armament button CONFIGURES the default set: toggled on when off, off when on", () => {
   // Menus configure core state immediately — the toggle proposes the new
-  // default set; whether any in-fiction action queues is the server's
-  // business, invisible here.
+  // default set of item ENTITIES; whether any in-fiction action queues is
+  // the server's business, invisible here.
   const setDefaultArmaments = mock(() => {});
   const withTotals = {
     ...tables(),
@@ -126,20 +172,18 @@ test("an armament button CONFIGURES the default set: toggled on when off, off wh
   });
   const swordOff = [
     ...off.container.querySelectorAll(".defaultArmaments button"),
-  ].find((button) =>
-    button.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.sword),
-  )!;
+  ].find((button) => button.textContent!.startsWith("sword"))!;
   expect(swordOff.hasAttribute("disabled")).toBe(false);
   fireEvent.click(swordOff);
   expect(setDefaultArmaments).toHaveBeenCalledWith({
-    armamentIds: [armamentIdOf("sword")],
+    armamentEntityIds: [5n],
   });
 
   const setOn = mock(() => {});
   const assigned = {
     ...withTotals,
     default_armaments_components: mockTable([
-      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+      { entityId: 1n, armamentEntityIds: [5n] },
     ]),
   };
   const on = render(<CustomizationPanel />, {
@@ -150,20 +194,19 @@ test("an armament button CONFIGURES the default set: toggled on when off, off wh
   });
   const swordOn = [
     ...on.container.querySelectorAll(".defaultArmaments button"),
-  ].find((button) =>
-    button.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.sword),
-  )!;
+  ].find((button) => button.textContent!.startsWith("sword"))!;
   expect(swordOn.className).toContain("active");
   fireEvent.click(swordOn);
-  expect(setOn).toHaveBeenCalledWith({ armamentIds: [] });
+  expect(setOn).toHaveBeenCalledWith({ armamentEntityIds: [] });
 });
 
 test("an armament past the DEFAULT configuration's free hand renders visibly disabled", () => {
-  // The basis is the DEFAULT configuration, not what's in hand: total
-  // hand 0 with the sword's -1 folded in (equipment holds it), defaults
-  // empty → default configuration hand = 0 - (-1) + 0 = 1. The staff
-  // (-2) would drive it negative: visibly disabled. The sword (-1)
-  // stays available.
+  // The basis is the DEFAULT configuration over the steady base: base hand 2,
+  // no default armaments held → adding the two-handed staff (-2) is fine (0),
+  // but wait — the sword is worn as armor? No: the sword is a one-hander in
+  // the bags. With NO defaults held, both fit; so hold the sword as a default
+  // (hand 2 - 1 = 1 free), and the staff (-2) would drive it negative:
+  // visibly disabled. The sword itself stays available (toggle off).
   const setDefaultArmaments = mock(() => {});
   const withStaff = {
     ...tables(),
@@ -175,13 +218,17 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
       { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
       { entityId: 9n, itemRef: { tag: "Armament", value: armamentIdOf("staff") } },
     ]),
-    // Total reflects the sword IN HAND (hand 1 - 1 = 0 base... authored
-    // here directly): total hand 0 with the sword's -1 folded in.
-    total_stat_block_components: mockTable([
-      { entityId: 1n, statBlock: { hand: 0 } },
+    appearance_features_components: mockTable([
+      appearanceRow(5n, ["sword"]),
+      appearanceRow(9n, ["staff"]),
     ]),
-    equipment_components: mockTable([
-      { entityId: 1n, armamentIds: [armamentIdOf("sword")] },
+    // Steady base hand 2 (no equipment/status/stance to peel).
+    total_stat_block_components: mockTable([
+      { entityId: 1n, statBlock: { hand: 2 } },
+    ]),
+    // The sword is held in the default set, spending one grip.
+    default_armaments_components: mockTable([
+      { entityId: 1n, armamentEntityIds: [5n] },
     ]),
   };
   const { container } = render(<CustomizationPanel />, {
@@ -190,15 +237,12 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
       reducers: { setDefaultArmaments },
     }),
   });
-  // Default configuration hand: 0 - (sword -1) + (defaults: none) = 1.
   const buttons = [...container.querySelectorAll(".defaultArmaments button")];
-  const staff = buttons.find((b) =>
-    b.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.staff),
-  )!;
-  const sword = buttons.find((b) =>
-    b.textContent!.startsWith(ARMAMENT_DISPLAY_NAMES.sword),
-  )!;
+  const staff = buttons.find((b) => b.textContent!.startsWith("staff"))!;
+  const sword = buttons.find((b) => b.textContent!.startsWith("sword"))!;
+  // Free hand after the held sword is 1; the two-handed staff can't be added.
   expect(staff.hasAttribute("disabled")).toBe(true);
+  // The held sword stays clickable (to toggle off).
   expect(sword.hasAttribute("disabled")).toBe(false);
   // A disabled button proposes nothing.
   fireEvent.click(staff);
@@ -253,9 +297,6 @@ test("the DEFAULT action bar proposes set_default_actions from its candidates", 
 });
 
 test("a candidate click STACKS onto the default bar, never replaces it", () => {
-  // Regression: default_actions_components was never subscribed, so the
-  // client list read empty and every click proposed a one-element
-  // replacement.
   const setDefaultActions = mock(() => {});
   const withBar = {
     ...tables(),
@@ -285,9 +326,6 @@ test("a candidate click STACKS onto the default bar, never replaces it", () => {
 });
 
 test("owned items render in stable ENTITY order regardless of row order", () => {
-  // Regression: raw table iteration order fed both button order and the
-  // counted first-instance rule, so a click could light a DIFFERENT
-  // instance's button after an update reshuffled rows.
   const reversedRows = {
     ...tables(),
     location_components: mockTable([
@@ -298,6 +336,13 @@ test("owned items render in stable ENTITY order regardless of row order", () => 
       { entityId: 9n, itemRef: { tag: "Armament", value: armamentIdOf("staff") } },
       { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
     ]),
+    appearance_features_components: mockTable([
+      appearanceRow(9n, ["staff"]),
+      appearanceRow(5n, ["sword"]),
+    ]),
+    total_stat_block_components: mockTable([
+      { entityId: 1n, statBlock: { hand: 2 } },
+    ]),
   };
   const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(reversedRows, { identity: {} as Identity }),
@@ -305,33 +350,23 @@ test("owned items render in stable ENTITY order regardless of row order", () => 
   const labels = [
     ...container.querySelectorAll(".defaultArmaments button"),
   ].map((button) => button.textContent!.split(" ")[0]);
-  // Sorted by ENTITY id (5 sword, 9 staff), rendered by DISPLAY name.
-  expect(labels).toEqual([
-    ARMAMENT_DISPLAY_NAMES.sword,
-    ARMAMENT_DISPLAY_NAMES.staff,
-  ]);
+  // Sorted by ENTITY id (5 sword, 9 staff), rendered by appearance name.
+  expect(labels).toEqual(["sword", "staff"]);
 });
 
 test("a fifth relic renders visibly disabled at the four-cap", () => {
   const atCap = {
     ...tables(),
+    // Four relic ENTITIES already worn; the owned charm would be a fifth.
     relics_components: mockTable([
-      {
-        entityId: 1n,
-        relicIds: [
-          relicIdOf("frost_talisman"),
-          relicIdOf("storm_bead"),
-          relicIdOf("bone_idol"),
-          relicIdOf("sun_medallion"),
-        ],
-      },
+      { entityId: 1n, relicEntityIds: [10n, 11n, 12n, 13n] },
     ]),
   };
   const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(atCap, { identity: {} as Identity }),
   });
   const charm = [...container.querySelectorAll(".relics button")].find((button) =>
-    button.textContent!.startsWith(RELIC_DISPLAY_NAMES.ember_charm),
+    button.textContent!.startsWith("ember charm"),
   )!;
   expect(charm.hasAttribute("disabled")).toBe(true);
 });
@@ -356,7 +391,7 @@ test("an equipped-but-unapplied item renders TEMPORARILY disabled, still removab
     }),
   });
   const jerkin = [...container.querySelectorAll(".armor button")].find((button) =>
-    button.textContent!.startsWith(ARMOR_DISPLAY_NAMES.leather_jerkin),
+    button.textContent!.startsWith("leather jerkin"),
   )!;
   expect(jerkin.className).toContain("temporarilyDisabled");
   expect(jerkin.textContent).toContain("(disabled)");
@@ -374,12 +409,11 @@ test("toggling a relic on proposes the extended relic set", () => {
   });
   const { container } = render(<CustomizationPanel />, { wrapper });
 
-  // Buttons carry the stat summary after the name now: match by prefix.
   const charm = [...container.querySelectorAll(".relics button")].find((button) =>
-    button.textContent!.startsWith(RELIC_DISPLAY_NAMES.ember_charm),
+    button.textContent!.startsWith("ember charm"),
   )!;
   fireEvent.click(charm);
   expect(setRelics).toHaveBeenCalledWith({
-    relicIds: [relicIdOf("ember_charm")],
+    relicEntityIds: [7n],
   });
 });
