@@ -122,6 +122,21 @@ pub struct StatBlockAsset {
     pub appearance_feature_names: Vec<String>,
 }
 
+/// The APPEARANCE group as authored. Appearance is the only group that resolves
+/// names, so it is the only one needing a distinct asset type — the numeric
+/// group blocks (StatsBlock / BodyCapacityBlock / ReadinessBlock) carry no name
+/// references and so double as their own asset type, exactly as StatRequirements
+/// already does. push_assets resolves these names to the stored feature ids
+/// (see AppearanceBlock).
+///
+/// Additive: introduced alongside StatBlockAsset ahead of the per-group source
+/// cutover, which is where it is wired into authoring and resolution.
+#[allow(dead_code)]
+#[derive(Debug, Clone, SpacetimeType, Default)]
+pub struct AppearanceBlockAsset {
+    pub feature_names: Vec<String>,
+}
+
 /// A piece of gear as authored: armament, armor, or relic. Its `stat_block` is
 /// the GRANT it confers when equipped (the Equippable); its
 /// `appearance_feature_names` are the ITEM entity's OWN look, stamped onto the
