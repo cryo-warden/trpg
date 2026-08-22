@@ -16,9 +16,9 @@ secador::secador!(
             asset::quest::quests,
             asset::relic::relics,
             asset::stance::{special_stances, SpecialStanceKey},
-            asset::stat_block::StatBlock,
             entity::*,
             entity_handle_extension::EntityHandleExtension,
+            stat_group::StatsBlock,
         };
 
         #[derive(Debug, Clone, SpacetimeType)]
@@ -253,27 +253,29 @@ secador::secador!(
             }
         }
 
-        /// The stat block an item contributes when worn or wielded — or per
+        /// The STATS delta an item contributes when worn or wielded — or per
         /// bit when eaten: the payload stat-affecting events carry so the
-        /// narration can show the numbers that moved.
-        fn item_asset_stat_block(ecs: Ecs, item_entity_id: u64) -> Option<StatBlock> {
+        /// narration can show the numbers that moved. Only the stats group is
+        /// carried here (attack/defense/hp/ep/size — the combat numbers);
+        /// readiness/capacity deltas are a client-narration concern.
+        fn item_asset_stat_block(ecs: Ecs, item_entity_id: u64) -> Option<StatsBlock> {
             let item = ecs.db.item_components().entity_id().find(item_entity_id)?;
             match item.item_ref {
                 crate::item::ItemRef::Armament(id) => {
-                    ecs.db.armaments().id().find(id).map(|a| a.stat_block)
+                    ecs.db.armaments().id().find(id).map(|a| a.stats)
                 }
                 crate::item::ItemRef::Armor(id) => {
-                    ecs.db.armors().id().find(id).map(|a| a.stat_block)
+                    ecs.db.armors().id().find(id).map(|a| a.stats)
                 }
                 crate::item::ItemRef::Relic(id) => {
-                    ecs.db.relics().id().find(id).map(|r| r.stat_block)
+                    ecs.db.relics().id().find(id).map(|r| r.stats)
                 }
                 crate::item::ItemRef::QuestItem(q) => ecs
                     .db
                     .quests()
                     .id()
                     .find(q.quest_id)
-                    .map(|quest| quest.per_bit_stat_block),
+                    .map(|quest| quest.per_bit_stats),
             }
         }
 
@@ -287,9 +289,9 @@ secador::secador!(
             pub owner_entity_id: u64,
             pub event_type: EventType,
             pub target_entity_id: u64,
-            /// The stat DELTA this event applied, when it applied one (eat,
+            /// The stats DELTA this event applied, when it applied one (eat,
             /// equip, unequip): the narration renders its non-zero elements.
-            pub stat_block: Option<StatBlock>,
+            pub stat_block: Option<StatsBlock>,
         }
 
         impl EntityEvent {

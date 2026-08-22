@@ -11,7 +11,7 @@ import {
 } from "spacetimedb";
 import {
   ActionType,
-  StatRequirements,
+  ReadinessRequirements,
 } from "./types";
 
 
@@ -22,6 +22,6 @@ export default __t.row({
     return ActionType.name("action_type");
   },
   get requirements() {
-    return StatRequirements;
+    return ReadinessRequirements;
   },
 });

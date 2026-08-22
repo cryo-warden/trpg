@@ -32,7 +32,11 @@ import {
   ItemComponentBlob,
   EquippableComponentBlob,
   EquipmentDisabledComponentBlob,
-  StatBlockCacheComponentBlob,
+  StatsCacheComponentBlob,
+  AppearanceCacheComponentBlob,
+  ReadinessCacheComponentBlob,
+  BodyCapacityCacheComponentBlob,
+  EquipmentBodyCapacityCacheComponentBlob,
   FlagComponentBlob,
   CheckpointComponentBlob,
   DifferentiableComponentBlob,
@@ -45,7 +49,10 @@ import {
   AttackComponentBlob,
   HpComponentBlob,
   EpComponentBlob,
-  TotalStatBlockComponentBlob,
+  MaximaRaiseComponentBlob,
+  StatsTotalComponentBlob,
+  ReadinessTotalComponentBlob,
+  BodyCapacityTotalComponentBlob,
   FearStatusComponentBlob,
   CourageStatusComponentBlob,
   BracedStatusComponentBlob,
@@ -129,32 +136,71 @@ export default __t.row({
   get equipmentDisabled() {
     return __t.option(EquipmentDisabledComponentBlob).name("equipment_disabled");
   },
-  get equipmentStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob).name("equipment_stat_block_cache");
+  get traitsStatsCache() {
+    return __t.option(StatsCacheComponentBlob).name("traits_stats_cache");
   },
-  get statusStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob).name("status_stat_block_cache");
+  get statusStatsCache() {
+    return __t.option(StatsCacheComponentBlob).name("status_stats_cache");
   },
-  get traitsStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob).name("traits_stat_block_cache");
+  get questStatsCache() {
+    return __t.option(StatsCacheComponentBlob).name("quest_stats_cache");
   },
-  get questStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob).name("quest_stat_block_cache");
+  get equipmentStatsCache() {
+    return __t.option(StatsCacheComponentBlob).name("equipment_stats_cache");
   },
-  get traitsStatBlockDirtyFlag() {
-    return __t.option(FlagComponentBlob).name("traits_stat_block_dirty_flag");
+  get traitsAppearanceCache() {
+    return __t.option(AppearanceCacheComponentBlob).name("traits_appearance_cache");
   },
-  get equipmentStatBlockDirtyFlag() {
-    return __t.option(FlagComponentBlob).name("equipment_stat_block_dirty_flag");
+  get questAppearanceCache() {
+    return __t.option(AppearanceCacheComponentBlob).name("quest_appearance_cache");
   },
-  get statusStatBlockDirtyFlag() {
-    return __t.option(FlagComponentBlob).name("status_stat_block_dirty_flag");
+  get equipmentAppearanceCache() {
+    return __t.option(AppearanceCacheComponentBlob).name("equipment_appearance_cache");
   },
-  get questStatBlockDirtyFlag() {
-    return __t.option(FlagComponentBlob).name("quest_stat_block_dirty_flag");
+  get traitsReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob).name("traits_readiness_cache");
   },
-  get totalStatBlockDirtyFlag() {
-    return __t.option(FlagComponentBlob).name("total_stat_block_dirty_flag");
+  get statusReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob).name("status_readiness_cache");
+  },
+  get questReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob).name("quest_readiness_cache");
+  },
+  get equipmentReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob).name("equipment_readiness_cache");
+  },
+  get traitsBodyCapacityCache() {
+    return __t.option(BodyCapacityCacheComponentBlob).name("traits_body_capacity_cache");
+  },
+  get questBodyCapacityCache() {
+    return __t.option(BodyCapacityCacheComponentBlob).name("quest_body_capacity_cache");
+  },
+  get equipmentBodyCapacityCache() {
+    return __t.option(EquipmentBodyCapacityCacheComponentBlob).name("equipment_body_capacity_cache");
+  },
+  get traitsDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("traits_dirty_flag");
+  },
+  get statusDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("status_dirty_flag");
+  },
+  get questDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("quest_dirty_flag");
+  },
+  get equipmentDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("equipment_dirty_flag");
+  },
+  get statsDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("stats_dirty_flag");
+  },
+  get appearanceDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("appearance_dirty_flag");
+  },
+  get bodyCapacityDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("body_capacity_dirty_flag");
+  },
+  get readinessDirtyFlag() {
+    return __t.option(FlagComponentBlob).name("readiness_dirty_flag");
   },
   get checkpointObject() {
     return __t.option(FlagComponentBlob).name("checkpoint_object");
@@ -210,8 +256,17 @@ export default __t.row({
   get ep() {
     return __t.option(EpComponentBlob);
   },
-  get totalStatBlock() {
-    return __t.option(TotalStatBlockComponentBlob).name("total_stat_block");
+  get maximaRaise() {
+    return __t.option(MaximaRaiseComponentBlob).name("maxima_raise");
+  },
+  get statsTotal() {
+    return __t.option(StatsTotalComponentBlob).name("stats_total");
+  },
+  get readinessTotal() {
+    return __t.option(ReadinessTotalComponentBlob).name("readiness_total");
+  },
+  get bodyCapacityTotal() {
+    return __t.option(BodyCapacityTotalComponentBlob).name("body_capacity_total");
   },
   get fearStatus() {
     return __t.option(FearStatusComponentBlob).name("fear_status");

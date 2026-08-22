@@ -7,7 +7,7 @@ use spacetimedb::SpacetimeType;
 /// sources granting the same feature grant it once, and a removed source is not
 /// modelled by negation (there is no "negative feature") — a recompute rebuilds
 /// the set from the surviving sources.
-#[derive(Debug, Clone, Default, SpacetimeType)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, SpacetimeType)]
 pub struct AppearanceBlock {
     pub feature_ids: Vec<u32>,
 }

@@ -17,12 +17,12 @@ use crate::{
     action::ActionType,
     appearance::AppearanceFeatureType,
     asset::location_map::{ConnectionAnchor, Layout, ZoneKind},
-    asset::stat_block::StatRequirements,
     entity::{
         AllegianceComponentBlob, AttackComponentBlob, EnemyControllerComponentBlob,
         EpComponentBlob, FlagComponentBlob, HpComponentBlob, LocationComponentBlob,
         NameComponentBlob, PathComponentBlob, PlayerControllerComponentBlob,
     },
+    stat_group::{BodyCapacityBlock, ReadinessRequirements, StatsBlock},
 };
 
 /// One round of an action: every effect here resolves in the same system
@@ -66,10 +66,13 @@ pub enum ActionEffectAsset {
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct ActionAsset {
     pub action_type: ActionType,
-    /// Thresholds the entity's TOTAL stat block must meet for this action to
-    /// appear in its derived available actions. (StatRequirements carries no
-    /// asset-name references, so the wire type is the stored type.)
-    pub requirements: StatRequirements,
+    /// Thresholds the entity's READINESS total must meet for this action to
+    /// appear in its derived available actions — the action set is the filter
+    /// of every action whose requirements the readiness clears. (Readiness tags
+    /// are how a source "grants" an action now: a blade grants `bladed`, and a
+    /// slash requires it.) ReadinessRequirements carries no asset-name
+    /// references, so the wire type is the stored type.
+    pub requirements: ReadinessRequirements,
     /// Ordered rounds; push_assets derives the ActionRound rows (and their
     /// ids) from this. An action lives exactly as many ticks as it has
     /// rounds.
@@ -86,76 +89,56 @@ pub struct AppearanceFeatureAsset {
     pub exclusion_group: Option<String>,
 }
 
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct StatBlockAsset {
-    pub attack: i8,
-    pub mhp: i16,
-    pub defense: i8,
-    pub mep: i16,
-    pub hand: i8,
-    /// Equipment CAPACITY: the lone worn-armor slot (body provides 1, worn
-    /// armor consumes 1).
-    pub body: i8,
-    /// Equipment CAPACITY: the four relic slots (body provides 4, each worn
-    /// relic consumes 1).
-    pub relic: i8,
-    pub gait: i8,
-    pub reach: i8,
-    pub blunt: i8,
-    pub bladed: i8,
-    pub pole: i8,
-    pub ward: i8,
-    pub focus: i8,
-    pub wing: i8,
-    /// How upright the posture leaves the body: stances provide it, and
-    /// actions that need footing (dive, lying down) require it.
-    pub upright: i8,
-    /// Granular size: contests, intimidation, and (later) pickup and gear
-    /// gating all compare DELTAS, so nothing is inherently gargantuan — a
-    /// kaiju battle and a fairy battle are the same mechanics.
-    pub size: i8,
-    /// Morale is RIGID: it lives on the stat block like attack, never in a
-    /// fluid component. Fear/courage statuses contribute through the
-    /// status stat-block cache.
-    pub morale: i8,
-    pub action_names: Vec<String>,
-    pub appearance_feature_names: Vec<String>,
+/// A stat SOURCE as authored, grouped per stat group (deliberately NOT flat):
+/// a source contributes to each group independently, and this authored shape
+/// mirrors that split. Every group defaults, so an author names only the
+/// groups a source actually touches (a plain trait sets `stats`; a blade sets
+/// `stats` + `readiness` + the hand cost in `body_capacity`). There is NO
+/// aggregate stored on the runtime side — resolution fans this out into the
+/// four independent group values (see resolve_grouped_block).
+///
+/// Actions are NOT authored here: an action is available wherever its
+/// requirements clear the readiness total, so a source grants an action by
+/// providing the readiness tags that action requires — never by naming it.
+#[derive(Debug, Clone, SpacetimeType, Default)]
+pub struct GroupedBlockAsset {
+    pub stats: StatsBlock,
+    pub appearance: AppearanceBlockAsset,
+    pub body_capacity: BodyCapacityBlock,
+    pub readiness: crate::stat_group::ReadinessBlock,
 }
 
 /// The APPEARANCE group as authored. Appearance is the only group that resolves
 /// names, so it is the only one needing a distinct asset type — the numeric
 /// group blocks (StatsBlock / BodyCapacityBlock / ReadinessBlock) carry no name
-/// references and so double as their own asset type, exactly as StatRequirements
-/// already does. push_assets resolves these names to the stored feature ids
-/// (see AppearanceBlock).
-///
-/// Additive: introduced alongside StatBlockAsset ahead of the per-group source
-/// cutover, which is where it is wired into authoring and resolution.
-#[allow(dead_code)]
+/// references and so double as their own asset type, exactly as
+/// ReadinessRequirements already does. push_assets resolves these names to the
+/// stored feature ids (see AppearanceBlock).
 #[derive(Debug, Clone, SpacetimeType, Default)]
 pub struct AppearanceBlockAsset {
     pub feature_names: Vec<String>,
 }
 
-/// A piece of gear as authored: armament, armor, or relic. Its `stat_block` is
-/// the GRANT it confers when equipped (the Equippable); its
-/// `appearance_feature_names` are the ITEM entity's OWN look, stamped onto the
-/// spawned item and never mixed into the Equippable — the wielder's appearance
-/// is its own, not the sword's it holds.
+/// A piece of gear as authored: armament, armor, or relic. Its `block` is the
+/// GRANT it confers when equipped (the Equippable's per-group contributions —
+/// including the readiness tags that make actions available and the hand/body/
+/// relic cost); its `appearance_feature_names` are the ITEM entity's OWN look,
+/// stamped onto the spawned item and never mixed into the grant — the wielder's
+/// appearance is its own, not the sword's it holds.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct GearAsset {
-    pub stat_block: StatBlockAsset,
+    pub block: GroupedBlockAsset,
     pub appearance_feature_names: Vec<String>,
 }
 
-/// A stance as authored. Its stat block contributes to the entity's total
-/// like a baseline or trait — including granted action_ids, the stance's
-/// techniques (at most 6; enforced at push). Its requirements gate adopting
-/// the stance and are checked WITHOUT the stance's own contributions.
+/// A stance as authored. Its block contributes to the entity's totals like a
+/// baseline or trait — the readiness tags it provides make its techniques
+/// available through the ordinary requirements filter. Its requirements gate
+/// adopting the stance and are checked WITHOUT the stance's own contributions.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct StanceAsset {
-    pub requirements: StatRequirements,
-    pub stat_block: StatBlockAsset,
+    pub requirements: ReadinessRequirements,
+    pub block: GroupedBlockAsset,
 }
 
 /// A quest as authored: the stat contribution EACH progress bit grants
@@ -163,7 +146,7 @@ pub struct StanceAsset {
 /// total bit supply across the whole world — one quest may span many maps.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct QuestAsset {
-    pub per_bit_stat_block: StatBlockAsset,
+    pub per_bit_block: GroupedBlockAsset,
     pub bit_count: u32,
 }
 
@@ -437,7 +420,7 @@ secador::secador!(
     [
         (ActionAsset, NamedActionAsset),
         (AppearanceFeatureAsset, NamedAppearanceFeatureAsset),
-        (StatBlockAsset, NamedStatBlockAsset),
+        (GroupedBlockAsset, NamedGroupedBlockAsset),
         (GearAsset, NamedGearAsset),
         (StanceAsset, NamedStanceAsset),
         (QuestAsset, NamedQuestAsset),

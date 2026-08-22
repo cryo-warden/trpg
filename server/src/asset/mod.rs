@@ -8,10 +8,10 @@ use crate::{
     appearance::{appearance_features, AppearanceFeature},
     asset::{
         types::{
-            EntityBlobAsset, EntityBlobsSamplerAsset, ItemRefAsset, NamedActionAsset,
-            NamedAppearanceFeatureAsset, NamedEncounterAsset, NamedEntityBlobAsset,
-            NamedGearAsset, NamedLocationMapAsset, NamedLocationMapThemeAsset, NamedQuestAsset,
-            NamedStanceAsset, NamedStatBlockAsset, NamedTraitPaletteAsset, StatBlockAsset,
+            AppearanceBlockAsset, EntityBlobAsset, EntityBlobsSamplerAsset, GroupedBlockAsset,
+            ItemRefAsset, NamedActionAsset, NamedAppearanceFeatureAsset, NamedEncounterAsset,
+            NamedEntityBlobAsset, NamedGearAsset, NamedGroupedBlockAsset, NamedLocationMapAsset,
+            NamedLocationMapThemeAsset, NamedQuestAsset, NamedStanceAsset, NamedTraitPaletteAsset,
         },
         quest::{quests, Quest},
         baseline::{baselines, Baseline},
@@ -30,13 +30,12 @@ use crate::{
         trait_palette::{trait_palettes, TraitPalette},
         relic::{relics, Relic},
         stance::{special_stances, stances, SpecialStance, SpecialStanceKey, Stance},
-        stat_block::StatBlock,
     },
     ecs_extension::EcsExtension,
     entity::{
-        baseline_components, equipment_stat_block_dirty_flag_components, named_entities,
-        quest_stat_block_dirty_flag_components, total_stat_block_dirty_flag_components,
-        traits_stat_block_dirty_flag_components,
+        appearance_dirty_flag_components, baseline_components, body_capacity_dirty_flag_components,
+        equipment_dirty_flag_components, named_entities, quest_dirty_flag_components,
+        readiness_dirty_flag_components, stats_dirty_flag_components, traits_dirty_flag_components,
         ActionsComponentBlob, ActiveStanceComponentBlob,
         AppearanceFeaturesComponentBlob, BaselineComponentBlob,
         CheckpointBindingComponentBlob, CheckpointComponentBlob, DifferentiableComponentBlob,
@@ -47,6 +46,7 @@ use crate::{
         RemainsComponentBlob, StartingGearComponentBlob, TraitsComponentBlob,
     },
     item::ItemRef,
+    stat_group::{AppearanceBlock, BodyCapacityBlock, ReadinessBlock, StatsBlock},
 };
 
 pub mod types;
@@ -60,7 +60,6 @@ pub mod location_map;
 pub mod location_map_theme;
 pub mod rng_range;
 pub mod stance;
-pub mod stat_block;
 pub mod r#trait;
 pub mod trait_palette;
 pub mod weighted_sampler;
@@ -84,8 +83,8 @@ struct SpecialEntityBlob {
 pub struct AssetPack {
     actions: Vec<NamedActionAsset>,
     appearance_features: Vec<NamedAppearanceFeatureAsset>,
-    baselines: Vec<NamedStatBlockAsset>,
-    traits: Vec<NamedStatBlockAsset>,
+    baselines: Vec<NamedGroupedBlockAsset>,
+    traits: Vec<NamedGroupedBlockAsset>,
     trait_palettes: Vec<NamedTraitPaletteAsset>,
     armaments: Vec<NamedGearAsset>,
     armors: Vec<NamedGearAsset>,
@@ -179,13 +178,13 @@ struct AssetNameMaps {
     stances: HashMap<String, u32>,
     quests: HashMap<String, u32>,
     location_maps: HashMap<String, u32>,
-    // Resolved gear stat blocks, keyed by asset id — filled once the gear
-    // assets are stored (see the fill below). Lets blob resolution stamp an
-    // item's Equippable and an NPC's summed EquipmentBlobbed without a
-    // second asset lookup.
-    armament_stat_blocks: HashMap<u32, StatBlock>,
-    armor_stat_blocks: HashMap<u32, StatBlock>,
-    relic_stat_blocks: HashMap<u32, StatBlock>,
+    // Resolved gear GRANTS (per-group contributions when equipped), keyed by
+    // asset id — filled once the gear assets are stored (see the fill below).
+    // Lets blob resolution stamp an item's Equippable and an NPC's summed
+    // EquipmentBlobbed without a second asset lookup.
+    armament_grants: HashMap<u32, ResolvedGroups>,
+    armor_grants: HashMap<u32, ResolvedGroups>,
+    relic_grants: HashMap<u32, ResolvedGroups>,
     // Each gear kind's OWN appearance features, keyed by asset id: stamped onto
     // a spawned item entity, kept out of the Equippable grant entirely.
     armament_appearance_ids: HashMap<u32, Vec<u32>>,
@@ -219,17 +218,23 @@ fn resolve_entity_blob(
             })
         })
         .transpose()?;
-    // An equippable item entity carries its gear asset's stat block (the GRANT
-    // it confers when worn). Appearance is NOT part of the grant.
+    // An equippable item entity carries its gear asset's GRANT (the per-group
+    // contributions it confers when worn — including the hand/body/relic cost
+    // and the readiness tags that make actions available). This grant appearance
+    // is the wielder-facing look; the item's OWN look is a separate channel
+    // (gear_appearance_ids below).
     let equippable = item_ref.as_ref().and_then(|r| {
-        let stat_block = match r {
-            ItemRef::Armament(id) => maps.armament_stat_blocks.get(id),
-            ItemRef::Armor(id) => maps.armor_stat_blocks.get(id),
-            ItemRef::Relic(id) => maps.relic_stat_blocks.get(id),
+        let grant = match r {
+            ItemRef::Armament(id) => maps.armament_grants.get(id),
+            ItemRef::Armor(id) => maps.armor_grants.get(id),
+            ItemRef::Relic(id) => maps.relic_grants.get(id),
             ItemRef::QuestItem(_) => None,
         }?;
         Some(EquippableComponentBlob {
-            stat_block: stat_block.clone(),
+            stats: grant.stats.clone(),
+            appearance: grant.appearance.clone(),
+            body_capacity: grant.body_capacity.clone(),
+            readiness: grant.readiness.clone(),
         })
     });
     // The gear item's OWN appearance features — its look, a separate channel
@@ -244,38 +249,47 @@ fn resolve_entity_blob(
         })
         .cloned()
         .unwrap_or_default();
-    // NPC gear kept light: the summed stat block of the authored armaments,
-    // armor, and relics — the same total a player's per-item Equippable sum
-    // produces.
+    // NPC gear kept light: the summed GRANT of the authored armaments, armor,
+    // and relics — the same per-group total a player's per-item Equippable sum
+    // produces. Each group folds independently through its own AddAssign.
     let equipment_blobbed = {
-        let mut stat_block = StatBlock::default();
+        let mut summed = ResolvedGroups::default();
         let mut any = false;
+        let mut fold = |grant: &ResolvedGroups| {
+            summed.stats += &grant.stats;
+            summed.appearance += &grant.appearance;
+            summed.body_capacity += &grant.body_capacity;
+            summed.readiness += &grant.readiness;
+            any = true;
+        };
         if let Some(names) = author.armament_names.as_ref() {
             for n in names {
                 let id = resolve_name(&maps.armaments, "armament", n)?;
-                if let Some(b) = maps.armament_stat_blocks.get(&id) {
-                    stat_block += b;
-                    any = true;
+                if let Some(g) = maps.armament_grants.get(&id) {
+                    fold(g);
                 }
             }
         }
         if let Some(n) = author.armor_name.as_ref() {
             let id = resolve_name(&maps.armors, "armor", n)?;
-            if let Some(b) = maps.armor_stat_blocks.get(&id) {
-                stat_block += b;
-                any = true;
+            if let Some(g) = maps.armor_grants.get(&id) {
+                fold(g);
             }
         }
         if let Some(names) = author.relic_names.as_ref() {
             for n in names {
                 let id = resolve_name(&maps.relics, "relic", n)?;
-                if let Some(b) = maps.relic_stat_blocks.get(&id) {
-                    stat_block += b;
-                    any = true;
+                if let Some(g) = maps.relic_grants.get(&id) {
+                    fold(g);
                 }
             }
         }
-        any.then_some(EquipmentBlobbedComponentBlob { stat_block })
+        any.then_some(EquipmentBlobbedComponentBlob {
+            stats: summed.stats,
+            appearance: summed.appearance,
+            body_capacity: summed.body_capacity,
+            readiness: summed.readiness,
+        })
     };
     Ok(EntityBlob {
         name: author.name,
@@ -399,13 +413,9 @@ fn resolve_entity_blob(
         pending_connections: None,
         respawn_timer: None,
         map_cleanup_timer: None,
-        total_stat_block: None,
         fear_status: None,
         courage_status: None,
         braced_status: None,
-        status_stat_block_dirty_flag: None,
-        quest_stat_block_cache: None,
-        quest_stat_block_dirty_flag: None,
         traits: author
             .trait_names
             .map(|names| {
@@ -482,12 +492,35 @@ fn resolve_entity_blob(
         attack: author.attack,
         player_controller: author.player_controller,
         enemy_controller: author.enemy_controller,
-        equipment_stat_block_cache: None,
-        status_stat_block_cache: None,
-        traits_stat_block_cache: None,
-        traits_stat_block_dirty_flag: None,
-        equipment_stat_block_dirty_flag: None,
-        total_stat_block_dirty_flag: None,
+        // Per-group source caches, group totals, dirty flags, and the transient
+        // maxima raise are all runtime state — derived by the stats systems,
+        // never authored.
+        traits_stats_cache: None,
+        status_stats_cache: None,
+        quest_stats_cache: None,
+        equipment_stats_cache: None,
+        traits_appearance_cache: None,
+        quest_appearance_cache: None,
+        equipment_appearance_cache: None,
+        traits_readiness_cache: None,
+        status_readiness_cache: None,
+        quest_readiness_cache: None,
+        equipment_readiness_cache: None,
+        traits_body_capacity_cache: None,
+        quest_body_capacity_cache: None,
+        equipment_body_capacity_cache: None,
+        stats_total: None,
+        readiness_total: None,
+        body_capacity_total: None,
+        maxima_raise: None,
+        traits_dirty_flag: None,
+        status_dirty_flag: None,
+        quest_dirty_flag: None,
+        equipment_dirty_flag: None,
+        stats_dirty_flag: None,
+        appearance_dirty_flag: None,
+        body_capacity_dirty_flag: None,
+        readiness_dirty_flag: None,
         action_state: None,
         action_queue: None,
         // The enemy AI's rotation cursor is runtime-only.
@@ -582,56 +615,39 @@ fn resolve_appearance_names(
         .collect()
 }
 
-fn resolve_stat_block(author: StatBlockAsset, maps: &AssetNameMaps) -> Result<StatBlock, String> {
-    let StatBlockAsset {
-        attack,
-        mhp,
-        defense,
-        mep,
-        hand,
-        body,
-        relic,
-        gait,
-        reach,
-        blunt,
-        bladed,
-        pole,
-        ward,
-        focus,
-        wing,
-        upright,
-        size,
-        morale,
-        action_names,
-        appearance_feature_names,
-    } = author;
-    Ok(StatBlock {
-        attack,
-        mhp,
-        defense,
-        mep,
-        hand,
-        body,
-        relic,
-        gait,
-        reach,
-        blunt,
-        bladed,
-        pole,
-        ward,
-        focus,
-        wing,
-        upright,
-        size,
-        morale,
-        action_ids: action_names
-            .iter()
-            .map(|n| resolve_name(&maps.actions, "action", n))
-            .collect::<Result<_, _>>()?,
-        appearance_feature_ids: appearance_feature_names
-            .iter()
-            .map(|n| resolve_name(&maps.appearance_features, "appearance feature", n))
-            .collect::<Result<_, _>>()?,
+/// The four independent group values a source contributes, resolved from its
+/// authored form. NOT a runtime aggregate — there is no stored StatBlock — just
+/// the natural carrier for the four values resolution produces together, fanned
+/// out into separate row fields / component fields at every call site.
+#[derive(Debug, Clone, Default)]
+struct ResolvedGroups {
+    stats: StatsBlock,
+    appearance: AppearanceBlock,
+    body_capacity: BodyCapacityBlock,
+    readiness: ReadinessBlock,
+}
+
+fn resolve_appearance_block(
+    author: &AppearanceBlockAsset,
+    maps: &AssetNameMaps,
+) -> Result<AppearanceBlock, String> {
+    Ok(AppearanceBlock {
+        feature_ids: resolve_appearance_names(&author.feature_names, maps)?,
+    })
+}
+
+/// Resolve an authored per-group source block: only the appearance group names
+/// need resolving; the numeric group blocks carry no references and pass
+/// through verbatim.
+fn resolve_grouped_block(
+    author: GroupedBlockAsset,
+    maps: &AssetNameMaps,
+) -> Result<ResolvedGroups, String> {
+    Ok(ResolvedGroups {
+        stats: author.stats,
+        appearance: resolve_appearance_block(&author.appearance, maps)?,
+        body_capacity: author.body_capacity,
+        readiness: author.readiness,
     })
 }
 
@@ -665,9 +681,9 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     // reference any kind, so the action loop below already needs them.
     let mut maps = AssetNameMaps {
         // Filled after the gear assets are stored, below.
-        armament_stat_blocks: HashMap::new(),
-        armor_stat_blocks: HashMap::new(),
-        relic_stat_blocks: HashMap::new(),
+        armament_grants: HashMap::new(),
+        armor_grants: HashMap::new(),
+        relic_grants: HashMap::new(),
         armament_appearance_ids: HashMap::new(),
         armor_appearance_ids: HashMap::new(),
         relic_appearance_ids: HashMap::new(),
@@ -787,10 +803,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     for b in asset_pack.baselines {
         let id = maps.baselines[&b.name];
+        let g = resolve_grouped_block(b.value, &maps)?;
         let row = Baseline {
             id,
             name: b.name,
-            stat_block: resolve_stat_block(b.value, &maps)?,
+            stats: g.stats,
+            appearance: g.appearance,
+            body_capacity: g.body_capacity,
+            readiness: g.readiness,
         };
         if ctx.db.baselines().id().find(id).is_some() {
             ctx.db.baselines().id().update(row);
@@ -801,10 +821,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     for t in asset_pack.traits {
         let id = maps.traits[&t.name];
+        let g = resolve_grouped_block(t.value, &maps)?;
         let row = Trait {
             id,
             name: t.name,
-            stat_block: resolve_stat_block(t.value, &maps)?,
+            stats: g.stats,
+            appearance: g.appearance,
+            body_capacity: g.body_capacity,
+            readiness: g.readiness,
         };
         if ctx.db.traits().id().find(id).is_some() {
             ctx.db.traits().id().update(row);
@@ -835,10 +859,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     for a in asset_pack.armaments {
         let id = maps.armaments[&a.name];
+        let g = resolve_grouped_block(a.value.block, &maps)?;
         let row = Armament {
             id,
             name: a.name,
-            stat_block: resolve_stat_block(a.value.stat_block, &maps)?,
+            stats: g.stats,
+            appearance: g.appearance,
+            body_capacity: g.body_capacity,
+            readiness: g.readiness,
             appearance_feature_ids: resolve_appearance_names(
                 &a.value.appearance_feature_names,
                 &maps,
@@ -853,10 +881,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     for a in asset_pack.armors {
         let id = maps.armors[&a.name];
+        let g = resolve_grouped_block(a.value.block, &maps)?;
         let row = Armor {
             id,
             name: a.name,
-            stat_block: resolve_stat_block(a.value.stat_block, &maps)?,
+            stats: g.stats,
+            appearance: g.appearance,
+            body_capacity: g.body_capacity,
+            readiness: g.readiness,
             appearance_feature_ids: resolve_appearance_names(
                 &a.value.appearance_feature_names,
                 &maps,
@@ -871,10 +903,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     for r in asset_pack.relics {
         let id = maps.relics[&r.name];
+        let g = resolve_grouped_block(r.value.block, &maps)?;
         let row = Relic {
             id,
             name: r.name,
-            stat_block: resolve_stat_block(r.value.stat_block, &maps)?,
+            stats: g.stats,
+            appearance: g.appearance,
+            body_capacity: g.body_capacity,
+            readiness: g.readiness,
             appearance_feature_ids: resolve_appearance_names(
                 &r.value.appearance_feature_names,
                 &maps,
@@ -887,12 +923,57 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    // The gear assets are now stored with their resolved stat blocks; index
+    // The gear assets are now stored with their resolved per-group grants; index
     // them by id so blob resolution can stamp per-item Equippable and summed
     // NPC EquipmentBlobbed contributions.
-    maps.armament_stat_blocks = ctx.db.armaments().iter().map(|a| (a.id, a.stat_block)).collect();
-    maps.armor_stat_blocks = ctx.db.armors().iter().map(|a| (a.id, a.stat_block)).collect();
-    maps.relic_stat_blocks = ctx.db.relics().iter().map(|r| (r.id, r.stat_block)).collect();
+    maps.armament_grants = ctx
+        .db
+        .armaments()
+        .iter()
+        .map(|a| {
+            (
+                a.id,
+                ResolvedGroups {
+                    stats: a.stats,
+                    appearance: a.appearance,
+                    body_capacity: a.body_capacity,
+                    readiness: a.readiness,
+                },
+            )
+        })
+        .collect();
+    maps.armor_grants = ctx
+        .db
+        .armors()
+        .iter()
+        .map(|a| {
+            (
+                a.id,
+                ResolvedGroups {
+                    stats: a.stats,
+                    appearance: a.appearance,
+                    body_capacity: a.body_capacity,
+                    readiness: a.readiness,
+                },
+            )
+        })
+        .collect();
+    maps.relic_grants = ctx
+        .db
+        .relics()
+        .iter()
+        .map(|r| {
+            (
+                r.id,
+                ResolvedGroups {
+                    stats: r.stats,
+                    appearance: r.appearance,
+                    body_capacity: r.body_capacity,
+                    readiness: r.readiness,
+                },
+            )
+        })
+        .collect();
     maps.armament_appearance_ids =
         ctx.db.armaments().iter().map(|a| (a.id, a.appearance_feature_ids)).collect();
     maps.armor_appearance_ids =
@@ -902,10 +983,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     for q in asset_pack.quests {
         let id = maps.quests[&q.name];
+        let g = resolve_grouped_block(q.value.per_bit_block, &maps)?;
         let row = Quest {
             id,
             name: q.name,
-            per_bit_stat_block: resolve_stat_block(q.value.per_bit_stat_block, &maps)?,
+            per_bit_stats: g.stats,
+            per_bit_appearance: g.appearance,
+            per_bit_body_capacity: g.body_capacity,
+            per_bit_readiness: g.readiness,
             bit_count: q.value.bit_count,
         };
         if ctx.db.quests().id().find(id).is_some() {
@@ -917,21 +1002,18 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
 
     for s in asset_pack.stances {
         let id = maps.stances[&s.name];
-        let stat_block = resolve_stat_block(s.value.stat_block, &maps)?;
-        // Six is the design ceiling for simultaneously available battle
-        // actions; a stance authoring more can never fit them.
-        if stat_block.action_ids.len() > 6 {
-            return Err(format!(
-                "Stance \"{}\" grants {} actions; the ceiling is 6.",
-                s.name,
-                stat_block.action_ids.len()
-            ));
-        }
+        // A stance grants no appearance; its stats/readiness/body-capacity
+        // contribute to the corresponding totals. Actions are no longer granted
+        // (they derive from the readiness filter), so there is no per-stance
+        // action ceiling to enforce here.
+        let g = resolve_grouped_block(s.value.block, &maps)?;
         let row = Stance {
             id,
             name: s.name,
             requirements: s.value.requirements,
-            stat_block,
+            stats: g.stats,
+            body_capacity: g.body_capacity,
+            readiness: g.readiness,
         };
         if ctx.db.stances().id().find(id).is_some() {
             ctx.db.stances().id().update(row);
@@ -1364,25 +1446,59 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     // an existing character keeps a derived action set filtered under the
     // OLD requirements until something else happens to dirty it.
     for baseline in ctx.db.baseline_components().iter() {
-        let flag = FlagComponent {
-            entity_id: baseline.entity_id,
+        let entity_id = baseline.entity_id;
+        let flag = FlagComponent { entity_id };
+        // Re-fold the cached sources (traits/quest/equipment) and recompute
+        // every group total. Baseline and stance are read live, so seeding the
+        // group flags re-applies them too; status is runtime-only and re-dirties
+        // itself when a status changes.
+        let seed = |present: bool, insert: &dyn Fn(FlagComponent)| {
+            if !present {
+                insert(flag.clone());
+            }
         };
-        let traits_flags = ctx.db.traits_stat_block_dirty_flag_components();
-        if traits_flags.entity_id().find(baseline.entity_id).is_none() {
-            traits_flags.insert(flag.clone());
-        }
-        let equipment_flags = ctx.db.equipment_stat_block_dirty_flag_components();
-        if equipment_flags.entity_id().find(baseline.entity_id).is_none() {
-            equipment_flags.insert(flag.clone());
-        }
-        let quest_flags = ctx.db.quest_stat_block_dirty_flag_components();
-        if quest_flags.entity_id().find(baseline.entity_id).is_none() {
-            quest_flags.insert(flag.clone());
-        }
-        let total_flags = ctx.db.total_stat_block_dirty_flag_components();
-        if total_flags.entity_id().find(baseline.entity_id).is_none() {
-            total_flags.insert(flag);
-        }
+        seed(
+            ctx.db.traits_dirty_flag_components().entity_id().find(entity_id).is_some(),
+            &|f| {
+                ctx.db.traits_dirty_flag_components().insert(f);
+            },
+        );
+        seed(
+            ctx.db.quest_dirty_flag_components().entity_id().find(entity_id).is_some(),
+            &|f| {
+                ctx.db.quest_dirty_flag_components().insert(f);
+            },
+        );
+        seed(
+            ctx.db.equipment_dirty_flag_components().entity_id().find(entity_id).is_some(),
+            &|f| {
+                ctx.db.equipment_dirty_flag_components().insert(f);
+            },
+        );
+        seed(
+            ctx.db.stats_dirty_flag_components().entity_id().find(entity_id).is_some(),
+            &|f| {
+                ctx.db.stats_dirty_flag_components().insert(f);
+            },
+        );
+        seed(
+            ctx.db.appearance_dirty_flag_components().entity_id().find(entity_id).is_some(),
+            &|f| {
+                ctx.db.appearance_dirty_flag_components().insert(f);
+            },
+        );
+        seed(
+            ctx.db.body_capacity_dirty_flag_components().entity_id().find(entity_id).is_some(),
+            &|f| {
+                ctx.db.body_capacity_dirty_flag_components().insert(f);
+            },
+        );
+        seed(
+            ctx.db.readiness_dirty_flag_components().entity_id().find(entity_id).is_some(),
+            &|f| {
+                ctx.db.readiness_dirty_flag_components().insert(f);
+            },
+        );
     }
 
     Ok(())

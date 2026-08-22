@@ -177,7 +177,7 @@ impl LocationMapTheme {
 /// variation rolls and pack/item variety.
 pub(crate) fn variety_group_of(ecs: Ecs, trait_id: u32) -> Option<String> {
     let t = ecs.db.traits().id().find(trait_id)?;
-    let feature_id = *t.stat_block.appearance_feature_ids.first()?;
+    let feature_id = *t.appearance.feature_ids.first()?;
     ecs.db
         .appearance_features()
         .index()

@@ -17,13 +17,6 @@
 //                       fang, ...); only meaningful on entities that can act, so
 //                       it owns the action-gating requirements check.
 //
-// These are introduced ADDITIVELY alongside the existing StatBlock; the runtime
-// cutover (per-group sources, totals, and dirty flags) and StatBlock's deletion
-// land in a later change. Until that cutover wires them in, the blocks are
-// exercised only by their own unit tests, so their non-test uses — the types
-// themselves and these re-exports — are pending.
-#![allow(dead_code, unused_imports)]
-
 mod appearance_block;
 mod body_capacity_block;
 mod readiness_block;

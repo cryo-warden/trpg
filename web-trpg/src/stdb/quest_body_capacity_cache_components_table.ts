@@ -10,13 +10,13 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  StatBlock,
+  BodyCapacityBlock,
 } from "./types";
 
 
 export default __t.row({
   entityId: __t.u64().primaryKey().name("entity_id"),
-  get statBlock() {
-    return StatBlock.name("stat_block");
+  get bodyCapacity() {
+    return BodyCapacityBlock.name("body_capacity");
   },
 });

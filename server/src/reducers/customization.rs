@@ -3,11 +3,12 @@ use spacetimedb::{reducer, ReducerContext};
 
 use crate::{
     action::{actions, special_actions},
-    asset::{baseline::baselines, stance::stances, stat_block::StatBlock},
+    asset::{baseline::baselines, stance::stances},
     ecs_extension::EcsExtension,
     entity::*,
     entity_handle_extension::EntityHandleExtension,
     item::{ItemRef, StanceCustomization},
+    stat_group::ReadinessBlock,
 };
 use spacetimedb::Table;
 
@@ -110,27 +111,29 @@ pub fn set_relics(ctx: &ReducerContext, relic_entity_ids: Vec<u64>) -> Result<()
     Ok(())
 }
 
-/// The GEARED context: base parts rebuilt explicitly (baseline plus
-/// traits, worn armor/relics, and the given armaments) — never the
-/// current equipment cache, and no stance: the base every stance
-/// compares to. Its action_ids are the DEFAULT bar's candidate set.
-/// Every gear contribution is the item's own Equippable stat block.
-fn geared_stat_block(
+/// The GEARED READINESS: base parts rebuilt explicitly (baseline plus traits,
+/// worn armor/relics, and the given armaments) — never the current equipment
+/// cache, and no stance: the base every stance compares to. Actions are derived
+/// from readiness, so this readiness (through actions_meeting) yields the
+/// DEFAULT bar's candidate set. Every gear contribution is the item's own
+/// Equippable readiness.
+fn geared_readiness(
     ctx: &ReducerContext,
     player_entity_id: u64,
     armament_entity_ids: &[u64],
-) -> StatBlock {
+) -> ReadinessBlock {
     let ecs = ctx.ecs();
     let handle = ecs.find(player_entity_id);
     let mut geared = { handle.baseline() }
         .and_then(|b| ctx.db.baselines().id().find(b.baseline_id))
-        .map_or_else(StatBlock::default, |b| b.stat_block);
-    if let Some(c) = handle.traits_stat_block_cache() {
-        geared += &c.stat_block;
+        .map(|b| b.readiness)
+        .unwrap_or_default();
+    if let Some(c) = handle.traits_readiness_cache() {
+        geared += &c.readiness;
     }
     let mut add_item = |item_entity_id: u64| {
         if let Some(q) = ecs.find(item_entity_id).equippable() {
-            geared += &q.stat_block;
+            geared += &q.readiness;
         }
     };
     if let Some(c) = handle.armor() {
@@ -147,18 +150,30 @@ fn geared_stat_block(
     geared
 }
 
-/// The candidate context a stance customization would produce: the geared base
-/// plus the stance itself. Its action_ids are the stance's full
-/// candidate action set.
-fn candidate_stat_block(
+/// The candidate READINESS a stance customization would produce: the geared
+/// base plus the stance itself. Through actions_meeting this yields the stance's
+/// full candidate action set.
+fn candidate_readiness(
     ctx: &ReducerContext,
     player_entity_id: u64,
     stance: &crate::asset::stance::Stance,
     armament_entity_ids: &[u64],
-) -> StatBlock {
-    let mut candidate = geared_stat_block(ctx, player_entity_id, armament_entity_ids);
-    candidate += &stance.stat_block;
+) -> ReadinessBlock {
+    let mut candidate = geared_readiness(ctx, player_entity_id, armament_entity_ids);
+    candidate += &stance.readiness;
     candidate
+}
+
+/// The action ids whose requirements the given readiness meets: the candidate
+/// set a bar assignment is validated against, mirroring how the derived
+/// ActionsComponent is built.
+fn actions_meeting(ctx: &ReducerContext, readiness: &ReadinessBlock) -> Vec<u32> {
+    ctx.db
+        .actions()
+        .iter()
+        .filter(|a| readiness.meets(&a.requirements))
+        .map(|a| a.id)
+        .collect()
 }
 
 /// Replace one stance's customization entry via `update`, preserving the rest.
@@ -226,7 +241,7 @@ pub fn assign_stance_armaments(
         // deliberate per-stance override must fit that stance outright.
         let ph = ecs.find(p.entity_id());
         if let Some(overflow) = ph.first_overflowing_equipment(
-            ph.steady_capacity_base(Some(&stance.stat_block)),
+            ph.steady_capacity_base(Some(&stance.body_capacity)),
             override_ids,
         ) {
             return Err(over_capacity_error(overflow));
@@ -346,9 +361,10 @@ pub fn assign_stance_actions(
             .and_then(|a| a.armament_entity_ids.clone())
             .or_else(|| handle.default_armaments().map(|d| d.armament_entity_ids))
             .unwrap_or_default();
-        let mut candidates =
-            candidate_stat_block(ctx, p.entity_id(), &stance, &stance_armament_entity_ids)
-                .action_ids;
+        let mut candidates = actions_meeting(
+            ctx,
+            &candidate_readiness(ctx, p.entity_id(), &stance, &stance_armament_entity_ids),
+        );
         // The common verbs are always pinnable: their slot is the point.
         candidates.extend(common_pinnable_action_ids(ctx));
         for id in bar_ids {
@@ -411,8 +427,10 @@ pub fn set_default_actions(ctx: &ReducerContext, action_ids: Vec<u32>) -> Result
     let default_armament_entity_ids = { handle.default_armaments() }
         .map(|d| d.armament_entity_ids)
         .unwrap_or_default();
-    let mut candidates =
-        geared_stat_block(ctx, player_entity_id, &default_armament_entity_ids).action_ids;
+    let mut candidates = actions_meeting(
+        ctx,
+        &geared_readiness(ctx, player_entity_id, &default_armament_entity_ids),
+    );
     // The common verbs are always pinnable: their slot is the point.
     candidates.extend(common_pinnable_action_ids(ctx));
     for id in &action_ids {

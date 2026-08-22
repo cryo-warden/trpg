@@ -1,6 +1,6 @@
 use spacetimedb::table;
 
-use crate::asset::stat_block::StatBlock;
+use crate::stat_group::{AppearanceBlock, BodyCapacityBlock, ReadinessBlock, StatsBlock};
 
 #[table(accessor = baselines)]
 #[derive(Debug, Clone)]
@@ -9,6 +9,8 @@ pub struct Baseline {
     pub id: u32,
     #[unique]
     pub name: String,
-    pub stat_block: StatBlock,
+    pub stats: StatsBlock,
+    pub appearance: AppearanceBlock,
+    pub body_capacity: BodyCapacityBlock,
+    pub readiness: ReadinessBlock,
 }
-

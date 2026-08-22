@@ -47,7 +47,7 @@ export const Action = __t.object("Action", {
     return ActionType;
   },
   get requirements() {
-    return StatRequirements;
+    return ReadinessRequirements;
   },
 });
 export type Action = __Infer<typeof Action>;
@@ -57,7 +57,7 @@ export const ActionAsset = __t.object("ActionAsset", {
     return ActionType;
   },
   get requirements() {
-    return StatRequirements;
+    return ReadinessRequirements;
   },
   get rounds() {
     return __t.array(ActionRoundAsset);
@@ -226,6 +226,31 @@ export const AllegianceComponentBlob = __t.object("AllegianceComponentBlob", {
 });
 export type AllegianceComponentBlob = __Infer<typeof AllegianceComponentBlob>;
 
+export const AppearanceBlock = __t.object("AppearanceBlock", {
+  featureIds: __t.array(__t.u32()),
+});
+export type AppearanceBlock = __Infer<typeof AppearanceBlock>;
+
+export const AppearanceBlockAsset = __t.object("AppearanceBlockAsset", {
+  featureNames: __t.array(__t.string()),
+});
+export type AppearanceBlockAsset = __Infer<typeof AppearanceBlockAsset>;
+
+export const AppearanceCacheComponent = __t.object("AppearanceCacheComponent", {
+  entityId: __t.u64(),
+  get appearance() {
+    return AppearanceBlock;
+  },
+});
+export type AppearanceCacheComponent = __Infer<typeof AppearanceCacheComponent>;
+
+export const AppearanceCacheComponentBlob = __t.object("AppearanceCacheComponentBlob", {
+  get appearance() {
+    return AppearanceBlock;
+  },
+});
+export type AppearanceCacheComponentBlob = __Infer<typeof AppearanceCacheComponentBlob>;
+
 export const AppearanceFeature = __t.object("AppearanceFeature", {
   index: __t.u32(),
   name: __t.string(),
@@ -269,8 +294,17 @@ export type AppearanceFeaturesComponentBlob = __Infer<typeof AppearanceFeaturesC
 export const Armament = __t.object("Armament", {
   id: __t.u32(),
   name: __t.string(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
   appearanceFeatureIds: __t.array(__t.u32()),
 });
@@ -279,8 +313,17 @@ export type Armament = __Infer<typeof Armament>;
 export const Armor = __t.object("Armor", {
   id: __t.u32(),
   name: __t.string(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
   appearanceFeatureIds: __t.array(__t.u32()),
 });
@@ -307,10 +350,10 @@ export const AssetPack = __t.object("AssetPack", {
     return __t.array(NamedAppearanceFeatureAsset);
   },
   get baselines() {
-    return __t.array(NamedStatBlockAsset);
+    return __t.array(NamedGroupedBlockAsset);
   },
   get traits() {
-    return __t.array(NamedStatBlockAsset);
+    return __t.array(NamedGroupedBlockAsset);
   },
   get traitPalettes() {
     return __t.array(NamedTraitPaletteAsset);
@@ -379,8 +422,17 @@ export type AttackComponentBlob = __Infer<typeof AttackComponentBlob>;
 export const Baseline = __t.object("Baseline", {
   id: __t.u32(),
   name: __t.string(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });
 export type Baseline = __Infer<typeof Baseline>;
@@ -400,6 +452,43 @@ export const Bitset = __t.object("Bitset", {
   bytes: __t.byteArray(),
 });
 export type Bitset = __Infer<typeof Bitset>;
+
+export const BodyCapacityBlock = __t.object("BodyCapacityBlock", {
+  hand: __t.i8(),
+  body: __t.i8(),
+  relic: __t.i8(),
+});
+export type BodyCapacityBlock = __Infer<typeof BodyCapacityBlock>;
+
+export const BodyCapacityCacheComponent = __t.object("BodyCapacityCacheComponent", {
+  entityId: __t.u64(),
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+});
+export type BodyCapacityCacheComponent = __Infer<typeof BodyCapacityCacheComponent>;
+
+export const BodyCapacityCacheComponentBlob = __t.object("BodyCapacityCacheComponentBlob", {
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+});
+export type BodyCapacityCacheComponentBlob = __Infer<typeof BodyCapacityCacheComponentBlob>;
+
+export const BodyCapacityTotalComponent = __t.object("BodyCapacityTotalComponent", {
+  entityId: __t.u64(),
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+});
+export type BodyCapacityTotalComponent = __Infer<typeof BodyCapacityTotalComponent>;
+
+export const BodyCapacityTotalComponentBlob = __t.object("BodyCapacityTotalComponentBlob", {
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+});
+export type BodyCapacityTotalComponentBlob = __Infer<typeof BodyCapacityTotalComponentBlob>;
 
 export const BracedStatusComponent = __t.object("BracedStatusComponent", {
   entityId: __t.u64(),
@@ -649,31 +738,70 @@ export const EntityBlob = __t.object("EntityBlob", {
   get equipmentDisabled() {
     return __t.option(EquipmentDisabledComponentBlob);
   },
-  get equipmentStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob);
+  get traitsStatsCache() {
+    return __t.option(StatsCacheComponentBlob);
   },
-  get statusStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob);
+  get statusStatsCache() {
+    return __t.option(StatsCacheComponentBlob);
   },
-  get traitsStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob);
+  get questStatsCache() {
+    return __t.option(StatsCacheComponentBlob);
   },
-  get questStatBlockCache() {
-    return __t.option(StatBlockCacheComponentBlob);
+  get equipmentStatsCache() {
+    return __t.option(StatsCacheComponentBlob);
   },
-  get traitsStatBlockDirtyFlag() {
+  get traitsAppearanceCache() {
+    return __t.option(AppearanceCacheComponentBlob);
+  },
+  get questAppearanceCache() {
+    return __t.option(AppearanceCacheComponentBlob);
+  },
+  get equipmentAppearanceCache() {
+    return __t.option(AppearanceCacheComponentBlob);
+  },
+  get traitsReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob);
+  },
+  get statusReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob);
+  },
+  get questReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob);
+  },
+  get equipmentReadinessCache() {
+    return __t.option(ReadinessCacheComponentBlob);
+  },
+  get traitsBodyCapacityCache() {
+    return __t.option(BodyCapacityCacheComponentBlob);
+  },
+  get questBodyCapacityCache() {
+    return __t.option(BodyCapacityCacheComponentBlob);
+  },
+  get equipmentBodyCapacityCache() {
+    return __t.option(EquipmentBodyCapacityCacheComponentBlob);
+  },
+  get traitsDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
-  get equipmentStatBlockDirtyFlag() {
+  get statusDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
-  get statusStatBlockDirtyFlag() {
+  get questDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
-  get questStatBlockDirtyFlag() {
+  get equipmentDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
-  get totalStatBlockDirtyFlag() {
+  get statsDirtyFlag() {
+    return __t.option(FlagComponentBlob);
+  },
+  get appearanceDirtyFlag() {
+    return __t.option(FlagComponentBlob);
+  },
+  get bodyCapacityDirtyFlag() {
+    return __t.option(FlagComponentBlob);
+  },
+  get readinessDirtyFlag() {
     return __t.option(FlagComponentBlob);
   },
   get checkpointObject() {
@@ -730,8 +858,17 @@ export const EntityBlob = __t.object("EntityBlob", {
   get ep() {
     return __t.option(EpComponentBlob);
   },
-  get totalStatBlock() {
-    return __t.option(TotalStatBlockComponentBlob);
+  get maximaRaise() {
+    return __t.option(MaximaRaiseComponentBlob);
+  },
+  get statsTotal() {
+    return __t.option(StatsTotalComponentBlob);
+  },
+  get readinessTotal() {
+    return __t.option(ReadinessTotalComponentBlob);
+  },
+  get bodyCapacityTotal() {
+    return __t.option(BodyCapacityTotalComponentBlob);
   },
   get fearStatus() {
     return __t.option(FearStatusComponentBlob);
@@ -889,7 +1026,7 @@ export const EntityEvent = __t.object("EntityEvent", {
   },
   targetEntityId: __t.u64(),
   get statBlock() {
-    return __t.option(StatBlock);
+    return __t.option(StatsBlock);
   },
 });
 export type EntityEvent = __Infer<typeof EntityEvent>;
@@ -917,18 +1054,51 @@ export type EpComponentBlob = __Infer<typeof EpComponentBlob>;
 
 export const EquipmentBlobbedComponent = __t.object("EquipmentBlobbedComponent", {
   entityId: __t.u64(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });
 export type EquipmentBlobbedComponent = __Infer<typeof EquipmentBlobbedComponent>;
 
 export const EquipmentBlobbedComponentBlob = __t.object("EquipmentBlobbedComponentBlob", {
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });
 export type EquipmentBlobbedComponentBlob = __Infer<typeof EquipmentBlobbedComponentBlob>;
+
+export const EquipmentBodyCapacityCacheComponent = __t.object("EquipmentBodyCapacityCacheComponent", {
+  entityId: __t.u64(),
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+});
+export type EquipmentBodyCapacityCacheComponent = __Infer<typeof EquipmentBodyCapacityCacheComponent>;
+
+export const EquipmentBodyCapacityCacheComponentBlob = __t.object("EquipmentBodyCapacityCacheComponentBlob", {
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+});
+export type EquipmentBodyCapacityCacheComponentBlob = __Infer<typeof EquipmentBodyCapacityCacheComponentBlob>;
 
 export const EquipmentComponent = __t.object("EquipmentComponent", {
   entityId: __t.u64(),
@@ -954,15 +1124,33 @@ export type EquipmentDisabledComponentBlob = __Infer<typeof EquipmentDisabledCom
 
 export const EquippableComponent = __t.object("EquippableComponent", {
   entityId: __t.u64(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });
 export type EquippableComponent = __Infer<typeof EquippableComponent>;
 
 export const EquippableComponentBlob = __t.object("EquippableComponentBlob", {
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });
 export type EquippableComponentBlob = __Infer<typeof EquippableComponentBlob>;
@@ -1005,12 +1193,28 @@ export const FlagComponentBlob = __t.object("FlagComponentBlob", {});
 export type FlagComponentBlob = __Infer<typeof FlagComponentBlob>;
 
 export const GearAsset = __t.object("GearAsset", {
-  get statBlock() {
-    return StatBlockAsset;
+  get block() {
+    return GroupedBlockAsset;
   },
   appearanceFeatureNames: __t.array(__t.string()),
 });
 export type GearAsset = __Infer<typeof GearAsset>;
+
+export const GroupedBlockAsset = __t.object("GroupedBlockAsset", {
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlockAsset;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
+  },
+});
+export type GroupedBlockAsset = __Infer<typeof GroupedBlockAsset>;
 
 export const HpComponent = __t.object("HpComponent", {
   entityId: __t.u64(),
@@ -1387,6 +1591,19 @@ export const MapRoomsComponentBlob = __t.object("MapRoomsComponentBlob", {
 });
 export type MapRoomsComponentBlob = __Infer<typeof MapRoomsComponentBlob>;
 
+export const MaximaRaiseComponent = __t.object("MaximaRaiseComponent", {
+  entityId: __t.u64(),
+  mhp: __t.i16(),
+  mep: __t.i16(),
+});
+export type MaximaRaiseComponent = __Infer<typeof MaximaRaiseComponent>;
+
+export const MaximaRaiseComponentBlob = __t.object("MaximaRaiseComponentBlob", {
+  mhp: __t.i16(),
+  mep: __t.i16(),
+});
+export type MaximaRaiseComponentBlob = __Infer<typeof MaximaRaiseComponentBlob>;
+
 export const NameComponent = __t.object("NameComponent", {
   entityId: __t.u64(),
   name: __t.string(),
@@ -1444,6 +1661,14 @@ export const NamedGearAsset = __t.object("NamedGearAsset", {
 });
 export type NamedGearAsset = __Infer<typeof NamedGearAsset>;
 
+export const NamedGroupedBlockAsset = __t.object("NamedGroupedBlockAsset", {
+  name: __t.string(),
+  get value() {
+    return GroupedBlockAsset;
+  },
+});
+export type NamedGroupedBlockAsset = __Infer<typeof NamedGroupedBlockAsset>;
+
 export const NamedLocationMapAsset = __t.object("NamedLocationMapAsset", {
   name: __t.string(),
   get value() {
@@ -1475,14 +1700,6 @@ export const NamedStanceAsset = __t.object("NamedStanceAsset", {
   },
 });
 export type NamedStanceAsset = __Infer<typeof NamedStanceAsset>;
-
-export const NamedStatBlockAsset = __t.object("NamedStatBlockAsset", {
-  name: __t.string(),
-  get value() {
-    return StatBlockAsset;
-  },
-});
-export type NamedStatBlockAsset = __Infer<typeof NamedStatBlockAsset>;
 
 export const NamedTraitPaletteAsset = __t.object("NamedTraitPaletteAsset", {
   name: __t.string(),
@@ -1623,16 +1840,25 @@ export type PlayerControllerComponentBlob = __Infer<typeof PlayerControllerCompo
 export const Quest = __t.object("Quest", {
   id: __t.u32(),
   name: __t.string(),
-  get perBitStatBlock() {
-    return StatBlock;
+  get perBitStats() {
+    return StatsBlock;
+  },
+  get perBitAppearance() {
+    return AppearanceBlock;
+  },
+  get perBitBodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get perBitReadiness() {
+    return ReadinessBlock;
   },
   bitCount: __t.u32(),
 });
 export type Quest = __Infer<typeof Quest>;
 
 export const QuestAsset = __t.object("QuestAsset", {
-  get perBitStatBlock() {
-    return StatBlockAsset;
+  get perBitBlock() {
+    return GroupedBlockAsset;
   },
   bitCount: __t.u32(),
 });
@@ -1745,11 +1971,84 @@ export const QueuedAction = __t.object("QueuedAction", {
 });
 export type QueuedAction = __Infer<typeof QueuedAction>;
 
+export const ReadinessBlock = __t.object("ReadinessBlock", {
+  morale: __t.i8(),
+  bladed: __t.i8(),
+  blunt: __t.i8(),
+  pole: __t.i8(),
+  ward: __t.i8(),
+  focus: __t.i8(),
+  gait: __t.i8(),
+  reach: __t.i8(),
+  wing: __t.i8(),
+  upright: __t.i8(),
+  fang: __t.i8(),
+  claw: __t.i8(),
+  ooze: __t.i8(),
+});
+export type ReadinessBlock = __Infer<typeof ReadinessBlock>;
+
+export const ReadinessCacheComponent = __t.object("ReadinessCacheComponent", {
+  entityId: __t.u64(),
+  get readiness() {
+    return ReadinessBlock;
+  },
+});
+export type ReadinessCacheComponent = __Infer<typeof ReadinessCacheComponent>;
+
+export const ReadinessCacheComponentBlob = __t.object("ReadinessCacheComponentBlob", {
+  get readiness() {
+    return ReadinessBlock;
+  },
+});
+export type ReadinessCacheComponentBlob = __Infer<typeof ReadinessCacheComponentBlob>;
+
+export const ReadinessRequirements = __t.object("ReadinessRequirements", {
+  morale: __t.option(__t.i8()),
+  bladed: __t.option(__t.i8()),
+  blunt: __t.option(__t.i8()),
+  pole: __t.option(__t.i8()),
+  ward: __t.option(__t.i8()),
+  focus: __t.option(__t.i8()),
+  gait: __t.option(__t.i8()),
+  reach: __t.option(__t.i8()),
+  wing: __t.option(__t.i8()),
+  upright: __t.option(__t.i8()),
+  fang: __t.option(__t.i8()),
+  claw: __t.option(__t.i8()),
+  ooze: __t.option(__t.i8()),
+});
+export type ReadinessRequirements = __Infer<typeof ReadinessRequirements>;
+
+export const ReadinessTotalComponent = __t.object("ReadinessTotalComponent", {
+  entityId: __t.u64(),
+  get readiness() {
+    return ReadinessBlock;
+  },
+});
+export type ReadinessTotalComponent = __Infer<typeof ReadinessTotalComponent>;
+
+export const ReadinessTotalComponentBlob = __t.object("ReadinessTotalComponentBlob", {
+  get readiness() {
+    return ReadinessBlock;
+  },
+});
+export type ReadinessTotalComponentBlob = __Infer<typeof ReadinessTotalComponentBlob>;
+
 export const Relic = __t.object("Relic", {
   id: __t.u32(),
   name: __t.string(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
   appearanceFeatureIds: __t.array(__t.u32()),
 });
@@ -1845,20 +2144,26 @@ export const Stance = __t.object("Stance", {
   id: __t.u32(),
   name: __t.string(),
   get requirements() {
-    return StatRequirements;
+    return ReadinessRequirements;
   },
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });
 export type Stance = __Infer<typeof Stance>;
 
 export const StanceAsset = __t.object("StanceAsset", {
   get requirements() {
-    return StatRequirements;
+    return ReadinessRequirements;
   },
-  get statBlock() {
-    return StatBlockAsset;
+  get block() {
+    return GroupedBlockAsset;
   },
 });
 export type StanceAsset = __Infer<typeof StanceAsset>;
@@ -1900,90 +2205,44 @@ export const StartingGearComponentBlob = __t.object("StartingGearComponentBlob",
 });
 export type StartingGearComponentBlob = __Infer<typeof StartingGearComponentBlob>;
 
-export const StatBlock = __t.object("StatBlock", {
-  attack: __t.i8(),
-  defense: __t.i8(),
-  hand: __t.i8(),
-  body: __t.i8(),
-  relic: __t.i8(),
-  gait: __t.i8(),
-  reach: __t.i8(),
-  blunt: __t.i8(),
-  bladed: __t.i8(),
-  pole: __t.i8(),
-  ward: __t.i8(),
-  focus: __t.i8(),
-  wing: __t.i8(),
-  upright: __t.i8(),
-  size: __t.i8(),
-  morale: __t.i8(),
+export const StatsBlock = __t.object("StatsBlock", {
   mhp: __t.i16(),
   mep: __t.i16(),
-  actionIds: __t.array(__t.u32()),
-  appearanceFeatureIds: __t.array(__t.u32()),
-});
-export type StatBlock = __Infer<typeof StatBlock>;
-
-export const StatBlockAsset = __t.object("StatBlockAsset", {
   attack: __t.i8(),
-  mhp: __t.i16(),
   defense: __t.i8(),
-  mep: __t.i16(),
-  hand: __t.i8(),
-  body: __t.i8(),
-  relic: __t.i8(),
-  gait: __t.i8(),
-  reach: __t.i8(),
-  blunt: __t.i8(),
-  bladed: __t.i8(),
-  pole: __t.i8(),
-  ward: __t.i8(),
-  focus: __t.i8(),
-  wing: __t.i8(),
-  upright: __t.i8(),
   size: __t.i8(),
-  morale: __t.i8(),
-  actionNames: __t.array(__t.string()),
-  appearanceFeatureNames: __t.array(__t.string()),
 });
-export type StatBlockAsset = __Infer<typeof StatBlockAsset>;
+export type StatsBlock = __Infer<typeof StatsBlock>;
 
-export const StatBlockCacheComponent = __t.object("StatBlockCacheComponent", {
+export const StatsCacheComponent = __t.object("StatsCacheComponent", {
   entityId: __t.u64(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
   },
 });
-export type StatBlockCacheComponent = __Infer<typeof StatBlockCacheComponent>;
+export type StatsCacheComponent = __Infer<typeof StatsCacheComponent>;
 
-export const StatBlockCacheComponentBlob = __t.object("StatBlockCacheComponentBlob", {
-  get statBlock() {
-    return StatBlock;
+export const StatsCacheComponentBlob = __t.object("StatsCacheComponentBlob", {
+  get stats() {
+    return StatsBlock;
   },
 });
-export type StatBlockCacheComponentBlob = __Infer<typeof StatBlockCacheComponentBlob>;
+export type StatsCacheComponentBlob = __Infer<typeof StatsCacheComponentBlob>;
 
-export const StatRequirements = __t.object("StatRequirements", {
-  attack: __t.option(__t.i8()),
-  defense: __t.option(__t.i8()),
-  hand: __t.option(__t.i8()),
-  body: __t.option(__t.i8()),
-  relic: __t.option(__t.i8()),
-  gait: __t.option(__t.i8()),
-  reach: __t.option(__t.i8()),
-  blunt: __t.option(__t.i8()),
-  bladed: __t.option(__t.i8()),
-  pole: __t.option(__t.i8()),
-  ward: __t.option(__t.i8()),
-  focus: __t.option(__t.i8()),
-  wing: __t.option(__t.i8()),
-  upright: __t.option(__t.i8()),
-  size: __t.option(__t.i8()),
-  morale: __t.option(__t.i8()),
-  mhp: __t.option(__t.i16()),
-  mep: __t.option(__t.i16()),
+export const StatsTotalComponent = __t.object("StatsTotalComponent", {
+  entityId: __t.u64(),
+  get stats() {
+    return StatsBlock;
+  },
 });
-export type StatRequirements = __Infer<typeof StatRequirements>;
+export type StatsTotalComponent = __Infer<typeof StatsTotalComponent>;
+
+export const StatsTotalComponentBlob = __t.object("StatsTotalComponentBlob", {
+  get stats() {
+    return StatsBlock;
+  },
+});
+export type StatsTotalComponentBlob = __Infer<typeof StatsTotalComponentBlob>;
 
 export const SystemTimer = __t.object("SystemTimer", {
   scheduledId: __t.u64(),
@@ -2002,26 +2261,20 @@ export const TimerComponentBlob = __t.object("TimerComponentBlob", {
 });
 export type TimerComponentBlob = __Infer<typeof TimerComponentBlob>;
 
-export const TotalStatBlockComponent = __t.object("TotalStatBlockComponent", {
-  entityId: __t.u64(),
-  get statBlock() {
-    return StatBlock;
-  },
-});
-export type TotalStatBlockComponent = __Infer<typeof TotalStatBlockComponent>;
-
-export const TotalStatBlockComponentBlob = __t.object("TotalStatBlockComponentBlob", {
-  get statBlock() {
-    return StatBlock;
-  },
-});
-export type TotalStatBlockComponentBlob = __Infer<typeof TotalStatBlockComponentBlob>;
-
 export const Trait = __t.object("Trait", {
   id: __t.u32(),
   name: __t.string(),
-  get statBlock() {
-    return StatBlock;
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock;
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });
 export type Trait = __Infer<typeof Trait>;

@@ -1,47 +1,39 @@
 use std::collections::HashSet;
 
+use spacetimedb::Table;
+
 use crate::{
     action::{action_rounds, actions, special_actions, ActionEffect, ActionId, ActionType},
-    asset::{
-        armament::armaments, armor::armors, baseline::baselines, relic::relics,
-        stance::stances, stat_block::StatBlock,
-    },
+    asset::{baseline::baselines, stance::stances},
     entity::*,
     item::ItemRef,
+    stat_group::{BodyCapacityBlock, ReadinessBlock},
 };
 
 pub trait EntityHandleExtension {
-    /// The entity's stat context WITHOUT any stance: baseline plus the
-    /// trait/equipment/status caches. This is both the base the total builds
-    /// on and the context stance-adoption requirements are checked against —
-    /// a stance never provides the properties needed to enter itself.
-    fn base_stat_block(&self) -> StatBlock;
+    /// The entity's READINESS context WITHOUT any stance: baseline plus the
+    /// trait/equipment/status readiness caches. This is the context stance-
+    /// adoption requirements are checked against — a stance never provides the
+    /// readiness needed to enter itself.
+    fn base_readiness(&self) -> ReadinessBlock;
     /// The STEADY capacity base an equip is gated against: the stance-free
-    /// context minus the two mutable rungs (equipment and status), i.e.
-    /// baseline plus traits plus quest, and the given stance's own block when
-    /// a per-stance override is being checked. Over-equipping may only outrun
-    /// a transient STATUS penalty (whose stats drop live); it must fit every
-    /// steadier source, so status and equipment are both excluded here.
-    fn steady_capacity_base(&self, stance_stat_block: Option<&StatBlock>) -> StatBlock;
+    /// body-capacity minus the two mutable rungs (equipment and status), i.e.
+    /// baseline plus traits plus quest, and the given stance's own capacity when
+    /// a per-stance override is being checked. Over-equipping may only outrun a
+    /// transient STATUS penalty; it must fit every steadier source, so status
+    /// and equipment are both excluded here. (Status never touches capacity
+    /// anyway; the exclusion is kept explicit.)
+    fn steady_capacity_base(&self, stance_body_capacity: Option<&BodyCapacityBlock>)
+        -> BodyCapacityBlock;
     /// The first configured item ENTITY that would NOT fit when its Equippable
-    /// is folded onto `base` in order (apply-if-fits, no drop tolerated). None
-    /// means the whole set is fully applicable against the steady base — the
-    /// invariant every equip mutator preserves.
+    /// body-capacity is folded onto `base` in order (apply-if-fits, no drop
+    /// tolerated). None means the whole set is fully applicable against the
+    /// steady base — the invariant every equip mutator preserves.
     fn first_overflowing_equipment(
         &self,
-        base: StatBlock,
+        base: BodyCapacityBlock,
         item_entity_ids: &[u64],
     ) -> Option<u64>;
-    fn apply_stat_block(
-        self,
-        stat_block: StatBlock,
-        available_action_ids: Vec<ActionId>,
-    ) -> Self;
-    fn set_mhp(self, mhp: i16) -> Self;
-    fn set_defense(self, defense: i8) -> Self;
-    fn set_mep(self, mep: i16) -> Self;
-    fn set_actions(self, action_ids: Vec<ActionId>) -> Self;
-    fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self;
     /// The armament ITEM ENTITIES the hands should hold RIGHT NOW: the active
     /// stance's customization override when it assigns any, else the DEFAULT
     /// set (what the equip menu built). A stance assignment overrides the
@@ -101,40 +93,45 @@ pub trait EntityHandleExtension {
 }
 
 impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension for T {
-    fn base_stat_block(&self) -> StatBlock {
+    fn base_readiness(&self) -> ReadinessBlock {
         let e = self.to_handle();
-        let mut stat_block = e
+        let mut readiness = e
             .baseline()
             .and_then(|b| e.ecs().db.baselines().id().find(b.baseline_id))
-            .map_or_else(StatBlock::default, |b| b.stat_block);
-        if let Some(c) = e.traits_stat_block_cache() {
-            stat_block += &c.stat_block;
+            .map(|b| b.readiness)
+            .unwrap_or_default();
+        if let Some(c) = e.traits_readiness_cache() {
+            readiness += &c.readiness;
         }
-        if let Some(c) = e.equipment_stat_block_cache() {
-            stat_block += &c.stat_block;
+        if let Some(c) = e.equipment_readiness_cache() {
+            readiness += &c.readiness;
         }
-        if let Some(c) = e.status_stat_block_cache() {
-            stat_block += &c.stat_block;
+        if let Some(c) = e.status_readiness_cache() {
+            readiness += &c.readiness;
         }
-        if let Some(c) = e.quest_stat_block_cache() {
-            stat_block += &c.stat_block;
+        if let Some(c) = e.quest_readiness_cache() {
+            readiness += &c.readiness;
         }
-        stat_block
+        readiness
     }
 
-    fn steady_capacity_base(&self, stance_stat_block: Option<&StatBlock>) -> StatBlock {
+    fn steady_capacity_base(
+        &self,
+        stance_body_capacity: Option<&BodyCapacityBlock>,
+    ) -> BodyCapacityBlock {
         let e = self.to_handle();
         let mut base = e
             .baseline()
             .and_then(|b| e.ecs().db.baselines().id().find(b.baseline_id))
-            .map_or_else(StatBlock::default, |b| b.stat_block);
-        if let Some(c) = e.traits_stat_block_cache() {
-            base += &c.stat_block;
+            .map(|b| b.body_capacity)
+            .unwrap_or_default();
+        if let Some(c) = e.traits_body_capacity_cache() {
+            base += &c.body_capacity;
         }
-        if let Some(c) = e.quest_stat_block_cache() {
-            base += &c.stat_block;
+        if let Some(c) = e.quest_body_capacity_cache() {
+            base += &c.body_capacity;
         }
-        if let Some(s) = stance_stat_block {
+        if let Some(s) = stance_body_capacity {
             base += s;
         }
         base
@@ -142,184 +139,82 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
 
     fn first_overflowing_equipment(
         &self,
-        base: StatBlock,
+        base: BodyCapacityBlock,
         item_entity_ids: &[u64],
     ) -> Option<u64> {
         let ecs = self.to_handle().ecs();
         let mut running = base;
         for id in item_entity_ids {
             if let Some(q) = ecs.find(*id).equippable() {
-                if !running.admits_equipment_item(&q.stat_block) {
+                if !running.admits_equipment_item(&q.body_capacity) {
                     return Some(*id);
                 }
-                running += &q.stat_block;
+                running += &q.body_capacity;
             }
         }
         None
-    }
-
-    /// The published total keeps its FULL grants (action_ids unfiltered):
-    /// clients build candidate sets from it, and filtering out valid
-    /// candidates there would lie to them. The USABLE set — requirement-
-    /// and same-stance-filtered — is `available_action_ids`, and lives
-    /// solely in ActionsComponent.
-    fn apply_stat_block(
-        self,
-        stat_block: StatBlock,
-        available_action_ids: Vec<ActionId>,
-    ) -> Self {
-        self.to_handle()
-            .clone()
-            .upsert_new_total_stat_block(stat_block.clone())
-            .into_handle()
-            .upsert_new_attack(stat_block.attack)
-            .set_mhp(stat_block.mhp)
-            .set_mep(stat_block.mep)
-            .set_defense(stat_block.defense)
-            .set_actions(available_action_ids)
-            .set_appearance_feature_ids(stat_block.appearance_feature_ids);
-        self
-    }
-
-    // THE MAXIMA ARE A RATCHET. Creation sets mhp/mep freely (a tiny body is
-    // born with tiny maxima); afterwards a recomputed total can only RAISE
-    // them — and a raise carries the current value up with it, so gaining a
-    // maximum never fakes a damaged/spent state. Reductions are refused
-    // outright: every max-value exploit is a raise/lower CYCLE (spend to zero,
-    // re-gain the max, repeat), and with the lowering half impossible the cycle
-    // never closes. The stored component is itself the before-value the
-    // comparison needs. The design half of the deal: mhp/mep sources must be
-    // LIMITED — permanent, progression-like grants, not swappable gear (each
-    // swappable source is a one-time permanent boost under this rule).
-    //
-    // These writers create the hp/ep rows and thereafter only raise the
-    // maxima; every entity that derives a stat block gets them, its values
-    // coming from its baseline and traits.
-    fn set_mhp(self, mhp: i16) -> Self {
-        let e = self.to_handle();
-        if let Some(mut hp) = e.hp() {
-            if mhp > hp.mhp {
-                hp.hp = hp.hp.saturating_add(mhp - hp.mhp);
-                hp.mhp = mhp;
-                e.update_hp_row(hp);
-            }
-        } else {
-            e.insert_new_hp(mhp, mhp, 0, 0, 0);
-        }
-        self
-    }
-
-    fn set_defense(self, defense: i8) -> Self {
-        let e = self.to_handle();
-        if let Some(mut hp_component) = e.hp() {
-            hp_component.defense = defense;
-            e.update_hp_row(hp_component);
-        } else {
-            e.insert_new_hp(0, 0, defense, 0, 0);
-        }
-        self
-    }
-
-    fn set_mep(self, mep: i16) -> Self {
-        let e = self.to_handle();
-        if let Some(mut ep_component) = e.ep() {
-            if mep > ep_component.mep {
-                ep_component.ep = ep_component.ep.saturating_add(mep - ep_component.mep);
-                ep_component.mep = mep;
-                e.update_ep_row(ep_component);
-            }
-        } else {
-            e.insert_new_ep(mep, mep);
-        }
-        self
-    }
-
-    fn set_actions(self, action_ids: Vec<ActionId>) -> Self {
-        let e = self.to_handle();
-        if let Some(mut c) = e.actions() {
-            c.action_ids = action_ids;
-            e.update_actions_row(c);
-        } else {
-            e.insert_new_actions(action_ids);
-        }
-        self
     }
 
     fn stance_is_reachable(&self, stance_id: u32) -> bool {
         let e = self.to_handle();
         let ecs = e.ecs();
 
-        // Seeds: the UNFILTERED grants — base (body + traits + gear worn)
-        // plus the active stance — never the derived ActionsComponent,
-        // which is requirement- and same-stance-filtered (and a tick
-        // stale): the posture back into your previous stance must count as
-        // reachable even while it is filtered out of your usable actions.
-        // Plus every carried item's granted actions (gear reaches its
-        // stances without being wielded — the customization menu must let you
-        // configure toward them).
-        let mut action_queue: Vec<ActionId> = {
-            let mut grants = self.base_stat_block();
-            if let Some(active) = e.active_stance() {
-                if let Some(s) = ecs.db.stances().id().find(active.stance_id) {
-                    grants += &s.stat_block;
-                }
-            }
-            grants.action_ids
-        };
+        // The readiness context reachability is measured against, WITHOUT any
+        // stance: base readiness plus the readiness of every item that could
+        // potentially be equipped (each carried equippable), so gear reaches
+        // its stances without being wielded — the customization menu must let
+        // you configure toward them. Actions are no longer explicit grants: an
+        // action is traversable exactly where this readiness (plus the stance
+        // currently occupied along the path) meets its requirements.
+        let mut context_base = self.base_readiness();
         for carried in ecs
             .db
             .location_components()
             .location_entity_id()
             .filter(e.entity_id())
         {
-            if let Some(item) = ecs.find(carried.entity_id).item() {
-                let grants = match item.item_ref {
-                    ItemRef::Armament(id) => {
-                        ecs.db.armaments().id().find(id).map(|a| a.stat_block.action_ids)
-                    }
-                    ItemRef::Armor(id) => {
-                        ecs.db.armors().id().find(id).map(|a| a.stat_block.action_ids)
-                    }
-                    ItemRef::Relic(id) => {
-                        ecs.db.relics().id().find(id).map(|r| r.stat_block.action_ids)
-                    }
-                    // Quest items grant no actions; their worth is the bit.
-                    ItemRef::QuestItem(_) => None,
-                };
-                action_queue.extend(grants.unwrap_or_default());
+            if let Some(q) = ecs.find(carried.entity_id).equippable() {
+                context_base += &q.readiness;
             }
         }
 
-        let mut reached: HashSet<u32> = HashSet::new();
-        let mut visited_actions: HashSet<ActionId> = HashSet::new();
-        let mut stance_queue: Vec<u32> = Vec::new();
-        loop {
-            if let Some(action_id) = action_queue.pop() {
-                if visited_actions.insert(action_id) {
-                    for round in ecs.db.action_rounds().action_sequence().filter(action_id) {
-                        for effect in &round.effects {
-                            if let ActionEffect::SetStance(target) = effect {
-                                stance_queue.push(*target);
+        let stance_readiness = |sid: u32| {
+            ecs.db.stances().id().find(sid).map(|s| s.readiness).unwrap_or_default()
+        };
+
+        // A closure over STANCES: from the posture currently occupied, any
+        // action whose requirements the context (base + that stance's tags)
+        // meets can fire, and its SetStance effects reach further stances —
+        // which in turn unlock more actions. So a stance may be reachable ONLY
+        // by first passing through another (a fully supported chain). The start
+        // node is the active stance (its tags), or no stance at all.
+        let mut visited: HashSet<u32> = HashSet::new();
+        let mut frontier: Vec<Option<u32>> =
+            vec![{ e.active_stance() }.map(|active| active.stance_id)];
+        while let Some(node) = frontier.pop() {
+            let mut context = context_base.clone();
+            if let Some(sid) = node {
+                context += &stance_readiness(sid);
+            }
+            for action in ecs.db.actions().iter() {
+                if !context.meets(&action.requirements) {
+                    continue;
+                }
+                for round in ecs.db.action_rounds().action_sequence().filter(action.id) {
+                    for effect in &round.effects {
+                        if let &ActionEffect::SetStance(target) = effect {
+                            if target == stance_id {
+                                return true;
+                            }
+                            if visited.insert(target) {
+                                frontier.push(Some(target));
                             }
                         }
                     }
                 }
-                continue;
-            }
-            match stance_queue.pop() {
-                None => return false,
-                Some(reached_id) => {
-                    if reached.insert(reached_id) {
-                        if reached_id == stance_id {
-                            return true;
-                        }
-                        if let Some(s) = ecs.db.stances().id().find(reached_id) {
-                            action_queue.extend(s.stat_block.action_ids);
-                        }
-                    }
-                }
             }
         }
+        false
     }
 
     fn resolved_armament_entity_ids(&self) -> Vec<u64> {
@@ -394,18 +289,6 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         }
     }
 
-    fn set_appearance_feature_ids(self, appearance_feature_ids: Vec<u32>) -> Self {
-        log::debug!(
-            "Setting appearance feature IDs for {}: {:?}",
-            self.to_handle().entity_id(),
-            appearance_feature_ids
-        );
-        self.to_handle()
-            .clone()
-            .upsert_new_appearance_features(appearance_feature_ids);
-        self
-    }
-
     fn allegiance_id(&self) -> Option<u64> {
         self.to_handle()
             .allegiance()
@@ -445,9 +328,9 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                 stance.name
             ));
         }
-        // Checked against the stance-free base: a stance never provides
-        // the properties needed to enter itself.
-        if !self.base_stat_block().meets(&stance.requirements) {
+        // Checked against the stance-free readiness: a stance never provides
+        // the readiness needed to enter itself.
+        if !self.base_readiness().meets(&stance.requirements) {
             return Err(format!(
                 "The requirements of stance \"{}\" are not met.",
                 stance.name
@@ -515,8 +398,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let morale_of = |entity_id: u64| {
             e.ecs()
                 .find(entity_id)
-                .total_stat_block()
-                .map(|t| i32::from(t.stat_block.morale))
+                .readiness_total()
+                .map(|t| i32::from(t.readiness.morale))
         };
         let own = morale_of(e.entity_id()).unwrap_or(0);
         let location = match e.location() {
@@ -619,8 +502,8 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
             // stats pipeline has not run yet (act can arrive before the
             // first tick) must not read as all-zero and refuse its
             // opening move.
-            if let Some(total) = e.total_stat_block() {
-                if !total.stat_block.meets(&a.requirements) {
+            if let Some(total) = e.readiness_total() {
+                if !total.readiness.meets(&a.requirements) {
                     return false;
                 }
             }

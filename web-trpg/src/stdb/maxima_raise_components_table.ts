@@ -9,21 +9,9 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
-import {
-  StatsBlock,
-  EventType,
-} from "./types";
-
 
 export default __t.row({
-  id: __t.u64().primaryKey(),
-  time: __t.timestamp(),
-  ownerEntityId: __t.u64().name("owner_entity_id"),
-  get eventType() {
-    return EventType.name("event_type");
-  },
-  targetEntityId: __t.u64().name("target_entity_id"),
-  get statBlock() {
-    return __t.option(StatsBlock).name("stat_block");
-  },
+  entityId: __t.u64().primaryKey().name("entity_id"),
+  mhp: __t.i16(),
+  mep: __t.i16(),
 });

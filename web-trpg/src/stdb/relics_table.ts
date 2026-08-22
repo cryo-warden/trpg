@@ -10,15 +10,27 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  StatBlock,
+  StatsBlock,
+  AppearanceBlock,
+  BodyCapacityBlock,
+  ReadinessBlock,
 } from "./types";
 
 
 export default __t.row({
   id: __t.u32().primaryKey(),
   name: __t.string(),
-  get statBlock() {
-    return StatBlock.name("stat_block");
+  get stats() {
+    return StatsBlock;
+  },
+  get appearance() {
+    return AppearanceBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock.name("body_capacity");
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
   appearanceFeatureIds: __t.array(__t.u32()).name("appearance_feature_ids"),
 });

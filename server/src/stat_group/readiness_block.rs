@@ -12,7 +12,7 @@ use spacetimedb::SpacetimeType;
 /// threshold against the merged total. The tag list is open by design — new
 /// action-suggesting tags (fang, claw, ooze, and further ones) join here.
 /// Merging saturates; `negated()` is the delta a removed source applies.
-#[derive(Debug, Clone, Default, SpacetimeType)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, SpacetimeType)]
 pub struct ReadinessBlock {
     /// Morale is RIGID: it rides readiness like a tag, never a fluid component.
     /// Fear/courage statuses contribute through their stat source.
@@ -97,7 +97,7 @@ impl AddAssign<&Self> for ReadinessBlock {
 /// Explicitly named minimum thresholds over the readiness tags: an absent entry
 /// means the tag is not checked (see `meets`). Carries no name references, so a
 /// requirement is the same shape whether authored or stored.
-#[derive(Debug, Clone, Default, SpacetimeType)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, SpacetimeType)]
 pub struct ReadinessRequirements {
     pub morale: Option<i8>,
     pub bladed: Option<i8>,

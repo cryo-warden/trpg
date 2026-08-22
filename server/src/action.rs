@@ -1,6 +1,6 @@
 use spacetimedb::{table, ReducerContext, SpacetimeType};
 
-use crate::asset::stat_block::StatRequirements;
+use crate::stat_group::ReadinessRequirements;
 
 pub type ActionId = u32;
 
@@ -82,9 +82,9 @@ pub struct Action {
     #[unique]
     pub name: String,
     pub action_type: ActionType,
-    /// Thresholds the entity's total stat block must meet for this action to
+    /// Thresholds the entity's READINESS total must meet for this action to
     /// appear in its derived available actions.
-    pub requirements: StatRequirements,
+    pub requirements: ReadinessRequirements,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]

@@ -10,15 +10,27 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  StatBlock,
+  StatsBlock,
+  AppearanceBlock,
+  BodyCapacityBlock,
+  ReadinessBlock,
 } from "./types";
 
 
 export default __t.row({
   id: __t.u32().primaryKey(),
   name: __t.string(),
-  get perBitStatBlock() {
-    return StatBlock.name("per_bit_stat_block");
+  get perBitStats() {
+    return StatsBlock.name("per_bit_stats");
+  },
+  get perBitAppearance() {
+    return AppearanceBlock.name("per_bit_appearance");
+  },
+  get perBitBodyCapacity() {
+    return BodyCapacityBlock.name("per_bit_body_capacity");
+  },
+  get perBitReadiness() {
+    return ReadinessBlock.name("per_bit_readiness");
   },
   bitCount: __t.u32().name("bit_count"),
 });

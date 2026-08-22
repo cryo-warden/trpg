@@ -10,8 +10,10 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 import {
-  StatRequirements,
-  StatBlock,
+  ReadinessRequirements,
+  StatsBlock,
+  BodyCapacityBlock,
+  ReadinessBlock,
 } from "./types";
 
 
@@ -19,9 +21,15 @@ export default __t.row({
   id: __t.u32().primaryKey(),
   name: __t.string(),
   get requirements() {
-    return StatRequirements;
+    return ReadinessRequirements;
   },
-  get statBlock() {
-    return StatBlock.name("stat_block");
+  get stats() {
+    return StatsBlock;
+  },
+  get bodyCapacity() {
+    return BodyCapacityBlock.name("body_capacity");
+  },
+  get readiness() {
+    return ReadinessBlock;
   },
 });

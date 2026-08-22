@@ -12,7 +12,6 @@ use crate::{
         location_map_theme::location_map_themes,
         r#trait::traits,
         stance::stances,
-        stat_block::StatBlock,
         weighted_sampler::WeightedSampler,
     },
     ecs_extension::EcsExtension,
@@ -20,6 +19,7 @@ use crate::{
     entity_handle_extension::EntityHandleExtension,
     event::{observable_events, EventQueue, EventType, NewEvent},
     quest::entities_quests_progress,
+    stat_group::{AppearanceBlock, BodyCapacityBlock, ReadinessBlock, StatsBlock},
 };
 use ecs::Ecs;
 use spacetimedb::{rand::seq::SliceRandom, Table};
@@ -492,8 +492,8 @@ pub fn action_system(ecs: Ecs) {
         {
             let actor = ecs.find(entity_id);
             let actor_size = actor
-                .total_stat_block()
-                .map_or(0, |t| i32::from(t.stat_block.size));
+                .stats_total()
+                .map_or(0, |t| i32::from(t.stats.size));
             let authored: i32 = effects
                 .iter()
                 .map(|effect| match effect {
@@ -521,8 +521,8 @@ pub fn action_system(ecs: Ecs) {
                         continue;
                     }
                     let victim_size = victim
-                        .total_stat_block()
-                        .map_or(0, |t| i32::from(t.stat_block.size));
+                        .stats_total()
+                        .map_or(0, |t| i32::from(t.stats.size));
                     let magnitude = max(0, actor_size - victim_size) + authored;
                     if magnitude > 0 {
                         queue.emit_early(ecs.new_event(
@@ -592,8 +592,8 @@ pub fn action_system(ecs: Ecs) {
                     // never below zero. The plain heal authors 1 and
                     // restores 1+focus.
                     let focus = i32::from(
-                        e.total_stat_block()
-                            .map(|t| t.stat_block.focus)
+                        e.readiness_total()
+                            .map(|t| t.readiness.focus)
                             .unwrap_or(0),
                     );
                     let amount = max(0, i32::from(*heal) + focus)
@@ -706,34 +706,101 @@ pub fn player_deactivation_timer_system(ecs: Ecs) {
     }
 }
 
+// The baseline's own contribution to each group, read LIVE from its asset row
+// (baselines are never cached). Absent baseline (or unknown id) contributes the
+// group default. One reader per group keeps the four totals independent.
+fn baseline_stats(ecs: &Ecs, entity_id: u64) -> StatsBlock {
+    ecs.find(entity_id)
+        .baseline()
+        .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
+        .map(|b| b.stats)
+        .unwrap_or_default()
+}
+
+fn baseline_appearance(ecs: &Ecs, entity_id: u64) -> AppearanceBlock {
+    ecs.find(entity_id)
+        .baseline()
+        .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
+        .map(|b| b.appearance)
+        .unwrap_or_default()
+}
+
+fn baseline_body_capacity(ecs: &Ecs, entity_id: u64) -> BodyCapacityBlock {
+    ecs.find(entity_id)
+        .baseline()
+        .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
+        .map(|b| b.body_capacity)
+        .unwrap_or_default()
+}
+
+fn baseline_readiness(ecs: &Ecs, entity_id: u64) -> ReadinessBlock {
+    ecs.find(entity_id)
+        .baseline()
+        .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
+        .map(|b| b.readiness)
+        .unwrap_or_default()
+}
+
+/// The active stance's contribution to one group, read live like the baseline;
+/// `pick` selects the group off the stance row. None when no stance is held.
+fn active_stance<T>(
+    ecs: &Ecs,
+    entity_id: u64,
+    pick: impl Fn(crate::asset::stance::Stance) -> T,
+) -> Option<T> {
+    ecs.find(entity_id)
+        .active_stance()
+        .and_then(|active| ecs.db.stances().id().find(active.stance_id))
+        .map(pick)
+}
+
 pub fn entity_stats_system(ecs: Ecs) {
-    for f in ecs.iter_traits_stat_block_dirty_flag() {
-        if let Some(c) = ecs.find(f.entity_id()).with_traits() {
-            let mut stat_block = StatBlock::default();
-            for id in &c.traits().trait_ids {
+    // --- SOURCE FOLDS: a refold flag means an input changed; re-derive that
+    // source's per-group contributions and upsert ONLY the group caches whose
+    // value actually moved (each upsert auto-dirties its group total flag, so a
+    // source touching one group never recomputes the others). ---
+
+    // TRAITS: sum every trait's per-group contribution.
+    for f in ecs.iter_traits_dirty_flag() {
+        let e = f.into_handle();
+        let mut stats = StatsBlock::default();
+        let mut appearance = AppearanceBlock::default();
+        let mut body_capacity = BodyCapacityBlock::default();
+        let mut readiness = ReadinessBlock::default();
+        if let Some(c) = e.traits() {
+            for id in &c.trait_ids {
                 if let Some(t) = ecs.db.traits().id().find(id) {
-                    stat_block += &t.stat_block;
+                    stats += &t.stats;
+                    appearance += &t.appearance;
+                    body_capacity += &t.body_capacity;
+                    readiness += &t.readiness;
                 }
             }
-
-            // Upserting the cache auto-dirties the total stat block (its
-            // declared dirty flag) — no manual flag here.
-            f.upsert_new_traits_stat_block_cache(stat_block)
-                .delete_traits_stat_block_dirty_flag()
-                .into_handle();
         }
+        if e.traits_stats_cache().map(|c| c.stats).unwrap_or_default() != stats {
+            e.clone().upsert_new_traits_stats_cache(stats);
+        }
+        if e.traits_appearance_cache().map(|c| c.appearance).unwrap_or_default() != appearance {
+            e.clone().upsert_new_traits_appearance_cache(appearance);
+        }
+        if e.traits_body_capacity_cache().map(|c| c.body_capacity).unwrap_or_default()
+            != body_capacity
+        {
+            e.clone().upsert_new_traits_body_capacity_cache(body_capacity);
+        }
+        if e.traits_readiness_cache().map(|c| c.readiness).unwrap_or_default() != readiness {
+            e.clone().upsert_new_traits_readiness_cache(readiness);
+        }
+        e.delete_traits_dirty_flag();
     }
 
-    // Status effects contribute stat blocks like everything else: courage
-    // folds into rigid morale, braced into defense. The cache upsert
-    // auto-dirties the total.
-    for f in ecs.iter_status_stat_block_dirty_flag() {
-        let e = ecs.find(f.entity_id());
-        let mut stat_block = StatBlock::default();
-        // Courage lifts morale, fear sinks it — both fold into the one rigid
-        // morale stat that action requirements gate against, so a feared
-        // entity's committed actions drop out of its derived set until rally
-        // (courage) or time restores the morale. Braced adds defense.
+    // STATUS effects contribute only stats (braced defense) and readiness
+    // (courage/fear morale). Courage lifts morale, fear sinks it — both fold
+    // into the one rigid morale tag action requirements gate against, so a
+    // feared entity's committed actions drop out of its derived set until rally
+    // or time restores the morale.
+    for f in ecs.iter_status_dirty_flag() {
+        let e = f.into_handle();
         let mut morale = 0i16;
         if let Some(c) = e.courage_status() {
             morale = morale.saturating_add(c.morale);
@@ -741,87 +808,105 @@ pub fn entity_stats_system(ecs: Ecs) {
         if let Some(fear) = e.fear_status() {
             morale = morale.saturating_sub(fear.intimidation);
         }
-        stat_block.morale = morale.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8;
-        if let Some(c) = e.braced_status() {
-            stat_block.defense = c.defense.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8;
+        let readiness = ReadinessBlock {
+            morale: morale.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8,
+            ..Default::default()
+        };
+        let stats = StatsBlock {
+            defense: e
+                .braced_status()
+                .map(|c| c.defense.clamp(i16::from(i8::MIN), i16::from(i8::MAX)) as i8)
+                .unwrap_or_default(),
+            ..Default::default()
+        };
+        if e.status_stats_cache().map(|c| c.stats).unwrap_or_default() != stats {
+            e.clone().upsert_new_status_stats_cache(stats);
         }
-        f.upsert_new_status_stat_block_cache(stat_block)
-            .delete_status_stat_block_dirty_flag()
-            .into_handle();
+        if e.status_readiness_cache().map(|c| c.readiness).unwrap_or_default() != readiness {
+            e.clone().upsert_new_status_readiness_cache(readiness);
+        }
+        e.delete_status_dirty_flag();
     }
 
-    // Quest progress contributes through its own cache like every other
-    // source: each quest's per-bit block, added popcount times (saturating;
-    // any granted ids dedup through the id-vec union rule). Bits only turn
-    // ON, so this contribution is monotonic — exactly what the maxima
-    // ratchet asks of mhp/mep sources.
-    for f in ecs.iter_quest_stat_block_dirty_flag() {
+    // QUEST progress: each quest's per-bit block, added popcount times
+    // (saturating). Bits only turn ON, so this contribution is monotonic —
+    // exactly what the maxima ratchet asks of mhp/mep sources.
+    for f in ecs.iter_quest_dirty_flag() {
         let entity_id = f.entity_id();
-        let mut stat_block = StatBlock::default();
-        for row in ecs
-            .db
-            .entities_quests_progress()
-            .entity_id()
-            .filter(entity_id)
-        {
+        let e = f.into_handle();
+        let mut stats = StatsBlock::default();
+        let mut appearance = AppearanceBlock::default();
+        let mut body_capacity = BodyCapacityBlock::default();
+        let mut readiness = ReadinessBlock::default();
+        for row in ecs.db.entities_quests_progress().entity_id().filter(entity_id) {
             if let Some(quest) = ecs.db.quests().id().find(row.quest_id) {
                 for _ in 0..row.bits.count_ones() {
-                    stat_block += &quest.per_bit_stat_block;
+                    stats += &quest.per_bit_stats;
+                    appearance += &quest.per_bit_appearance;
+                    body_capacity += &quest.per_bit_body_capacity;
+                    readiness += &quest.per_bit_readiness;
                 }
             }
         }
-        f.upsert_new_quest_stat_block_cache(stat_block)
-            .delete_quest_stat_block_dirty_flag()
-            .into_handle();
+        if e.quest_stats_cache().map(|c| c.stats).unwrap_or_default() != stats {
+            e.clone().upsert_new_quest_stats_cache(stats);
+        }
+        if e.quest_appearance_cache().map(|c| c.appearance).unwrap_or_default() != appearance {
+            e.clone().upsert_new_quest_appearance_cache(appearance);
+        }
+        if e.quest_body_capacity_cache().map(|c| c.body_capacity).unwrap_or_default()
+            != body_capacity
+        {
+            e.clone().upsert_new_quest_body_capacity_cache(body_capacity);
+        }
+        if e.quest_readiness_cache().map(|c| c.readiness).unwrap_or_default() != readiness {
+            e.clone().upsert_new_quest_readiness_cache(readiness);
+        }
+        e.delete_quest_dirty_flag();
     }
 
-    // Equipment is the BOTTOM, most-mutable rung: it validates against the
-    // running total of every OTHER stat source, so it is computed LAST among
-    // the sources (after traits/status/quest above) and re-dirtied whenever
-    // any of those change (see the source components' dirties()). Players
-    // wield concrete item entities (equipped_entity_ids); NPCs carry the
-    // precomputed EquipmentBlobbed instead. An entity may have either or both;
-    // the two are disjoint by construction, so summing both is safe.
-    for f in ecs.iter_equipment_stat_block_dirty_flag() {
-        let e = ecs.find(f.entity_id());
+    // EQUIPMENT is the BOTTOM, most-mutable rung: it validates against the
+    // running BODY-CAPACITY of every steadier source (baseline + traits + quest
+    // + stance — NOT status, NOT equipment itself), and only body-capacity
+    // gates it, so ONLY a body-capacity change re-dirties it. Players wield
+    // concrete item entities; NPCs carry the precomputed EquipmentBlobbed. An
+    // entity may have either or both; the two are disjoint, so summing is safe.
+    for f in ecs.iter_equipment_dirty_flag() {
+        let e = f.into_handle();
+        let entity_id = e.entity_id();
 
-        // The fixed context: baseline + trait/status/quest caches + the active
-        // stance's block — everything the total has EXCEPT equipment itself.
-        let mut running = e
-            .baseline()
-            .and_then(|b| ecs.db.baselines().id().find(b.baseline_id))
-            .map_or_else(StatBlock::default, |b| b.stat_block);
-        if let Some(c) = e.traits_stat_block_cache() {
-            running += &c.stat_block;
+        let mut capacity = baseline_body_capacity(&ecs, entity_id);
+        if let Some(c) = e.traits_body_capacity_cache() {
+            capacity += &c.body_capacity;
         }
-        if let Some(c) = e.status_stat_block_cache() {
-            running += &c.stat_block;
+        if let Some(c) = e.quest_body_capacity_cache() {
+            capacity += &c.body_capacity;
         }
-        if let Some(c) = e.quest_stat_block_cache() {
-            running += &c.stat_block;
-        }
-        if let Some(s) =
-            { e.active_stance() }.and_then(|active| ecs.db.stances().id().find(active.stance_id))
-        {
-            running += &s.stat_block;
+        if let Some(bc) = active_stance(&ecs, entity_id, |s| s.body_capacity) {
+            capacity += &bc;
         }
 
-        // Apply each equipped item in stored order, keeping it only while it
-        // does not drive a capacity it consumes below zero (hand/body/relic).
-        // A rejected item stays equipped but contributes nothing — its entity
-        // id goes to the disabled list so the client can mark it TEMPORARILY
-        // disabled. The first item to violate a capacity is the one dropped;
-        // later items that still fit are applied.
-        let mut applied = StatBlock::default();
+        // Apply each equipped item in stored order, keeping it only while its
+        // body-capacity cost does not drive a capacity it consumes below zero.
+        // A rejected item stays equipped but contributes nothing — its id goes
+        // to the disabled list. Each group of the accepted items accumulates
+        // independently.
+        let mut stats = StatsBlock::default();
+        let mut appearance = AppearanceBlock::default();
+        let mut applied_capacity = BodyCapacityBlock::default();
+        let mut readiness = ReadinessBlock::default();
         let mut disabled: Vec<u64> = Vec::new();
         if let Some(c) = e.equipment() {
             for item_id in &c.equipped_entity_ids {
                 let Some(q) = ecs.find(*item_id).equippable() else {
                     continue;
                 };
-                if running.admits_equipment_item(&q.stat_block) {
-                    running += &q.stat_block;
-                    applied += &q.stat_block;
+                if capacity.admits_equipment_item(&q.body_capacity) {
+                    capacity += &q.body_capacity;
+                    stats += &q.stats;
+                    appearance += &q.appearance;
+                    applied_capacity += &q.body_capacity;
+                    readiness += &q.readiness;
                 } else {
                     disabled.push(*item_id);
                 }
@@ -829,45 +914,106 @@ pub fn entity_stats_system(ecs: Ecs) {
         }
         // NPC blob gear is precomputed, always applied, never validated.
         if let Some(blobbed) = e.equipment_blobbed() {
-            applied += &blobbed.stat_block;
+            stats += &blobbed.stats;
+            appearance += &blobbed.appearance;
+            applied_capacity += &blobbed.body_capacity;
+            readiness += &blobbed.readiness;
         }
 
-        // Upserting the cache auto-dirties the total stat block (its declared
-        // dirty flag) — no manual flag here.
-        let handle = f
-            .upsert_new_equipment_stat_block_cache(applied)
-            .delete_equipment_stat_block_dirty_flag()
-            .into_handle();
+        if e.equipment_stats_cache().map(|c| c.stats).unwrap_or_default() != stats {
+            e.clone().upsert_new_equipment_stats_cache(stats);
+        }
+        if e.equipment_appearance_cache().map(|c| c.appearance).unwrap_or_default() != appearance {
+            e.clone().upsert_new_equipment_appearance_cache(appearance);
+        }
+        if e.equipment_body_capacity_cache().map(|c| c.body_capacity).unwrap_or_default()
+            != applied_capacity
+        {
+            e.clone().upsert_new_equipment_body_capacity_cache(applied_capacity);
+        }
+        if e.equipment_readiness_cache().map(|c| c.readiness).unwrap_or_default() != readiness {
+            e.clone().upsert_new_equipment_readiness_cache(readiness);
+        }
+        e.clone().delete_equipment_dirty_flag();
         if disabled.is_empty() {
-            handle.delete_equipment_disabled();
+            e.delete_equipment_disabled();
         } else {
-            handle.upsert_new_equipment_disabled(disabled);
+            e.upsert_new_equipment_disabled(disabled);
         }
     }
 
-    for f in ecs.iter_total_stat_block_dirty_flag() {
-        // A baseline or trait is enough to derive a stat block — no opt-in
-        // flag, no special cases. Every derived block is applied in full;
-        // whether the entity reads as a threat, a breakable object, or a
-        // near-indestructible structural feature is simply a matter of the HP
-        // and defense its baseline and traits give it.
-        log::debug!("Entity {} is computing total stat block.", f.entity_id());
-        let mut stat_block = f.base_stat_block();
+    // --- GROUP TOTALS: each group's applied read-state, recomputed from every
+    // source's contribution for that group. These ARE the read state — there is
+    // no aggregate and no separate "apply" step. ---
 
-        if let Some(s) = { f.active_stance() }
-            .and_then(|active| ecs.db.stances().id().find(active.stance_id))
-        {
-            stat_block += &s.stat_block;
+    // STATS total → StatsTotal, fanned out to the readers that still live in
+    // their own components: AttackComponent, HpComponent.defense, and — via a
+    // transient raise the ratchet system applies — the hp/ep maxima.
+    for f in ecs.iter_stats_dirty_flag() {
+        let entity_id = f.entity_id();
+        let e = f.into_handle();
+        let mut stats = baseline_stats(&ecs, entity_id);
+        if let Some(c) = e.traits_stats_cache() {
+            stats += &c.stats;
+        }
+        if let Some(c) = e.status_stats_cache() {
+            stats += &c.stats;
+        }
+        if let Some(c) = e.quest_stats_cache() {
+            stats += &c.stats;
+        }
+        if let Some(c) = e.equipment_stats_cache() {
+            stats += &c.stats;
+        }
+        if let Some(s) = active_stance(&ecs, entity_id, |s| s.stats) {
+            stats += &s;
         }
 
-        // Derived availability: an action the total's requirements check
-        // rejects is granted but not currently usable, so it never reaches
-        // the ActionsComponent. A posture into the stance ALREADY HELD is
-        // no option either — you can't stand when already standing. The
-        // TOTAL keeps its full grants (clients build candidate sets from
-        // it); only the AVAILABLE list is filtered. Swapping stances (or
-        // any stat change) re-derives this through the same dirty flag.
-        let active_stance_id = { f.active_stance() }.map(|active| active.stance_id);
+        let changed = e.stats_total().map(|t| t.stats).unwrap_or_default() != stats;
+        e.clone().upsert_new_stats_total(stats.clone());
+        e.clone().delete_stats_dirty_flag();
+        if changed {
+            e.clone().upsert_new_attack(stats.attack);
+            // Defense rides the hp component (the damage math reads it there).
+            if let Some(mut hp) = e.hp() {
+                hp.defense = stats.defense;
+                e.clone().update_hp_row(hp);
+            } else {
+                e.clone().insert_new_hp(0, 0, stats.defense, 0, 0);
+            }
+            // The maxima are a RATCHET applied by maxima_ratchet_system: emit
+            // the target ceilings as a transient payload rather than touching
+            // hp/ep here.
+            e.clone().insert_new_maxima_raise(stats.mhp, stats.mep);
+        }
+    }
+
+    // READINESS total → ReadinessTotal, then the DERIVED action set. An action
+    // is available exactly where the readiness clears its requirements (readiness
+    // tags are how sources grant actions now); a posture into the stance ALREADY
+    // held is filtered out (you can't stand when already standing).
+    for f in ecs.iter_readiness_dirty_flag() {
+        let entity_id = f.entity_id();
+        let e = f.into_handle();
+        let mut readiness = baseline_readiness(&ecs, entity_id);
+        if let Some(c) = e.traits_readiness_cache() {
+            readiness += &c.readiness;
+        }
+        if let Some(c) = e.status_readiness_cache() {
+            readiness += &c.readiness;
+        }
+        if let Some(c) = e.quest_readiness_cache() {
+            readiness += &c.readiness;
+        }
+        if let Some(c) = e.equipment_readiness_cache() {
+            readiness += &c.readiness;
+        }
+        if let Some(r) = active_stance(&ecs, entity_id, |s| s.readiness) {
+            readiness += &r;
+        }
+        e.clone().upsert_new_readiness_total(readiness.clone());
+
+        let active_stance_id = e.active_stance().map(|active| active.stance_id);
         let adopts_active_stance = |action_id: crate::action::ActionId| {
             let Some(active) = active_stance_id else {
                 return false;
@@ -877,29 +1023,103 @@ pub fn entity_stats_system(ecs: Ecs) {
                 .action_sequence()
                 .filter(action_id)
                 .any(|round| {
-                    round.effects.iter().any(|effect| {
-                        matches!(effect, ActionEffect::SetStance(s) if *s == active)
-                    })
+                    round
+                        .effects
+                        .iter()
+                        .any(|effect| matches!(effect, ActionEffect::SetStance(s) if *s == active))
                 })
         };
-        let available_action_ids: Vec<_> = stat_block
-            .action_ids
+        let available_action_ids: Vec<_> = ecs
+            .db
+            .actions()
             .iter()
-            .copied()
-            .filter(|id| match ecs.db.actions().id().find(id) {
-                Some(action) => {
-                    stat_block.meets(&action.requirements) && !adopts_active_stance(*id)
-                }
-                None => {
-                    log::error!("Granted action id {} has no action row.", id);
-                    false
-                }
+            .filter(|action| {
+                readiness.meets(&action.requirements) && !adopts_active_stance(action.id)
             })
+            .map(|action| action.id)
             .collect();
+        if e.actions().map(|c| c.action_ids).unwrap_or_default() != available_action_ids {
+            e.clone().upsert_new_actions(available_action_ids);
+        }
+        e.delete_readiness_dirty_flag();
+    }
 
-        f.delete_total_stat_block_dirty_flag()
-            .into_handle()
-            .apply_stat_block(stat_block, available_action_ids);
+    // BODY-CAPACITY total → BodyCapacityTotal (the equip gate's read state).
+    // Excludes status (a transient penalty never gates equipment).
+    for f in ecs.iter_body_capacity_dirty_flag() {
+        let entity_id = f.entity_id();
+        let e = f.into_handle();
+        let mut body_capacity = baseline_body_capacity(&ecs, entity_id);
+        if let Some(c) = e.traits_body_capacity_cache() {
+            body_capacity += &c.body_capacity;
+        }
+        if let Some(c) = e.quest_body_capacity_cache() {
+            body_capacity += &c.body_capacity;
+        }
+        if let Some(c) = e.equipment_body_capacity_cache() {
+            body_capacity += &c.body_capacity;
+        }
+        if let Some(bc) = active_stance(&ecs, entity_id, |s| s.body_capacity) {
+            body_capacity += &bc;
+        }
+        e.clone().upsert_new_body_capacity_total(body_capacity);
+        e.delete_body_capacity_dirty_flag();
+    }
+
+    // APPEARANCE total → AppearanceFeaturesComponent (its applied read state).
+    // Neither stance nor status contributes a look.
+    for f in ecs.iter_appearance_dirty_flag() {
+        let entity_id = f.entity_id();
+        let e = f.into_handle();
+        let mut appearance = baseline_appearance(&ecs, entity_id);
+        if let Some(c) = e.traits_appearance_cache() {
+            appearance += &c.appearance;
+        }
+        if let Some(c) = e.quest_appearance_cache() {
+            appearance += &c.appearance;
+        }
+        if let Some(c) = e.equipment_appearance_cache() {
+            appearance += &c.appearance;
+        }
+        let indexes = appearance.feature_ids;
+        if e.appearance_features().map(|c| c.appearance_feature_indexes).unwrap_or_default()
+            != indexes
+        {
+            e.clone().upsert_new_appearance_features(indexes);
+        }
+        e.delete_appearance_dirty_flag();
+    }
+
+    // The MAXIMA RATCHET: apply each transient raise the stats total emitted.
+    // Ceilings only rise, and a raise carries the current value up with it, so
+    // gaining a maximum never fakes a damaged/spent state; a would-be reduction
+    // is refused outright (every max-value exploit is a raise/lower cycle, and
+    // the lowering half is impossible). The stored hp/ep row IS the before-value
+    // the comparison needs.
+    for m in ecs.iter_maxima_raise() {
+        let (target_mhp, target_mep) = {
+            let raise = m.maxima_raise();
+            (raise.mhp, raise.mep)
+        };
+        let e = m.into_handle();
+        if let Some(mut hp) = e.hp() {
+            if target_mhp > hp.mhp {
+                hp.hp = hp.hp.saturating_add(target_mhp - hp.mhp);
+                hp.mhp = target_mhp;
+                e.clone().update_hp_row(hp);
+            }
+        } else {
+            e.clone().insert_new_hp(target_mhp, target_mhp, 0, 0, 0);
+        }
+        if let Some(mut ep) = e.ep() {
+            if target_mep > ep.mep {
+                ep.ep = ep.ep.saturating_add(target_mep - ep.mep);
+                ep.mep = target_mep;
+                e.clone().update_ep_row(ep);
+            }
+        } else {
+            e.clone().insert_new_ep(target_mep, target_mep);
+        }
     }
 }
 
@@ -1359,7 +1579,7 @@ pub fn action_validation_system(ecs: Ecs) {
 /// the rest interior. Inventory checks match the id alone, so both
 /// kinds count as carried.
 pub fn gear_location_system(ecs: Ecs) {
-    for f in ecs.iter_equipment_stat_block_dirty_flag() {
+    for f in ecs.iter_equipment_dirty_flag() {
         let handle = f.into_handle();
         let owner_entity_id = handle.entity_id();
         let Some(equipment) = handle.equipment() else {

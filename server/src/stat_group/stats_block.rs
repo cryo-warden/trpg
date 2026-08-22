@@ -10,7 +10,7 @@ use spacetimedb::SpacetimeType;
 /// Merging saturates rather than wrapping, so extreme stacking clamps at the
 /// type's bounds instead of corrupting the total. `negated()` is the delta an
 /// unequip (or any removed source) applies.
-#[derive(Debug, Clone, Default, SpacetimeType)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, SpacetimeType)]
 pub struct StatsBlock {
     pub mhp: i16,
     pub mep: i16,

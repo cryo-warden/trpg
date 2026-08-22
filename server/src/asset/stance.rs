@@ -1,6 +1,8 @@
 use spacetimedb::{table, SpacetimeType};
 
-use crate::asset::stat_block::{StatBlock, StatRequirements};
+use crate::stat_group::{
+    BodyCapacityBlock, ReadinessBlock, ReadinessRequirements, StatsBlock,
+};
 
 /// Stances the SERVER itself must find (never by name-sniffing): the push
 /// resolves the authored name and stores the id here, mirroring
@@ -18,10 +20,11 @@ pub struct SpecialStance {
     pub stance_id: u32,
 }
 
-/// A stance: the exclusive posture an entity fights from. Its stat block is
-/// an ordinary contribution to the entity's total (including granted
-/// action_ids — the stance's techniques), and its requirements gate ADOPTING
-/// it, checked against the entity's stat context WITHOUT any stance: a
+/// A stance: the exclusive posture an entity fights from. Its per-group blocks
+/// contribute to the entity's stats/readiness/body-capacity totals (the
+/// readiness tags it provides make its techniques available through the
+/// requirements filter); a stance grants no appearance. Its requirements gate
+/// ADOPTING it, checked against the entity's readiness WITHOUT any stance: a
 /// stance never provides the properties needed to enter itself.
 #[table(accessor = stances, public)]
 #[derive(Debug, Clone)]
@@ -30,6 +33,8 @@ pub struct Stance {
     pub id: u32,
     #[unique]
     pub name: String,
-    pub requirements: StatRequirements,
-    pub stat_block: StatBlock,
+    pub requirements: ReadinessRequirements,
+    pub stats: StatsBlock,
+    pub body_capacity: BodyCapacityBlock,
+    pub readiness: ReadinessBlock,
 }

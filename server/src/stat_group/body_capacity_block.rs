@@ -11,7 +11,7 @@ use spacetimedb::SpacetimeType;
 ///           consumes 1).
 /// A body provides the positive capacity; each equipped item consumes it
 /// (negative). Merging saturates; `negated()` is the unequip delta.
-#[derive(Debug, Clone, Default, SpacetimeType)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, SpacetimeType)]
 pub struct BodyCapacityBlock {
     pub hand: i8,
     pub body: i8,

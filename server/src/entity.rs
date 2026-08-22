@@ -1,7 +1,7 @@
 use crate::{
     action::ActionId,
-    asset::stat_block::StatBlock,
     item::{ItemRef, StanceCustomization},
+    stat_group::{AppearanceBlock, BodyCapacityBlock, ReadinessBlock, StatsBlock},
 };
 use ecs::entity;
 use spacetimedb::Timestamp;
@@ -118,25 +118,31 @@ entity!(
         pub party_leader: EntityId,
     }
 
-    // Equipment validates against every other stat source, so each of them
-    // ALSO dirties the equipment flag: equipment is the bottom, most-mutable
-    // rung and must re-derive whenever anything above it moves.
-    #[component(baseline in baseline_components, dirties(total_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
+    // The baseline is read LIVE from its asset row (never cached), so a
+    // change to WHICH baseline an entity has must re-derive every group total
+    // directly — and, because the baseline provides the body's own capacity
+    // (the floor the equip gate stands on), the equipment computation too.
+    #[component(baseline in baseline_components, dirties(stats_dirty_flag, appearance_dirty_flag, body_capacity_dirty_flag, readiness_dirty_flag, equipment_dirty_flag))]
     struct BaselineComponent {
         pub baseline_id: u32,
     }
 
-    #[component(traits in traits_components, dirties(traits_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
+    // A trait-set change re-folds the per-group traits caches (traits_dirty_flag
+    // drives the fold); each cache then dirties only its own group total, so a
+    // trait that touches only readiness never recomputes stats/appearance. The
+    // fold's body-capacity cache is what re-gates equipment — the traits input
+    // itself does not dirty equipment.
+    #[component(traits in traits_components, dirties(traits_dirty_flag))]
     struct TraitsComponent {
         pub trait_ids: Vec<u32>,
     }
 
-    // The exclusive posture the entity fights from: its stance's stat block
-    // joins the total (including granted action_ids), so swapping recomputes
-    // stats and available actions through the ordinary dirty-flag path. It
-    // also gates equipment (a stance can reduce a capacity), so it dirties
-    // equipment too.
-    #[component(active_stance in active_stance_components, dirties(total_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
+    // The exclusive posture the entity fights from: its stance's group blocks
+    // are folded LIVE into the stats/readiness/body-capacity totals (a stance
+    // provides no appearance), so swapping recomputes those totals — and the
+    // derived action set — through the ordinary dirty-flag path. It also gates
+    // equipment (a stance can reduce a capacity), so it dirties equipment too.
+    #[component(active_stance in active_stance_components, dirties(stats_dirty_flag, readiness_dirty_flag, body_capacity_dirty_flag, equipment_dirty_flag))]
     struct ActiveStanceComponent {
         pub stance_id: u32,
     }
@@ -150,7 +156,7 @@ entity!(
     // system detects divergence and forces the re-arm action, while
     // intentional acts (stance changes, equip/unequip) converge immediately
     // themselves. Players carry this; NPCs use the lighter EquipmentBlobbed.
-    #[component(equipment in equipment_components, dirties(equipment_stat_block_dirty_flag))]
+    #[component(equipment in equipment_components, dirties(equipment_dirty_flag))]
     struct EquipmentComponent {
         pub equipped_entity_ids: Vec<EntityId>,
     }
@@ -175,9 +181,12 @@ entity!(
     // entity uses this OR a real EquipmentComponent, never both: the conflict
     // invariant strips this when a real EquipmentComponent appears (real gear
     // wins), so an NPC can opt into item entities by gaining one.
-    #[component(equipment_blobbed in equipment_blobbed_components, dirties(equipment_stat_block_dirty_flag))]
+    #[component(equipment_blobbed in equipment_blobbed_components, dirties(equipment_dirty_flag))]
     struct EquipmentBlobbedComponent {
-        pub stat_block: StatBlock,
+        pub stats: StatsBlock,
+        pub appearance: AppearanceBlock,
+        pub body_capacity: BodyCapacityBlock,
+        pub readiness: ReadinessBlock,
     }
 
     // What a breakable leaves behind: on destruction (hp exhausted,
@@ -232,14 +241,18 @@ entity!(
         pub item_ref: ItemRef,
     }
 
-    // What one item entity contributes WHEN EQUIPPED: its whole stat block
-    // (armament/armor/relic properties, hand cost, granted actions, morale,
-    // ...), stamped from the gear asset at instantiation. The equipment cache
-    // of whoever wields it sums the Equippable of every equipped item — the
-    // single rule that replaces per-asset stat lookups.
+    // What one item entity contributes WHEN EQUIPPED: its per-group blocks
+    // (stats, appearance, the hand/body/relic cost in body_capacity, and the
+    // readiness tags it grants), stamped from the gear asset at instantiation.
+    // The equipment computation of whoever wields it sums the Equippable of
+    // every equipped item — the single rule that replaces per-asset stat
+    // lookups — gating each item on its body_capacity.
     #[component(equippable in equippable_components)]
     struct EquippableComponent {
-        pub stat_block: StatBlock,
+        pub stats: StatsBlock,
+        pub appearance: AppearanceBlock,
+        pub body_capacity: BodyCapacityBlock,
+        pub readiness: ReadinessBlock,
     }
 
     // Derived by the equipment stat computation: the equipped item ENTITIES
@@ -255,24 +268,77 @@ entity!(
         pub disabled_entity_ids: Vec<EntityId>,
     }
 
+    // Per-group SOURCE CACHES: each source's contribution to a group, folded
+    // once and memoized. Caches are grouped by BLOCK TYPE (not by source) so
+    // every cache of a group dirties the same single group total flag. A fold
+    // system upserts only the group caches whose value actually CHANGED, so a
+    // source touching one group never recomputes the others.
     #[component(
-      equipment_stat_block_cache in equipment_stat_block_cache_components,
-      status_stat_block_cache in status_stat_block_cache_components,
-      traits_stat_block_cache in traits_stat_block_cache_components,
-      quest_stat_block_cache in quest_stat_block_cache_components,
-      dirties(total_stat_block_dirty_flag),
+      traits_stats_cache in traits_stats_cache_components,
+      status_stats_cache in status_stats_cache_components,
+      quest_stats_cache in quest_stats_cache_components,
+      equipment_stats_cache in equipment_stats_cache_components,
+      dirties(stats_dirty_flag),
     )]
-    struct StatBlockCacheComponent {
-        pub stat_block: StatBlock,
+    struct StatsCacheComponent {
+        pub stats: StatsBlock,
     }
 
-    // TODO Equipment and Status Effects
     #[component(
-      traits_stat_block_dirty_flag in traits_stat_block_dirty_flag_components,
-      equipment_stat_block_dirty_flag in equipment_stat_block_dirty_flag_components,
-      status_stat_block_dirty_flag in status_stat_block_dirty_flag_components,
-      quest_stat_block_dirty_flag in quest_stat_block_dirty_flag_components,
-      total_stat_block_dirty_flag in total_stat_block_dirty_flag_components,
+      traits_appearance_cache in traits_appearance_cache_components,
+      quest_appearance_cache in quest_appearance_cache_components,
+      equipment_appearance_cache in equipment_appearance_cache_components,
+      dirties(appearance_dirty_flag),
+    )]
+    struct AppearanceCacheComponent {
+        pub appearance: AppearanceBlock,
+    }
+
+    #[component(
+      traits_readiness_cache in traits_readiness_cache_components,
+      status_readiness_cache in status_readiness_cache_components,
+      quest_readiness_cache in quest_readiness_cache_components,
+      equipment_readiness_cache in equipment_readiness_cache_components,
+      dirties(readiness_dirty_flag),
+    )]
+    struct ReadinessCacheComponent {
+        pub readiness: ReadinessBlock,
+    }
+
+    // The STEADY sources' body-capacity caches (traits, quest): a change here
+    // shifts the floor the equip gate stands on, so it dirties equipment too.
+    // Equipment's OWN body-capacity contribution is a SEPARATE component
+    // (equipment_body_capacity_cache below) that must NOT dirty equipment, or
+    // the equipment computation would re-trigger itself forever.
+    #[component(
+      traits_body_capacity_cache in traits_body_capacity_cache_components,
+      quest_body_capacity_cache in quest_body_capacity_cache_components,
+      dirties(body_capacity_dirty_flag, equipment_dirty_flag),
+    )]
+    struct BodyCapacityCacheComponent {
+        pub body_capacity: BodyCapacityBlock,
+    }
+
+    // Equipment's own contribution to the body-capacity total: dirties ONLY the
+    // body-capacity total, never the equipment flag (see above).
+    #[component(equipment_body_capacity_cache in equipment_body_capacity_cache_components, dirties(body_capacity_dirty_flag))]
+    struct EquipmentBodyCapacityCacheComponent {
+        pub body_capacity: BodyCapacityBlock,
+    }
+
+    #[component(
+      // REFOLD flags: a source input changed, so its per-group caches must be
+      // re-derived (the fold system then dirties only the group totals whose
+      // value moved).
+      traits_dirty_flag in traits_dirty_flag_components,
+      status_dirty_flag in status_dirty_flag_components,
+      quest_dirty_flag in quest_dirty_flag_components,
+      equipment_dirty_flag in equipment_dirty_flag_components,
+      // GROUP TOTAL flags: a group's total must be recomputed and re-applied.
+      stats_dirty_flag in stats_dirty_flag_components,
+      appearance_dirty_flag in appearance_dirty_flag_components,
+      body_capacity_dirty_flag in body_capacity_dirty_flag_components,
+      readiness_dirty_flag in readiness_dirty_flag_components,
       checkpoint_object in checkpoint_object_components,
       // On a map INSTANCE entity: its turn has not come (some player
       // there still owes an action). Derived once per tick by
@@ -402,14 +468,37 @@ entity!(
         pub mep: i16,
     }
 
-    // The APPLIED total stat block, stored whole: rigid stats (morale,
-    // size, and future property reads like pickup gating) are read straight
-    // from here instead of each getting its own component. Fluid values
-    // (hp, ep) still live in their own components; the total only moves
-    // their ceilings.
-    #[component(total_stat_block in total_stat_block_components)]
-    struct TotalStatBlockComponent {
-        pub stat_block: StatBlock,
+    // TRANSIENT (per-tick): the hp/ep MAXIMA a recomputed StatsTotal wants this
+    // entity to have. The stats-total system emits it instead of touching hp/ep
+    // directly; the maxima_ratchet_system consumes it and RAISES the ceilings
+    // (never lowers), carrying the current value up with each raise. Event-
+    // backed, so it clears itself every transaction — a dirty flag that carries
+    // its payload (the target maxima) rather than a bare marker.
+    #[component(maxima_raise in maxima_raise_components, transient)]
+    struct MaximaRaiseComponent {
+        pub mhp: i16,
+        pub mep: i16,
+    }
+
+    // The APPLIED per-group totals, each stored whole: these ARE the read
+    // state (there is no aggregate). Rigid stats (attack, defense, size, the
+    // hp/ep ceilings) read from StatsTotal; morale and the readiness tags read
+    // from ReadinessTotal; the equip gate reads BodyCapacityTotal. Fluid values
+    // (hp, ep) still live in their own components; StatsTotal only moves their
+    // ceilings. Appearance's applied total is AppearanceFeaturesComponent.
+    #[component(stats_total in stats_total_components)]
+    struct StatsTotalComponent {
+        pub stats: StatsBlock,
+    }
+
+    #[component(readiness_total in readiness_total_components)]
+    struct ReadinessTotalComponent {
+        pub readiness: ReadinessBlock,
+    }
+
+    #[component(body_capacity_total in body_capacity_total_components)]
+    struct BodyCapacityTotalComponent {
+        pub body_capacity: BodyCapacityBlock,
     }
 
     // FEAR: a timed morale debuff. `intimidation` is the intensity (folded
@@ -418,7 +507,7 @@ entity!(
     // removed at zero. Fear keeps the MAXIMUM intensity: a weaker fear
     // arriving over a stronger one is ignored and does not even refresh the
     // duration. Not cured by rally — you outlast it, or out-courage it.
-    #[component(fear_status in fear_status_components, dirties(status_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
+    #[component(fear_status in fear_status_components, dirties(status_dirty_flag))]
     struct FearStatusComponent {
         pub intimidation: i16,
         pub duration: i16,
@@ -430,14 +519,14 @@ entity!(
     // Folds into the total through the status cache so rigid morale absorbs
     // it, lifting effective morale back over the action thresholds a fear
     // pushed it under.
-    #[component(courage_status in courage_status_components, dirties(status_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
+    #[component(courage_status in courage_status_components, dirties(status_dirty_flag))]
     struct CourageStatusComponent {
         pub morale: i16,
     }
 
     // BRACED: dive's status effect — bonus defense, folded through the
     // status cache exactly like courage. Cleared on the next stance change.
-    #[component(braced_status in braced_status_components, dirties(status_stat_block_dirty_flag, equipment_stat_block_dirty_flag))]
+    #[component(braced_status in braced_status_components, dirties(status_dirty_flag))]
     struct BracedStatusComponent {
         pub defense: i16,
     }

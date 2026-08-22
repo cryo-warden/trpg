@@ -70,6 +70,7 @@ import ActionsRow from "./actions_table";
 import ActionsComponentsRow from "./actions_components_table";
 import ActiveStanceComponentsRow from "./active_stance_components_table";
 import AllegianceComponentsRow from "./allegiance_components_table";
+import AppearanceDirtyFlagComponentsRow from "./appearance_dirty_flag_components_table";
 import AppearanceFeaturesRow from "./appearance_features_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
 import ArmamentsRow from "./armaments_table";
@@ -77,6 +78,8 @@ import ArmorComponentsRow from "./armor_components_table";
 import ArmorsRow from "./armors_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
+import BodyCapacityDirtyFlagComponentsRow from "./body_capacity_dirty_flag_components_table";
+import BodyCapacityTotalComponentsRow from "./body_capacity_total_components_table";
 import BracedStatusComponentsRow from "./braced_status_components_table";
 import CheckpointBindingComponentsRow from "./checkpoint_binding_components_table";
 import CheckpointComponentsRow from "./checkpoint_components_table";
@@ -94,11 +97,14 @@ import EntitiesVisitedLocationsRow from "./entities_visited_locations_table";
 import EntityBlobsRow from "./entity_blobs_table";
 import EntityDeletionTimerComponentsRow from "./entity_deletion_timer_components_table";
 import EpComponentsRow from "./ep_components_table";
+import EquipmentAppearanceCacheComponentsRow from "./equipment_appearance_cache_components_table";
 import EquipmentBlobbedComponentsRow from "./equipment_blobbed_components_table";
+import EquipmentBodyCapacityCacheComponentsRow from "./equipment_body_capacity_cache_components_table";
 import EquipmentComponentsRow from "./equipment_components_table";
+import EquipmentDirtyFlagComponentsRow from "./equipment_dirty_flag_components_table";
 import EquipmentDisabledComponentsRow from "./equipment_disabled_components_table";
-import EquipmentStatBlockCacheComponentsRow from "./equipment_stat_block_cache_components_table";
-import EquipmentStatBlockDirtyFlagComponentsRow from "./equipment_stat_block_dirty_flag_components_table";
+import EquipmentReadinessCacheComponentsRow from "./equipment_readiness_cache_components_table";
+import EquipmentStatsCacheComponentsRow from "./equipment_stats_cache_components_table";
 import EquippableComponentsRow from "./equippable_components_table";
 import FearStatusComponentsRow from "./fear_status_components_table";
 import HpComponentsRow from "./hp_components_table";
@@ -114,6 +120,7 @@ import MapCheckpointsComponentsRow from "./map_checkpoints_components_table";
 import MapCleanupTimerComponentsRow from "./map_cleanup_timer_components_table";
 import MapInstanceComponentsRow from "./map_instance_components_table";
 import MapRoomsComponentsRow from "./map_rooms_components_table";
+import MaximaRaiseComponentsRow from "./maxima_raise_components_table";
 import NameComponentsRow from "./name_components_table";
 import NamedEntitiesRow from "./named_entities_table";
 import ObservableEventsRow from "./observable_events_table";
@@ -127,10 +134,15 @@ import PerishedComponentsRow from "./perished_components_table";
 import PinnedActionsComponentsRow from "./pinned_actions_components_table";
 import PlayerControllerComponentsRow from "./player_controller_components_table";
 import PlayerDeactivationTimerComponentsRow from "./player_deactivation_timer_components_table";
-import QuestStatBlockCacheComponentsRow from "./quest_stat_block_cache_components_table";
-import QuestStatBlockDirtyFlagComponentsRow from "./quest_stat_block_dirty_flag_components_table";
+import QuestAppearanceCacheComponentsRow from "./quest_appearance_cache_components_table";
+import QuestBodyCapacityCacheComponentsRow from "./quest_body_capacity_cache_components_table";
+import QuestDirtyFlagComponentsRow from "./quest_dirty_flag_components_table";
+import QuestReadinessCacheComponentsRow from "./quest_readiness_cache_components_table";
+import QuestStatsCacheComponentsRow from "./quest_stats_cache_components_table";
 import QuestsRow from "./quests_table";
 import QuestsRoomsRolesRow from "./quests_rooms_roles_table";
+import ReadinessDirtyFlagComponentsRow from "./readiness_dirty_flag_components_table";
+import ReadinessTotalComponentsRow from "./readiness_total_components_table";
 import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
 import RemainsComponentsRow from "./remains_components_table";
@@ -141,13 +153,17 @@ import StanceCustomizationsComponentsRow from "./stance_customizations_component
 import StanceForcedComponentsRow from "./stance_forced_components_table";
 import StancesRow from "./stances_table";
 import StartingGearComponentsRow from "./starting_gear_components_table";
-import StatusStatBlockCacheComponentsRow from "./status_stat_block_cache_components_table";
-import StatusStatBlockDirtyFlagComponentsRow from "./status_stat_block_dirty_flag_components_table";
-import TotalStatBlockComponentsRow from "./total_stat_block_components_table";
-import TotalStatBlockDirtyFlagComponentsRow from "./total_stat_block_dirty_flag_components_table";
+import StatsDirtyFlagComponentsRow from "./stats_dirty_flag_components_table";
+import StatsTotalComponentsRow from "./stats_total_components_table";
+import StatusDirtyFlagComponentsRow from "./status_dirty_flag_components_table";
+import StatusReadinessCacheComponentsRow from "./status_readiness_cache_components_table";
+import StatusStatsCacheComponentsRow from "./status_stats_cache_components_table";
+import TraitsAppearanceCacheComponentsRow from "./traits_appearance_cache_components_table";
+import TraitsBodyCapacityCacheComponentsRow from "./traits_body_capacity_cache_components_table";
 import TraitsComponentsRow from "./traits_components_table";
-import TraitsStatBlockCacheComponentsRow from "./traits_stat_block_cache_components_table";
-import TraitsStatBlockDirtyFlagComponentsRow from "./traits_stat_block_dirty_flag_components_table";
+import TraitsDirtyFlagComponentsRow from "./traits_dirty_flag_components_table";
+import TraitsReadinessCacheComponentsRow from "./traits_readiness_cache_components_table";
+import TraitsStatsCacheComponentsRow from "./traits_stats_cache_components_table";
 import TurnPausedComponentsRow from "./turn_paused_components_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -318,6 +334,17 @@ const tablesSchema = __schema({
       { name: 'allegiance_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, AllegianceComponentsRow),
+  appearance_dirty_flag_components: __table({
+    name: 'appearance_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'appearance_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'appearance_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, AppearanceDirtyFlagComponentsRow),
   appearance_features: __table({
     name: 'appearance_features',
     indexes: [
@@ -407,6 +434,28 @@ const tablesSchema = __schema({
       { name: 'baseline_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, BaselineComponentsRow),
+  body_capacity_dirty_flag_components: __table({
+    name: 'body_capacity_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'body_capacity_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'body_capacity_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, BodyCapacityDirtyFlagComponentsRow),
+  body_capacity_total_components: __table({
+    name: 'body_capacity_total_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'body_capacity_total_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'body_capacity_total_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, BodyCapacityTotalComponentsRow),
   braced_status_components: __table({
     name: 'braced_status_components',
     indexes: [
@@ -602,6 +651,17 @@ const tablesSchema = __schema({
       { name: 'ep_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EpComponentsRow),
+  equipment_appearance_cache_components: __table({
+    name: 'equipment_appearance_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equipment_appearance_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equipment_appearance_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquipmentAppearanceCacheComponentsRow),
   equipment_blobbed_components: __table({
     name: 'equipment_blobbed_components',
     indexes: [
@@ -613,6 +673,17 @@ const tablesSchema = __schema({
       { name: 'equipment_blobbed_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EquipmentBlobbedComponentsRow),
+  equipment_body_capacity_cache_components: __table({
+    name: 'equipment_body_capacity_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equipment_body_capacity_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equipment_body_capacity_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquipmentBodyCapacityCacheComponentsRow),
   equipment_components: __table({
     name: 'equipment_components',
     indexes: [
@@ -624,6 +695,17 @@ const tablesSchema = __schema({
       { name: 'equipment_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EquipmentComponentsRow),
+  equipment_dirty_flag_components: __table({
+    name: 'equipment_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'equipment_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'equipment_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, EquipmentDirtyFlagComponentsRow),
   equipment_disabled_components: __table({
     name: 'equipment_disabled_components',
     indexes: [
@@ -635,28 +717,28 @@ const tablesSchema = __schema({
       { name: 'equipment_disabled_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, EquipmentDisabledComponentsRow),
-  equipment_stat_block_cache_components: __table({
-    name: 'equipment_stat_block_cache_components',
+  equipment_readiness_cache_components: __table({
+    name: 'equipment_readiness_cache_components',
     indexes: [
-      { accessor: 'entity_id', name: 'equipment_stat_block_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'equipment_readiness_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'equipment_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'equipment_readiness_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, EquipmentStatBlockCacheComponentsRow),
-  equipment_stat_block_dirty_flag_components: __table({
-    name: 'equipment_stat_block_dirty_flag_components',
+  }, EquipmentReadinessCacheComponentsRow),
+  equipment_stats_cache_components: __table({
+    name: 'equipment_stats_cache_components',
     indexes: [
-      { accessor: 'entity_id', name: 'equipment_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'equipment_stats_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'equipment_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'equipment_stats_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, EquipmentStatBlockDirtyFlagComponentsRow),
+  }, EquipmentStatsCacheComponentsRow),
   equippable_components: __table({
     name: 'equippable_components',
     indexes: [
@@ -841,6 +923,18 @@ const tablesSchema = __schema({
       { name: 'map_rooms_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, MapRoomsComponentsRow),
+  maxima_raise_components: __table({
+    name: 'maxima_raise_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'maxima_raise_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'maxima_raise_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+    event: true,
+  }, MaximaRaiseComponentsRow),
   name_components: __table({
     name: 'name_components',
     indexes: [
@@ -1002,28 +1096,61 @@ const tablesSchema = __schema({
       { name: 'player_deactivation_timer_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, PlayerDeactivationTimerComponentsRow),
-  quest_stat_block_cache_components: __table({
-    name: 'quest_stat_block_cache_components',
+  quest_appearance_cache_components: __table({
+    name: 'quest_appearance_cache_components',
     indexes: [
-      { accessor: 'entity_id', name: 'quest_stat_block_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'quest_appearance_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'quest_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'quest_appearance_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, QuestStatBlockCacheComponentsRow),
-  quest_stat_block_dirty_flag_components: __table({
-    name: 'quest_stat_block_dirty_flag_components',
+  }, QuestAppearanceCacheComponentsRow),
+  quest_body_capacity_cache_components: __table({
+    name: 'quest_body_capacity_cache_components',
     indexes: [
-      { accessor: 'entity_id', name: 'quest_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'quest_body_capacity_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'quest_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'quest_body_capacity_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, QuestStatBlockDirtyFlagComponentsRow),
+  }, QuestBodyCapacityCacheComponentsRow),
+  quest_dirty_flag_components: __table({
+    name: 'quest_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'quest_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'quest_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, QuestDirtyFlagComponentsRow),
+  quest_readiness_cache_components: __table({
+    name: 'quest_readiness_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'quest_readiness_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'quest_readiness_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, QuestReadinessCacheComponentsRow),
+  quest_stats_cache_components: __table({
+    name: 'quest_stats_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'quest_stats_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'quest_stats_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, QuestStatsCacheComponentsRow),
   quests: __table({
     name: 'quests',
     indexes: [
@@ -1056,6 +1183,28 @@ const tablesSchema = __schema({
       { name: 'quests_rooms_roles_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, QuestsRoomsRolesRow),
+  readiness_dirty_flag_components: __table({
+    name: 'readiness_dirty_flag_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'readiness_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'readiness_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ReadinessDirtyFlagComponentsRow),
+  readiness_total_components: __table({
+    name: 'readiness_total_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'readiness_total_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'readiness_total_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, ReadinessTotalComponentsRow),
   relics: __table({
     name: 'relics',
     indexes: [
@@ -1178,50 +1327,83 @@ const tablesSchema = __schema({
       { name: 'starting_gear_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, StartingGearComponentsRow),
-  status_stat_block_cache_components: __table({
-    name: 'status_stat_block_cache_components',
+  stats_dirty_flag_components: __table({
+    name: 'stats_dirty_flag_components',
     indexes: [
-      { accessor: 'entity_id', name: 'status_stat_block_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'stats_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'status_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'stats_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, StatusStatBlockCacheComponentsRow),
-  status_stat_block_dirty_flag_components: __table({
-    name: 'status_stat_block_dirty_flag_components',
+  }, StatsDirtyFlagComponentsRow),
+  stats_total_components: __table({
+    name: 'stats_total_components',
     indexes: [
-      { accessor: 'entity_id', name: 'status_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'stats_total_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'status_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'stats_total_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, StatusStatBlockDirtyFlagComponentsRow),
-  total_stat_block_components: __table({
-    name: 'total_stat_block_components',
+  }, StatsTotalComponentsRow),
+  status_dirty_flag_components: __table({
+    name: 'status_dirty_flag_components',
     indexes: [
-      { accessor: 'entity_id', name: 'total_stat_block_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'status_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'total_stat_block_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'status_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, TotalStatBlockComponentsRow),
-  total_stat_block_dirty_flag_components: __table({
-    name: 'total_stat_block_dirty_flag_components',
+  }, StatusDirtyFlagComponentsRow),
+  status_readiness_cache_components: __table({
+    name: 'status_readiness_cache_components',
     indexes: [
-      { accessor: 'entity_id', name: 'total_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'status_readiness_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'total_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'status_readiness_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, TotalStatBlockDirtyFlagComponentsRow),
+  }, StatusReadinessCacheComponentsRow),
+  status_stats_cache_components: __table({
+    name: 'status_stats_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'status_stats_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'status_stats_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, StatusStatsCacheComponentsRow),
+  traits_appearance_cache_components: __table({
+    name: 'traits_appearance_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'traits_appearance_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'traits_appearance_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, TraitsAppearanceCacheComponentsRow),
+  traits_body_capacity_cache_components: __table({
+    name: 'traits_body_capacity_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'traits_body_capacity_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'traits_body_capacity_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, TraitsBodyCapacityCacheComponentsRow),
   traits_components: __table({
     name: 'traits_components',
     indexes: [
@@ -1233,28 +1415,39 @@ const tablesSchema = __schema({
       { name: 'traits_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, TraitsComponentsRow),
-  traits_stat_block_cache_components: __table({
-    name: 'traits_stat_block_cache_components',
+  traits_dirty_flag_components: __table({
+    name: 'traits_dirty_flag_components',
     indexes: [
-      { accessor: 'entity_id', name: 'traits_stat_block_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'traits_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'traits_stat_block_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'traits_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, TraitsStatBlockCacheComponentsRow),
-  traits_stat_block_dirty_flag_components: __table({
-    name: 'traits_stat_block_dirty_flag_components',
+  }, TraitsDirtyFlagComponentsRow),
+  traits_readiness_cache_components: __table({
+    name: 'traits_readiness_cache_components',
     indexes: [
-      { accessor: 'entity_id', name: 'traits_stat_block_dirty_flag_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+      { accessor: 'entity_id', name: 'traits_readiness_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
         'entityId',
       ] },
     ],
     constraints: [
-      { name: 'traits_stat_block_dirty_flag_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+      { name: 'traits_readiness_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
-  }, TraitsStatBlockDirtyFlagComponentsRow),
+  }, TraitsReadinessCacheComponentsRow),
+  traits_stats_cache_components: __table({
+    name: 'traits_stats_cache_components',
+    indexes: [
+      { accessor: 'entity_id', name: 'traits_stats_cache_components_entity_id_idx_btree', algorithm: 'btree', columns: [
+        'entityId',
+      ] },
+    ],
+    constraints: [
+      { name: 'traits_stats_cache_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
+    ],
+  }, TraitsStatsCacheComponentsRow),
   turn_paused_components: __table({
     name: 'turn_paused_components',
     indexes: [
