@@ -14,7 +14,7 @@
 //                       (admits_equipment_item), so the ONLY group whose change
 //                       need dirty equipment computation.
 //   ReadinessBlock    — morale plus the action-suggesting tags (bladed, wing,
-//                       fang, ...); only meaningful on entities that can act, so
+//                       jaw, ...); only meaningful on entities that can act, so
 //                       it owns the action-gating requirements check.
 //
 mod appearance_block;

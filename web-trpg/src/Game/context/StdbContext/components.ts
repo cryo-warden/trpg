@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { GroupedBlock } from "../../domain/statBlock";
 import { getActionOptions } from "../../domain/actionOptions";
 import { bitIsSet } from "../../domain/bitset";
 import { ActionId, EntityId } from "../../trpg";
@@ -42,11 +43,22 @@ export const componentQueries = [
   "select * from pinned_actions_components",
   "select * from actions_components",
   "select * from active_stance_components",
-  "select * from total_stat_block_components",
-  // The per-source stat caches the menus PEEL off the total to recover a
-  // steady base for their hypothetical, configuration-driven numbers.
-  "select * from equipment_stat_block_cache_components",
-  "select * from status_stat_block_cache_components",
+  // The four group totals — the applied/read state (appearance rides its own
+  // features component).
+  "select * from stats_total_components",
+  "select * from readiness_total_components",
+  "select * from body_capacity_total_components",
+  // The per-source group caches the menus PEEL off the totals to recover a
+  // steady base for their hypothetical, configuration-driven numbers — plus the
+  // per-source READINESS caches the readiness UI reads to show a tag that moved
+  // on ANY source even when the total nets to zero.
+  "select * from equipment_stats_cache_components",
+  "select * from equipment_body_capacity_cache_components",
+  "select * from equipment_readiness_cache_components",
+  "select * from status_stats_cache_components",
+  "select * from status_readiness_cache_components",
+  "select * from traits_readiness_cache_components",
+  "select * from quest_readiness_cache_components",
   "select * from item_components",
   "select * from checkpoint_object_components",
   "select * from armor_components",
@@ -82,19 +94,40 @@ export const useActionStateComponent = createUseComponent(
   "action_state_components",
 );
 export const useActionsComponent = createUseComponent("actions_components");
-/** The stored applied total: rigid stats (morale, size, properties) read
- * straight from here rather than per-stat components. */
-export const useTotalStatBlockComponent = createUseComponent(
-  "total_stat_block_components",
+/** The applied per-group totals — the read state. Combat/vitals read stats;
+ * action gating reads readiness; equipment fit reads body-capacity. */
+export const useStatsTotal = createUseComponent("stats_total_components");
+export const useReadinessTotal = createUseComponent(
+  "readiness_total_components",
 );
-/** The applied EQUIPMENT contribution and the STATUS contribution, peeled off
- * the total to recover the steady base (baseline + traits + quest) the equip
- * and stance menus build their hypothetical, config-driven totals on. */
-export const useEquipmentStatBlockCache = createUseComponent(
-  "equipment_stat_block_cache_components",
+export const useBodyCapacityTotal = createUseComponent(
+  "body_capacity_total_components",
 );
-export const useStatusStatBlockCache = createUseComponent(
-  "status_stat_block_cache_components",
+/** The applied EQUIPMENT and STATUS per-group contributions, peeled off the
+ * totals to recover the steady base (baseline + traits + quest) the equip and
+ * stance menus build their hypothetical, config-driven totals on. */
+export const useEquipmentStatsCache = createUseComponent(
+  "equipment_stats_cache_components",
+);
+export const useEquipmentBodyCapacityCache = createUseComponent(
+  "equipment_body_capacity_cache_components",
+);
+export const useEquipmentReadinessCache = createUseComponent(
+  "equipment_readiness_cache_components",
+);
+export const useStatusStatsCache = createUseComponent(
+  "status_stats_cache_components",
+);
+export const useStatusReadinessCache = createUseComponent(
+  "status_readiness_cache_components",
+);
+/** Per-source readiness caches: the readiness UI shows a tag that moved on ANY
+ * source even when the total nets to zero, so it reads each source directly. */
+export const useTraitsReadinessCache = createUseComponent(
+  "traits_readiness_cache_components",
+);
+export const useQuestReadinessCache = createUseComponent(
+  "quest_readiness_cache_components",
 );
 export const useEpComponent = createUseComponent("ep_components");
 export const useHpComponent = createUseComponent("hp_components");
@@ -356,10 +389,12 @@ export const useQuestItemFreshness = (
   }, [item, progressRows, playerEntity]);
 };
 
-/** The stat block an item entity's asset contributes — gear when worn or
+/** The grouped block an item entity's asset contributes — gear when worn or
  * wielded, a quest item's per-bit grant when eaten. Null for non-items
  * and unknown refs. Feeds the entity card's stat summary line. */
-export const useItemAssetStatBlock = (entityId: EntityId | null) => {
+export const useItemAssetGroupedBlock = (
+  entityId: EntityId | null,
+): GroupedBlock | null => {
   const item = useItemComponent(entityId);
   const armaments = useTableData("armaments", (t) => [...t.iter()], []);
   const armors = useTableData("armors", (t) => [...t.iter()], []);
@@ -371,14 +406,25 @@ export const useItemAssetStatBlock = (entityId: EntityId | null) => {
       return null;
     }
     if (ref.tag === "QuestItem") {
-      return (
-        quests.find((row) => row.id === ref.value.questId)?.perBitStatBlock ??
-        null
-      );
+      const quest = quests.find((row) => row.id === ref.value.questId);
+      return quest == null
+        ? null
+        : {
+            stats: quest.perBitStats,
+            bodyCapacity: quest.perBitBodyCapacity,
+            readiness: quest.perBitReadiness,
+          };
     }
     const rows =
       ref.tag === "Armament" ? armaments : ref.tag === "Armor" ? armors : relics;
-    return rows.find((row) => row.id === ref.value)?.statBlock ?? null;
+    const row = rows.find((asset) => asset.id === ref.value);
+    return row == null
+      ? null
+      : {
+          stats: row.stats,
+          bodyCapacity: row.bodyCapacity,
+          readiness: row.readiness,
+        };
   }, [item, armaments, armors, relics, quests]);
 };
 
@@ -461,7 +507,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
   const targetOfferedActions = useOfferedActionsComponent(focus);
   const playerLocation = useLocationComponent(playerEntity);
   const specialActionIds = useSpecialActionIds();
-  const actorTotal = useTotalStatBlockComponent(playerEntity);
+  const actorReadiness = useReadinessTotal(playerEntity);
   // Take reach: the target's own container, when it has one, must be
   // the player's room — or an OPEN container standing in it.
   const targetHolder = useLocationComponent(
@@ -505,7 +551,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
       specialActionIds,
       targetWithinTakeReach:
         targetCoLocatedWithPlayer || targetInOpenContainerHere,
-      actorStats: actorTotal?.statBlock ?? null,
+      actorStats: actorReadiness?.readiness ?? null,
       playerEntity,
       target: focus,
       playerAllegianceId: playerAllegiance?.allegianceEntityId ?? null,
@@ -527,7 +573,7 @@ export const useActionOptions = (focus: Focus): ActionId[] => {
     targetOfferedActions,
     playerLocation,
     specialActionIds,
-    actorTotal,
+    actorReadiness,
     targetHolder,
     targetHolderOpen,
     focus,

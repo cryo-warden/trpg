@@ -60,7 +60,7 @@ beforeAll(async () => {
       "SELECT * FROM active_stance_components",
       "SELECT * FROM equipment_components",
       "SELECT * FROM equipment_disabled_components",
-      "SELECT * FROM total_stat_block_components",
+      "SELECT * FROM readiness_total_components",
       "SELECT * FROM default_armaments_components",
       "SELECT * FROM pinned_actions_components",
       "SELECT * FROM stance_customizations_components",
@@ -371,9 +371,9 @@ test("a stance that taxes the grip drops a wielded stat (temporarily disabled)",
     )?.disabledEntityIds ?? []),
   ];
   const myBladed = (): number =>
-    [...player.db.total_stat_block_components.iter()].find(
+    [...player.db.readiness_total_components.iter()].find(
       (row) => row.entityId === playerEntityId,
-    )?.statBlock.bladed ?? -1;
+    )?.readiness.bladed ?? -1;
 
   // Wield the two-handed greatsword alone: it FITS the stance-free base (two
   // hands, grip -2), so the gate accepts it and its bladed applies.

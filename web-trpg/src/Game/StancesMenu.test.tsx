@@ -1,7 +1,6 @@
 import { test, expect, mock } from "bun:test";
 import { fireEvent, render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
-import type { StatBlock } from "../stdb/types";
 import {
   actionIdOf,
   appearanceFeatureIndexOf,
@@ -14,50 +13,26 @@ import { STANCE_DISPLAY_NAMES, StanceName } from "./assets/stances";
 import { AppearanceFeatureName } from "./assets/appearance_features";
 import { StancesMenu } from "./StancesMenu";
 
-const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
-  attack: 0,
-  defense: 0,
-  hand: 0,
-  body: 0,
-  relic: 0,
-  gait: 0,
-  reach: 0,
-  blunt: 0,
-  bladed: 0,
-  pole: 0,
-  ward: 0,
-  focus: 0,
-  wing: 0,
-  upright: 0,
-  size: 0,
-  morale: 0,
-  mhp: 0,
-  mep: 0,
-  actionIds: [],
-  appearanceFeatureIds: [],
-  ...partial,
-});
-
 // Each item ENTITY names itself by its own appearance features.
 const appearanceRow = (entityId: bigint, names: AppearanceFeatureName[]) => ({
   entityId,
   appearanceFeatureIndexes: names.map(appearanceFeatureIndexOf),
 });
 
-// The player (entity 1) stands with empty hands (grip 2); standing and
-// dueling are REACHABLE through the stand and duel postures in their
-// total's action grants. They carry a sword (entity 5, hand -1, assigned
-// to dueling) and a spear (entity 8, hand -2, assigned nowhere).
+// The player (entity 1) is a two-handed, two-footed body (grip 2) with a
+// fighter's nerve. Reachability keys off READINESS now, not granted action
+// lists: standing is reachable through the body's `foot`, and dueling through
+// that `foot` plus the `bladed` the carried sword could add. They carry a sword
+// (entity 5, hand -1, assigned to dueling) and a spear (entity 8, hand -2,
+// assigned nowhere).
 const tables = () => ({
   player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
-  total_stat_block_components: mockTable([
-    {
-      entityId: 1n,
-      statBlock: runtimeStatBlock({
-        hand: 2,
-        actionIds: [actionIdOf("stand"), actionIdOf("duel")],
-      }),
-    },
+  stats_total_components: mockTable([{ entityId: 1n, stats: {} }]),
+  readiness_total_components: mockTable([
+    { entityId: 1n, readiness: { morale: 3, hand: 2, foot: 2 } },
+  ]),
+  body_capacity_total_components: mockTable([
+    { entityId: 1n, bodyCapacity: { hand: 2 } },
   ]),
   active_stance_components: mockTable([
     { entityId: 1n, stanceId: stanceIdOf("standing") },
@@ -134,7 +109,7 @@ test("a stance with NO override lights 'use default' and shows the default items
   )!;
   expect(standingSword.className).toContain("active");
   expect(standing.textContent).toContain("Hand 1 (-1)");
-  expect(standing.textContent).toContain("Morale 1 (+1)");
+  expect(standing.textContent).toContain("Morale 4 (+1)");
 
   // Dueling OVERRIDES with its own sword assignment: its "use default"
   // button is unlit.
@@ -270,9 +245,15 @@ test("cards show categorized totals with deltas from the no-stance base", () => 
   const dueling = cardOf(container, "dueling")!;
   expect(dueling.textContent).toContain("Attack 1 (+1)");
   expect(dueling.textContent).toContain("Hand 1 (-1)");
-  expect(dueling.textContent).toContain("Morale 1 (+1)");
-  // Proper display names, never the internal underscored key.
-  expect(dueling.textContent).toContain("Grants: Lunge");
+  expect(dueling.textContent).toContain("Morale 4 (+1)");
+  // Actions DERIVE from readiness now (no more "Grants:" line): the assigned
+  // sword's `bladed` plus the committed-act morale surface Lunge as a candidate
+  // button, named by its proper display name, never the underscored key.
+  expect(
+    [...dueling.querySelectorAll("button")].some(
+      (button) => button.textContent === "Lunge",
+    ),
+  ).toBe(true);
   expect(dueling.textContent).toContain("Combat");
   expect(dueling.textContent).toContain("Body");
 

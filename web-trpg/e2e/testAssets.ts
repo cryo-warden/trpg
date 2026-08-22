@@ -371,13 +371,6 @@ export const stancePack = (): AssetPack => ({
         mhp: 5,
         hand: 2,
         gait: 2,
-        actionNames: [
-          "test_punch",
-          "test_shuffle",
-          "test_lie",
-          "test_square",
-          "test_reach_wide",
-        ],
       }),
     },
   ],
@@ -386,7 +379,7 @@ export const stancePack = (): AssetPack => ({
       name: "test_brawler",
       value: {
         requirements: requirements({ hand: 1 }),
-        statBlock: statBlock({}),
+        block: statBlock({}),
       },
     },
     {
@@ -395,14 +388,14 @@ export const stancePack = (): AssetPack => ({
         requirements: NO_REQUIREMENTS,
         // The mep grant exercises the maxima RATCHET: adopting prone
         // raises mep once; leaving never lowers it back.
-        statBlock: statBlock({ gait: -2, mep: 3 }),
+        block: statBlock({ gait: -2, mep: 3 }),
       },
     },
     {
       name: "test_four_arms",
       value: {
         requirements: requirements({ hand: 4 }),
-        statBlock: statBlock({}),
+        block: statBlock({}),
       },
     },
   ],
@@ -492,15 +485,6 @@ export const customizationPack = (): AssetPack => ({
         body: 1,
         relic: 4,
         gait: 2,
-        actionNames: [
-          "test_take",
-          "test_slash",
-          "test_stand",
-          "test_duel",
-          "test_burden",
-          "test_equip",
-          "test_unequip",
-        ],
       }),
     },
   ],
@@ -511,7 +495,7 @@ export const customizationPack = (): AssetPack => ({
     },
     {
       name: "test_club",
-      value: gear(statBlock({ blunt: 1, hand: -1, actionNames: ["test_smash"] }), []),
+      value: gear(statBlock({ blunt: 1, hand: -1 }), []),
     },
     // Two-handed: consumes BOTH hands, so it and a one-hander cannot both be
     // applied on a two-hand body — the second wielded stays equipped but its
@@ -526,13 +510,13 @@ export const customizationPack = (): AssetPack => ({
   stances: [
     {
       name: "test_standing",
-      value: { requirements: NO_REQUIREMENTS, statBlock: statBlock({}) },
+      value: { requirements: NO_REQUIREMENTS, block: statBlock({}) },
     },
     {
       name: "test_dueling",
       value: {
         requirements: requirements({ bladed: 1 }),
-        statBlock: statBlock({ attack: 1 }),
+        block: statBlock({ attack: 1 }),
       },
     },
     // Costs a hand: a two-handed wield that fits the stance-free base no
@@ -541,7 +525,7 @@ export const customizationPack = (): AssetPack => ({
       name: "test_burdened",
       value: {
         requirements: NO_REQUIREMENTS,
-        statBlock: statBlock({ hand: -1 }),
+        block: statBlock({ hand: -1 }),
       },
     },
   ],
@@ -643,7 +627,7 @@ export const moralePack = (): AssetPack => ({
   stances: [
     {
       name: "test_standing",
-      value: { requirements: NO_REQUIREMENTS, statBlock: statBlock({}) },
+      value: { requirements: NO_REQUIREMENTS, block: statBlock({}) },
     },
   ],
   baselines: [
@@ -657,7 +641,6 @@ export const moralePack = (): AssetPack => ({
         morale: 5,
         // Rally is an ordinary buff the mouse knows; fear leaves it as the
         // one action still reachable (no morale requirement).
-        actionNames: ["test_move", "test_stand", "test_rally"],
       }),
     },
     {
@@ -665,7 +648,6 @@ export const moralePack = (): AssetPack => ({
       value: statBlock({
         mhp: 20,
         size: 6,
-        actionNames: ["test_smash"],
       }),
     },
   ],
@@ -722,7 +704,7 @@ export const connectionsPack = (): AssetPack => ({
   baselines: [
     {
       name: "test_walker",
-      value: statBlock({ mhp: 5, gait: 2, actionNames: ["test_move"] }),
+      value: statBlock({ mhp: 5, gait: 2 }),
     },
     // Paths are real bodies with HP (so a crossing can collapse); give the
     // test theme's paths a baseline like the real path baselines do.
@@ -920,12 +902,11 @@ export const deathPack = (): AssetPack => ({
         mhp: 10,
         mep: 4,
         gait: 2,
-        actionNames: ["test_attune", "test_move", "test_jab"],
       }),
     },
     {
       name: "test_brute",
-      value: statBlock({ mhp: 30, actionNames: ["test_crush"] }),
+      value: statBlock({ mhp: 30 }),
     },
     {
       name: "test_vermin",
@@ -1017,14 +998,14 @@ export const divePack = (): AssetPack => ({
       name: "test_standing",
       value: {
         requirements: NO_REQUIREMENTS,
-        statBlock: statBlock({ actionNames: ["test_dive"] }),
+        block: statBlock({}),
       },
     },
     {
       name: "test_prone",
       value: {
         requirements: NO_REQUIREMENTS,
-        statBlock: statBlock({ gait: -2 }),
+        block: statBlock({ gait: -2 }),
       },
     },
   ],
@@ -1122,7 +1103,7 @@ export const questPack = (): AssetPack => ({
   quests: [
     {
       name: "test_red_cookies",
-      value: { perBitStatBlock: statBlock({ mhp: 1 }), bitCount: 3 },
+      value: { perBitBlock: statBlock({ mhp: 1 }), bitCount: 3 },
     },
   ],
   appearanceFeatures: [
@@ -1178,7 +1159,6 @@ export const questPack = (): AssetPack => ({
         mhp: 5,
         hand: 2,
         gait: 2,
-        actionNames: ["test_take", "test_eat", "test_smash"],
       }),
     },
   ],
@@ -1265,7 +1245,7 @@ export const interactionsPack = (): AssetPack => ({
   quests: [
     {
       name: "test_hidden_cookies",
-      value: { perBitStatBlock: statBlock({ mhp: 1 }), bitCount: 2 },
+      value: { perBitBlock: statBlock({ mhp: 1 }), bitCount: 2 },
     },
   ],
   actions: [
@@ -1293,13 +1273,15 @@ export const interactionsPack = (): AssetPack => ({
         rounds: [{ effects: [{ tag: "Dump" }], interruptible: false }],
       },
     },
-    // Offered by the chest but beyond any looter: the actor-requirements
-    // gate refuses it at queue time (size 5 against a size-0 body).
+    // Offered by the chest but beyond any looter: the actor-requirements gate
+    // refuses it at queue time. Requirements are READINESS-only now, so the
+    // heave gates on committed nerve (morale 3) — a timid looter (morale 0)
+    // can't muster it, the readiness analog of the retired size-5 gate.
     {
       name: "test_heave",
       value: {
         actionType: { tag: "Interact" },
-        requirements: requirements({ size: 5 }),
+        requirements: requirements({ morale: 3 }),
         rounds: [{ effects: [{ tag: "Open" }], interruptible: false }],
       },
     },
@@ -1390,7 +1372,7 @@ export const spawnPack = (): AssetPack => ({
   quests: [
     {
       name: "test_spawn_cookies",
-      value: { perBitStatBlock: statBlock({ mhp: 1 }), bitCount: 5 },
+      value: { perBitBlock: statBlock({ mhp: 1 }), bitCount: 5 },
     },
   ],
   appearanceFeatures: [
@@ -1511,7 +1493,7 @@ export const bossPack = (): AssetPack => ({
   quests: [
     {
       name: "test_conquest",
-      value: { perBitStatBlock: statBlock({ mhp: 2 }), bitCount: 1 },
+      value: { perBitBlock: statBlock({ mhp: 2 }), bitCount: 1 },
     },
   ],
   actions: [
@@ -1527,7 +1509,11 @@ export const bossPack = (): AssetPack => ({
       name: "test_strike",
       value: {
         actionType: { tag: "Attack" },
-        requirements: NO_REQUIREMENTS,
+        // A hand strike DERIVES from `hand`: the challenger has hands, the
+        // warden does not, so only the challenger can strike. Under the derived-
+        // action model a NO_REQUIREMENTS attack would leak to EVERY entity —
+        // including the warden, which would then beat the challenger to death.
+        requirements: requirements({ hand: 1 }),
         rounds: [{ effects: [{ tag: "Attack", value: 5 }], interruptible: false }],
       },
     },
@@ -1559,7 +1545,8 @@ export const bossPack = (): AssetPack => ({
         mhp: 10,
         gait: 2,
         attack: 0,
-        actionNames: ["test_move", "test_strike"],
+        // Hands to strike with; the warden has none, so it cannot fight back.
+        hand: 2,
       }),
     },
     {
@@ -1690,12 +1677,11 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
         mhp: 20,
         gait: 2,
         attack: 1,
-        actionNames: ["test_move", "test_strike"],
       }),
     },
     {
       name: "test_lurker_base",
-      value: statBlock({ mhp: 10, attack: 1, actionNames: ["test_strike"] }),
+      value: statBlock({ mhp: 10, attack: 1 }),
     },
   ],
   encounterBlobs: [
@@ -1834,7 +1820,6 @@ export const guardedMapPack = ({
         mhp: 10,
         gait: 2,
         attack: 1,
-        actionNames: ["test_move", "test_smash"],
       }),
     },
   ],

@@ -2,9 +2,14 @@ import { useMemo } from "react";
 import {
   ActionAsset,
   AppearanceFeatureAsset,
+  ReadinessBlock,
   Stance,
 } from "../../../stdb/types";
-import { StanceReachabilityGraph } from "../../domain/stanceReachability";
+import {
+  IntStatRequirements,
+  IntStats,
+  meetsRequirements,
+} from "../../domain/statSummary";
 import {
   ACTIONS,
   ACTION_APPEARANCES,
@@ -114,7 +119,7 @@ export const useStanceRows = (): { id: number; name: string }[] =>
     [],
   );
 
-/** The full subscribed stance rows (stat block and requirements included),
+/** The full subscribed stance rows (group blocks and requirements included),
  * ordered by id — the stances menu renders from these. */
 export const useStanceDetailRows = (): Stance[] =>
   useTableData(
@@ -123,46 +128,34 @@ export const useStanceDetailRows = (): Stance[] =>
     [],
   );
 
-/** The graph the stances menu closes over: each stance's action and stance
- * grants (from its subscribed stat block), and each action's SetStance
- * targets (from the client's own asset Records — the server does not
- * publish effects, but the client authored them). */
-export const useStanceReachabilityGraph = (): StanceReachabilityGraph => {
-  const stanceRows = useStanceDetailRows();
-  const actionRows = useTableData(
+/** The client mirror of the server's derived action set: every subscribed
+ * action whose readiness requirements are met by a given readiness block. The
+ * menus use it to project the candidate actions a hypothetical configuration
+ * would make available. */
+export const useActionsMeetingReadiness = (): ((
+  readiness: ReadinessBlock,
+) => ActionId[]) => {
+  const rows = useTableData(
     "actions",
     (table) => [...table.iter()].map(({ id, name }) => ({ id, name })),
     [],
   );
-  return useMemo(() => {
-    const stanceIdsByName = new Map(
-      stanceRows.map((row) => [row.name, row.id]),
-    );
-    const stanceGrants = new Map(
-      stanceRows.map((row) => [
-        row.id,
-        { actionIds: [...row.statBlock.actionIds] },
-      ]),
-    );
-    const actionStanceTargets = new Map<number, number[]>();
-    for (const { id, name } of actionRows) {
-      const asset = toNamedActionAsset(name);
-      if (asset == null) {
-        continue;
-      }
-      const targets = asset.rounds
-        .flatMap((round) => round.effects)
-        .flatMap((effect) =>
-          effect.tag === "SetStance"
-            ? (stanceIdsByName.get(effect.value) ?? [])
-            : [],
-        );
-      if (targets.length > 0) {
-        actionStanceTargets.set(id, targets);
-      }
-    }
-    return { stanceGrants, actionStanceTargets };
-  }, [stanceRows, actionRows]);
+  return useMemo(
+    () => (readiness: ReadinessBlock) =>
+      rows.flatMap(({ id, name }) => {
+        const asset = toNamedActionAsset(name);
+        if (asset == null) {
+          return [];
+        }
+        return meetsRequirements(
+          readiness as unknown as IntStats,
+          asset.requirements as unknown as IntStatRequirements,
+        )
+          ? [id]
+          : [];
+      }),
+    [rows],
+  );
 };
 
 export type NamedActionAsset = { name: ActionName } & ActionAsset;

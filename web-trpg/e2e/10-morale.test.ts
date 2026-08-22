@@ -27,10 +27,10 @@ const myStanceId = (): number | undefined =>
   )?.stanceId;
 
 const myMorale = (): number | undefined => {
-  const total = [...player.db.total_stat_block_components.iter()].find(
+  const total = [...player.db.readiness_total_components.iter()].find(
     (row) => row.entityId === playerEntityId,
   );
-  return total?.statBlock.morale;
+  return total?.readiness.morale;
 };
 
 const myFear = () =>
@@ -59,7 +59,7 @@ beforeAll(async () => {
       "SELECT * FROM stances",
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
-      "SELECT * FROM total_stat_block_components",
+      "SELECT * FROM readiness_total_components",
       "SELECT * FROM fear_status_components",
       "SELECT * FROM courage_status_components",
       "SELECT * FROM ep_components",

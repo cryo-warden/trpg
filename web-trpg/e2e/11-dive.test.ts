@@ -40,7 +40,7 @@ beforeAll(async () => {
       "SELECT * FROM stances",
       "SELECT * FROM active_stance_components",
       "SELECT * FROM equipment_components",
-      "SELECT * FROM total_stat_block_components",
+      "SELECT * FROM readiness_total_components",
       "SELECT * FROM hp_components",
       "SELECT * FROM item_components",
       "SELECT * FROM location_components",
@@ -88,7 +88,7 @@ test("diving at a sword lands prone, braced, holding the sword — morale includ
   );
   await waitFor(
     () =>
-      myRow(player.db.total_stat_block_components.iter())?.statBlock.morale ===
+      myRow(player.db.readiness_total_components.iter())?.readiness.morale ===
       8,
     30000,
   );

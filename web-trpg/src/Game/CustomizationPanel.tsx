@@ -4,7 +4,8 @@ import {
   admitsEquipmentItem,
   applyEquipmentIfFits,
   EquipCandidate,
-  subtractStatBlocks,
+  flattenGrouped,
+  subtractGrouped,
 } from "./domain/statBlock";
 import {
   OwnedItem,
@@ -18,6 +19,7 @@ import {
 } from "./context/StdbContext/customization";
 import {
   useActionDisplayNameOf,
+  useActionsMeetingReadiness,
   useCommonPinnableActionIds,
 } from "./context/StdbContext/assetLookup";
 import { useStanceFreeBase } from "./context/StdbContext/baseStats";
@@ -99,16 +101,24 @@ export const CustomizationPanel = () => {
     ...candidatesOf(defaultArmamentEntityIds),
   ];
   const { total: configTotal } = applyEquipmentIfFits(baseStats, configCandidates);
-  const defaultConfigStat = (key: IntStatKey): number => configTotal[key];
+  const configFlat = flattenGrouped(configTotal);
+  const defaultConfigStat = (key: IntStatKey): number => configFlat[key] ?? 0;
   // What the applied gear adds up to (dropped gear excluded), for the summary.
-  const equippedContribution = subtractStatBlocks(configTotal, baseStats);
+  const equippedContribution = flattenGrouped(
+    subtractGrouped(configTotal, baseStats),
+  );
 
-  // The default bar's candidate set: everything the applied configuration
-  // grants plus the COMMON verbs (take, move, …) — offered or derived in play,
-  // absent from any granted set, but pinnable for a stable slot all the same.
+  // The default bar's candidate set: every action the applied configuration's
+  // READINESS makes available (the derived set) plus the COMMON verbs (take,
+  // move, …) — offered or derived in play, absent from any granted set, but
+  // pinnable for a stable slot all the same.
+  const actionsMeetingReadiness = useActionsMeetingReadiness();
   const commonPinnable = useCommonPinnableActionIds();
   const defaultCandidateActionIds = [
-    ...new Set([...configTotal.actionIds, ...commonPinnable]),
+    ...new Set([
+      ...actionsMeetingReadiness(configTotal.readiness),
+      ...commonPinnable,
+    ]),
   ];
 
   // Add-guards: the capacity a further pick of each kind would face. An item
@@ -124,7 +134,10 @@ export const CustomizationPanel = () => {
   ).total;
   const wouldOverflow = (running: typeof baseStats, id: EntityId): boolean => {
     const block = statOfEntityId(id);
-    return block != null && !admitsEquipmentItem(running, block);
+    return (
+      block != null &&
+      !admitsEquipmentItem(running.bodyCapacity, block.bodyCapacity)
+    );
   };
 
   const summaryOf = (item: OwnedItem) => {
@@ -132,7 +145,7 @@ export const CustomizationPanel = () => {
     return block == null ? null : (
       <>
         {" "}
-        <StatBlockSummary statBlock={block} />
+        <StatBlockSummary statBlock={flattenGrouped(block)} />
       </>
     );
   };

@@ -237,6 +237,22 @@
       ],
       "dir": "web-trpg"
     },
+    "test-e2e-iso-smoke": {
+      "command": [
+        "bash",
+        "scripts/e2e-stdb.sh",
+        "e2e/0-smoke.test.ts"
+      ],
+      "dir": "web-trpg"
+    },
+    "test-e2e-iso": {
+      "command": [
+        "bash",
+        "scripts/e2e-stdb.sh",
+        "e2e"
+      ],
+      "dir": "web-trpg"
+    },
     "test-e2e": {
       "bundle": [
         "test-e2e-smoke",

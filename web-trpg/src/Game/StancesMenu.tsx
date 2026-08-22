@@ -5,16 +5,12 @@ import { EntityId } from "./trpg";
 import { ActionsBarEditor } from "./ActionsBarEditor";
 import {
   useActionDisplayNameOf,
+  useActionsMeetingReadiness,
   useCommonPinnableActionIds,
   useStanceDetailRows,
-  useStanceReachabilityGraph,
 } from "./context/StdbContext/assetLookup";
 import { useStanceFreeBase } from "./context/StdbContext/baseStats";
-import {
-  useMyActiveStanceId,
-  usePlayerEntity,
-  useTotalStatBlockComponent,
-} from "./context/StdbContext/components";
+import { useMyActiveStanceId } from "./context/StdbContext/components";
 import { STANCE_DISPLAY_NAMES } from "./assets/stances";
 import { displayNameFrom } from "./assets/display_names";
 import {
@@ -32,9 +28,13 @@ import { useStdbConnection } from "./context/StdbContext/useStdb";
 import { reachableStanceIds } from "./domain/stanceReachability";
 import { signedStatSummary } from "./domain/statSummary";
 import {
-  addStatBlocks,
+  addBlock,
+  addGrouped,
   applyEquipmentIfFits,
   EquipCandidate,
+  flattenGrouped,
+  GroupedBlock,
+  ZERO_READINESS,
 } from "./domain/statBlock";
 import { EntityName } from "./EntityName";
 import { StatBlockSummary } from "./StatBlockSummary";
@@ -60,11 +60,8 @@ const toggle = (ids: readonly EntityId[], id: EntityId): EntityId[] =>
  */
 export const StancesMenu = () => {
   const connection = useStdbConnection();
-  const playerEntity = usePlayerEntity();
-  const total = useTotalStatBlockComponent(playerEntity);
   const activeStanceId = useMyActiveStanceId();
   const stanceRows = useStanceDetailRows();
-  const graph = useStanceReachabilityGraph();
   const assignments = useMyStanceAssignments();
   const owned = useOwnedItems();
   const gearStatBlockOf = useGearStatBlockOf();
@@ -93,34 +90,49 @@ export const StancesMenu = () => {
       return block == null ? [] : [{ entityId: id, block }];
     });
 
-  const totalStatBlock = total?.statBlock ?? null;
-  const reachable = useMemo(() => {
-    const seedActionIds = [...(totalStatBlock?.actionIds ?? [])];
+  // The stance-free, armament-free base of every stat and grant — steady
+  // (baseline + traits + quest), status-free, and shared with the equip menu.
+  const { baseStats } = useStanceFreeBase();
+  // Everything carried gear COULD add to readiness, summed — reachability keys
+  // off all potentially-equippable items, as the server's closure does.
+  const carriableReadiness = useMemo(() => {
+    let readiness = ZERO_READINESS;
     for (const item of owned) {
-      const gear = gearStatBlockOf(item);
-      if (gear != null) {
-        seedActionIds.push(...gear.actionIds);
+      const gearBlock = gearStatBlockOf(item);
+      if (gearBlock != null) {
+        readiness = addBlock(readiness, gearBlock.readiness);
       }
     }
-    // The stance currently HELD is trivially reachable — even one adopted
-    // by force or at creation, with no posture action granting it.
-    const seedStanceIds = activeStanceId == null ? [] : [activeStanceId];
-    return new Set(reachableStanceIds({ seedActionIds, seedStanceIds, graph }));
-  }, [totalStatBlock, owned, gearStatBlockOf, graph, activeStanceId]);
+    return readiness;
+  }, [owned, gearStatBlockOf]);
+  const reachable = useMemo(
+    () =>
+      new Set(
+        reachableStanceIds({
+          baseReadiness: baseStats.readiness,
+          carriableReadiness,
+          activeStanceId,
+          stances: stanceRows.map((row) => ({
+            id: row.id,
+            requirements: row.requirements,
+            readiness: row.readiness,
+          })),
+        }),
+      ),
+    [baseStats, carriableReadiness, activeStanceId, stanceRows],
+  );
   const shown = stanceRows.filter((row) => reachable.has(row.id));
 
-  // The stance-free, armament-free base of every stat and grant — steady
-  // (baseline + traits + quest), status-free, and shared with the equip menu
-  // so the two menus can never show different bases. The GEARED base adds the
-  // worn armor and relics (constant across stances): each stance card shows
-  // the full would-be totals it produces with its wielded armaments, and its
-  // DELTAS are measured against this geared base, so worn gear never reads as
-  // a per-stance change.
-  const { baseStats } = useStanceFreeBase();
+  // The GEARED base adds the worn armor and relics (constant across stances):
+  // each stance card shows the full would-be totals it produces with its
+  // wielded armaments, and its DELTAS are measured against this geared base, so
+  // worn gear never reads as a per-stance change.
   const gearedBase = applyEquipmentIfFits(baseStats, [
     ...(armorEntityId == null ? [] : candidatesOf([armorEntityId])),
     ...candidatesOf(relicEntityIds),
   ]).total;
+  const actionsMeetingReadiness = useActionsMeetingReadiness();
+  const gearedFlat = flattenGrouped(gearedBase);
 
   const ownedArmaments = owned.filter((item) => item.kind === "Armament");
 
@@ -178,21 +190,28 @@ export const StancesMenu = () => {
         // with its wielded armaments applied (apply-if-fits, so an armament
         // this stance leaves no grip for drops out of the numbers just as it
         // would live). Delta is measured against the geared base.
-        const candidateBase = addStatBlocks(gearedBase, stance.statBlock);
+        const stanceBlock: GroupedBlock = {
+          stats: stance.stats,
+          bodyCapacity: stance.bodyCapacity,
+          readiness: stance.readiness,
+        };
+        const stanceSummary = flattenGrouped(stanceBlock);
+        const candidateBase = addGrouped(gearedBase, stanceBlock);
         const armamentCandidates = candidatesOf(resolvedArmaments);
         const { total: candidate } = applyEquipmentIfFits(
           candidateBase,
           armamentCandidates,
         );
-        const freeHand = candidate.hand;
-        const grantedActionNames = [...stance.statBlock.actionIds].map(
-          (id) => actionDisplayName(id),
-        );
-        // The stance's candidate ACTION set: everything the would-be
-        // configuration grants (base + worn gear + this stance + its applied
-        // armaments) plus the always-pinnable common verbs.
+        const candidateFlat = flattenGrouped(candidate);
+        const freeHand = candidate.bodyCapacity.hand;
+        // The stance's candidate ACTION set: every action the would-be
+        // configuration's READINESS makes available (base + worn gear + this
+        // stance + its applied armaments) plus the always-pinnable common verbs.
         const candidateActionIds = [
-          ...new Set([...candidate.actionIds, ...commonPinnable]),
+          ...new Set([
+            ...actionsMeetingReadiness(candidate.readiness),
+            ...commonPinnable,
+          ]),
         ];
         // Highlighting always shows the EFFECTIVE set: the override when
         // one exists, the default items otherwise. Clicking an item while
@@ -214,18 +233,15 @@ export const StancesMenu = () => {
               {stanceName}
               {stance.id === activeStanceId && " (active)"}
             </h3>
-            {signedStatSummary(stance.statBlock) !== "" && (
+            {signedStatSummary(stanceSummary) !== "" && (
               <div className="stanceSummary">
-                <StatBlockSummary statBlock={stance.statBlock} />
+                <StatBlockSummary statBlock={stanceSummary} />
               </div>
             )}
             <StatGroupsView
-              statOf={(key) => candidate[key]}
-              deltaOf={(key) => candidate[key] - gearedBase[key]}
+              statOf={(key) => candidateFlat[key] ?? 0}
+              deltaOf={(key) => (candidateFlat[key] ?? 0) - (gearedFlat[key] ?? 0)}
             />
-            {grantedActionNames.length > 0 && (
-              <div>Grants: {grantedActionNames.join(", ")}</div>
-            )}
             <h4>Armaments (free hand: {freeHand})</h4>
             <Button
               className={usesDefault ? "active" : ""}

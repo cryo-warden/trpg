@@ -10,39 +10,30 @@ import {
   relicIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
-import type { StatBlock } from "../stdb/types";
 import { AppearanceFeatureName } from "./assets/appearance_features";
 import { CustomizationPanel } from "./CustomizationPanel";
-
-// A full runtime StatBlock over the wire shape: the published total the menu
-// peels to its steady base carries every field, so tests do too.
-const runtimeStatBlock = (partial: Partial<StatBlock>): StatBlock => ({
-  attack: 0,
-  defense: 0,
-  hand: 0,
-  body: 0,
-  relic: 0,
-  gait: 0,
-  reach: 0,
-  blunt: 0,
-  bladed: 0,
-  pole: 0,
-  ward: 0,
-  focus: 0,
-  wing: 0,
-  upright: 0,
-  size: 0,
-  morale: 0,
-  mhp: 0,
-  mep: 0,
-  actionIds: [],
-  appearanceFeatureIds: [],
-  ...partial,
-});
 
 // The steady body plan: one armor slot, four relic slots, two hands — the
 // capacities the base carries before any gear is worn.
 const baseCapacities = { hand: 2, body: 1, relic: 4 };
+
+// The per-group total rows the menu peels back to its steady base (the flat
+// StatBlock is retired). Body-capacity always carries the body plan; a test adds
+// stats/readiness only when it cares. Partial blocks are fine — the peel
+// normalizes every field.
+const groupTotals = ({
+  stats = {},
+  readiness = {},
+  bodyCapacity = baseCapacities,
+}: {
+  stats?: Record<string, number>;
+  readiness?: Record<string, number>;
+  bodyCapacity?: Record<string, number>;
+}) => ({
+  stats_total_components: mockTable([{ entityId: 1n, stats }]),
+  readiness_total_components: mockTable([{ entityId: 1n, readiness }]),
+  body_capacity_total_components: mockTable([{ entityId: 1n, bodyCapacity }]),
+});
 
 // Item ENTITIES render their OWN appearance name (getName over their
 // appearance features), never the gear asset's vocabulary name.
@@ -56,9 +47,7 @@ const appearanceRow = (entityId: bigint, names: AppearanceFeatureName[]) => ({
 // appearance features.
 const tables = () => ({
   player_controller_components: mockTable([{ entityId: 1n, accountId: 1n }]),
-  total_stat_block_components: mockTable([
-    { entityId: 1n, statBlock: runtimeStatBlock(baseCapacities) },
-  ]),
+  ...groupTotals({}),
   location_components: mockTable([
     { entityId: 5n, locationEntityId: 1n },
     { entityId: 6n, locationEntityId: 1n },
@@ -160,9 +149,7 @@ test("an armament button CONFIGURES the default set: toggled on when off, off wh
   const setDefaultArmaments = mock(() => {});
   const withTotals = {
     ...tables(),
-    total_stat_block_components: mockTable([
-      { entityId: 1n, statBlock: { hand: 2 } },
-    ]),
+    ...groupTotals({ bodyCapacity: { hand: 2 } }),
   };
   const off = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withTotals, {
@@ -223,9 +210,7 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
       appearanceRow(9n, ["staff"]),
     ]),
     // Steady base hand 2 (no equipment/status/stance to peel).
-    total_stat_block_components: mockTable([
-      { entityId: 1n, statBlock: { hand: 2 } },
-    ]),
+    ...groupTotals({ bodyCapacity: { hand: 2 } }),
     // The sword is held in the default set, spending one grip.
     default_armaments_components: mockTable([
       { entityId: 1n, armamentEntityIds: [5n] },
@@ -252,9 +237,7 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
 test("the equip menu lays the stance card's detailed stats out — deltaless", () => {
   const withTotals = {
     ...tables(),
-    total_stat_block_components: mockTable([
-      { entityId: 1n, statBlock: { attack: 1, hand: 2 } },
-    ]),
+    ...groupTotals({ stats: { attack: 1 }, bodyCapacity: { hand: 2 } }),
   };
   const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withTotals, { identity: {} as Identity }),
@@ -272,14 +255,11 @@ test("the equip menu lays the stance card's detailed stats out — deltaless", (
 
 test("the DEFAULT action bar proposes set_default_actions from its candidates", () => {
   const setDefaultActions = mock(() => {});
+  // "Take" derives from readiness for any actor (it requires nothing), so the
+  // base need only carry the body plan for the panel to render it.
   const withCandidates = {
     ...tables(),
-    total_stat_block_components: mockTable([
-      {
-        entityId: 1n,
-        statBlock: { hand: 2, actionIds: [actionIdOf("take")] },
-      },
-    ]),
+    ...groupTotals({ bodyCapacity: { hand: 2 } }),
   };
   const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(withCandidates, {
@@ -298,14 +278,14 @@ test("the DEFAULT action bar proposes set_default_actions from its candidates", 
 
 test("a candidate click STACKS onto the default bar, never replaces it", () => {
   const setDefaultActions = mock(() => {});
+  // Heal is a spell: it derives only when the readiness carries focus AND light,
+  // so the base must supply both for the candidate to appear.
   const withBar = {
     ...tables(),
-    total_stat_block_components: mockTable([
-      {
-        entityId: 1n,
-        statBlock: { hand: 2, actionIds: [actionIdOf("take"), actionIdOf("heal")] },
-      },
-    ]),
+    ...groupTotals({
+      bodyCapacity: { hand: 2 },
+      readiness: { focus: 1, light: 1 },
+    }),
     default_actions_components: mockTable([
       { entityId: 1n, actionIds: [actionIdOf("take")] },
     ]),
@@ -340,9 +320,7 @@ test("owned items render in stable ENTITY order regardless of row order", () => 
       appearanceRow(9n, ["staff"]),
       appearanceRow(5n, ["sword"]),
     ]),
-    total_stat_block_components: mockTable([
-      { entityId: 1n, statBlock: { hand: 2 } },
-    ]),
+    ...groupTotals({ bodyCapacity: { hand: 2 } }),
   };
   const { container } = render(<CustomizationPanel />, {
     wrapper: gameWrapper(reversedRows, { identity: {} as Identity }),

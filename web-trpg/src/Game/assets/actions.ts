@@ -1,7 +1,7 @@
 import {
   ActionAsset,
   ActionEffectAsset,
-  StatRequirements,
+  ReadinessRequirements,
 } from "../../stdb/types";
 import { NO_REQUIREMENTS, requirements } from "./stat_requirements";
 
@@ -38,7 +38,7 @@ const SetStance = (stanceName: string) =>
  * postures need footing (upright) to enter from. */
 const posture = (
   stanceName: string,
-  postureRequirements: StatRequirements = requirements({}),
+  postureRequirements: ReadinessRequirements = requirements({}),
 ) => ({
   actionType: { tag: "Posture" } as const,
   requirements: postureRequirements,
@@ -69,6 +69,8 @@ export const ACTIONS = {
   },
   bop: {
     actionType: { tag: "Attack" },
+    // A free hand to strike with (readiness hand), not a grip SLOT: a wielded
+    // weapon removes the free hand, so a fully-armed fighter drops bop.
     requirements: requirements({ hand: 1, morale: 1 }),
     rounds: [round(Attack(1))],
   },
@@ -103,18 +105,21 @@ export const ACTIONS = {
   // focus exactly as attacks scale by attack).
   heal: {
     actionType: { tag: "Buff" },
-    requirements: requirements({}),
+    // Magic AND light: channeled through focus (the discipline) and drawn from
+    // the light element (the affinity). A healer centers into light_casting or
+    // holds a radiant channeling implement — plain focus alone no longer heals.
+    requirements: requirements({ focus: 1, light: 1 }),
     rounds: [round(Heal(1))],
   },
   slime_spray: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ morale: 1 }),
+    requirements: requirements({ ooze: 1, morale: 1 }),
     // A heavy with a committed (uninterruptible) telegraph, then recovery.
     rounds: [round(Intimidate(1)), round(Attack(1)), round()],
   },
   scratch: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ morale: 1 }),
+    requirements: requirements({ claw: 1, morale: 1 }),
     rounds: [round(Attack(1))],
   },
   guard: {
@@ -124,8 +129,42 @@ export const ACTIONS = {
   },
   bite: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ morale: 1 }),
+    requirements: requirements({ jaw: 1, morale: 1 }),
     rounds: [round(Attack(1))],
+  },
+  // A heavier bite that a mere jaw can't manage — a predator's jaw (2) unlocks
+  // it, showing how a higher body-tag score reaches the stronger attack.
+  maul: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ jaw: 2, morale: 3 }),
+    rounds: [interruptibleRound(Intimidate(1)), round(Attack(2))],
+  },
+  // A kick DERIVES from `foot`, the same footing tag the upright stances need —
+  // feet both stand and strike, exactly as hands both hold and bop.
+  kick: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ foot: 1, morale: 1 }),
+    rounds: [round(Attack(1))],
+  },
+  // Elemental melee: a physical strike IMBUED with an element — the limb tag
+  // (jaw/hand/foot) plus the matching element, but NO focus. Unlike a spell
+  // (focus + element, cast at range), these are the body channeling an element
+  // it already carries (from a casting stance or a channeling implement) through
+  // a bite, punch, or kick. Fire is the exemplar; the pattern extends per element.
+  fire_bite: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ jaw: 1, fire: 1, morale: 1 }),
+    rounds: [round(Attack(2))],
+  },
+  fire_punch: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ hand: 1, fire: 1, morale: 1 }),
+    rounds: [round(Attack(2))],
+  },
+  fire_kick: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ foot: 1, fire: 1, morale: 1 }),
+    rounds: [round(Attack(2))],
   },
   // Armament basics: each armament grants its own attack, and the
   // requirement re-checks the property the armament provides.
@@ -166,21 +205,46 @@ export const ACTIONS = {
     // Committed footwork first, then the strike.
     rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
+  // Elemental magic: each bolt needs focus (to channel) AND its own element (the
+  // affinity), plus the committed-act morale. The element comes from the matching
+  // casting stance or a channeling armament; scaling is deliberately flat for now
+  // (one focus, one element) — stronger variants will ask for higher values.
   fire_bolt: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ focus: 1, morale: 3 }),
+    requirements: requirements({ focus: 1, fire: 1, morale: 3 }),
     rounds: [interruptibleRound(Intimidate(2)), round(Attack(3))],
   },
   ice_shard: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ focus: 1, morale: 3 }),
+    requirements: requirements({ focus: 1, ice: 1, morale: 3 }),
     rounds: [round(Attack(2))],
   },
   lightning_arc: {
     actionType: { tag: "Attack" },
-    requirements: requirements({ focus: 1, morale: 3 }),
+    requirements: requirements({ focus: 1, lightning: 1, morale: 3 }),
     // Two strikes on the same tick.
     rounds: [round(Attack(1), Attack(1))],
+  },
+  // Light magic — a radiant strike. Same channel-plus-affinity gate as a bolt,
+  // showing light drives the occasional attack as well as healing.
+  radiance: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ focus: 1, light: 1, morale: 3 }),
+    rounds: [round(Attack(2))],
+  },
+  // Shadow magic, the buff half: a protective shroud (Guard). Magic, so it needs
+  // focus; shadow is the affinity behind both wards and hexes.
+  shroud: {
+    actionType: { tag: "Buff" },
+    requirements: requirements({ focus: 1, shadow: 1 }),
+    rounds: [round(Guard(2))],
+  },
+  // Shadow magic, the debuff half: a hex that shakes an enemy's nerve
+  // (Intimidate). Targets a foe, so it rides the Attack action type.
+  hex: {
+    actionType: { tag: "Attack" },
+    requirements: requirements({ focus: 1, shadow: 1, morale: 1 }),
+    rounds: [round(Intimidate(2))],
   },
   // Inventory verbs: carrying IS location, so taking pulls the item into
   // the taker and dropping pushes it back out to the room. Taking needs no
@@ -253,21 +317,27 @@ export const ACTIONS = {
   // Stance changes ARE actions — a round spent shifting posture, no
   // separate UI. Each goes through the shared adoption gates (known stance,
   // requirements, the fear gate).
+  // Each posture inherits its target stance's readiness requirement, so a
+  // posture only appears in the derived set when the stance it enters is
+  // actually adoptable (the server gates adoption by the same requirement).
   stand: posture("standing"),
   sit: posture("sitting"),
   // Lying down and diving need footing: nothing to drop from when flat.
   lie_down: posture("prone", requirements({ upright: 1 })),
   ready_up: posture("ready"),
-  square_up: posture("brawler"),
-  duel: posture("dueling"),
+  square_up: posture("brawler", requirements({ hand: 1 })),
+  duel: posture("dueling", requirements({ bladed: 1 })),
   stride: posture("striding"),
-  perch: posture("perched"),
-  take_wing: posture("flapping"),
-  center: posture("casting"),
-  kindle: posture("fire_casting"),
-  chill: posture("ice_casting"),
-  charge: posture("lightning_casting"),
+  perch: posture("perched", requirements({ wing: 1 })),
+  take_wing: posture("flapping", requirements({ wing: 2 })),
+  center: posture("casting", requirements({ focus: 1 })),
+  kindle: posture("fire_casting", requirements({ focus: 1 })),
+  chill: posture("ice_casting", requirements({ focus: 1 })),
+  charge: posture("lightning_casting", requirements({ focus: 1 })),
+  illuminate: posture("light_casting", requirements({ focus: 1 })),
+  darken: posture("shadow_casting", requirements({ focus: 1 })),
   slump: posture("amorphous"),
+  phase: posture("intangible", requirements({ ethereal: 1 })),
   // Hit the deck: lands prone (fear stays if present), braced for +2
   // defense, and grabs a targeted item mid-dive — a wielded weapon's morale
   // can itself overcome a fear.
@@ -335,6 +405,27 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
     beginTemplate:
       "{0:sentence:subject} snapped {0:possessive} jaws at {1:object}.",
   },
+  maul: {
+    displayName: "Maul",
+    beginTemplate:
+      "{0:sentence:subject} bared {0:possessive} teeth to maul {1:object}.",
+  },
+  kick: {
+    displayName: "Kick",
+    beginTemplate: "{0:sentence:subject} kicked at {1:object}.",
+  },
+  fire_bite: {
+    displayName: "Fire Bite",
+    beginTemplate: "{0:sentence:subject} sank blazing jaws into {1:object}.",
+  },
+  fire_punch: {
+    displayName: "Fire Punch",
+    beginTemplate: "{0:sentence:subject} drove a flaming fist at {1:object}.",
+  },
+  fire_kick: {
+    displayName: "Fire Kick",
+    beginTemplate: "{0:sentence:subject} whirled a fiery kick at {1:object}.",
+  },
   smash: {
     displayName: "Smash",
     beginTemplate: "{0:sentence:subject} hefted a bludgeon toward {1:object}.",
@@ -374,6 +465,18 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
   lightning_arc: {
     displayName: "Lightning Arc",
     beginTemplate: "{0:sentence:subject} arced lightning toward {1:object}.",
+  },
+  radiance: {
+    displayName: "Radiance",
+    beginTemplate: "{0:sentence:subject} gathered searing light at {1:object}.",
+  },
+  shroud: {
+    displayName: "Shroud",
+    beginTemplate: "{0:sentence:subject} drew a shadow shroud close.",
+  },
+  hex: {
+    displayName: "Hex",
+    beginTemplate: "{0:sentence:subject} whispered a hex at {1:object}.",
   },
   take: {
     displayName: "Take",
@@ -471,8 +574,20 @@ export const ACTION_APPEARANCES: Record<ActionName, ActionAppearance> = {
     displayName: "Charge",
     beginTemplate: "{0:sentence:subject} crackled with gathering charge.",
   },
+  illuminate: {
+    displayName: "Illuminate",
+    beginTemplate: "{0:sentence:subject} kindled a steady inner light.",
+  },
+  darken: {
+    displayName: "Darken",
+    beginTemplate: "{0:sentence:subject} drew the shadows inward.",
+  },
   slump: {
     displayName: "Slump",
     beginTemplate: "{0:sentence:subject} slumped back into formlessness.",
+  },
+  phase: {
+    displayName: "Phase",
+    beginTemplate: "{0:sentence:subject} faded half out of the world.",
   },
 };

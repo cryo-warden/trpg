@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { StatBlock } from "../../../stdb/types";
 import { EntityId } from "../../trpg";
+import { GroupedBlock } from "../../domain/statBlock";
 import { ARMAMENT_DISPLAY_NAMES } from "../../assets/armaments";
 import { ARMOR_DISPLAY_NAMES } from "../../assets/armors";
 import { RELIC_DISPLAY_NAMES } from "../../assets/relics";
@@ -223,23 +223,30 @@ export const useMyDefaultArmamentEntityIds = (): EntityId[] => {
   );
 };
 
-const useStatBlockMap = (table: "armaments" | "armors" | "relics") =>
+const useGroupedBlockMap = (table: "armaments" | "armors" | "relics") =>
   useTableData(
     table,
     (t) =>
-      new Map<number, StatBlock>(
-        [...t.iter()].map((row) => [row.id, row.statBlock]),
+      new Map<number, GroupedBlock>(
+        [...t.iter()].map((row) => [
+          row.id,
+          {
+            stats: row.stats,
+            bodyCapacity: row.bodyCapacity,
+            readiness: row.readiness,
+          },
+        ]),
       ),
     [],
   );
 
-/** Resolves any owned item to its gear asset's stat block. */
+/** Resolves any owned item to its gear asset's grouped block. */
 export const useGearStatBlockOf = (): ((
   item: OwnedItem,
-) => StatBlock | null) => {
-  const armamentStats = useStatBlockMap("armaments");
-  const armorStats = useStatBlockMap("armors");
-  const relicStats = useStatBlockMap("relics");
+) => GroupedBlock | null) => {
+  const armamentStats = useGroupedBlockMap("armaments");
+  const armorStats = useGroupedBlockMap("armors");
+  const relicStats = useGroupedBlockMap("relics");
   return useMemo(
     () => (item: OwnedItem) =>
       (item.kind === "Armament"

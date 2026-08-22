@@ -1,4 +1,4 @@
-import type { StatBlock } from "../stdb/types";
+import type { StatKey } from "./domain/statSummary";
 
 /**
  * The categorized DETAILED stats view: one vocabulary for every card
@@ -6,11 +6,8 @@ import type { StatBlock } from "../stdb/types";
  * alike, so the two read as the same kind of surface.
  */
 
-/** Every int stat of the block (the id-vec grants are not numbers). */
-export type IntStatKey = Exclude<
-  keyof StatBlock,
-  "actionIds" | "appearanceFeatureIds"
->;
+/** Every int stat a flattened grouped block carries. */
+export type IntStatKey = StatKey;
 
 export type StatEntry = readonly [IntStatKey, string];
 
@@ -41,6 +38,9 @@ export const STAT_GROUPS: readonly StatGroup[] = [
       ["gait", "Gait"],
       ["reach", "Reach"],
       ["wing", "Wing"],
+      ["foot", "Foot"],
+      ["amorphous", "Amorphous"],
+      ["ethereal", "Ethereal"],
       ["upright", "Upright"],
       ["size", "Size"],
     ],
@@ -53,6 +53,24 @@ export const STAT_GROUPS: readonly StatGroup[] = [
       ["pole", "Pole"],
       ["ward", "Ward"],
       ["focus", "Focus"],
+    ],
+  },
+  {
+    label: "Instinct",
+    stats: [
+      ["jaw", "Jaw"],
+      ["claw", "Claw"],
+      ["ooze", "Ooze"],
+    ],
+  },
+  {
+    label: "Element",
+    stats: [
+      ["fire", "Fire"],
+      ["ice", "Ice"],
+      ["lightning", "Lightning"],
+      ["light", "Light"],
+      ["shadow", "Shadow"],
     ],
   },
 ];

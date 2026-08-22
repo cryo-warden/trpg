@@ -2,98 +2,105 @@ import { StanceAsset } from "../../stdb/types";
 import { statBlock } from "./stat_block";
 import { NO_REQUIREMENTS, requirements } from "./stat_requirements";
 
-// A stance's stat block is an ordinary contribution to the entity's total —
-// including its actionNames, the stance's granted techniques (at most 6;
-// enforced at push). Its requirements gate ADOPTING it and are checked
-// against the entity's stance-free base (body + traits + equipment).
+// A stance is an ordinary grouped contribution to the entity's total. It no
+// longer GRANTS actions: the available-action set derives from the readiness
+// total, so a stance shapes actions only through the readiness it adds (upright
+// for footing, etc.) and its own adoption requirements. Requirements gate
+// ADOPTING it and are checked against the entity's stance-free readiness (body +
+// traits + carried gear).
 //
-// UPRIGHT is the posture stat: stances provide it, and actions that need
-// footing require it (dive and lie_down need upright 1), so "you can't
-// dive when already flat" is ordinary requirement filtering — no special
-// cases. (A posture into the stance already held is separately filtered
-// out of the derived actions: you can't stand when already standing.)
+// UPRIGHT is the posture stat: stances provide it, and actions that need footing
+// require it (dive and lie_down need upright 1), so "you can't dive when already
+// flat" is ordinary requirement filtering. (A posture into the stance already
+// held is separately excluded from the derived actions.)
 export const STANCES = {
-  // The improvising default: nothing required, nothing granted, nothing
-  // changed. What you can do standing is exactly what your body, traits, and
-  // armaments provide.
+  // The improvising default: what you can do standing is exactly what your body,
+  // traits, and armaments derive. Needs feet — a formless body cannot stand.
   standing: {
-    requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ upright: 2, actionNames: ["dive"] }),
+    requirements: requirements({ foot: 1 }),
+    block: statBlock({ upright: 2 }),
   },
   // Knocked down: harder to fight from, and gait sinks below what movement
-  // actions require, so they drop out of the derived available actions.
+  // actions require, so they drop out of the derived available actions. The one
+  // universal posture — anything can be flat, and the defeat system forces it —
+  // so it stays ungated.
   prone: {
     requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ attack: -1, defense: -1, gait: -2 }),
+    block: statBlock({ attack: -1, defense: -1, gait: -2 }),
   },
   sitting: {
-    requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({
-      defense: -1,
-      gait: -2,
-      upright: 1,
-      actionNames: ["dive"],
-    }),
+    requirements: requirements({ foot: 1 }),
+    block: statBlock({ defense: -1, gait: -2, upright: 1 }),
   },
-  // Defensive footing. Later this stance also carries the actions whose
-  // added benefit is a favorable transition into another stance.
+  // Defensive footing.
   ready: {
-    requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({ defense: 1, upright: 2, actionNames: ["guard"] }),
+    requirements: requirements({ foot: 1 }),
+    block: statBlock({ defense: 1, upright: 2 }),
   },
   brawler: {
-    requirements: requirements({ hand: 1 }),
-    statBlock: statBlock({ upright: 2 }),
+    requirements: requirements({ hand: 1, foot: 1 }),
+    block: statBlock({ upright: 2 }),
   },
   dueling: {
-    requirements: requirements({ bladed: 1 }),
-    statBlock: statBlock({ attack: 1, upright: 2, actionNames: ["lunge"] }),
+    requirements: requirements({ bladed: 1, foot: 1 }),
+    block: statBlock({ attack: 1, upright: 2 }),
   },
   // Built for covering ground.
   striding: {
-    requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({
-      gait: 1,
-      upright: 2,
-      // Movement is offered by paths, never granted by stances.
-      actionNames: [],
-    }),
+    requirements: requirements({ foot: 1 }),
+    block: statBlock({ gait: 1, upright: 2 }),
   },
   perched: {
     requirements: requirements({ wing: 1 }),
-    statBlock: statBlock({ defense: 1, gait: -2, upright: 1 }),
+    block: statBlock({ defense: 1, gait: -2, upright: 1 }),
   },
   flapping: {
     requirements: requirements({ wing: 2 }),
-    statBlock: statBlock({
-      gait: 2,
-      upright: 2,
-      // Movement is offered by paths, never granted by stances.
-      actionNames: [],
-    }),
+    block: statBlock({ gait: 2, upright: 2 }),
   },
-  // General magic; the elemental specializations trade breadth for a
-  // sharper granted technique. (No mep grant: the maxima are a ratchet, so
-  // a stance-carried maximum would be a one-time permanent boost.)
+  // General magic; the elemental specializations GRANT the matching element,
+  // so centering into one is one of the two ways to meet a spell's element
+  // requirement (a channeling armament is the other). Entering needs `focus`
+  // (a body's innate channeling or a channeling armament provides it), never
+  // the element itself — the stance is what supplies that. (No mep grant: the
+  // maxima are a ratchet, so a stance-carried maximum would be a one-time
+  // permanent boost.)
   casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ upright: 2, actionNames: ["heal"] }),
+    block: statBlock({ upright: 2 }),
   },
   fire_casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ upright: 2, actionNames: ["fire_bolt"] }),
+    block: statBlock({ fire: 1, upright: 2 }),
   },
   ice_casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ defense: 1, upright: 2, actionNames: ["ice_shard"] }),
+    block: statBlock({ ice: 1, defense: 1, upright: 2 }),
   },
   lightning_casting: {
     requirements: requirements({ focus: 1 }),
-    statBlock: statBlock({ upright: 2, actionNames: ["lightning_arc"] }),
+    block: statBlock({ lightning: 1, upright: 2 }),
   },
+  light_casting: {
+    requirements: requirements({ focus: 1 }),
+    block: statBlock({ light: 1, upright: 2 }),
+  },
+  shadow_casting: {
+    requirements: requirements({ focus: 1 }),
+    block: statBlock({ shadow: 1, upright: 2 }),
+  },
+  // Only a formless body can pour itself into this shape; a legged creature
+  // cannot. The reciprocal of the footing stances' `foot` gate.
   amorphous: {
-    requirements: NO_REQUIREMENTS,
-    statBlock: statBlock({}),
+    requirements: requirements({ amorphous: 1 }),
+    block: statBlock({}),
+  },
+  // The ethereal beings' posture: a sprite or wisp goes half-incorporeal, harder
+  // to land a blow on (+1 defense). Gated on `ethereal`, which only such bodies
+  // carry — no footing needed, so a floating being holds it without feet.
+  intangible: {
+    requirements: requirements({ ethereal: 1 }),
+    block: statBlock({ defense: 1 }),
   },
 } satisfies Record<string, StanceAsset>;
 
@@ -115,5 +122,8 @@ export const STANCE_DISPLAY_NAMES: Record<StanceName, string> = {
   fire_casting: "Fire Casting",
   ice_casting: "Ice Casting",
   lightning_casting: "Lightning Casting",
+  light_casting: "Light Casting",
+  shadow_casting: "Shadow Casting",
   amorphous: "Amorphous",
+  intangible: "Intangible",
 };

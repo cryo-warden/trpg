@@ -1,115 +1,163 @@
-import { StatBlock } from "../../stdb/types";
+import {
+  BodyCapacityBlock,
+  ReadinessBlock,
+  StatsBlock,
+} from "../../stdb/types";
 import { EntityId } from "../trpg";
+import { IntStats } from "./statSummary";
 
 /**
- * Client-side StatBlock arithmetic: the mirror of the server's StatBlock
- * `AddAssign` and its equipment apply-if-fits loop. The menus use it to render
- * the HYPOTHETICAL totals a CONFIGURATION would produce — updated the instant a
- * selection changes — rather than reading the actual equipment, which only
- * converges when the player completes a later action.
+ * Client-side PER-GROUP stat arithmetic: the mirror of the server's per-group
+ * `AddAssign`/`negated` and its body-capacity apply-if-fits loop. The menus use
+ * it to render the HYPOTHETICAL totals a CONFIGURATION would produce — updated
+ * the instant a selection changes — rather than reading the actual equipment,
+ * which only converges when the player completes a later action.
+ *
+ * The four groups are INDEPENDENT: there is no merged/flat block. `GroupedBlock`
+ * is only a BUNDLE of the three numeric groups a configuration moves together
+ * (appearance is the item's own look, carried separately), each field group
+ * operated on by the same generic record arithmetic.
  */
 
-/** The equipment CAPACITIES an item may consume: grip and the worn slots. */
+/** The equipment CAPACITIES an item may consume: grip and the worn slots. Only
+ * body-capacity gates whether gear fits. */
 export const CAPACITY_KEYS = ["hand", "body", "relic"] as const;
 
-/** A fresh all-zero block, the identity for addition and the stand-in for an
+/** All-zero per-group identities: the addition identity and the stand-in for an
  * absent per-source cache row. */
-export const ZERO_STAT_BLOCK: StatBlock = {
+export const ZERO_STATS: StatsBlock = {
+  mhp: 0,
+  mep: 0,
   attack: 0,
   defense: 0,
+  size: 0,
+};
+export const ZERO_BODY_CAPACITY: BodyCapacityBlock = {
   hand: 0,
   body: 0,
   relic: 0,
-  gait: 0,
-  reach: 0,
-  blunt: 0,
+};
+export const ZERO_READINESS: ReadinessBlock = {
+  morale: 0,
   bladed: 0,
+  blunt: 0,
   pole: 0,
   ward: 0,
   focus: 0,
+  gait: 0,
+  reach: 0,
   wing: 0,
   upright: 0,
-  size: 0,
-  morale: 0,
-  mhp: 0,
-  mep: 0,
-  actionIds: [],
-  appearanceFeatureIds: [],
+  hand: 0,
+  jaw: 0,
+  claw: 0,
+  ooze: 0,
+  fire: 0,
+  ice: 0,
+  lightning: 0,
+  light: 0,
+  shadow: 0,
+  foot: 0,
+  amorphous: 0,
+  ethereal: 0,
 };
 
-const isNumber = (value: unknown): value is number => typeof value === "number";
-
-/**
- * Generalized record addition: every NUMERIC field summed, every ARRAY field
- * unioned (deduped, order-preserving). Generic over the record shape so it
- * survives new stat fields without edits here.
- */
-export const addStatBlocks = (a: StatBlock, b: StatBlock): StatBlock => {
-  const out: Record<string, unknown> = { ...a };
-  for (const [key, bv] of Object.entries(b)) {
-    const av = (a as Record<string, unknown>)[key];
-    // Key off b's field kind and default a's — so a sparse block (a test
-    // total that omits fields) is normalized to a full one, never crashing on
-    // a missing array.
-    if (isNumber(bv)) {
-      out[key] = (isNumber(av) ? av : 0) + bv;
-    } else if (Array.isArray(bv)) {
-      out[key] = [...new Set([...(Array.isArray(av) ? av : []), ...bv])];
-    }
+/** Generic field-wise record addition: every field of `b` summed onto `a`. One
+ * operation for each numeric group (stats, body-capacity, readiness) — they all
+ * satisfy `Record<string, number>`. */
+export const addBlock = <T extends Record<string, number>>(a: T, b: T): T => {
+  const out: Record<string, number> = { ...a };
+  for (const [key, value] of Object.entries(b)) {
+    out[key] = (out[key] ?? 0) + value;
   }
-  return out as StatBlock;
+  return out as T;
 };
 
-/**
- * a − b: numeric fields differenced, array fields set-differenced (a minus b).
- * The inverse of addition, used to PEEL a source (equipment, status, the
- * active stance) back off the published total to recover a steady base.
- */
-export const subtractStatBlocks = (a: StatBlock, b: StatBlock): StatBlock => {
-  const out: Record<string, unknown> = { ...a };
-  for (const [key, bv] of Object.entries(b)) {
-    const av = (a as Record<string, unknown>)[key];
-    // Key off b's field kind and default a's, so subtracting a full ZERO
-    // block normalizes a sparse input to a full block.
-    if (isNumber(bv)) {
-      out[key] = (isNumber(av) ? av : 0) - bv;
-    } else if (Array.isArray(bv)) {
-      const remove = new Set(bv);
-      out[key] = (Array.isArray(av) ? av : []).filter((x) => !remove.has(x));
-    }
+/** a − b, field-wise: the inverse of {@link addBlock}, used to PEEL a source
+ * (equipment, status, the active stance) back off a published total. */
+export const subtractBlock = <T extends Record<string, number>>(
+  a: T,
+  b: T,
+): T => {
+  const out: Record<string, number> = { ...a };
+  for (const [key, value] of Object.entries(b)) {
+    out[key] = (out[key] ?? 0) - value;
   }
-  return out as StatBlock;
+  return out as T;
 };
 
+/** The three numeric groups a configuration moves together — a bundle of
+ * INDEPENDENT blocks, never a merged one. */
+export type GroupedBlock = {
+  stats: StatsBlock;
+  bodyCapacity: BodyCapacityBlock;
+  readiness: ReadinessBlock;
+};
+
+export const ZERO_GROUPED: GroupedBlock = {
+  stats: ZERO_STATS,
+  bodyCapacity: ZERO_BODY_CAPACITY,
+  readiness: ZERO_READINESS,
+};
+
+/** Flatten a grouped bundle to one int-stat record for DISPLAY only (summaries,
+ * the categorized stat view). The two `hand` stats collapse to the BODY-CAPACITY
+ * one — free grip is what these surfaces show; readiness-hand matters for action
+ * gating, not the summary line. */
+export const flattenGrouped = (block: GroupedBlock): IntStats => ({
+  ...block.readiness,
+  ...block.stats,
+  ...block.bodyCapacity,
+});
+
+/** Add two grouped bundles by adding each group independently. */
+export const addGrouped = (a: GroupedBlock, b: GroupedBlock): GroupedBlock => ({
+  stats: addBlock(a.stats, b.stats),
+  bodyCapacity: addBlock(a.bodyCapacity, b.bodyCapacity),
+  readiness: addBlock(a.readiness, b.readiness),
+});
+
+/** a − b across each group independently. */
+export const subtractGrouped = (
+  a: GroupedBlock,
+  b: GroupedBlock,
+): GroupedBlock => ({
+  stats: subtractBlock(a.stats, b.stats),
+  bodyCapacity: subtractBlock(a.bodyCapacity, b.bodyCapacity),
+  readiness: subtractBlock(a.readiness, b.readiness),
+});
+
 /**
- * Does the running total ADMIT this item — every capacity the item CONSUMES
- * staying non-negative once applied? A grant (>= 0) never blocks. Exactly the
- * server's per-item causation rule (StatBlock::admits_equipment_item).
+ * Does the running body-capacity ADMIT this item — every capacity the item
+ * CONSUMES staying non-negative once applied? A grant (>= 0) never blocks.
+ * Exactly the server's per-item causation rule
+ * (BodyCapacityBlock::admits_equipment_item). Only body-capacity gates fit.
  */
 export const admitsEquipmentItem = (
-  running: StatBlock,
-  item: StatBlock,
+  running: BodyCapacityBlock,
+  item: BodyCapacityBlock,
 ): boolean =>
   CAPACITY_KEYS.every((key) => item[key] >= 0 || running[key] + item[key] >= 0);
 
-export type EquipCandidate = { entityId: EntityId; block: StatBlock };
+export type EquipCandidate = { entityId: EntityId; block: GroupedBlock };
 
 /**
  * Fold candidate items onto a base in order, applying each only while it fits
- * (apply-if-fits; the first item to overrun a capacity it consumes is skipped,
- * later items still considered) — the client mirror of the server's equipment
- * compute loop. Returns the resulting total and the entity ids whose stats did
- * NOT apply.
+ * (apply-if-fits; the first item to overrun a body-capacity it consumes is
+ * skipped, later items still considered) — the client mirror of the server's
+ * equipment compute loop. Fit is decided by body-capacity alone; a fitting item
+ * contributes ALL its groups. Returns the resulting grouped total and the entity
+ * ids whose stats did NOT apply.
  */
 export const applyEquipmentIfFits = (
-  base: StatBlock,
+  base: GroupedBlock,
   candidates: readonly EquipCandidate[],
-): { total: StatBlock; unappliedEntityIds: EntityId[] } => {
+): { total: GroupedBlock; unappliedEntityIds: EntityId[] } => {
   let total = base;
   const unappliedEntityIds: EntityId[] = [];
   for (const { entityId, block } of candidates) {
-    if (admitsEquipmentItem(total, block)) {
-      total = addStatBlocks(total, block);
+    if (admitsEquipmentItem(total.bodyCapacity, block.bodyCapacity)) {
+      total = addGrouped(total, block);
     } else {
       unappliedEntityIds.push(entityId);
     }

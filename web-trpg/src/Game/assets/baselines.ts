@@ -1,11 +1,12 @@
-import { StatBlockAsset } from "../../stdb/types";
+import { GroupedBlockAsset } from "../../stdb/types";
 import { statBlock } from "./stat_block";
 
-const CASTING_POSTURES = ["stand", "center", "kindle", "chill", "charge"];
-
 // Bodies are the primary providers of the counted property stats: hands to
-// hold and swing with, gait to move on, reach to threaten at range. Stances
-// and (later) equipment and circumstances add to or consume these.
+// hold and swing with, gait to move on, reach to threaten at range. A body's
+// `hand` counts BOTH the grip slots it has and the free hands it can strike
+// with; wielding gear removes free hands. Actions are no longer granted here —
+// they DERIVE from readiness (morale, the weapon/limb tags, footing), so a body
+// only needs to carry the tags its intended actions require.
 export const BASELINES = {
   human: statBlock({
     attack: 0,
@@ -19,24 +20,14 @@ export const BASELINES = {
     relic: 4,
     gait: 2,
     reach: 1,
+    // Two legs to stand, stride, and sit on — the footing every upright stance
+    // needs, and what a slime lacks.
+    foot: 2,
+    // A mouth to bite with: humans have no fangs but a jaw all the same, so a
+    // plain bite is theirs (a stronger maul wants a predator's jaw).
+    jaw: 1,
     size: 0,
     morale: 5,
-    // The item verbs (take/drop/equip/unequip/eat) are NOT here: they
-    // are derived offers, computed from the target's components against
-    // the special-action registry — no body innately "knows" them.
-    // Rally IS here: an ordinary morale buff every person can reach for,
-    // the counterplay to fear (which enemies simply wait out).
-    actionNames: [
-      "attune",
-      "stand",
-      "sit",
-      "lie_down",
-      "ready_up",
-      "square_up",
-      "duel",
-      "stride",
-      "rally",
-    ],
     appearanceFeatureNames: ["human"],
   }),
   slime: statBlock({
@@ -47,7 +38,11 @@ export const BASELINES = {
     gait: 1,
     size: -2,
     morale: 3,
-    actionNames: ["slime_spray", "slump"],
+    // Its spray attack derives from the ooze tag.
+    ooze: 1,
+    // Formless: the amorphous stance is the only posture it can hold (plus
+    // prone), and no footing stance is reachable — it has no feet to stand on.
+    amorphous: 1,
     appearanceFeatureNames: ["slime"],
   }),
   bat: statBlock({
@@ -56,10 +51,12 @@ export const BASELINES = {
     defense: -1,
     mep: 3,
     gait: 2,
+    // Wings, not feet: it perches and flaps, never stands or strides.
     wing: 2,
     size: -4,
     morale: 5,
-    actionNames: ["scratch", "perch", "take_wing"],
+    // Its scratch derives from the claw tag.
+    claw: 1,
     appearanceFeatureNames: ["bat"],
   }),
   // A human body wearing a different life: same slots, different look.
@@ -73,21 +70,10 @@ export const BASELINES = {
     relic: 4,
     gait: 2,
     reach: 1,
+    foot: 2,
+    jaw: 1,
     size: 0,
     morale: 4,
-    // The item verbs (take/drop/equip/unequip/eat) are NOT here: they
-    // are derived offers, computed from the target's components against
-    // the special-action registry — no body innately "knows" them.
-    actionNames: [
-      "attune",
-      "stand",
-      "sit",
-      "lie_down",
-      "ready_up",
-      "square_up",
-      "duel",
-      "stride",
-    ],
     appearanceFeatureNames: ["bandit"],
   }),
   // Starting-area teachers. The ogre looms: size delta plus its smash
@@ -101,6 +87,7 @@ export const BASELINES = {
     hand: 2,
     gait: 1,
     reach: 1,
+    foot: 2,
     size: 5,
     morale: 6,
     appearanceFeatureNames: ["ogre"],
@@ -110,9 +97,10 @@ export const BASELINES = {
     mhp: 2,
     mep: 1,
     gait: 2,
+    foot: 2,
     size: -6,
     morale: 2,
-    actionNames: ["bite"],
+    jaw: 1,
     appearanceFeatureNames: ["rat"],
   }),
   wolf: statBlock({
@@ -120,13 +108,16 @@ export const BASELINES = {
     mhp: 6,
     mep: 2,
     gait: 2,
+    foot: 2,
     size: -1,
     morale: 3,
-    actionNames: ["bite", "stand", "lie_down", "stride"],
+    // A predator's jaw: strong enough to unlock the heavier maul, where a rat
+    // (jaw 1) or a human only manages a plain bite.
+    jaw: 2,
     appearanceFeatureNames: ["wolf"],
   }),
   // The elemental bodies channel innately: focus without any staff, and
-  // every casting stance known from birth. Their ELEMENT is not the body:
+  // every casting stance reachable from birth. Their ELEMENT is not the body:
   // fire/ice/lightning natures are traits, so any element can ride any body.
   imp: statBlock({
     attack: 1,
@@ -135,9 +126,11 @@ export const BASELINES = {
     hand: 1,
     gait: 1,
     focus: 1,
+    // Legged, so it can stand as well as cast; sprite and wisp instead FLOAT —
+    // no feet — and only ever channel, so their footing is deliberately absent.
+    foot: 2,
     size: -3,
     morale: 4,
-    actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["imp"],
   }),
   sprite: statBlock({
@@ -146,9 +139,10 @@ export const BASELINES = {
     mep: 6,
     gait: 1,
     focus: 1,
+    // A floating, part-incorporeal being: no feet, but it can go intangible.
+    ethereal: 1,
     size: -3,
     morale: 4,
-    actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["sprite"],
   }),
   wisp: statBlock({
@@ -156,9 +150,9 @@ export const BASELINES = {
     mep: 8,
     gait: 3,
     focus: 1,
+    ethereal: 1,
     size: -3,
     morale: 4,
-    actionNames: CASTING_POSTURES,
     appearanceFeatureNames: ["wisp"],
   }),
   // STRUCTURAL FEATURES. A path is a physical crossing: its noun is a baseline
@@ -207,6 +201,6 @@ export const BASELINES = {
   // The practice dummy: made to be hit — modest HP, no defense so a beginner
   // sees real damage. "training" rides as a trait.
   dummy: statBlock({ appearanceFeatureNames: ["dummy"], mhp: 10, defense: 0 }),
-} satisfies Record<string, StatBlockAsset>;
+} satisfies Record<string, GroupedBlockAsset>;
 
 export type BaselineName = keyof typeof BASELINES;

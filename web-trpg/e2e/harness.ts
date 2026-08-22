@@ -8,19 +8,39 @@
 /** Module path is relative to the web-trpg working directory (po dir). */
 const SERVER_MODULE_PATH = "../server";
 
-/** The isolated database the full-tick E2E suite publishes to. */
-export const TEST_DB = "trpg-e2e";
+/** The isolated database the full-tick E2E suite publishes to. The `test-`
+ * prefix marks it as throwaway (underscores are invalid in db names);
+ * scripts/e2e-stdb.sh runs it on a dedicated instance whose whole data dir is
+ * wiped at both ends of a run. */
+export const TEST_DB = "test-trpg-e2e";
 
 /** A SEPARATE isolated database for the feature-gated test-reducer module: the
  * same production code plus one reducer per test set (server/src/test_reducers.rs),
  * compiled with the `testing` feature. Distinct name so it never collides with
  * the full-tick e2e DB or production. */
-export const TEST_REDUCER_DB = "trpg-e2e-test";
+export const TEST_REDUCER_DB = "test-trpg-e2e-test";
 
-export const SPACETIME_URI = "ws://localhost:3000";
+/** The dedicated test instance's port, set by scripts/e2e-stdb.sh. When unset
+ * (e.g. dev-publish.ts building a dev database) the harness falls back to the
+ * spacetime CLI's configured default server and the dev instance on :3000, so
+ * the same publish/connect helpers serve both flows. */
+const TEST_PORT = process.env.TRPG_E2E_STDB_PORT;
+
+/** SpacetimeDB CLI flags that pin every command to the dedicated test instance
+ * (empty when unset, so the CLI uses its configured default). */
+const SERVER_ARGS = TEST_PORT ? ["--server", `http://127.0.0.1:${TEST_PORT}`] : [];
+
+export const SPACETIME_URI = TEST_PORT
+  ? `ws://127.0.0.1:${TEST_PORT}`
+  : "ws://localhost:3000";
 
 const spacetime = (args: string[]): { code: number; out: string } => {
-  const result = Bun.spawnSync({ cmd: ["spacetime", ...args] });
+  // `--server` is a per-subcommand flag in the spacetime CLI, so it goes AFTER
+  // the subcommand (args[0]), not before it.
+  const [subcommand, ...rest] = args;
+  const result = Bun.spawnSync({
+    cmd: ["spacetime", subcommand, ...SERVER_ARGS, ...rest],
+  });
   const decode = (buffer: Uint8Array | null) =>
     buffer ? new TextDecoder().decode(buffer) : "";
   return {

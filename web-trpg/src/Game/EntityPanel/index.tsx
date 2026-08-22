@@ -7,13 +7,14 @@ import {
   useActionOptions,
   useActionPhase,
   useIsBlockedPath,
-  useItemAssetStatBlock,
+  useItemAssetGroupedBlock,
   useMyVisitedLocationIds,
   usePathComponent,
   usePlayerEntity,
   useQuestItemFreshness,
 } from "../context/StdbContext/components";
 import { StatBlockSummary } from "../StatBlockSummary";
+import { flattenGrouped } from "../domain/statBlock";
 import { EntityName } from "../EntityName";
 import { EntityId } from "../trpg";
 import { EPBar } from "./EPBar";
@@ -67,7 +68,7 @@ export const EntityPanel = ({
   // An item's card summarizes what it contributes — the same non-zero
   // rule every other stat surface uses. Predictability: what a thing
   // does is readable before touching it.
-  const itemStatBlock = useItemAssetStatBlock(entity);
+  const itemBlock = useItemAssetGroupedBlock(entity);
   const focusThis = useCallback(() => {
     setFocus(entity);
   }, [entity, setFocus]);
@@ -105,9 +106,9 @@ export const EntityPanel = ({
           <span className="actionPhase"> — recovering…</span>
         )}
       </div>
-      {itemStatBlock != null && (
+      {itemBlock != null && (
         <div>
-          <StatBlockSummary statBlock={itemStatBlock} />
+          <StatBlockSummary statBlock={flattenGrouped(itemBlock)} />
         </div>
       )}
       <HPBar entity={entity} />

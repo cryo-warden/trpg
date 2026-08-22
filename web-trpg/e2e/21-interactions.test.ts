@@ -59,7 +59,7 @@ beforeAll(async () => {
       "SELECT * FROM open_components",
       "SELECT * FROM offered_actions_components",
       "SELECT * FROM player_controller_components",
-      "SELECT * FROM total_stat_block_components",
+      "SELECT * FROM readiness_total_components",
       "SELECT * FROM accounts",
     ]);
   await player.reducers.createAccount({ name: "looter" });
@@ -118,13 +118,13 @@ test("an offer beyond the actor's strength is refused: requirements gate acts to
   // first (before it derives, requirements deliberately go unchecked).
   await waitFor(
     () =>
-      [...player.db.total_stat_block_components.iter()].some(
+      [...player.db.readiness_total_components.iter()].some(
         (row) => row.entityId === playerEntityId,
       ),
     30000,
   );
-  // The chest OFFERS test_heave, but its size-5 requirement is beyond
-  // any looter: offered does not mean able.
+  // The chest OFFERS test_heave, but heaving it needs committed nerve
+  // (morale 3) beyond a timid looter (morale 0): offered does not mean able.
   await expect(
     player.reducers.act({
       actionId: actionIdByName("test_heave"),

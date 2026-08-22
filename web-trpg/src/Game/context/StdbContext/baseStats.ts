@@ -1,17 +1,27 @@
 import { useMemo } from "react";
-import { StatBlock } from "../../../stdb/types";
 import { useStanceDetailRows } from "./assetLookup";
 import {
-  useEquipmentStatBlockCache,
+  useBodyCapacityTotal,
+  useEquipmentBodyCapacityCache,
+  useEquipmentReadinessCache,
+  useEquipmentStatsCache,
   useMyActiveStanceId,
   usePlayerEntity,
-  useStatusStatBlockCache,
-  useTotalStatBlockComponent,
+  useReadinessTotal,
+  useStatsTotal,
+  useStatusReadinessCache,
+  useStatusStatsCache,
 } from "./components";
-import { subtractStatBlocks, ZERO_STAT_BLOCK } from "../../domain/statBlock";
+import {
+  GroupedBlock,
+  subtractBlock,
+  ZERO_BODY_CAPACITY,
+  ZERO_READINESS,
+  ZERO_STATS,
+} from "../../domain/statBlock";
 
 /**
- * The STEADY base of every stat and action grant: the published total with the
+ * The STEADY per-group base of every stat: the published group totals with the
  * two mutable rungs peeled back off — the applied EQUIPMENT and STATUS caches —
  * and the active stance. What remains is baseline + traits + quest: steady,
  * configuration-INDEPENDENT, and status-free. The menus add a CONFIGURATION
@@ -19,37 +29,64 @@ import { subtractStatBlocks, ZERO_STAT_BLOCK } from "../../domain/statBlock";
  * totals that configuration WOULD produce — updated the instant a selection
  * changes, never waiting for the actual equipment to converge on a later
  * action. One derivation, so the equip menu and the stance cards can never show
- * different bases. (The server revalidates on every assignment; these numbers
- * only inform.)
+ * different bases. Body-capacity has no status contribution (status never
+ * changes capacity), so it peels only equipment and stance. (The server
+ * revalidates on every assignment; these numbers only inform.)
  */
-export const useStanceFreeBase = (): {
-  baseStats: StatBlock;
-  baseActionIds: number[];
-} => {
+export const useStanceFreeBase = (): { baseStats: GroupedBlock } => {
   const playerEntity = usePlayerEntity();
-  const total = useTotalStatBlockComponent(playerEntity);
-  const equipmentCache = useEquipmentStatBlockCache(playerEntity);
-  const statusCache = useStatusStatBlockCache(playerEntity);
+  const statsTotal = useStatsTotal(playerEntity);
+  const readinessTotal = useReadinessTotal(playerEntity);
+  const bodyCapacityTotal = useBodyCapacityTotal(playerEntity);
+  const equipmentStats = useEquipmentStatsCache(playerEntity);
+  const equipmentBodyCapacity = useEquipmentBodyCapacityCache(playerEntity);
+  const equipmentReadiness = useEquipmentReadinessCache(playerEntity);
+  const statusStats = useStatusStatsCache(playerEntity);
+  const statusReadiness = useStatusReadinessCache(playerEntity);
   const activeStanceId = useMyActiveStanceId();
   const stanceRows = useStanceDetailRows();
 
   return useMemo(() => {
-    const totalStatBlock = total?.statBlock ?? ZERO_STAT_BLOCK;
-    const equipmentBlock = equipmentCache?.statBlock ?? ZERO_STAT_BLOCK;
-    const statusBlock = statusCache?.statBlock ?? ZERO_STAT_BLOCK;
-    const activeStanceBlock =
-      stanceRows.find((row) => row.id === activeStanceId)?.statBlock ??
-      ZERO_STAT_BLOCK;
-    // total = baseline + traits + equipment + status + quest + active stance;
-    // peel the mutable rungs and the stance to recover baseline + traits +
-    // quest — the steady base every menu builds its own configuration onto.
-    const base = subtractStatBlocks(
-      subtractStatBlocks(
-        subtractStatBlocks(totalStatBlock, equipmentBlock),
-        statusBlock,
+    const activeStance =
+      stanceRows.find((row) => row.id === activeStanceId) ?? null;
+    // total = baseline + traits + quest + equipment + status + active stance;
+    // peel the mutable rungs and the stance per group to recover the steady
+    // base. Body-capacity has no status rung.
+    const stats = subtractBlock(
+      subtractBlock(
+        subtractBlock(statsTotal?.stats ?? ZERO_STATS, equipmentStats?.stats ?? ZERO_STATS),
+        statusStats?.stats ?? ZERO_STATS,
       ),
-      activeStanceBlock,
+      activeStance?.stats ?? ZERO_STATS,
     );
-    return { baseStats: base, baseActionIds: base.actionIds };
-  }, [total, equipmentCache, statusCache, activeStanceId, stanceRows]);
+    const readiness = subtractBlock(
+      subtractBlock(
+        subtractBlock(
+          readinessTotal?.readiness ?? ZERO_READINESS,
+          equipmentReadiness?.readiness ?? ZERO_READINESS,
+        ),
+        statusReadiness?.readiness ?? ZERO_READINESS,
+      ),
+      activeStance?.readiness ?? ZERO_READINESS,
+    );
+    const bodyCapacity = subtractBlock(
+      subtractBlock(
+        bodyCapacityTotal?.bodyCapacity ?? ZERO_BODY_CAPACITY,
+        equipmentBodyCapacity?.bodyCapacity ?? ZERO_BODY_CAPACITY,
+      ),
+      activeStance?.bodyCapacity ?? ZERO_BODY_CAPACITY,
+    );
+    return { baseStats: { stats, bodyCapacity, readiness } };
+  }, [
+    statsTotal,
+    readinessTotal,
+    bodyCapacityTotal,
+    equipmentStats,
+    equipmentBodyCapacity,
+    equipmentReadiness,
+    statusStats,
+    statusReadiness,
+    activeStanceId,
+    stanceRows,
+  ]);
 };

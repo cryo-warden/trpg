@@ -1,13 +1,37 @@
-import { StatBlockAsset } from "../../stdb/types";
-import { ACTIONS } from "./actions";
+import { GroupedBlockAsset } from "../../stdb/types";
 import { statBlock } from "./stat_block";
 
 export const TRAITS = {
+  // Capability traits now grant READINESS, not action lists — actions derive
+  // from readiness. admin carries every tag high (it can do anything); mobile
+  // grants the gait that movement requires; bopper grants a free hand and the
+  // nerve for the heavy bop.
   admin: statBlock({
-    actionNames: Object.keys(ACTIONS),
+    morale: 9,
+    bladed: 9,
+    blunt: 9,
+    pole: 9,
+    ward: 9,
+    focus: 9,
+    gait: 9,
+    reach: 9,
+    wing: 9,
+    upright: 9,
+    hand: 9,
+    jaw: 9,
+    claw: 9,
+    ooze: 9,
+    fire: 9,
+    ice: 9,
+    lightning: 9,
+    light: 9,
+    shadow: 9,
+    foot: 9,
+    amorphous: 9,
+    ethereal: 9,
   }),
-  mobile: statBlock({ actionNames: ["move"] }),
-  bopper: statBlock({ actionNames: ["bop", "boppity_bop"] }),
+  mobile: statBlock({ gait: 1 }),
+  bopper: statBlock({ hand: 1, morale: 3 }),
   tiny: statBlock({ attack: -1, mhp: -2, size: -4 }),
   small: statBlock({ mhp: -1, size: -1 }),
   big: statBlock({ mhp: 2, size: 1 }),
@@ -65,6 +89,6 @@ export const TRAITS = {
   fire_nature: statBlock({ appearanceFeatureNames: ["fiery"] }),
   ice_nature: statBlock({ appearanceFeatureNames: ["icy"] }),
   lightning_nature: statBlock({ appearanceFeatureNames: ["crackling"] }),
-} satisfies Record<string, StatBlockAsset>;
+} satisfies Record<string, GroupedBlockAsset>;
 
 export type TraitName = keyof typeof TRAITS;

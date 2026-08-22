@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from "react";
 import type { Identity } from "spacetimedb";
 import type { DbConnection } from "../stdb";
-import type { StatBlockAsset } from "../stdb/types";
+import type { AppearanceBlockAsset } from "../stdb/types";
 import { StdbContext } from "../Game/context/StdbContext/StdbContext";
 import { ACTIONS, ActionName } from "../Game/assets/actions";
 import {
@@ -87,17 +87,12 @@ export const mockTable = <Row>(initial: Row[] = []): MockTable<Row> => {
 // Mock asset-table rows mirroring a push of the local Records: ids follow the
 // Records' enumeration order, exactly as push_assets interns them. Tests act
 // as the server here; app code never computes an asset id this way —
-// including the name -> id resolution inside stat blocks, mirrored below.
-const resolveMockStatBlock = (asset: StatBlockAsset) => {
-  const { actionNames, appearanceFeatureNames, ...ints } = asset;
-  return {
-    ...ints,
-    actionIds: actionNames.map((name) => actionIdOf(name as ActionName)),
-    appearanceFeatureIds: appearanceFeatureNames.map((name) =>
-      appearanceFeatureIndexOf(name as AppearanceFeatureName),
-    ),
-  };
-};
+// including the appearance name -> id resolution mirrored below.
+const resolveAppearance = (appearance: AppearanceBlockAsset) => ({
+  featureIds: appearance.featureNames.map((name) =>
+    appearanceFeatureIndexOf(name as AppearanceFeatureName),
+  ),
+});
 
 export const mockAssetTables = () => ({
   actions: mockTable(
@@ -121,35 +116,58 @@ export const mockAssetTables = () => ({
       id,
       name,
       requirements: stance.requirements,
-      statBlock: resolveMockStatBlock(stance.statBlock),
+      stats: stance.block.stats,
+      bodyCapacity: stance.block.bodyCapacity,
+      readiness: stance.block.readiness,
     })),
   ),
   armaments: mockTable(
     Object.entries(ARMAMENTS).map(([name, gear], id) => ({
       id,
       name,
-      statBlock: resolveMockStatBlock(gear.statBlock),
+      stats: gear.block.stats,
+      appearance: resolveAppearance(gear.block.appearance),
+      bodyCapacity: gear.block.bodyCapacity,
+      readiness: gear.block.readiness,
+      appearanceFeatureIds: gear.appearanceFeatureNames.map((name) =>
+        appearanceFeatureIndexOf(name as AppearanceFeatureName),
+      ),
     })),
   ),
   armors: mockTable(
     Object.entries(ARMORS).map(([name, gear], id) => ({
       id,
       name,
-      statBlock: resolveMockStatBlock(gear.statBlock),
+      stats: gear.block.stats,
+      appearance: resolveAppearance(gear.block.appearance),
+      bodyCapacity: gear.block.bodyCapacity,
+      readiness: gear.block.readiness,
+      appearanceFeatureIds: gear.appearanceFeatureNames.map((name) =>
+        appearanceFeatureIndexOf(name as AppearanceFeatureName),
+      ),
     })),
   ),
   relics: mockTable(
     Object.entries(RELICS).map(([name, gear], id) => ({
       id,
       name,
-      statBlock: resolveMockStatBlock(gear.statBlock),
+      stats: gear.block.stats,
+      appearance: resolveAppearance(gear.block.appearance),
+      bodyCapacity: gear.block.bodyCapacity,
+      readiness: gear.block.readiness,
+      appearanceFeatureIds: gear.appearanceFeatureNames.map((name) =>
+        appearanceFeatureIndexOf(name as AppearanceFeatureName),
+      ),
     })),
   ),
   quests: mockTable(
     Object.entries(QUESTS).map(([name, quest], id) => ({
       id,
       name,
-      perBitStatBlock: resolveMockStatBlock(quest.perBitStatBlock),
+      perBitStats: quest.perBitBlock.stats,
+      perBitAppearance: resolveAppearance(quest.perBitBlock.appearance),
+      perBitBodyCapacity: quest.perBitBlock.bodyCapacity,
+      perBitReadiness: quest.perBitBlock.readiness,
       bitCount: quest.bitCount,
     })),
   ),
@@ -211,9 +229,16 @@ export const stdbWrapper = (
       path_components: mockTable([]),
       actions_components: mockTable([]),
       active_stance_components: mockTable([]),
-      total_stat_block_components: mockTable([]),
-      equipment_stat_block_cache_components: mockTable([]),
-      status_stat_block_cache_components: mockTable([]),
+      stats_total_components: mockTable([]),
+      readiness_total_components: mockTable([]),
+      body_capacity_total_components: mockTable([]),
+      equipment_stats_cache_components: mockTable([]),
+      equipment_body_capacity_cache_components: mockTable([]),
+      equipment_readiness_cache_components: mockTable([]),
+      status_stats_cache_components: mockTable([]),
+      status_readiness_cache_components: mockTable([]),
+      traits_readiness_cache_components: mockTable([]),
+      quest_readiness_cache_components: mockTable([]),
       fear_status_components: mockTable([]),
       courage_status_components: mockTable([]),
       action_state_components: mockTable([]),
