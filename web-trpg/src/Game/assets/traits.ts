@@ -85,7 +85,9 @@ export const TRAITS = {
   notched: statBlock({ appearanceFeatureNames: ["notched"] }),
   pitted: statBlock({ appearanceFeatureNames: ["pitted"] }),
   vampire: statBlock({ appearanceFeatureNames: ["vampiric"] }),
-  ghost: statBlock({ appearanceFeatureNames: ["ghostly"] }),
+  // A ghost is part-incorporeal: the nature grants ethereal, so any body wearing
+  // it can go intangible regardless of what it was built from.
+  ghost: statBlock({ ethereal: 1, appearanceFeatureNames: ["ghostly"] }),
   fire_nature: statBlock({ appearanceFeatureNames: ["fiery"] }),
   ice_nature: statBlock({ appearanceFeatureNames: ["icy"] }),
   lightning_nature: statBlock({ appearanceFeatureNames: ["crackling"] }),

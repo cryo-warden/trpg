@@ -94,3 +94,8 @@ test("only an ethereal being can go intangible", () => {
     meetsRequirements(BASELINES.human.readiness, STANCES.intangible.requirements),
   ).toBe(false);
 });
+
+test("the ghost nature grants ethereal, so a haunted body can go intangible", () => {
+  const haunted = addBlock(BASELINES.human.readiness, TRAITS.ghost.readiness);
+  expect(meetsRequirements(haunted, STANCES.intangible.requirements)).toBe(true);
+});
