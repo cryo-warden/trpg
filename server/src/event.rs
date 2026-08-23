@@ -11,10 +11,7 @@ secador::secador!(
 
         use crate::{
             action::{ActionEffect, ActionId},
-            asset::armament::armaments,
-            asset::armor::armors,
             asset::quest::quests,
-            asset::relic::relics,
             asset::stance::{special_stances, SpecialStanceKey},
             entity::*,
             entity_handle_extension::EntityHandleExtension,
@@ -88,7 +85,7 @@ secador::secador!(
                     item_location.location_entity_id = taker_entity_id;
                     item_location.kind = LocationKind::Interior;
                     ecs.db.location_components().entity_id().update(item_location);
-                    if let crate::item::ItemRef::Armament(_) = item.item_ref {
+                    if let crate::item::ItemRef::Armament = item.item_ref {
                         // The auto-wield goes to the DEFAULT slot as this
                         // concrete item ENTITY; the hands re-resolve (an
                         // active stance override keeps winning). But the grip
@@ -152,7 +149,7 @@ secador::secador!(
                     .is_none()
             };
             match item.item_ref {
-                crate::item::ItemRef::Armament(_) => {
+                crate::item::ItemRef::Armament => {
                     let mut armament_entity_ids = owner
                         .default_armaments()
                         .map(|c| c.armament_entity_ids)
@@ -165,7 +162,7 @@ secador::secador!(
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
-                crate::item::ItemRef::Armor(_) => {
+                crate::item::ItemRef::Armor => {
                     if !fits(&[item_entity_id]) {
                         return false;
                     }
@@ -173,7 +170,7 @@ secador::secador!(
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
-                crate::item::ItemRef::Relic(_) => {
+                crate::item::ItemRef::Relic => {
                     let mut relic_entity_ids =
                         owner.relics().map(|c| c.relic_entity_ids).unwrap_or_default();
                     if relic_entity_ids.len() >= 4 {
@@ -211,7 +208,7 @@ secador::secador!(
             }
             let owner = ecs.find(owner_entity_id);
             match item.item_ref {
-                crate::item::ItemRef::Armament(_) => {
+                crate::item::ItemRef::Armament => {
                     let mut armament_entity_ids = owner
                         .default_armaments()
                         .map(|c| c.armament_entity_ids)
@@ -226,7 +223,7 @@ secador::secador!(
                     ecs.find(owner_entity_id).apply_resolved_equipment();
                     true
                 }
-                crate::item::ItemRef::Armor(_) => {
+                crate::item::ItemRef::Armor => {
                     if { owner.armor() }.is_some_and(|c| c.armor_entity_id == item_entity_id) {
                         owner.delete_armor();
                         ecs.find(owner_entity_id).apply_resolved_equipment();
@@ -235,7 +232,7 @@ secador::secador!(
                         false
                     }
                 }
-                crate::item::ItemRef::Relic(_) => {
+                crate::item::ItemRef::Relic => {
                     let mut relic_entity_ids =
                         owner.relics().map(|c| c.relic_entity_ids).unwrap_or_default();
                     let Some(position) =
@@ -261,14 +258,13 @@ secador::secador!(
         fn item_asset_stat_block(ecs: Ecs, item_entity_id: u64) -> Option<StatsBlock> {
             let item = ecs.db.item_components().entity_id().find(item_entity_id)?;
             match item.item_ref {
-                crate::item::ItemRef::Armament(id) => {
-                    ecs.db.armaments().id().find(id).map(|a| a.stats)
-                }
-                crate::item::ItemRef::Armor(id) => {
-                    ecs.db.armors().id().find(id).map(|a| a.stats)
-                }
-                crate::item::ItemRef::Relic(id) => {
-                    ecs.db.relics().id().find(id).map(|r| r.stats)
+                // A worn/wielded item's stats live on its OWN Equippable — the
+                // same source the equipment computation sums — so narration reads
+                // it directly rather than a gear asset table.
+                crate::item::ItemRef::Armament
+                | crate::item::ItemRef::Armor
+                | crate::item::ItemRef::Relic => {
+                    ecs.find(item_entity_id).equippable().map(|q| q.stats)
                 }
                 crate::item::ItemRef::QuestItem(q) => ecs
                     .db

@@ -291,44 +291,6 @@ export const AppearanceFeaturesComponentBlob = __t.object("AppearanceFeaturesCom
 });
 export type AppearanceFeaturesComponentBlob = __Infer<typeof AppearanceFeaturesComponentBlob>;
 
-export const Armament = __t.object("Armament", {
-  id: __t.u32(),
-  name: __t.string(),
-  get stats() {
-    return StatsBlock;
-  },
-  get appearance() {
-    return AppearanceBlock;
-  },
-  get bodyCapacity() {
-    return BodyCapacityBlock;
-  },
-  get readiness() {
-    return ReadinessBlock;
-  },
-  appearanceFeatureIds: __t.array(__t.u32()),
-});
-export type Armament = __Infer<typeof Armament>;
-
-export const Armor = __t.object("Armor", {
-  id: __t.u32(),
-  name: __t.string(),
-  get stats() {
-    return StatsBlock;
-  },
-  get appearance() {
-    return AppearanceBlock;
-  },
-  get bodyCapacity() {
-    return BodyCapacityBlock;
-  },
-  get readiness() {
-    return ReadinessBlock;
-  },
-  appearanceFeatureIds: __t.array(__t.u32()),
-});
-export type Armor = __Infer<typeof Armor>;
-
 export const ArmorComponent = __t.object("ArmorComponent", {
   entityId: __t.u64(),
   armorEntityId: __t.u64(),
@@ -358,14 +320,8 @@ export const AssetPack = __t.object("AssetPack", {
   get traitPalettes() {
     return __t.array(NamedTraitPaletteAsset);
   },
-  get armaments() {
-    return __t.array(NamedGearAsset);
-  },
-  get armors() {
-    return __t.array(NamedGearAsset);
-  },
-  get relics() {
-    return __t.array(NamedGearAsset);
+  get gearBlobs() {
+    return __t.array(NamedEntityBlobAsset);
   },
   get stances() {
     return __t.array(NamedStanceAsset);
@@ -952,6 +908,9 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
   get item() {
     return __t.option(ItemRefAsset);
   },
+  get equippable() {
+    return __t.option(GroupedBlockAsset);
+  },
   actionNames: __t.option(__t.array(__t.string())),
   offeredActionNames: __t.option(__t.array(__t.string())),
   pinnedActionNames: __t.option(__t.array(__t.string())),
@@ -1192,13 +1151,14 @@ export type FlagComponent = __Infer<typeof FlagComponent>;
 export const FlagComponentBlob = __t.object("FlagComponentBlob", {});
 export type FlagComponentBlob = __Infer<typeof FlagComponentBlob>;
 
-export const GearAsset = __t.object("GearAsset", {
-  get block() {
-    return GroupedBlockAsset;
+export const GearBlob = __t.object("GearBlob", {
+  id: __t.u32(),
+  name: __t.string(),
+  get blob() {
+    return EntityBlob;
   },
-  appearanceFeatureNames: __t.array(__t.string()),
 });
-export type GearAsset = __Infer<typeof GearAsset>;
+export type GearBlob = __Infer<typeof GearBlob>;
 
 export const GroupedBlockAsset = __t.object("GroupedBlockAsset", {
   get stats() {
@@ -1278,9 +1238,9 @@ export type ItemComponentBlob = __Infer<typeof ItemComponentBlob>;
 
 // The tagged union or sum type for the algebraic type `ItemRef`.
 export const ItemRef = __t.enum("ItemRef", {
-  Armament: __t.u32(),
-  Armor: __t.u32(),
-  Relic: __t.u32(),
+  Armament: __t.unit(),
+  Armor: __t.unit(),
+  Relic: __t.unit(),
   get QuestItem() {
     return QuestItemRef;
   },
@@ -1289,9 +1249,9 @@ export type ItemRef = __Infer<typeof ItemRef>;
 
 // The tagged union or sum type for the algebraic type `ItemRefAsset`.
 export const ItemRefAsset = __t.enum("ItemRefAsset", {
-  Armament: __t.string(),
-  Armor: __t.string(),
-  Relic: __t.string(),
+  Armament: __t.unit(),
+  Armor: __t.unit(),
+  Relic: __t.unit(),
   get QuestItem() {
     return QuestItemRefAsset;
   },
@@ -1652,14 +1612,6 @@ export const NamedEntityBlobAsset = __t.object("NamedEntityBlobAsset", {
   },
 });
 export type NamedEntityBlobAsset = __Infer<typeof NamedEntityBlobAsset>;
-
-export const NamedGearAsset = __t.object("NamedGearAsset", {
-  name: __t.string(),
-  get value() {
-    return GearAsset;
-  },
-});
-export type NamedGearAsset = __Infer<typeof NamedGearAsset>;
 
 export const NamedGroupedBlockAsset = __t.object("NamedGroupedBlockAsset", {
   name: __t.string(),
@@ -2052,25 +2004,6 @@ export const ReadinessTotalComponentBlob = __t.object("ReadinessTotalComponentBl
   },
 });
 export type ReadinessTotalComponentBlob = __Infer<typeof ReadinessTotalComponentBlob>;
-
-export const Relic = __t.object("Relic", {
-  id: __t.u32(),
-  name: __t.string(),
-  get stats() {
-    return StatsBlock;
-  },
-  get appearance() {
-    return AppearanceBlock;
-  },
-  get bodyCapacity() {
-    return BodyCapacityBlock;
-  },
-  get readiness() {
-    return ReadinessBlock;
-  },
-  appearanceFeatureIds: __t.array(__t.u32()),
-});
-export type Relic = __Infer<typeof Relic>;
 
 export const RelicsComponent = __t.object("RelicsComponent", {
   entityId: __t.u64(),

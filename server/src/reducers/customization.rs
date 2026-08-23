@@ -58,7 +58,7 @@ pub fn set_armor(ctx: &ReducerContext, item_entity_id: u64) -> Result<(), String
         .from_player_identity(ctx.sender())
         .ok_or("Cannot find a player entity.")?;
     match owned_item_ref(&ecs, p.entity_id(), item_entity_id)? {
-        ItemRef::Armor(_) => {}
+        ItemRef::Armor => {}
         other => return Err(format!("Item {} is not armor ({:?}).", item_entity_id, other)),
     }
     let ph = ecs.find(p.entity_id());
@@ -97,7 +97,7 @@ pub fn set_relics(ctx: &ReducerContext, relic_entity_ids: Vec<u64>) -> Result<()
         .ok_or("Cannot find a player entity.")?;
     for id in &relic_entity_ids {
         match owned_item_ref(&ecs, p.entity_id(), *id)? {
-            ItemRef::Relic(_) => {}
+            ItemRef::Relic => {}
             other => return Err(format!("Item {} is not a relic ({:?}).", id, other)),
         }
     }
@@ -228,7 +228,7 @@ pub fn assign_stance_armaments(
     if let Some(override_ids) = &armament_entity_ids {
         for id in override_ids {
             match owned_item_ref(&ecs, p.entity_id(), *id)? {
-                ItemRef::Armament(_) => {}
+                ItemRef::Armament => {}
                 other => {
                     return Err(format!("Item {} is not an armament ({:?}).", id, other))
                 }
@@ -281,7 +281,7 @@ pub fn set_default_armaments(
     let player_entity_id = p.entity_id();
     for id in &armament_entity_ids {
         match owned_item_ref(&ecs, player_entity_id, *id)? {
-            ItemRef::Armament(_) => {}
+            ItemRef::Armament => {}
             other => return Err(format!("Item {} is not an armament ({:?}).", id, other)),
         }
     }

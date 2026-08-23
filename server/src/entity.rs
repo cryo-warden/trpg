@@ -161,12 +161,12 @@ entity!(
         pub equipped_entity_ids: Vec<EntityId>,
     }
 
-    // The AUTHORED starting gear (gear ASSET ids) an entity is born with —
+    // The AUTHORED starting gear (gear-BLOB ids) an entity is born with —
     // a provisioning MANIFEST, never the runtime reality. Player provisioning
-    // (new_player) spawns one owned item entity per listed asset, records
-    // their entity ids on EquipmentComponent, then deletes this. Stats never
-    // read it. Present but inert on authored NPCs, whose stats come from the
-    // summed EquipmentBlobbed instead — they never provision.
+    // (new_player) instantiates one owned item entity per listed gear blob,
+    // records their entity ids on EquipmentComponent, then deletes this. Stats
+    // never read it. Present but inert on authored NPCs, whose stats come from
+    // the summed EquipmentBlobbed instead — they never provision.
     #[component(starting_gear in starting_gear_components)]
     struct StartingGearComponent {
         pub armament_ids: Vec<u32>,
@@ -234,8 +234,9 @@ entity!(
         pub assignments: Vec<StanceCustomization>,
     }
 
-    // An entity that IS an item: takeable, droppable, and referenced by the
-    // customization menu through its gear asset.
+    // An entity that IS an item: takeable, droppable, and shown in the
+    // customization menu. Its stats live on its own Equippable, its look on its
+    // own appearance features — it declares only its equip-slot kind here.
     #[component(item in item_components)]
     struct ItemComponent {
         pub item_ref: ItemRef,
@@ -243,10 +244,11 @@ entity!(
 
     // What one item entity contributes WHEN EQUIPPED: its per-group blocks
     // (stats, appearance, the hand/body/relic cost in body_capacity, and the
-    // readiness tags it grants), stamped from the gear asset at instantiation.
-    // The equipment computation of whoever wields it sums the Equippable of
-    // every equipped item — the single rule that replaces per-asset stat
-    // lookups — gating each item on its body_capacity.
+    // readiness tags it grants), stamped from the item's OWN authored blob at
+    // instantiation (there is no gear asset table). The equipment computation
+    // of whoever wields it sums the Equippable of every equipped item — the
+    // single rule that replaces per-asset stat lookups — gating each item on
+    // its body_capacity.
     #[component(equippable in equippable_components)]
     struct EquippableComponent {
         pub stats: StatsBlock,

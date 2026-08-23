@@ -250,7 +250,7 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
         let is_armament = |id: u64| {
             matches!(
                 ecs.find(id).item().map(|i| i.item_ref),
-                Some(ItemRef::Armament(_))
+                Some(ItemRef::Armament)
             )
         };
         // ARMAMENTS: the resolved override-or-default set when this entity
@@ -539,14 +539,14 @@ impl<'a, T: WithEntityHandle<'a> + InstantiateEntityBlob> EntityHandleExtension 
                     }
                     carried
                         && match gear_ref {
-                            crate::item::ItemRef::Armament(_) => { e.default_armaments() }
+                            crate::item::ItemRef::Armament => { e.default_armaments() }
                                 .is_some_and(|d| {
                                     d.armament_entity_ids.contains(&other_entity_id)
                                 }),
-                            crate::item::ItemRef::Armor(_) => {
+                            crate::item::ItemRef::Armor => {
                                 { e.armor() }.is_some_and(|a| a.armor_entity_id == other_entity_id)
                             }
-                            crate::item::ItemRef::Relic(_) => { e.relics() }
+                            crate::item::ItemRef::Relic => { e.relics() }
                                 .is_some_and(|r| r.relic_entity_ids.contains(&other_entity_id)),
                             crate::item::ItemRef::QuestItem(_) => false,
                         }

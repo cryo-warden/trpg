@@ -31,9 +31,10 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       baselines: namedPairs(BASELINES),
       traits: namedPairs(TRAITS),
       traitPalettes: namedPairs(TRAIT_PALETTES),
-      armaments: namedPairs(ARMAMENTS),
-      armors: namedPairs(ARMORS),
-      relics: namedPairs(RELICS),
+      // Gear is now ordinary entity blobs — one flat registry keyed by name
+      // (each name is unique across the three kinds). The equip SLOT lives on
+      // each blob's item component, not in a per-kind table.
+      gearBlobs: namedPairs({ ...ARMAMENTS, ...ARMORS, ...RELICS }),
       stances: namedPairs(STANCES),
       quests: namedPairs(QUESTS),
       proneStanceName: "prone",

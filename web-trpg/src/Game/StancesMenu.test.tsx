@@ -4,13 +4,14 @@ import type { Identity } from "spacetimedb";
 import {
   actionIdOf,
   appearanceFeatureIndexOf,
-  armamentIdOf,
+  gearItemRows,
   mockTable,
   stanceIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { STANCE_DISPLAY_NAMES, StanceName } from "./assets/stances";
 import { AppearanceFeatureName } from "./assets/appearance_features";
+import { ARMAMENTS } from "./assets/armaments";
 import { StancesMenu } from "./StancesMenu";
 
 // Each item ENTITY names itself by its own appearance features.
@@ -41,9 +42,9 @@ const tables = () => ({
     { entityId: 5n, locationEntityId: 1n },
     { entityId: 8n, locationEntityId: 1n },
   ]),
-  item_components: mockTable([
-    { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
-    { entityId: 8n, itemRef: { tag: "Armament", value: armamentIdOf("spear") } },
+  ...gearItemRows([
+    { entityId: 5n, gear: ARMAMENTS.sword },
+    { entityId: 8n, gear: ARMAMENTS.spear },
   ]),
   appearance_features_components: mockTable([
     appearanceRow(5n, ["sword"]),
@@ -163,9 +164,9 @@ test("clicking an active-by-default item enters custom mode WITHOUT it, keeping 
       { entityId: 5n, locationEntityId: 1n },
       { entityId: 6n, locationEntityId: 1n },
     ]),
-    item_components: mockTable([
-      { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
-      { entityId: 6n, itemRef: { tag: "Armament", value: armamentIdOf("club") } },
+    ...gearItemRows([
+      { entityId: 5n, gear: ARMAMENTS.sword },
+      { entityId: 6n, gear: ARMAMENTS.club },
     ]),
     appearance_features_components: mockTable([
       appearanceRow(5n, ["sword"]),

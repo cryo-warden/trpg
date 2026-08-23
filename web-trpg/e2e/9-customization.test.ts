@@ -53,9 +53,8 @@ beforeAll(async () => {
     .subscribe([
       "SELECT * FROM actions",
       "SELECT * FROM stances",
-      "SELECT * FROM armaments",
-      "SELECT * FROM armors",
-      "SELECT * FROM relics",
+      "SELECT * FROM appearance_features",
+      "SELECT * FROM appearance_features_components",
       "SELECT * FROM actions_components",
       "SELECT * FROM active_stance_components",
       "SELECT * FROM equipment_components",
@@ -79,11 +78,18 @@ beforeAll(async () => {
   await waitFor(() => player.db.item_components.count() === 5n, 30000);
 }, 60000);
 
-const armamentItemId = (armamentAssetId: number): bigint =>
-  [...player.db.item_components.iter()].find(
-    (row) =>
-      row.itemRef.tag === "Armament" && row.itemRef.value === armamentAssetId,
+// Item refs are payload-less now: an item is found by its OWN appearance
+// feature, not a gear asset id. (Armor and Relic each have a single instance,
+// so their kind tag alone still pins them.)
+const featureIndexByName = (look: string): number =>
+  [...player.db.appearance_features.iter()].find((f) => f.name === look)!.index;
+
+const itemIdByLook = (look: string): bigint => {
+  const index = featureIndexByName(look);
+  return [...player.db.appearance_features_components.iter()].find((row) =>
+    row.appearanceFeatureIndexes.includes(index),
   )!.entityId;
+};
 
 const soleItemIdOfKind = (tag: "Armor" | "Relic"): bigint =>
   [...player.db.item_components.iter()].find((row) => row.itemRef.tag === tag)!
@@ -95,7 +101,7 @@ afterAll(() => {
 });
 
 test("taking a sword pockets it AND wields it", async () => {
-  const swordItemId = armamentItemId(idByName(player.db.armaments, "test_sword"));
+  const swordItemId = itemIdByLook("test_sword_look");
   expect(carriedItemIds()).not.toContain(swordItemId);
 
   const takeId = idByName(player.db.actions, "test_take");
@@ -138,8 +144,7 @@ test("armor and relics require ownership; owned ones equip", async () => {
 }, 60000);
 
 test("a stance assignment OVERRIDES the default set; clearing it falls back", async () => {
-  const clubId = idByName(player.db.armaments, "test_club");
-  const clubItemId = armamentItemId(clubId);
+  const clubItemId = itemIdByLook("test_club_look");
   const duelingId = idByName(player.db.stances, "test_dueling");
   const standingId = idByName(player.db.stances, "test_standing");
 
@@ -239,10 +244,8 @@ test("bar assignments: on adoption for other stances, INSTANT for the active one
 }, 60000);
 
 test("unequip/equip actions edit the DEFAULT slot; hands re-resolve", async () => {
-  const swordId = idByName(player.db.armaments, "test_sword");
-  const clubId = idByName(player.db.armaments, "test_club");
-  const swordItemId = armamentItemId(swordId);
-  const clubItemId = armamentItemId(clubId);
+  const swordItemId = itemIdByLook("test_sword_look");
+  const clubItemId = itemIdByLook("test_club_look");
   const myDefaults = (): bigint[] => [
     ...([...player.db.default_armaments_components.iter()].find(
       (row) => row.entityId === playerEntityId,
@@ -300,10 +303,8 @@ test("the DEFAULT action bar: set-validated, pinned by stances without a bar of 
 }, 60000);
 
 test("set_default_armaments configures IMMEDIATELY: the menu path, hands re-resolving", async () => {
-  const swordId = idByName(player.db.armaments, "test_sword");
-  const clubId = idByName(player.db.armaments, "test_club");
-  const swordItemId = armamentItemId(swordId);
-  const clubItemId = armamentItemId(clubId);
+  const swordItemId = itemIdByLook("test_sword_look");
+  const clubItemId = itemIdByLook("test_club_look");
   const jerkinItemId = soleItemIdOfKind("Armor");
   const myDefaults = (): bigint[] => [
     ...([...player.db.default_armaments_components.iter()].find(
@@ -333,10 +334,8 @@ test("set_default_armaments configures IMMEDIATELY: the menu path, hands re-reso
 }, 60000);
 
 test("the equip gate refuses gear that overruns a steady capacity", async () => {
-  const swordId = idByName(player.db.armaments, "test_sword");
-  const greatId = idByName(player.db.armaments, "test_greatsword");
-  const swordItemId = armamentItemId(swordId);
-  const greatItemId = armamentItemId(greatId);
+  const swordItemId = itemIdByLook("test_sword_look");
+  const greatItemId = itemIdByLook("test_greatsword_look");
   const takeId = idByName(player.db.actions, "test_take");
 
   // Bring the two-handed greatsword into the bags.
@@ -354,8 +353,7 @@ test("the equip gate refuses gear that overruns a steady capacity", async () => 
 }, 60000);
 
 test("a stance that taxes the grip drops a wielded stat (temporarily disabled)", async () => {
-  const greatId = idByName(player.db.armaments, "test_greatsword");
-  const greatItemId = armamentItemId(greatId);
+  const greatItemId = itemIdByLook("test_greatsword_look");
   const burdenedId = idByName(player.db.stances, "test_burdened");
   const standingId = idByName(player.db.stances, "test_standing");
   // The greatsword is already in the bags from the gate test above.

@@ -4,7 +4,6 @@ import { DbConnection } from "../../../stdb";
 import { accountQueries } from "./account";
 import { assetQueries } from "./assetLookup";
 import { componentQueries } from "./components";
-import { gearQueries } from "./customization";
 import { renderingQueries } from "./rendering";
 import { StdbContext } from "./StdbContext";
 import { describeConnectionError } from "./connectionErrorText";
@@ -15,7 +14,6 @@ const queries = [
   ...renderingQueries,
   ...componentQueries,
   ...assetQueries,
-  ...gearQueries,
   ...accountQueries,
 ];
 

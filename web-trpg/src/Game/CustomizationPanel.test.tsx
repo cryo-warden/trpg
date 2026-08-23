@@ -4,13 +4,14 @@ import type { Identity } from "spacetimedb";
 import {
   actionIdOf,
   appearanceFeatureIndexOf,
-  armamentIdOf,
-  armorIdOf,
+  gearItemRows,
   mockTable,
-  relicIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { AppearanceFeatureName } from "./assets/appearance_features";
+import { ARMAMENTS } from "./assets/armaments";
+import { ARMORS } from "./assets/armors";
+import { RELICS } from "./assets/relics";
 import { CustomizationPanel } from "./CustomizationPanel";
 
 // The steady body plan: one armor slot, four relic slots, two hands — the
@@ -53,10 +54,10 @@ const tables = () => ({
     { entityId: 6n, locationEntityId: 1n },
     { entityId: 7n, locationEntityId: 1n },
   ]),
-  item_components: mockTable([
-    { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
-    { entityId: 6n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
-    { entityId: 7n, itemRef: { tag: "Relic", value: relicIdOf("ember_charm") } },
+  ...gearItemRows([
+    { entityId: 5n, gear: ARMAMENTS.sword },
+    { entityId: 6n, gear: ARMORS.leather_jerkin },
+    { entityId: 7n, gear: RELICS.ember_charm },
   ]),
   appearance_features_components: mockTable([
     appearanceRow(5n, ["sword"]),
@@ -97,9 +98,9 @@ test("of two identical armors, only the FIRST instance draws as worn", () => {
       { entityId: 6n, locationEntityId: 1n },
       { entityId: 8n, locationEntityId: 1n },
     ]),
-    item_components: mockTable([
-      { entityId: 6n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
-      { entityId: 8n, itemRef: { tag: "Armor", value: armorIdOf("leather_jerkin") } },
+    ...gearItemRows([
+      { entityId: 6n, gear: ARMORS.leather_jerkin },
+      { entityId: 8n, gear: ARMORS.leather_jerkin },
     ]),
     appearance_features_components: mockTable([
       appearanceRow(6n, ["leather", "jerkin"]),
@@ -201,9 +202,9 @@ test("an armament past the DEFAULT configuration's free hand renders visibly dis
       { entityId: 5n, locationEntityId: 1n },
       { entityId: 9n, locationEntityId: 1n },
     ]),
-    item_components: mockTable([
-      { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
-      { entityId: 9n, itemRef: { tag: "Armament", value: armamentIdOf("staff") } },
+    ...gearItemRows([
+      { entityId: 5n, gear: ARMAMENTS.sword },
+      { entityId: 9n, gear: ARMAMENTS.staff },
     ]),
     appearance_features_components: mockTable([
       appearanceRow(5n, ["sword"]),
@@ -312,9 +313,9 @@ test("owned items render in stable ENTITY order regardless of row order", () => 
       { entityId: 9n, locationEntityId: 1n },
       { entityId: 5n, locationEntityId: 1n },
     ]),
-    item_components: mockTable([
-      { entityId: 9n, itemRef: { tag: "Armament", value: armamentIdOf("staff") } },
-      { entityId: 5n, itemRef: { tag: "Armament", value: armamentIdOf("sword") } },
+    ...gearItemRows([
+      { entityId: 9n, gear: ARMAMENTS.staff },
+      { entityId: 5n, gear: ARMAMENTS.sword },
     ]),
     appearance_features_components: mockTable([
       appearanceRow(9n, ["staff"]),

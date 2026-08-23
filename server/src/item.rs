@@ -9,13 +9,18 @@ pub struct QuestItemRef {
     pub index: u32,
 }
 
-/// What an item entity IS: one reference into exactly one asset kind.
-/// An explicit sum type, never inferred from names or table probing.
+/// What KIND of item an item entity IS. An explicit sum type, never inferred
+/// from names or table probing. The equip-slot kind is all that is carried:
+/// an item's mechanical worth lives on its own EquippableComponent, and its
+/// name/look on its own appearance features — never in a separate gear asset
+/// table. Gear is authored as an ordinary entity blob like everything else, so
+/// there is no gear-asset id to reference here. QuestItem alone keeps a payload
+/// (the quest bit it sets when eaten).
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ItemRef {
-    Armament(u32),
-    Armor(u32),
-    Relic(u32),
+    Armament,
+    Armor,
+    Relic,
     QuestItem(QuestItemRef),
 }
 

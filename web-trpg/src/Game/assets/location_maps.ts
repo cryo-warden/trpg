@@ -9,6 +9,10 @@ import {
   ZoneKind,
 } from "../../stdb/types";
 import { blob } from "./entity_blobs";
+import { ARMAMENTS } from "./armaments";
+import { ARMORS } from "./armors";
+import { RELICS } from "./relics";
+import { gearLoot } from "./gear";
 import { QuestName } from "./quests";
 
 // The visible checkpoints: fortune-telling scenery placed in every map's
@@ -160,79 +164,61 @@ export const LOCATION_MAP_THEMES = {
         },
         {
           weight: 2,
-          blob: blob({
-            appearanceFeatureNames: ["club"],
-            item: { tag: "Armament", value: "club" },
-          }),
+          blob: gearLoot(ARMAMENTS.club, { appearanceFeatureNames: ["club"] }),
         },
         {
           weight: 2,
-          blob: blob({
+          blob: gearLoot(ARMAMENTS.sword, {
             // A differentiable item takes its whole look through the pipeline:
             // the noun is a baseline (max HP 0 → no HP), the rolled condition a
             // trait. Overwritten from baseline + traits; you take it, not fight
             // it.
             baselineName: "sword",
-            item: { tag: "Armament", value: "sword" },
             differentiable: { traitPaletteName: "weapon_variety" },
           }),
         },
         {
           weight: 2,
-          blob: blob({
-            appearanceFeatureNames: ["dagger"],
-            item: { tag: "Armament", value: "dagger" },
-          }),
+          blob: gearLoot(ARMAMENTS.dagger, { appearanceFeatureNames: ["dagger"] }),
         },
         {
           weight: 2,
-          blob: blob({
+          blob: gearLoot(ARMAMENTS.shield, {
             baselineName: "shield",
-            item: { tag: "Armament", value: "shield" },
             differentiable: { traitPaletteName: "weapon_variety" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
-            appearanceFeatureNames: ["spear"],
-            item: { tag: "Armament", value: "spear" },
-          }),
+          blob: gearLoot(ARMAMENTS.spear, { appearanceFeatureNames: ["spear"] }),
         },
         {
           weight: 1,
-          blob: blob({
-            appearanceFeatureNames: ["axe"],
-            item: { tag: "Armament", value: "axe" },
-          }),
+          blob: gearLoot(ARMAMENTS.axe, { appearanceFeatureNames: ["axe"] }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(ARMAMENTS.staff, {
             baselineName: "staff",
-            item: { tag: "Armament", value: "staff" },
             differentiable: { traitPaletteName: "weapon_variety" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(ARMORS.leather_jerkin, {
             appearanceFeatureNames: ["leather", "jerkin"],
-            item: { tag: "Armor", value: "leather_jerkin" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(RELICS.ember_charm, {
             appearanceFeatureNames: ["smoldering", "charm"],
-            item: { tag: "Relic", value: "ember_charm" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(RELICS.storm_bead, {
             appearanceFeatureNames: ["crackling", "bead"],
-            item: { tag: "Relic", value: "storm_bead" },
           }),
         },
       ],
@@ -409,65 +395,50 @@ export const LOCATION_MAP_THEMES = {
         { weight: 2, blob: blob({ baselineName: "brazier" }) },
         {
           weight: 2,
-          blob: blob({
+          blob: gearLoot(ARMAMENTS.sword, {
             appearanceFeatureNames: ["rusty", "sword"],
-            item: { tag: "Armament", value: "sword" },
           }),
         },
         {
           weight: 2,
-          blob: blob({
+          blob: gearLoot(ARMAMENTS.axe, {
             appearanceFeatureNames: ["rusty", "axe"],
-            item: { tag: "Armament", value: "axe" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(ARMAMENTS.shield, {
             appearanceFeatureNames: ["ancient", "shield"],
-            item: { tag: "Armament", value: "shield" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
-            appearanceFeatureNames: ["club"],
-            item: { tag: "Armament", value: "club" },
-          }),
+          blob: gearLoot(ARMAMENTS.club, { appearanceFeatureNames: ["club"] }),
         },
         {
           weight: 1,
-          blob: blob({
-            appearanceFeatureNames: ["spear"],
-            item: { tag: "Armament", value: "spear" },
-          }),
+          blob: gearLoot(ARMAMENTS.spear, { appearanceFeatureNames: ["spear"] }),
         },
         {
           weight: 1,
-          blob: blob({
-            appearanceFeatureNames: ["dagger"],
-            item: { tag: "Armament", value: "dagger" },
-          }),
+          blob: gearLoot(ARMAMENTS.dagger, { appearanceFeatureNames: ["dagger"] }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(ARMORS.leather_jerkin, {
             appearanceFeatureNames: ["leather", "jerkin"],
-            item: { tag: "Armor", value: "leather_jerkin" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(ARMORS.chain_hauberk, {
             appearanceFeatureNames: ["rusty", "hauberk"],
-            item: { tag: "Armor", value: "chain_hauberk" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(RELICS.bone_idol, {
             appearanceFeatureNames: ["bone", "idol"],
-            item: { tag: "Relic", value: "bone_idol" },
           }),
         },
       ],
@@ -527,44 +498,38 @@ export const LOCATION_MAP_THEMES = {
         { weight: 2, blob: blob({ baselineName: "pillar", traitNames: ["crackling"] }) },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(ARMAMENTS.staff, {
             appearanceFeatureNames: ["gleaming", "staff"],
-            item: { tag: "Armament", value: "staff" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(RELICS.ember_charm, {
             appearanceFeatureNames: ["smoldering", "charm"],
-            item: { tag: "Relic", value: "ember_charm" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(RELICS.frost_talisman, {
             appearanceFeatureNames: ["frozen", "talisman"],
-            item: { tag: "Relic", value: "frost_talisman" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(RELICS.storm_bead, {
             appearanceFeatureNames: ["crackling", "bead"],
-            item: { tag: "Relic", value: "storm_bead" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(RELICS.sun_medallion, {
             appearanceFeatureNames: ["gleaming", "medallion"],
-            item: { tag: "Relic", value: "sun_medallion" },
           }),
         },
         {
           weight: 1,
-          blob: blob({
+          blob: gearLoot(ARMORS.traveler_robe, {
             appearanceFeatureNames: ["ancient", "robe"],
-            item: { tag: "Armor", value: "traveler_robe" },
           }),
         },
       ],

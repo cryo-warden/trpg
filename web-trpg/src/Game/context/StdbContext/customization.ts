@@ -1,56 +1,19 @@
 import { useMemo } from "react";
 import { EntityId } from "../../trpg";
 import { GroupedBlock } from "../../domain/statBlock";
-import { ARMAMENT_DISPLAY_NAMES } from "../../assets/armaments";
-import { ARMOR_DISPLAY_NAMES } from "../../assets/armors";
-import { RELIC_DISPLAY_NAMES } from "../../assets/relics";
-import { QUEST_DISPLAY_NAMES } from "../../assets/quests";
-import { displayNameFrom } from "../../assets/display_names";
 import { usePlayerEntity } from "./components";
 import { useTableData } from "./useTableData";
-
-// The gear asset tables are public precisely so the customization menu can turn
-// the ids found in item components back into names — the backward half of
-// the name/id asymmetry, same as actions.
-export const gearQueries = [
-  "select * from armaments",
-  "select * from armors",
-  "select * from relics",
-];
 
 export type GearKind = "Armament" | "Armor" | "Relic";
 
 export type OwnedItem = {
   entityId: EntityId;
   kind: GearKind | "QuestItem";
-  /** Gear asset id — or the QUEST id for quest items (their instance
-   * identity is the quest bit, not a gear asset). */
-  assetId: number;
-  /** The PROPER display name (raw key resolved through the client
-   * vocabulary), never the internal underscored key. */
-  name: string;
 };
 
-/** id -> display name for a gear kind: the subscribed table hands back the
- * raw key from an id, the kind's vocabulary turns it human. */
-const useNameMap = (
-  table: "armaments" | "armors" | "relics",
-  vocabulary: Record<string, string>,
-) =>
-  useTableData(
-    table,
-    (t) =>
-      new Map<number, string>(
-        [...t.iter()].map((row) => [
-          row.id,
-          displayNameFrom(vocabulary, row.name),
-        ]),
-      ),
-    [vocabulary],
-  );
-
-/** Everything the player carries (carrying IS location), resolved to gear
- * names for display. */
+/** Everything the player carries (carrying IS location). An item's name and
+ * look render through its appearance features (see EntityName), never a gear
+ * asset table — here we need only its entity and its equip-slot kind. */
 export const useOwnedItems = (): OwnedItem[] => {
   const playerEntity = usePlayerEntity();
   const locationRows = useTableData(
@@ -59,20 +22,6 @@ export const useOwnedItems = (): OwnedItem[] => {
     [],
   );
   const itemRows = useTableData("item_components", (t) => [...t.iter()], []);
-  const armamentNames = useNameMap("armaments", ARMAMENT_DISPLAY_NAMES);
-  const armorNames = useNameMap("armors", ARMOR_DISPLAY_NAMES);
-  const relicNames = useNameMap("relics", RELIC_DISPLAY_NAMES);
-  const questNames = useTableData(
-    "quests",
-    (t) =>
-      new Map<number, string>(
-        [...t.iter()].map((row) => [
-          row.id,
-          displayNameFrom(QUEST_DISPLAY_NAMES, row.name),
-        ]),
-      ),
-    [],
-  );
 
   return useMemo(() => {
     if (playerEntity == null) {
@@ -90,39 +39,11 @@ export const useOwnedItems = (): OwnedItem[] => {
     return itemRows
       .filter((row) => carried.has(row.entityId))
       .sort((a, b) => (a.entityId < b.entityId ? -1 : 1))
-      .map((row) => {
-        const ref = row.itemRef;
-        if (ref.tag === "QuestItem") {
-          const questId = ref.value.questId;
-          return {
-            entityId: row.entityId,
-            kind: "QuestItem" as const,
-            assetId: questId,
-            name: questNames.get(questId) ?? `#${questId}`,
-          };
-        }
-        const names =
-          ref.tag === "Armament"
-            ? armamentNames
-            : ref.tag === "Armor"
-              ? armorNames
-              : relicNames;
-        return {
-          entityId: row.entityId,
-          kind: ref.tag,
-          assetId: ref.value,
-          name: names.get(ref.value) ?? `#${ref.value}`,
-        };
-      });
-  }, [
-    playerEntity,
-    locationRows,
-    itemRows,
-    armamentNames,
-    armorNames,
-    relicNames,
-    questNames,
-  ]);
+      .map((row) => ({
+        entityId: row.entityId,
+        kind: row.itemRef.tag,
+      }));
+  }, [playerEntity, locationRows, itemRows]);
 };
 
 /** The worn armor ITEM entity, if any. */
@@ -223,13 +144,15 @@ export const useMyDefaultArmamentEntityIds = (): EntityId[] => {
   );
 };
 
-const useGroupedBlockMap = (table: "armaments" | "armors" | "relics") =>
+/** item ENTITY id -> the grouped block it contributes when equipped, read from
+ * the item's OWN equippable component (no gear asset table). */
+const useEquippableBlockMap = () =>
   useTableData(
-    table,
+    "equippable_components",
     (t) =>
-      new Map<number, GroupedBlock>(
+      new Map<EntityId, GroupedBlock>(
         [...t.iter()].map((row) => [
-          row.id,
+          row.entityId,
           {
             stats: row.stats,
             bodyCapacity: row.bodyCapacity,
@@ -240,22 +163,16 @@ const useGroupedBlockMap = (table: "armaments" | "armors" | "relics") =>
     [],
   );
 
-/** Resolves any owned item to its gear asset's grouped block. */
+/** Resolves any owned item to the grouped block it contributes when equipped —
+ * read from the item entity's own Equippable. Quest items are not equippable
+ * and resolve to null here. */
 export const useGearStatBlockOf = (): ((
   item: OwnedItem,
 ) => GroupedBlock | null) => {
-  const armamentStats = useGroupedBlockMap("armaments");
-  const armorStats = useGroupedBlockMap("armors");
-  const relicStats = useGroupedBlockMap("relics");
+  const byEntity = useEquippableBlockMap();
   return useMemo(
-    () => (item: OwnedItem) =>
-      (item.kind === "Armament"
-        ? armamentStats
-        : item.kind === "Armor"
-          ? armorStats
-          : relicStats
-      ).get(item.assetId) ?? null,
-    [armamentStats, armorStats, relicStats],
+    () => (item: OwnedItem) => byEntity.get(item.entityId) ?? null,
+    [byEntity],
   );
 };
 

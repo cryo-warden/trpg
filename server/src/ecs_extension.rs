@@ -1,9 +1,7 @@
 use crate::{
     account::{account_of, AccountId},
-    asset::{armament::armaments, armor::armors, relic::relics, ReducerContextExtension},
+    asset::{gear::gear_blobs, ReducerContextExtension},
     entity::*,
-    item::ItemRef,
-    stat_group::{AppearanceBlock, BodyCapacityBlock, ReadinessBlock, StatsBlock},
 };
 use ecs::Ecs;
 use spacetimedb::Identity;
@@ -107,72 +105,29 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
         // Added on a fresh handle so new_player's return type stays unchanged.
         let player_entity_id = player.entity_id();
         self.find(player_entity_id).upsert_new_party(0);
-        // The authored starting-gear MANIFEST becomes OWNED item entities
-        // located in the player: customization equips concrete entities, so
-        // the worn reality needs real items behind it. Each carries its
-        // Equippable stamp; their ids form the canonical EquipmentComponent.
+        // The authored starting-gear MANIFEST (gear-blob ids) becomes OWNED item
+        // entities located in the player: customization equips concrete entities,
+        // so the worn reality needs real items behind it. Each gear blob already
+        // carries its item kind, its Equippable grant, and its own appearance, so
+        // instantiating it yields a complete item entity through the same pipeline
+        // as any other blob. Their ids form the canonical EquipmentComponent.
         if let Some(manifest) = self.find(player_entity_id).starting_gear() {
-            // Each spawn carries the gear's Equippable GRANT (its four per-group
-            // contributions) and, separately, the gear's OWN appearance features
-            // (the item's look) — two distinct channels that never mix.
-            struct GearSpawn {
-                item_ref: ItemRef,
-                stats: StatsBlock,
-                appearance: AppearanceBlock,
-                body_capacity: BodyCapacityBlock,
-                readiness: ReadinessBlock,
-                own_appearance_ids: Vec<u32>,
-            }
-            let mut to_spawn: Vec<GearSpawn> = Vec::new();
-            for id in &manifest.armament_ids {
-                if let Some(a) = self.db.armaments().id().find(id) {
-                    to_spawn.push(GearSpawn {
-                        item_ref: ItemRef::Armament(*id),
-                        stats: a.stats,
-                        appearance: a.appearance,
-                        body_capacity: a.body_capacity,
-                        readiness: a.readiness,
-                        own_appearance_ids: a.appearance_feature_ids,
-                    });
-                }
-            }
+            let scope = self.instantiation_scope();
+            let mut gear_blob_ids: Vec<u32> = manifest.armament_ids.clone();
             if let Some(armor_id) = manifest.worn_armor_id {
-                if let Some(a) = self.db.armors().id().find(armor_id) {
-                    to_spawn.push(GearSpawn {
-                        item_ref: ItemRef::Armor(armor_id),
-                        stats: a.stats,
-                        appearance: a.appearance,
-                        body_capacity: a.body_capacity,
-                        readiness: a.readiness,
-                        own_appearance_ids: a.appearance_feature_ids,
-                    });
-                }
+                gear_blob_ids.push(armor_id);
             }
-            for id in &manifest.worn_relic_ids {
-                if let Some(r) = self.db.relics().id().find(id) {
-                    to_spawn.push(GearSpawn {
-                        item_ref: ItemRef::Relic(*id),
-                        stats: r.stats,
-                        appearance: r.appearance,
-                        body_capacity: r.body_capacity,
-                        readiness: r.readiness,
-                        own_appearance_ids: r.appearance_feature_ids,
-                    });
-                }
-            }
+            gear_blob_ids.extend(manifest.worn_relic_ids.iter().copied());
             let mut equipped_entity_ids: Vec<u64> = Vec::new();
-            for s in to_spawn {
-                let item = self
-                    .new()
-                    .upsert_new_item(s.item_ref)
-                    .upsert_new_equippable(s.stats, s.appearance, s.body_capacity, s.readiness)
-                    .upsert_new_location(player_entity_id, LocationKind::Interior)
-                    .into_handle();
-                if !s.own_appearance_ids.is_empty() {
-                    item.clone()
-                        .upsert_new_appearance_features(s.own_appearance_ids);
+            for id in gear_blob_ids {
+                if let Some(gear) = self.db.gear_blobs().id().find(id) {
+                    let item = self
+                        .new()
+                        .instantiate_blob(gear.blob, &scope)?
+                        .upsert_new_location(player_entity_id, LocationKind::Interior)
+                        .into_handle();
+                    equipped_entity_ids.push(item.entity_id());
                 }
-                equipped_entity_ids.push(item.entity_id());
             }
             // The manifest is consumed once: real items now stand for it.
             self.find(player_entity_id).delete_starting_gear();

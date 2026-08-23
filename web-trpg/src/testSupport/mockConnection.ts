@@ -1,17 +1,14 @@
 import { createElement, type ReactNode } from "react";
 import type { Identity } from "spacetimedb";
 import type { DbConnection } from "../stdb";
-import type { AppearanceBlockAsset } from "../stdb/types";
+import type { AppearanceBlockAsset, EntityBlobAsset } from "../stdb/types";
 import { StdbContext } from "../Game/context/StdbContext/StdbContext";
 import { ACTIONS, ActionName } from "../Game/assets/actions";
 import {
   APPEARANCE_FEATURES,
   AppearanceFeatureName,
 } from "../Game/assets/appearance_features";
-import { ARMAMENTS, ArmamentName } from "../Game/assets/armaments";
-import { ARMORS, ArmorName } from "../Game/assets/armors";
 import { QUESTS, QuestName } from "../Game/assets/quests";
-import { RELICS, RelicName } from "../Game/assets/relics";
 import { STANCES, StanceName } from "../Game/assets/stances";
 
 /**
@@ -121,45 +118,6 @@ export const mockAssetTables = () => ({
       readiness: stance.block.readiness,
     })),
   ),
-  armaments: mockTable(
-    Object.entries(ARMAMENTS).map(([name, gear], id) => ({
-      id,
-      name,
-      stats: gear.block.stats,
-      appearance: resolveAppearance(gear.block.appearance),
-      bodyCapacity: gear.block.bodyCapacity,
-      readiness: gear.block.readiness,
-      appearanceFeatureIds: gear.appearanceFeatureNames.map((name) =>
-        appearanceFeatureIndexOf(name as AppearanceFeatureName),
-      ),
-    })),
-  ),
-  armors: mockTable(
-    Object.entries(ARMORS).map(([name, gear], id) => ({
-      id,
-      name,
-      stats: gear.block.stats,
-      appearance: resolveAppearance(gear.block.appearance),
-      bodyCapacity: gear.block.bodyCapacity,
-      readiness: gear.block.readiness,
-      appearanceFeatureIds: gear.appearanceFeatureNames.map((name) =>
-        appearanceFeatureIndexOf(name as AppearanceFeatureName),
-      ),
-    })),
-  ),
-  relics: mockTable(
-    Object.entries(RELICS).map(([name, gear], id) => ({
-      id,
-      name,
-      stats: gear.block.stats,
-      appearance: resolveAppearance(gear.block.appearance),
-      bodyCapacity: gear.block.bodyCapacity,
-      readiness: gear.block.readiness,
-      appearanceFeatureIds: gear.appearanceFeatureNames.map((name) =>
-        appearanceFeatureIndexOf(name as AppearanceFeatureName),
-      ),
-    })),
-  ),
   quests: mockTable(
     Object.entries(QUESTS).map(([name, quest], id) => ({
       id,
@@ -179,17 +137,36 @@ export const actionIdOf = (name: ActionName): number =>
 export const stanceIdOf = (name: StanceName): number =>
   Object.keys(STANCES).indexOf(name);
 
-export const armamentIdOf = (name: ArmamentName): number =>
-  Object.keys(ARMAMENTS).indexOf(name);
-
-export const armorIdOf = (name: ArmorName): number =>
-  Object.keys(ARMORS).indexOf(name);
-
-export const relicIdOf = (name: RelicName): number =>
-  Object.keys(RELICS).indexOf(name);
-
 export const questIdOf = (name: QuestName): number =>
   Object.keys(QUESTS).indexOf(name);
+
+/** A set of gear item ENTITIES. Each carries the two component rows the server
+ * writes per owned gear entity: a payload-less {@link item_components} ref (its
+ * equip-slot KIND) and its own {@link equippable_components} grant, keyed by
+ * entity id — the same channel the live client reads (no gear asset table). An
+ * item's name and look come from its appearance features, declared separately.
+ * Spread into a table map to supply BOTH tables at once. */
+export const gearItemRows = (
+  entries: { entityId: bigint; gear: EntityBlobAsset }[],
+) => ({
+  item_components: mockTable(
+    entries.map(({ entityId, gear }) => ({
+      entityId,
+      itemRef: { tag: gear.item!.tag },
+    })),
+  ),
+  equippable_components: mockTable(
+    entries
+      .filter(({ gear }) => gear.equippable != null)
+      .map(({ entityId, gear }) => ({
+        entityId,
+        stats: gear.equippable!.stats,
+        appearance: gear.equippable!.appearance,
+        bodyCapacity: gear.equippable!.bodyCapacity,
+        readiness: gear.equippable!.readiness,
+      })),
+  ),
+});
 
 /** The account every mocked identity belongs to unless a test overrides the
  * account_identities table. */
@@ -243,6 +220,7 @@ export const stdbWrapper = (
       courage_status_components: mockTable([]),
       action_state_components: mockTable([]),
       item_components: mockTable([]),
+      equippable_components: mockTable([]),
       checkpoint_object_components: mockTable([]),
       checkpoint_components: mockTable([]),
       armor_components: mockTable([]),

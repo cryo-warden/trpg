@@ -37,8 +37,8 @@ const bodyReadiness = (blob: EntityBlobAsset): ReadinessBlock => {
   }
   for (const name of blob.armamentNames ?? []) {
     const armament = ARMAMENTS[name as keyof typeof ARMAMENTS];
-    if (armament) {
-      total = addBlock(total, armament.block.readiness);
+    if (armament?.equippable) {
+      total = addBlock(total, armament.equippable.readiness);
     }
   }
   return total;

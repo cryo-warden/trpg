@@ -10,7 +10,7 @@ use crate::{
         types::{
             AppearanceBlockAsset, EntityBlobAsset, EntityBlobsSamplerAsset, GroupedBlockAsset,
             ItemRefAsset, NamedActionAsset, NamedAppearanceFeatureAsset, NamedEncounterAsset,
-            NamedEntityBlobAsset, NamedGearAsset, NamedGroupedBlockAsset, NamedLocationMapAsset,
+            NamedEntityBlobAsset, NamedGroupedBlockAsset, NamedLocationMapAsset,
             NamedLocationMapThemeAsset, NamedQuestAsset, NamedStanceAsset, NamedTraitPaletteAsset,
         },
         quest::{quests, Quest},
@@ -24,11 +24,9 @@ use crate::{
             location_map_themes, EntityBlobSample, EntityBlobsSampler, LocationMapTheme,
             PathBlobPair, PathBlobPairSample, PathBlobPairsSampler,
         },
-        armament::{armaments, Armament},
-        armor::{armors, Armor},
+        gear::{gear_blobs, GearBlob},
         r#trait::{traits, Trait},
         trait_palette::{trait_palettes, TraitPalette},
-        relic::{relics, Relic},
         stance::{special_stances, stances, SpecialStance, SpecialStanceKey, Stance},
     },
     ecs_extension::EcsExtension,
@@ -50,11 +48,9 @@ use crate::{
 };
 
 pub mod types;
-pub mod armament;
+pub mod gear;
 pub mod quest;
-pub mod armor;
 pub mod baseline;
-pub mod relic;
 pub mod encounter;
 pub mod location_map;
 pub mod location_map_theme;
@@ -86,9 +82,10 @@ pub struct AssetPack {
     baselines: Vec<NamedGroupedBlockAsset>,
     traits: Vec<NamedGroupedBlockAsset>,
     trait_palettes: Vec<NamedTraitPaletteAsset>,
-    armaments: Vec<NamedGearAsset>,
-    armors: Vec<NamedGearAsset>,
-    relics: Vec<NamedGearAsset>,
+    /// Gear TEMPLATES: ordinary entity blobs, each carrying its item kind, its
+    /// Equippable grant, and its own appearance. Stored name-keyed so players
+    /// spawn owned copies and creatures reference them for summed NPC equipment.
+    gear_blobs: Vec<NamedEntityBlobAsset>,
     stances: Vec<NamedStanceAsset>,
     quests: Vec<NamedQuestAsset>,
     /// Which stance a dive lands in; a pack without morale-relevant content
@@ -172,24 +169,17 @@ struct AssetNameMaps {
     baselines: HashMap<String, u32>,
     traits: HashMap<String, u32>,
     trait_palettes: HashMap<String, u32>,
-    armaments: HashMap<String, u32>,
-    armors: HashMap<String, u32>,
-    relics: HashMap<String, u32>,
+    // Gear blobs (name -> id). All three creature reference fields
+    // (armament_names / armor_name / relic_names) resolve against this one map;
+    // the equip SLOT is decided by which field, not by a per-kind table.
+    gear: HashMap<String, u32>,
     stances: HashMap<String, u32>,
     quests: HashMap<String, u32>,
     location_maps: HashMap<String, u32>,
-    // Resolved gear GRANTS (per-group contributions when equipped), keyed by
-    // asset id — filled once the gear assets are stored (see the fill below).
-    // Lets blob resolution stamp an item's Equippable and an NPC's summed
-    // EquipmentBlobbed without a second asset lookup.
-    armament_grants: HashMap<u32, ResolvedGroups>,
-    armor_grants: HashMap<u32, ResolvedGroups>,
-    relic_grants: HashMap<u32, ResolvedGroups>,
-    // Each gear kind's OWN appearance features, keyed by asset id: stamped onto
-    // a spawned item entity, kept out of the Equippable grant entirely.
-    armament_appearance_ids: HashMap<u32, Vec<u32>>,
-    armor_appearance_ids: HashMap<u32, Vec<u32>>,
-    relic_appearance_ids: HashMap<u32, Vec<u32>>,
+    // Each gear blob's resolved Equippable GRANT, keyed by gear-blob id — filled
+    // as the gear blobs are resolved (see the loop below). Lets a creature blob
+    // sum its NPC EquipmentBlobbed without re-resolving each referenced gear.
+    gear_equippables: HashMap<u32, EquippableComponentBlob>,
 }
 
 /// Resolve an authored blob's asset-name references into the stored
@@ -206,11 +196,9 @@ fn resolve_entity_blob(
         .as_ref()
         .map(|item| {
             Ok::<_, String>(match item {
-                ItemRefAsset::Armament(n) => {
-                    ItemRef::Armament(resolve_name(&maps.armaments, "armament", n)?)
-                }
-                ItemRefAsset::Armor(n) => ItemRef::Armor(resolve_name(&maps.armors, "armor", n)?),
-                ItemRefAsset::Relic(n) => ItemRef::Relic(resolve_name(&maps.relics, "relic", n)?),
+                ItemRefAsset::Armament => ItemRef::Armament,
+                ItemRefAsset::Armor => ItemRef::Armor,
+                ItemRefAsset::Relic => ItemRef::Relic,
                 ItemRefAsset::QuestItem(q) => ItemRef::QuestItem(crate::item::QuestItemRef {
                     quest_id: resolve_name(&maps.quests, "quest", &q.quest_name)?,
                     index: q.index,
@@ -218,70 +206,47 @@ fn resolve_entity_blob(
             })
         })
         .transpose()?;
-    // An equippable item entity carries its gear asset's GRANT (the per-group
-    // contributions it confers when worn — including the hand/body/relic cost
-    // and the readiness tags that make actions available). This grant appearance
-    // is the wielder-facing look; the item's OWN look is a separate channel
-    // (gear_appearance_ids below).
-    let equippable = item_ref.as_ref().and_then(|r| {
-        let grant = match r {
-            ItemRef::Armament(id) => maps.armament_grants.get(id),
-            ItemRef::Armor(id) => maps.armor_grants.get(id),
-            ItemRef::Relic(id) => maps.relic_grants.get(id),
-            ItemRef::QuestItem(_) => None,
-        }?;
-        Some(EquippableComponentBlob {
-            stats: grant.stats.clone(),
-            appearance: grant.appearance.clone(),
-            body_capacity: grant.body_capacity.clone(),
-            readiness: grant.readiness.clone(),
+    // An equippable item entity carries its OWN authored GRANT (the per-group
+    // contributions it confers when worn — the hand/body/relic cost and the
+    // readiness tags that make actions available). Authored directly on the blob
+    // like any component; the item's OWN look is the ordinary appearance channel.
+    let equippable = author
+        .equippable
+        .map(|block| {
+            let g = resolve_grouped_block(block, maps)?;
+            Ok::<_, String>(EquippableComponentBlob {
+                stats: g.stats,
+                appearance: g.appearance,
+                body_capacity: g.body_capacity,
+                readiness: g.readiness,
+            })
         })
-    });
-    // The gear item's OWN appearance features — its look, a separate channel
-    // from the Equippable grant above.
-    let gear_appearance_ids: Vec<u32> = item_ref
-        .as_ref()
-        .and_then(|r| match r {
-            ItemRef::Armament(id) => maps.armament_appearance_ids.get(id),
-            ItemRef::Armor(id) => maps.armor_appearance_ids.get(id),
-            ItemRef::Relic(id) => maps.relic_appearance_ids.get(id),
-            ItemRef::QuestItem(_) => None,
-        })
-        .cloned()
-        .unwrap_or_default();
+        .transpose()?;
     // NPC gear kept light: the summed GRANT of the authored armaments, armor,
     // and relics — the same per-group total a player's per-item Equippable sum
-    // produces. Each group folds independently through its own AddAssign.
+    // produces. Each referenced gear blob is looked up by name and its own
+    // Equippable folded in; each group folds through its own AddAssign.
     let equipment_blobbed = {
         let mut summed = ResolvedGroups::default();
         let mut any = false;
-        let mut fold = |grant: &ResolvedGroups| {
-            summed.stats += &grant.stats;
-            summed.appearance += &grant.appearance;
-            summed.body_capacity += &grant.body_capacity;
-            summed.readiness += &grant.readiness;
-            any = true;
-        };
+        let mut gear_names: Vec<&String> = Vec::new();
         if let Some(names) = author.armament_names.as_ref() {
-            for n in names {
-                let id = resolve_name(&maps.armaments, "armament", n)?;
-                if let Some(g) = maps.armament_grants.get(&id) {
-                    fold(g);
-                }
-            }
+            gear_names.extend(names);
         }
         if let Some(n) = author.armor_name.as_ref() {
-            let id = resolve_name(&maps.armors, "armor", n)?;
-            if let Some(g) = maps.armor_grants.get(&id) {
-                fold(g);
-            }
+            gear_names.push(n);
         }
         if let Some(names) = author.relic_names.as_ref() {
-            for n in names {
-                let id = resolve_name(&maps.relics, "relic", n)?;
-                if let Some(g) = maps.relic_grants.get(&id) {
-                    fold(g);
-                }
+            gear_names.extend(names);
+        }
+        for n in gear_names {
+            let id = resolve_name(&maps.gear, "gear", n)?;
+            if let Some(eq) = maps.gear_equippables.get(&id) {
+                summed.stats += &eq.stats;
+                summed.appearance += &eq.appearance;
+                summed.body_capacity += &eq.body_capacity;
+                summed.readiness += &eq.readiness;
+                any = true;
             }
         }
         any.then_some(EquipmentBlobbedComponentBlob {
@@ -329,8 +294,9 @@ fn resolve_entity_blob(
         // Derived state only — the equipment stat computation writes it when
         // something is unapplied; never authored.
         equipment_disabled: None,
-        // The authored starting-gear MANIFEST (gear asset ids): player
-        // provisioning spawns owned item entities from it. Inert on NPCs.
+        // The authored starting-gear MANIFEST (gear-blob ids, resolved via
+        // maps.gear): player provisioning spawns owned item entities from it.
+        // Inert on NPCs.
         starting_gear: {
             let armament_ids: Vec<u32> = author
                 .armament_names
@@ -338,7 +304,7 @@ fn resolve_entity_blob(
                 .map(|names| {
                     names
                         .iter()
-                        .map(|n| resolve_name(&maps.armaments, "armament", n))
+                        .map(|n| resolve_name(&maps.gear, "gear", n))
                         .collect::<Result<_, _>>()
                 })
                 .transpose()?
@@ -346,7 +312,7 @@ fn resolve_entity_blob(
             let worn_armor_id: Option<u32> = author
                 .armor_name
                 .as_ref()
-                .map(|n| resolve_name(&maps.armors, "armor", n))
+                .map(|n| resolve_name(&maps.gear, "gear", n))
                 .transpose()?;
             let worn_relic_ids: Vec<u32> = author
                 .relic_names
@@ -354,7 +320,7 @@ fn resolve_entity_blob(
                 .map(|names| {
                     names
                         .iter()
-                        .map(|n| resolve_name(&maps.relics, "relic", n))
+                        .map(|n| resolve_name(&maps.gear, "gear", n))
                         .collect::<Result<_, _>>()
                 })
                 .transpose()?
@@ -462,20 +428,17 @@ fn resolve_entity_blob(
                 })
             })
             .transpose()?,
-        // An entity's own look: the authored features when given, else — for a
-        // gear item with none authored — the gear asset's own appearance
-        // features, so an authored dropped sword still renders as a sword.
-        appearance_features: match author.appearance_feature_names {
-            Some(names) => Some(AppearanceFeaturesComponentBlob {
-                appearance_feature_indexes: resolve_appearance_names(&names, maps)?,
-            }),
-            None if !gear_appearance_ids.is_empty() => {
-                Some(AppearanceFeaturesComponentBlob {
-                    appearance_feature_indexes: gear_appearance_ids.clone(),
+        // An entity's own look: its authored appearance features. Gear is an
+        // entity like any other, so its look comes through this same channel —
+        // never a separate gear-asset appearance.
+        appearance_features: author
+            .appearance_feature_names
+            .map(|names| {
+                Ok::<_, String>(AppearanceFeaturesComponentBlob {
+                    appearance_feature_indexes: resolve_appearance_names(&names, maps)?,
                 })
-            }
-            None => None,
-        },
+            })
+            .transpose()?,
         remains: author
             .remains_appearance_feature_names
             .map(|names| {
@@ -680,13 +643,6 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
     // All name -> id maps come first: effect payloads (e.g. SetStance) may
     // reference any kind, so the action loop below already needs them.
     let mut maps = AssetNameMaps {
-        // Filled after the gear assets are stored, below.
-        armament_grants: HashMap::new(),
-        armor_grants: HashMap::new(),
-        relic_grants: HashMap::new(),
-        armament_appearance_ids: HashMap::new(),
-        armor_appearance_ids: HashMap::new(),
-        relic_appearance_ids: HashMap::new(),
         actions: match_names(
             "action",
             ctx.db.actions().iter().map(|a| (a.name, a.id)),
@@ -712,21 +668,12 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.trait_palettes().iter().map(|p| (p.name, p.id)),
             asset_pack.trait_palettes.iter().map(|p| &p.name),
         )?,
-        armaments: match_names(
-            "armament",
-            ctx.db.armaments().iter().map(|a| (a.name, a.id)),
-            asset_pack.armaments.iter().map(|a| &a.name),
+        gear: match_names(
+            "gear",
+            ctx.db.gear_blobs().iter().map(|b| (b.name, b.id)),
+            asset_pack.gear_blobs.iter().map(|b| &b.name),
         )?,
-        armors: match_names(
-            "armor",
-            ctx.db.armors().iter().map(|a| (a.name, a.id)),
-            asset_pack.armors.iter().map(|a| &a.name),
-        )?,
-        relics: match_names(
-            "relic",
-            ctx.db.relics().iter().map(|r| (r.name, r.id)),
-            asset_pack.relics.iter().map(|r| &r.name),
-        )?,
+        gear_equippables: HashMap::new(),
         stances: match_names(
             "stance",
             ctx.db.stances().iter().map(|s| (s.name, s.id)),
@@ -857,129 +804,28 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    for a in asset_pack.armaments {
-        let id = maps.armaments[&a.name];
-        let g = resolve_grouped_block(a.value.block, &maps)?;
-        let row = Armament {
+    // Gear is authored as ordinary entity blobs; resolve each and store it
+    // name-keyed so players spawn owned copies at provisioning and creatures can
+    // sum their NPC equipment from it. Index each resolved Equippable grant by
+    // id for that sum. Ordering matters: gear blobs resolve before any blob that
+    // may REFERENCE them (encounters, named/anonymous blobs, the new-player blob).
+    for b in asset_pack.gear_blobs {
+        let id = maps.gear[&b.name];
+        let blob = resolve_entity_blob(b.value, &maps)?;
+        if let Some(equippable) = blob.equippable.clone() {
+            maps.gear_equippables.insert(id, equippable);
+        }
+        let row = GearBlob {
             id,
-            name: a.name,
-            stats: g.stats,
-            appearance: g.appearance,
-            body_capacity: g.body_capacity,
-            readiness: g.readiness,
-            appearance_feature_ids: resolve_appearance_names(
-                &a.value.appearance_feature_names,
-                &maps,
-            )?,
+            name: b.name,
+            blob,
         };
-        if ctx.db.armaments().id().find(id).is_some() {
-            ctx.db.armaments().id().update(row);
+        if ctx.db.gear_blobs().id().find(id).is_some() {
+            ctx.db.gear_blobs().id().update(row);
         } else {
-            ctx.db.armaments().insert(row);
+            ctx.db.gear_blobs().insert(row);
         }
     }
-
-    for a in asset_pack.armors {
-        let id = maps.armors[&a.name];
-        let g = resolve_grouped_block(a.value.block, &maps)?;
-        let row = Armor {
-            id,
-            name: a.name,
-            stats: g.stats,
-            appearance: g.appearance,
-            body_capacity: g.body_capacity,
-            readiness: g.readiness,
-            appearance_feature_ids: resolve_appearance_names(
-                &a.value.appearance_feature_names,
-                &maps,
-            )?,
-        };
-        if ctx.db.armors().id().find(id).is_some() {
-            ctx.db.armors().id().update(row);
-        } else {
-            ctx.db.armors().insert(row);
-        }
-    }
-
-    for r in asset_pack.relics {
-        let id = maps.relics[&r.name];
-        let g = resolve_grouped_block(r.value.block, &maps)?;
-        let row = Relic {
-            id,
-            name: r.name,
-            stats: g.stats,
-            appearance: g.appearance,
-            body_capacity: g.body_capacity,
-            readiness: g.readiness,
-            appearance_feature_ids: resolve_appearance_names(
-                &r.value.appearance_feature_names,
-                &maps,
-            )?,
-        };
-        if ctx.db.relics().id().find(id).is_some() {
-            ctx.db.relics().id().update(row);
-        } else {
-            ctx.db.relics().insert(row);
-        }
-    }
-
-    // The gear assets are now stored with their resolved per-group grants; index
-    // them by id so blob resolution can stamp per-item Equippable and summed
-    // NPC EquipmentBlobbed contributions.
-    maps.armament_grants = ctx
-        .db
-        .armaments()
-        .iter()
-        .map(|a| {
-            (
-                a.id,
-                ResolvedGroups {
-                    stats: a.stats,
-                    appearance: a.appearance,
-                    body_capacity: a.body_capacity,
-                    readiness: a.readiness,
-                },
-            )
-        })
-        .collect();
-    maps.armor_grants = ctx
-        .db
-        .armors()
-        .iter()
-        .map(|a| {
-            (
-                a.id,
-                ResolvedGroups {
-                    stats: a.stats,
-                    appearance: a.appearance,
-                    body_capacity: a.body_capacity,
-                    readiness: a.readiness,
-                },
-            )
-        })
-        .collect();
-    maps.relic_grants = ctx
-        .db
-        .relics()
-        .iter()
-        .map(|r| {
-            (
-                r.id,
-                ResolvedGroups {
-                    stats: r.stats,
-                    appearance: r.appearance,
-                    body_capacity: r.body_capacity,
-                    readiness: r.readiness,
-                },
-            )
-        })
-        .collect();
-    maps.armament_appearance_ids =
-        ctx.db.armaments().iter().map(|a| (a.id, a.appearance_feature_ids)).collect();
-    maps.armor_appearance_ids =
-        ctx.db.armors().iter().map(|a| (a.id, a.appearance_feature_ids)).collect();
-    maps.relic_appearance_ids =
-        ctx.db.relics().iter().map(|r| (r.id, r.appearance_feature_ids)).collect();
 
     for q in asset_pack.quests {
         let id = maps.quests[&q.name];

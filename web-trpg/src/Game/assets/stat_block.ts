@@ -1,4 +1,4 @@
-import { GearAsset, GroupedBlockAsset } from "../../stdb/types";
+import { GroupedBlockAsset } from "../../stdb/types";
 
 /** A FLAT authoring shorthand over the four canonical group blocks: anything not
  * mentioned contributes nothing. The client distributes these loose fields into
@@ -101,13 +101,3 @@ export const statBlock = (partial: FlatBlock): GroupedBlockAsset => {
     },
   };
 };
-
-/**
- * A piece of gear: a grouped-block GRANT (the Equippable) plus the item entity's
- * OWN appearance features (its look). Two separate channels — a wielder never
- * takes on the look of the gear it holds.
- */
-export const gear = (
-  block: GroupedBlockAsset,
-  appearanceFeatureNames: string[],
-): GearAsset => ({ block, appearanceFeatureNames });

@@ -60,6 +60,7 @@ export const componentQueries = [
   "select * from traits_readiness_cache_components",
   "select * from quest_readiness_cache_components",
   "select * from item_components",
+  "select * from equippable_components",
   "select * from checkpoint_object_components",
   "select * from armor_components",
   "select * from relics_components",
@@ -396,9 +397,15 @@ export const useItemAssetGroupedBlock = (
   entityId: EntityId | null,
 ): GroupedBlock | null => {
   const item = useItemComponent(entityId);
-  const armaments = useTableData("armaments", (t) => [...t.iter()], []);
-  const armors = useTableData("armors", (t) => [...t.iter()], []);
-  const relics = useTableData("relics", (t) => [...t.iter()], []);
+  const equippable = useTableData(
+    "equippable_components",
+    (t) => {
+      if (entityId == null) return null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (t.entityId as any).find(entityId) ?? null;
+    },
+    [entityId],
+  );
   const quests = useTableData("quests", (t) => [...t.iter()], []);
   return useMemo(() => {
     const ref = item?.itemRef;
@@ -415,17 +422,15 @@ export const useItemAssetGroupedBlock = (
             readiness: quest.perBitReadiness,
           };
     }
-    const rows =
-      ref.tag === "Armament" ? armaments : ref.tag === "Armor" ? armors : relics;
-    const row = rows.find((asset) => asset.id === ref.value);
-    return row == null
+    // Gear: the block it grants lives on the item entity's OWN Equippable.
+    return equippable == null
       ? null
       : {
-          stats: row.stats,
-          bodyCapacity: row.bodyCapacity,
-          readiness: row.readiness,
+          stats: equippable.stats,
+          bodyCapacity: equippable.bodyCapacity,
+          readiness: equippable.readiness,
         };
-  }, [item, armaments, armors, relics, quests]);
+  }, [item, equippable, quests]);
 };
 
 /** This carried item ENTITY counts as equipped/worn: membership in the

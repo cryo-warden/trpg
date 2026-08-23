@@ -3,7 +3,7 @@ import {
   NO_REQUIREMENTS,
   requirements,
 } from "../src/Game/assets/stat_requirements";
-import { gear, statBlock } from "../src/Game/assets/stat_block";
+import { FlatBlock, statBlock } from "../src/Game/assets/stat_block";
 
 /**
  * Test-specific asset bundles for E2E scenarios — deliberately tiny and
@@ -38,15 +38,50 @@ const postureAction = (name: string, stanceName: string) => ({
   },
 });
 
+/** A gear item ENTITY placed directly in the shared room. There is no gear
+ * asset table: an item's equip-slot KIND and the Equippable grant it confers
+ * live on its OWN entity (the item blob), exactly as the live client authors
+ * gear. A distinct `look` (an appearance feature the pack also declares) lets a
+ * test find the entity by name — the only stable handle now that item refs are
+ * payload-less. */
+const gearItemBlob = ({
+  tag,
+  grant,
+  look,
+}: {
+  tag: "Armament" | "Armor" | "Relic";
+  grant: FlatBlock;
+  look?: string;
+}): EntityBlobAsset =>
+  blob({
+    item: { tag },
+    equippable: statBlock(grant),
+    appearanceFeatureNames: look == null ? [] : [look],
+    location: {
+      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+      kind: { tag: "Interior" },
+    },
+  });
+
+/** An appearance-feature asset naming an item; `text` doubles as the display
+ * word and `name` as the pack key a test resolves by. */
+const lookFeature = (name: string, text: string) => ({
+  name,
+  value: {
+    text,
+    appearanceFeatureType: { tag: "Noun" as const },
+    priority: 100,
+    exclusionGroup: undefined,
+  },
+});
+
 const emptyPack = (): AssetPack => ({
   actions: [],
   appearanceFeatures: [],
   baselines: [],
   traits: [],
   traitPalettes: [],
-  armaments: [],
-  armors: [],
-  relics: [],
+  gearBlobs: [],
   stances: [],
   quests: [],
   proneStanceName: undefined,
@@ -488,25 +523,16 @@ export const customizationPack = (): AssetPack => ({
       }),
     },
   ],
-  armaments: [
-    {
-      name: "test_sword",
-      value: gear(statBlock({ bladed: 1, hand: -1 }), []),
-    },
-    {
-      name: "test_club",
-      value: gear(statBlock({ blunt: 1, hand: -1 }), []),
-    },
-    // Two-handed: consumes BOTH hands, so it and a one-hander cannot both be
-    // applied on a two-hand body — the second wielded stays equipped but its
-    // stats drop out (the capacity-validation case).
-    {
-      name: "test_greatsword",
-      value: gear(statBlock({ bladed: 1, hand: -2 }), []),
-    },
+  // Each item entity names itself by its own appearance feature (the only
+  // stable handle now that item refs carry no asset id); the stats it confers
+  // ride its own Equippable, authored on the placed blob below.
+  appearanceFeatures: [
+    lookFeature("test_sword_look", "sword"),
+    lookFeature("test_club_look", "club"),
+    lookFeature("test_greatsword_look", "greatsword"),
+    lookFeature("test_jerkin_look", "jerkin"),
+    lookFeature("test_charm_look", "charm"),
   ],
-  armors: [{ name: "test_jerkin", value: gear(statBlock({ defense: 1, body: -1 }), []) }],
-  relics: [{ name: "test_charm", value: gear(statBlock({ attack: 1, relic: -1 }), []) }],
   stances: [
     {
       name: "test_standing",
@@ -537,41 +563,18 @@ export const customizationPack = (): AssetPack => ({
     },
   }),
   instantiateEntityBlobs: [
-    blob({
-      item: { tag: "Armament", value: "test_sword" },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
+    gearItemBlob({ tag: "Armament", grant: { bladed: 1, hand: -1 }, look: "test_sword_look" }),
+    gearItemBlob({ tag: "Armament", grant: { blunt: 1, hand: -1 }, look: "test_club_look" }),
+    // Two-handed: consumes BOTH hands, so it and a one-hander cannot both be
+    // applied on a two-hand body — the second wielded stays equipped but its
+    // stats drop out (the capacity-validation case).
+    gearItemBlob({
+      tag: "Armament",
+      grant: { bladed: 1, hand: -2 },
+      look: "test_greatsword_look",
     }),
-    blob({
-      item: { tag: "Armament", value: "test_club" },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
-    blob({
-      item: { tag: "Armament", value: "test_greatsword" },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
-    blob({
-      item: { tag: "Armor", value: "test_jerkin" },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
-    blob({
-      item: { tag: "Relic", value: "test_charm" },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
+    gearItemBlob({ tag: "Armor", grant: { defense: 1, body: -1 }, look: "test_jerkin_look" }),
+    gearItemBlob({ tag: "Relic", grant: { attack: 1, relic: -1 }, look: "test_charm_look" }),
   ],
 });
 
@@ -987,12 +990,6 @@ export const divePack = (): AssetPack => ({
       },
     },
   ],
-  armaments: [
-    {
-      name: "test_brave_sword",
-      value: gear(statBlock({ bladed: 1, hand: -1, morale: 3 }), []),
-    },
-  ],
   stances: [
     {
       name: "test_standing",
@@ -1029,13 +1026,7 @@ export const divePack = (): AssetPack => ({
     },
   }),
   instantiateEntityBlobs: [
-    blob({
-      item: { tag: "Armament", value: "test_brave_sword" },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
+    gearItemBlob({ tag: "Armament", grant: { bladed: 1, hand: -1, morale: 3 } }),
   ],
 });
 

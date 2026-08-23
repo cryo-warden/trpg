@@ -73,9 +73,7 @@ import AllegianceComponentsRow from "./allegiance_components_table";
 import AppearanceDirtyFlagComponentsRow from "./appearance_dirty_flag_components_table";
 import AppearanceFeaturesRow from "./appearance_features_table";
 import AppearanceFeaturesComponentsRow from "./appearance_features_components_table";
-import ArmamentsRow from "./armaments_table";
 import ArmorComponentsRow from "./armor_components_table";
-import ArmorsRow from "./armors_table";
 import AttackComponentsRow from "./attack_components_table";
 import BaselineComponentsRow from "./baseline_components_table";
 import BodyCapacityDirtyFlagComponentsRow from "./body_capacity_dirty_flag_components_table";
@@ -143,7 +141,6 @@ import QuestsRow from "./quests_table";
 import QuestsRoomsRolesRow from "./quests_rooms_roles_table";
 import ReadinessDirtyFlagComponentsRow from "./readiness_dirty_flag_components_table";
 import ReadinessTotalComponentsRow from "./readiness_total_components_table";
-import RelicsRow from "./relics_table";
 import RelicsComponentsRow from "./relics_components_table";
 import RemainsComponentsRow from "./remains_components_table";
 import RespawnTimerComponentsRow from "./respawn_timer_components_table";
@@ -371,21 +368,6 @@ const tablesSchema = __schema({
       { name: 'appearance_features_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, AppearanceFeaturesComponentsRow),
-  armaments: __table({
-    name: 'armaments',
-    indexes: [
-      { accessor: 'id', name: 'armaments_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'name', name: 'armaments_name_idx_btree', algorithm: 'btree', columns: [
-        'name',
-      ] },
-    ],
-    constraints: [
-      { name: 'armaments_id_key', constraint: 'unique', columns: ['id'] },
-      { name: 'armaments_name_key', constraint: 'unique', columns: ['name'] },
-    ],
-  }, ArmamentsRow),
   armor_components: __table({
     name: 'armor_components',
     indexes: [
@@ -397,21 +379,6 @@ const tablesSchema = __schema({
       { name: 'armor_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, ArmorComponentsRow),
-  armors: __table({
-    name: 'armors',
-    indexes: [
-      { accessor: 'id', name: 'armors_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'name', name: 'armors_name_idx_btree', algorithm: 'btree', columns: [
-        'name',
-      ] },
-    ],
-    constraints: [
-      { name: 'armors_id_key', constraint: 'unique', columns: ['id'] },
-      { name: 'armors_name_key', constraint: 'unique', columns: ['name'] },
-    ],
-  }, ArmorsRow),
   attack_components: __table({
     name: 'attack_components',
     indexes: [
@@ -1205,21 +1172,6 @@ const tablesSchema = __schema({
       { name: 'readiness_total_components_entity_id_key', constraint: 'unique', columns: ['entityId'] },
     ],
   }, ReadinessTotalComponentsRow),
-  relics: __table({
-    name: 'relics',
-    indexes: [
-      { accessor: 'id', name: 'relics_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'name', name: 'relics_name_idx_btree', algorithm: 'btree', columns: [
-        'name',
-      ] },
-    ],
-    constraints: [
-      { name: 'relics_id_key', constraint: 'unique', columns: ['id'] },
-      { name: 'relics_name_key', constraint: 'unique', columns: ['name'] },
-    ],
-  }, RelicsRow),
   relics_components: __table({
     name: 'relics_components',
     indexes: [

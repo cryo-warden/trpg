@@ -119,18 +119,6 @@ pub struct AppearanceBlockAsset {
     pub feature_names: Vec<String>,
 }
 
-/// A piece of gear as authored: armament, armor, or relic. Its `block` is the
-/// GRANT it confers when equipped (the Equippable's per-group contributions —
-/// including the readiness tags that make actions available and the hand/body/
-/// relic cost); its `appearance_feature_names` are the ITEM entity's OWN look,
-/// stamped onto the spawned item and never mixed into the grant — the wielder's
-/// appearance is its own, not the sword's it holds.
-#[derive(Debug, Clone, SpacetimeType)]
-pub struct GearAsset {
-    pub block: GroupedBlockAsset,
-    pub appearance_feature_names: Vec<String>,
-}
-
 /// A stance as authored. Its block contributes to the entity's totals like a
 /// baseline or trait — the readiness tags it provides make its techniques
 /// available through the ordinary requirements filter. Its requirements gate
@@ -150,13 +138,14 @@ pub struct QuestAsset {
     pub bit_count: u32,
 }
 
-/// What an authored item entity IS, referencing its gear asset by NAME;
-/// push_assets resolves it to the stored ItemRef's integer id.
+/// What KIND of item an authored entity IS. Gear is authored as an ordinary
+/// entity blob carrying its own Equippable grant and appearance, so the gear
+/// kinds reference nothing; only QuestItem names a quest bit to resolve.
 #[derive(Debug, Clone, SpacetimeType)]
 pub enum ItemRefAsset {
-    Armament(String),
-    Armor(String),
-    Relic(String),
+    Armament,
+    Armor,
+    Relic,
     QuestItem(QuestItemRefAsset),
 }
 
@@ -200,6 +189,11 @@ pub struct EntityBlobAsset {
     pub armor_name: Option<String>,
     pub relic_names: Option<Vec<String>>,
     pub item: Option<ItemRefAsset>,
+    /// The GRANT this item confers when equipped: its per-group Equippable
+    /// contributions (the hand/body/relic cost and the readiness tags that make
+    /// actions available). Authored directly, like any component — gear is an
+    /// entity, not a table row.
+    pub equippable: Option<GroupedBlockAsset>,
     pub action_names: Option<Vec<String>>,
     /// Actions this OBJECT offers to anyone standing beside it (open,
     /// dump; later doors and levers) — explicit per entity, never
@@ -421,7 +415,6 @@ secador::secador!(
         (ActionAsset, NamedActionAsset),
         (AppearanceFeatureAsset, NamedAppearanceFeatureAsset),
         (GroupedBlockAsset, NamedGroupedBlockAsset),
-        (GearAsset, NamedGearAsset),
         (StanceAsset, NamedStanceAsset),
         (QuestAsset, NamedQuestAsset),
         (EntityBlobAsset, NamedEntityBlobAsset),
