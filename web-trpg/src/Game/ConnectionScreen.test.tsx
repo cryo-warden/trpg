@@ -27,15 +27,3 @@ test("error state shows the address, the failure, and a retry", () => {
   expect(container.textContent).toContain("connection refused");
   expect(container.querySelector("button")?.textContent).toBe("Retry");
 });
-
-test("a configuration failure renders even with no address resolved", () => {
-  const { container } = render(
-    <ConnectionScreen
-      status="error"
-      uri={null}
-      detail="Error: TRPG_STDB_PORT was not set at build time"
-    />,
-  );
-  expect(container.textContent).toContain("Cannot reach the game server");
-  expect(container.textContent).toContain("TRPG_STDB_PORT was not set");
-});

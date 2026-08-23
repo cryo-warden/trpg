@@ -19,15 +19,6 @@ const queries = [
   ...accountQueries,
 ];
 
-// The database URI, DERIVED from the page — scheme follows the page's
-// scheme (an https page gets wss; browsers refuse plain ws from a secure
-// page as mixed content), host is whatever served the client, and the PORT
-// is TRPG_STDB_PORT baked at build time: the SAME env var the cw manifest
-// declares (vite.config's envPrefix exposes it), not a parallel VITE_*
-// name. Deliberately NO default port: every build states which SpacetimeDB
-// instance it dials (dev scripts pass 3000 explicitly; cw injects the prod
-// value), and a build that forgot fails loudly — as a rendered error, not
-// a blank page — instead of silently talking to the wrong database.
 // TODO Move dev code behind compilation flags.
 const installDevHooks = (connection: DbConnection): void => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,15 +38,26 @@ const installDevHooks = (connection: DbConnection): void => {
   };
 };
 
+// The database URI. By default it is SAME-ORIGIN: scheme follows the page's
+// scheme (an https page gets wss; browsers refuse plain ws from a secure
+// page as mixed content), and host:port is whatever served the client — the
+// web server relays every /v1 request to the actual SpacetimeDB instance
+// (vite.config's proxy, dev and preview alike). Same-origin is what lets one
+// client work identically from the LAN and from the public tunnel, which
+// carries only 443 and could never reach a separate database port.
+//
+// TRPG_STDB_URI, baked at build time (vite.config's envPrefix exposes it),
+// overrides the default with a full base URI — for when the backend moves to
+// its own domain instead of riding the page's origin. Either way the
+// trailing slash matters: the SDK resolves its v1/... endpoints RELATIVE to
+// this URI, and without the slash the base's last path segment is dropped.
 const resolveStdbUri = (): string => {
-  const port: string | undefined = import.meta.env.TRPG_STDB_PORT;
-  if (port == null || port === "") {
-    throw new Error(
-      "TRPG_STDB_PORT was not set at build time: this build does not know which SpacetimeDB instance to dial.",
-    );
+  const override: string | undefined = import.meta.env.TRPG_STDB_URI;
+  if (override != null && override !== "") {
+    return override.endsWith("/") ? override : `${override}/`;
   }
   const scheme = window.location.protocol === "https:" ? "wss" : "ws";
-  return `${scheme}://${window.location.hostname}:${port}`;
+  return `${scheme}://${window.location.host}/`;
 };
 
 /**
@@ -69,15 +71,8 @@ const resolveStdbUri = (): string => {
  * the connecting view while the manager retries behind it.
  */
 export const WithStdb = ({ children }: { children: ReactNode }) => {
-  // Resolved once, synchronously: a build that cannot name its database
-  // renders as a configuration error rather than a blank page.
-  const [resolved] = useState(() => {
-    try {
-      return { uri: resolveStdbUri(), configurationError: null };
-    } catch (reason) {
-      return { uri: null, configurationError: String(reason) };
-    }
-  });
+  // Resolved once, synchronously, from the page's own location.
+  const [uri] = useState(resolveStdbUri);
   // The token lives in state so the builder REBUILDS when the server issues
   // one: the manager reuses the retained builder for every auto-reconnect,
   // and a builder frozen with the first render's (possibly empty) token
@@ -96,13 +91,10 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
   );
 
   const builder = useMemo(() => {
-    if (resolved.uri == null) {
-      return null;
-    }
     return DbConnection.builder()
       .withDatabaseName("trpg")
       .withToken(token)
-      .withUri(resolved.uri)
+      .withUri(uri)
       .onConnect((connection, _identity, freshToken) => {
         localStorage.setItem("auth_token", freshToken);
         setToken(freshToken);
@@ -115,21 +107,11 @@ export const WithStdb = ({ children }: { children: ReactNode }) => {
           .subscribe(queries);
         installDevHooks(connection);
       });
-  }, [resolved.uri, token]);
-
-  if (builder == null) {
-    return (
-      <ConnectionScreen
-        status="error"
-        uri={resolved.uri}
-        detail={resolved.configurationError}
-      />
-    );
-  }
+  }, [uri, token]);
 
   return (
     <SpacetimeDBProvider connectionBuilder={builder}>
-      <StdbGate uri={resolved.uri} syncedConnection={syncedConnection}>
+      <StdbGate uri={uri} syncedConnection={syncedConnection}>
         {children}
       </StdbGate>
     </SpacetimeDBProvider>
@@ -141,7 +123,7 @@ const StdbGate = ({
   syncedConnection,
   children,
 }: {
-  uri: string | null;
+  uri: string;
   syncedConnection: DbConnection | null;
   children: ReactNode;
 }) => {

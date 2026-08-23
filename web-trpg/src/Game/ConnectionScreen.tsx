@@ -12,8 +12,8 @@ export const ConnectionScreen = ({
   detail,
 }: {
   status: "connecting" | "error";
-  /** The database address involved, when known. */
-  uri: string | null;
+  /** The database address involved. */
+  uri: string;
   /** The underlying failure, when there is one. */
   detail: string | null;
 }) => (
@@ -22,16 +22,14 @@ export const ConnectionScreen = ({
       {status === "connecting" ? (
         <>
           <h2>Connecting…</h2>
-          {uri != null && <div className="uri">{uri}</div>}
+          <div className="uri">{uri}</div>
         </>
       ) : (
         <>
           <h2>Cannot reach the game server</h2>
-          {uri != null && (
-            <div className="uri">
-              Tried to connect to <code>{uri}</code>
-            </div>
-          )}
+          <div className="uri">
+            Tried to connect to <code>{uri}</code>
+          </div>
           {detail != null && <div className="detail">{detail}</div>}
           <div className="hint">
             The server may be down or unreachable from your network.
