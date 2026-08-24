@@ -14,12 +14,3 @@ export const RELICS = {
 } satisfies Record<string, EntityBlobAsset>;
 
 export type RelicName = keyof typeof RELICS;
-
-/** What a person reads on a relic button (see ARMAMENT_DISPLAY_NAMES). */
-export const RELIC_DISPLAY_NAMES: Record<RelicName, string> = {
-  ember_charm: "Ember Charm",
-  frost_talisman: "Frost Talisman",
-  storm_bead: "Storm Bead",
-  bone_idol: "Bone Idol",
-  sun_medallion: "Sun Medallion",
-};

@@ -736,7 +736,6 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         let row = AppearanceFeature {
             index,
             name: a.name,
-            text: a.value.text,
             appearance_feature_type: a.value.appearance_feature_type,
             priority: a.value.priority,
             exclusion_group: a.value.exclusion_group,

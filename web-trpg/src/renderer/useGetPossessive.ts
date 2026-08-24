@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useAppearanceFeatureAssetsOf } from "../Game/context/StdbContext/assetLookup";
 import { useAppearanceFeaturesComponents } from "../Game/context/StdbContext/components";
-import { possessiveForNoun } from "../Game/assets/appearance_features";
+import { possessiveForNoun } from "./en-us/appearanceFeatures";
 import { EntityId } from "../Game/trpg";
 import { getPossessive } from "../Game/domain/appearance";
 import { NarrationPossessive } from "../Game/domain/narration";

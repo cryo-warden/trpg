@@ -11,8 +11,7 @@ import {
 } from "./context/StdbContext/assetLookup";
 import { useStanceFreeBase } from "./context/StdbContext/baseStats";
 import { useMyActiveStanceId } from "./context/StdbContext/components";
-import { STANCE_DISPLAY_NAMES } from "./assets/stances";
-import { displayNameFrom } from "./assets/display_names";
+import { stanceDisplayOf } from "../renderer/en-us/stances";
 import {
   OwnedItem,
   useGearStatBlockOf,
@@ -226,7 +225,7 @@ export const StancesMenu = () => {
             candidateBase,
             candidatesOf([...resolvedArmaments, itemId]),
           ).unappliedEntityIds.length === 0;
-        const stanceName = displayNameFrom(STANCE_DISPLAY_NAMES, stance.name);
+        const stanceName = stanceDisplayOf(stance.name);
         return (
           <section className="stanceCard" key={stance.id}>
             <h3>
@@ -340,8 +339,8 @@ export const StancesMenu = () => {
           <button
             key={stance.id}
             type="button"
-            aria-label={displayNameFrom(STANCE_DISPLAY_NAMES, stance.name)}
-            title={displayNameFrom(STANCE_DISPLAY_NAMES, stance.name)}
+            aria-label={stanceDisplayOf(stance.name)}
+            title={stanceDisplayOf(stance.name)}
             className={[
               index === currentIndex ? "current" : "",
               stance.id === activeStanceId ? "activeStance" : "",

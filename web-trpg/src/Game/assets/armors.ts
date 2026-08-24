@@ -24,10 +24,3 @@ export const ARMORS = {
 } satisfies Record<string, EntityBlobAsset>;
 
 export type ArmorName = keyof typeof ARMORS;
-
-/** What a person reads on an armor button (see ARMAMENT_DISPLAY_NAMES). */
-export const ARMOR_DISPLAY_NAMES: Record<ArmorName, string> = {
-  leather_jerkin: "Leather Jerkin",
-  chain_hauberk: "Chain Hauberk",
-  traveler_robe: "Traveler's Robe",
-};

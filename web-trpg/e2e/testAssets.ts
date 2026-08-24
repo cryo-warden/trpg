@@ -63,12 +63,11 @@ const gearItemBlob = ({
     },
   });
 
-/** An appearance-feature asset naming an item; `text` doubles as the display
- * word and `name` as the pack key a test resolves by. */
-const lookFeature = (name: string, text: string) => ({
+/** An appearance-feature asset naming an item by its ROLE key; a test resolves
+ * it by `name` (display text is a locale concern, never on the wire). */
+const lookFeature = (name: string) => ({
   name,
   value: {
-    text,
     appearanceFeatureType: { tag: "Noun" as const },
     priority: 100,
     exclusionGroup: undefined,
@@ -224,16 +223,15 @@ export const mapGenPack = (): AssetPack => ({
     {
       name: "test_winding",
       value: {
-        text: "winding",
         appearanceFeatureType: { tag: "Adjective" },
         priority: 1000,
         exclusionGroup: undefined,
       },
     },
-    { name: "test_v1_mark", value: { text: "v1", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
-    { name: "test_v2_mark", value: { text: "v2", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
-    { name: "test_v3_mark", value: { text: "v3", appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
-    { name: "test_deco_mark", value: { text: "deco", appearanceFeatureType: { tag: "Noun" }, priority: 5000, exclusionGroup: undefined } },
+    { name: "test_v1_mark", value: { appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
+    { name: "test_v2_mark", value: { appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
+    { name: "test_v3_mark", value: { appearanceFeatureType: { tag: "Adjective" }, priority: 1000, exclusionGroup: undefined } },
+    { name: "test_deco_mark", value: { appearanceFeatureType: { tag: "Noun" }, priority: 5000, exclusionGroup: undefined } },
   ],
   // A differentiable pack: three creatures sharing a palette of three distinct
   // variety traits, forced to exactly one each — so the pack must come out with
@@ -527,11 +525,11 @@ export const customizationPack = (): AssetPack => ({
   // stable handle now that item refs carry no asset id); the stats it confers
   // ride its own Equippable, authored on the placed blob below.
   appearanceFeatures: [
-    lookFeature("test_sword_look", "sword"),
-    lookFeature("test_club_look", "club"),
-    lookFeature("test_greatsword_look", "greatsword"),
-    lookFeature("test_jerkin_look", "jerkin"),
-    lookFeature("test_charm_look", "charm"),
+    lookFeature("test_sword_look"),
+    lookFeature("test_club_look"),
+    lookFeature("test_greatsword_look"),
+    lookFeature("test_jerkin_look"),
+    lookFeature("test_charm_look"),
   ],
   stances: [
     {
@@ -1101,7 +1099,6 @@ export const questPack = (): AssetPack => ({
     {
       name: "test_jar",
       value: {
-        text: "jar",
         appearanceFeatureType: { tag: "Noun" },
         priority: 5000,
         exclusionGroup: undefined,
@@ -1110,7 +1107,6 @@ export const questPack = (): AssetPack => ({
     {
       name: "test_shards",
       value: {
-        text: "ceramic shards",
         appearanceFeatureType: { tag: "Noun" },
         priority: 4000,
         exclusionGroup: undefined,
@@ -1370,7 +1366,6 @@ export const spawnPack = (): AssetPack => ({
     {
       name: "test_jar",
       value: {
-        text: "jar",
         appearanceFeatureType: { tag: "Noun" },
         priority: 5000,
         exclusionGroup: undefined,
@@ -1379,7 +1374,6 @@ export const spawnPack = (): AssetPack => ({
     {
       name: "test_shards",
       value: {
-        text: "ceramic shards",
         appearanceFeatureType: { tag: "Noun" },
         priority: 4000,
         exclusionGroup: undefined,
@@ -1388,7 +1382,6 @@ export const spawnPack = (): AssetPack => ({
     {
       name: "test_cookie",
       value: {
-        text: "cookie",
         appearanceFeatureType: { tag: "Noun" },
         priority: 5000,
         exclusionGroup: undefined,
@@ -1770,7 +1763,6 @@ export const guardedMapPack = ({
     {
       name: "test_boulder",
       value: {
-        text: "boulder",
         appearanceFeatureType: { tag: "Noun" },
         priority: 5000,
         exclusionGroup: undefined,
@@ -1779,7 +1771,6 @@ export const guardedMapPack = ({
     {
       name: "test_rubble",
       value: {
-        text: "rubble",
         appearanceFeatureType: { tag: "Noun" },
         priority: 4000,
         exclusionGroup: undefined,

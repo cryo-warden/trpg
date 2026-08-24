@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import { render } from "@testing-library/react";
 import type { Identity } from "spacetimedb";
-import { ACTION_APPEARANCES } from "./assets/actions";
+import { ACTION_APPEARANCES } from "../renderer/en-us/actions";
 import { actionIdOf, mockTable } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
 import { ActionButton } from "./ActionButton";

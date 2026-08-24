@@ -1,4 +1,4 @@
-import { ACTION_APPEARANCES } from "../../assets/actions";
+import { ACTION_APPEARANCES } from "../../../renderer/en-us/actions";
 import { ActionId } from "../../trpg";
 import { useActionAsset } from "./assetLookup";
 

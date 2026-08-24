@@ -10,12 +10,11 @@ import {
   IntStats,
   meetsRequirements,
 } from "../../domain/statSummary";
+import { ACTIONS, ActionName } from "../../assets/actions";
 import {
-  ACTIONS,
   ACTION_APPEARANCES,
   ActionAppearance,
-  ActionName,
-} from "../../assets/actions";
+} from "../../../renderer/en-us/actions";
 import {
   APPEARANCE_FEATURES,
   AppearanceFeatureName,

@@ -1,7 +1,8 @@
 import { test, expect } from "bun:test";
 import type { EntityEvent } from "../stdb/types";
 import type { NarrationName } from "../Game/domain/narration";
-import { ACTIONS, ACTION_APPEARANCES } from "../Game/assets/actions";
+import { ACTIONS } from "../Game/assets/actions";
+import { ACTION_APPEARANCES } from "./en-us/actions";
 import { textMarkup } from "./textMarkup";
 import { renderEventWith } from "./language";
 import { createEnUs } from "./en-us";

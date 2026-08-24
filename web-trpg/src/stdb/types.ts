@@ -254,7 +254,6 @@ export type AppearanceCacheComponentBlob = __Infer<typeof AppearanceCacheCompone
 export const AppearanceFeature = __t.object("AppearanceFeature", {
   index: __t.u32(),
   name: __t.string(),
-  text: __t.string(),
   get appearanceFeatureType() {
     return AppearanceFeatureType;
   },
@@ -264,7 +263,6 @@ export const AppearanceFeature = __t.object("AppearanceFeature", {
 export type AppearanceFeature = __Infer<typeof AppearanceFeature>;
 
 export const AppearanceFeatureAsset = __t.object("AppearanceFeatureAsset", {
-  text: __t.string(),
   get appearanceFeatureType() {
     return AppearanceFeatureType;
   },

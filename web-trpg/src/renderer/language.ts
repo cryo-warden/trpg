@@ -1,4 +1,4 @@
-import { ActionAppearance } from "../Game/assets/actions";
+import { ActionAppearance } from "./en-us/actions";
 import { ActionId } from "../Game/trpg";
 import { EntityEvent } from "../stdb/types";
 import { Markup } from "./markup";

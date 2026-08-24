@@ -9,7 +9,8 @@ import {
   stanceIdOf,
 } from "../testSupport/mockConnection";
 import { gameWrapper } from "../testSupport/gameWrapper";
-import { STANCE_DISPLAY_NAMES, StanceName } from "./assets/stances";
+import { StanceName } from "./assets/stances";
+import { STANCE_DISPLAY } from "../renderer/en-us/stances";
 import { AppearanceFeatureName } from "./assets/appearance_features";
 import { ARMAMENTS } from "./assets/armaments";
 import { StancesMenu } from "./StancesMenu";
@@ -70,7 +71,7 @@ const cardOf = (container: HTMLElement, stance: StanceName) =>
   [...container.querySelectorAll(".stanceCard")].find((card) =>
     card
       .querySelector("h3")!
-      .textContent!.startsWith(STANCE_DISPLAY_NAMES[stance]),
+      .textContent!.startsWith(STANCE_DISPLAY[stance]),
   );
 
 // Armament buttons render the item ENTITY's appearance name.
@@ -231,7 +232,7 @@ test("gallery dots: one per reachable stance, the active stance marked", () => {
   const dots = [...container.querySelectorAll(".dots button")];
   expect(dots.length).toBe(container.querySelectorAll(".stanceCard").length);
   const standingDot = dots.find(
-    (dot) => dot.getAttribute("aria-label") === STANCE_DISPLAY_NAMES.standing,
+    (dot) => dot.getAttribute("aria-label") === STANCE_DISPLAY.standing,
   )!;
   expect(standingDot.className).toContain("activeStance");
 });

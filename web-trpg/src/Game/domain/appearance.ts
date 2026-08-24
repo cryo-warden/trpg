@@ -15,8 +15,14 @@ import { EntityId } from "../trpg";
  * ALTERNATIVES — at most one renders (the noun when it wins the name, else
  * the group's best adjective). An absent group means the feature stands
  * alone in its own group and always applies.
+ *
+ * Carries the feature's ROLE KEY (`name`), never its display word: an asset
+ * names a role, and a locale turns that role key into text (see `DisplayOf`).
  */
-export type NamingFeature = AppearanceFeatureAsset;
+export type NamingFeature = AppearanceFeatureAsset & { name: string };
+
+/** A locale's rendering of an appearance-feature role key into display text. */
+export type DisplayOf = (featureName: string) => string;
 
 const byPriorityDescending = (
   a: { priority: number },
@@ -39,20 +45,26 @@ const isAdjective = (feature: NamingFeature) =>
 const nounWinnerOf = (features: NamingFeature[]): NamingFeature | null =>
   features.filter(isNoun).sort(byPriorityDescending)[0] ?? null;
 
-/** The defining noun of a feature set, or null when featureless. */
-export const nounOf = (features: NamingFeature[] | null): string | null =>
-  features == null ? null : (nounWinnerOf(features)?.text ?? null);
+/** The defining noun's ROLE KEY for a feature set, or null when featureless.
+ * (The key, not display text — the caller renders it, or keys grammar off it.) */
+export const nounKeyOf = (features: NamingFeature[] | null): string | null =>
+  features == null ? null : (nounWinnerOf(features)?.name ?? null);
 
 /**
  * The display name for an entity's appearance features: the winning noun,
  * prefixed with up to three adjectives — ONE per remaining group (its
  * highest-priority adjective), highest priority last. A group that won the
  * noun contributes no adjective, so a trait's noun and adjective never both
- * appear.
+ * appear. Each feature's role key is rendered to text by the given locale
+ * (`displayOf`) — no display word ever lives on the feature itself.
  */
-export const describeAppearance = (
-  features: NamingFeature[] | null,
-): string => {
+export const describeAppearance = ({
+  features,
+  displayOf,
+}: {
+  features: NamingFeature[] | null;
+  displayOf: DisplayOf;
+}): string => {
   if (features == null) {
     return UNKNOWN_NOUN;
   }
@@ -62,7 +74,7 @@ export const describeAppearance = (
     (feature, index) => feature.exclusionGroup ?? `#${index}`,
   );
   const winner = nounWinnerOf(features);
-  const noun = winner?.text ?? UNKNOWN_NOUN;
+  const noun = winner != null ? displayOf(winner.name) : UNKNOWN_NOUN;
   const winnerGroup =
     winner == null ? null : groupKeys[features.indexOf(winner)];
 
@@ -80,7 +92,7 @@ export const describeAppearance = (
   const adjectives = [...bestAdjectiveByGroup.values()]
     .sort(byPriorityDescending)
     .slice(0, MAX_ADJECTIVES)
-    .map((feature) => feature.text)
+    .map((feature) => displayOf(feature.name))
     .reverse();
 
   return (adjectives.length > 0 ? adjectives.join(", ") + " " : "") + noun;
@@ -95,6 +107,8 @@ export type NameInputs = {
   viewpoint: EntityId | null;
   /** Looks up an entity's resolved appearance features, or null if unknown. */
   appearanceFeaturesOf: (entityId: EntityId) => NamingFeature[] | null;
+  /** The locale's rendering of a feature role key into display text. */
+  displayOf: DisplayOf;
 };
 
 /**
@@ -106,6 +120,7 @@ export const getName = ({
   subject,
   viewpoint,
   appearanceFeaturesOf,
+  displayOf,
 }: NameInputs): string | null => {
   if (named == null) {
     return null;
@@ -116,7 +131,7 @@ export const getName = ({
   if (viewpoint === named) {
     return subject === named ? "yourself" : "you";
   }
-  return describeAppearance(appearanceFeaturesOf(named));
+  return describeAppearance({ features: appearanceFeaturesOf(named), displayOf });
 };
 
 /** Third-person possessives, chosen by personhood and gender. */
@@ -148,5 +163,5 @@ export const getPossessive = ({
   if (viewpoint === named) {
     return "your";
   }
-  return possessiveForNoun(nounOf(appearanceFeaturesOf(named)));
+  return possessiveForNoun(nounKeyOf(appearanceFeaturesOf(named)));
 };

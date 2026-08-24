@@ -17,7 +17,6 @@ import {
 export default __t.row({
   index: __t.u32().primaryKey(),
   name: __t.string(),
-  text: __t.string(),
   get appearanceFeatureType() {
     return AppearanceFeatureType.name("appearance_feature_type");
   },

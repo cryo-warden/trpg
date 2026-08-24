@@ -44,21 +44,3 @@ export const ARMAMENTS = {
 } satisfies Record<string, EntityBlobAsset>;
 
 export type ArmamentName = keyof typeof ARMAMENTS;
-
-/** What a person reads on an armament button — the ACTION_APPEARANCES
- * seam for gear. The Record over ArmamentName makes a missing entry a
- * compile error. */
-export const ARMAMENT_DISPLAY_NAMES: Record<ArmamentName, string> = {
-  club: "Club",
-  sword: "Sword",
-  staff: "Staff",
-  shield: "Shield",
-  spear: "Spear",
-  axe: "Axe",
-  dagger: "Dagger",
-  flame_staff: "Flame Staff",
-  frost_charm: "Frost Charm",
-  storm_talisman: "Storm Talisman",
-  radiant_idol: "Radiant Idol",
-  gloom_medallion: "Gloom Medallion",
-};

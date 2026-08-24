@@ -81,7 +81,6 @@ pub struct ActionAsset {
 
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct AppearanceFeatureAsset {
-    pub text: String,
     pub appearance_feature_type: AppearanceFeatureType,
     pub priority: i32,
     /// Mutual-exclusion group (see AppearanceFeature): features sharing a

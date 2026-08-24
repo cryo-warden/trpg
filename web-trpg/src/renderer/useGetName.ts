@@ -1,14 +1,16 @@
 import { useMemo } from "react";
 import { useAppearanceFeatureAssetsOf } from "../Game/context/StdbContext/assetLookup";
 import { useLastKnownAppearanceIndexes } from "../Game/context/StdbContext/components";
+import { AppearanceFeatureName } from "../Game/assets/appearance_features";
 import { EntityId } from "../Game/trpg";
 import { getName } from "../Game/domain/appearance";
+import { appearanceFeatureDisplayOf } from "./en-us/appearanceFeatures";
 
 /**
  * Pulls appearance data and exposes the domain naming rule bound to a viewpoint.
- * Names currently come straight from the English strings embedded in the
- * appearance assets, which every language leverages for now. A future language
- * plugin will supply its own vocabulary picker here instead.
+ * Names render through the en-US locale's appearance vocabulary — display text
+ * lives in the locale, never in the assets. Selecting a locale per player will
+ * later swap which vocabulary is passed as `displayOf` here.
  */
 export const useGetName = (viewpointEntityId: EntityId | null) => {
   // LAST-KNOWN appearance, not just the live rows: an entity deleted in
@@ -29,6 +31,8 @@ export const useGetName = (viewpointEntityId: EntityId | null) => {
           appearanceFeatureAssetsOf(
             appearanceFeatureIndexesByEntityId.get(entityId) ?? null,
           ),
+        displayOf: (name) =>
+          appearanceFeatureDisplayOf(name as AppearanceFeatureName),
       });
   }, [
     appearanceFeatureIndexesByEntityId,

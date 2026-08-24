@@ -17,7 +17,6 @@ pub struct AppearanceFeature {
     pub index: u32,
     #[unique]
     pub name: String,
-    pub text: String,
     pub appearance_feature_type: AppearanceFeatureType,
     pub priority: i32,
     /// Mutual-exclusion group: features sharing a non-empty group are

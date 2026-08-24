@@ -105,25 +105,3 @@ export const STANCES = {
 } satisfies Record<string, StanceAsset>;
 
 export type StanceName = keyof typeof STANCES;
-
-/** What a person reads as a stance card's title (see
- * ARMAMENT_DISPLAY_NAMES). */
-export const STANCE_DISPLAY_NAMES: Record<StanceName, string> = {
-  standing: "Standing",
-  prone: "Prone",
-  sitting: "Sitting",
-  ready: "Ready",
-  brawler: "Brawler",
-  dueling: "Dueling",
-  striding: "Striding",
-  perched: "Perched",
-  flapping: "Flapping",
-  casting: "Casting",
-  fire_casting: "Fire Casting",
-  ice_casting: "Ice Casting",
-  lightning_casting: "Lightning Casting",
-  light_casting: "Light Casting",
-  shadow_casting: "Shadow Casting",
-  amorphous: "Amorphous",
-  intangible: "Intangible",
-};

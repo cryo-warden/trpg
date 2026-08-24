@@ -25,11 +25,3 @@ export const QUESTS = {
 } satisfies Record<string, QuestAsset>;
 
 export type QuestName = keyof typeof QUESTS;
-
-/** What a person reads wherever a quest labels its items (see
- * ARMAMENT_DISPLAY_NAMES). */
-export const QUEST_DISPLAY_NAMES: Record<QuestName, string> = {
-  red_cookies: "Red Cookies",
-  blue_cookies: "Blue Cookies",
-  warden_of_the_keep: "Warden of the Keep",
-};
