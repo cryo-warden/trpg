@@ -371,6 +371,12 @@ entity!(
       // can set it — a future "smash the wall" attack destroys directly,
       // no death required. The tier below cleanup, above nothing.
       destroyed in destroyed_components,
+      // ABSOLUTE immobility: while present, every movement effect on this
+      // entity is cancelled outright, whatever its gait — a rooted turret,
+      // a training dummy, a plant. Authored (immobile: {}), never derived.
+      // The enemy AI also refuses to queue a move while it stands, so a
+      // flagged NPC never wastes a turn on a doomed step.
+      immobile in immobile_components,
     )]
     struct FlagComponent {}
 

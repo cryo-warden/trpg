@@ -1862,6 +1862,10 @@ pub fn enemy_control_system(ecs: Ecs) {
         // anywhere: it simply waits. (continue, not break: one actionless enemy
         // must not stop the rest.)
         let handle = ecs.find(entity_id);
+        // An immobile NPC never attempts to move itself: movement actions are
+        // skipped outright, so it spends its turn on something it can actually
+        // do (or waits) rather than a step the effect layer would cancel anyway.
+        let immobile = handle.immobile().is_some();
         let action_ids = &e.actions().action_ids;
         let count = action_ids.len();
         let start = handle
@@ -1870,7 +1874,13 @@ pub fn enemy_control_system(ecs: Ecs) {
             .map_or(0, |i| i + 1);
         let Some(action_id) = (0..count)
             .map(|k| action_ids[(start + k) % count])
-            .find(|&action_id| handle.can_target_other(target_entity_id, action_id))
+            .find(|&action_id| {
+                handle.can_target_other(target_entity_id, action_id)
+                    && !(immobile
+                        && ecs.db.actions().id().find(action_id).is_some_and(|a| {
+                            matches!(a.action_type, crate::action::ActionType::Move)
+                        }))
+            })
         else {
             continue;
         };

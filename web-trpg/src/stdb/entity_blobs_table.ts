@@ -223,6 +223,9 @@ export default __t.row({
   get destroyed() {
     return __t.option(FlagComponentBlob);
   },
+  get immobile() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },

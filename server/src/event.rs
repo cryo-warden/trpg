@@ -305,35 +305,51 @@ secador::secador!(
                     EventType::ActionEffect(ref action_effect) => match action_effect {
                         ActionEffect::Buff(_) => true,
                         ActionEffect::Move => {
-                            match ecs.db.path_components().entity_id().find(target_entity_id) {
-                                None => {}
-                                // A blocked path refuses passage even if the
-                                // move was somehow queued before validation.
-                                Some(_) if !ecs.find(target_entity_id).path_is_open() => {}
-                                Some(path_component) => {
-                                    match ecs
-                                        .db
-                                        .location_components()
-                                        .entity_id()
-                                        .find(self.owner_entity_id)
-                                    {
-                                        None => {}
-                                        Some(mut location_component) => {
-                                            // Arrival copies the path's
-                                            // destination pair verbatim.
-                                            location_component.location_entity_id =
-                                                path_component.destination_entity_id;
-                                            location_component.kind =
-                                                path_component.destination_kind;
-                                            ecs.db
-                                                .location_components()
-                                                .entity_id()
-                                                .update(location_component);
+                            // ImmobileComponent is ABSOLUTE: a flagged mover
+                            // never moves, whatever its gait — the effect is
+                            // cancelled outright and not narrated (a false
+                            // "moved" line would mislead). The enemy AI also
+                            // refuses to queue a move while immobile; this is
+                            // the backstop for any other path here.
+                            if ecs
+                                .db
+                                .immobile_components()
+                                .entity_id()
+                                .find(self.owner_entity_id)
+                                .is_some()
+                            {
+                                false
+                            } else {
+                                match ecs.db.path_components().entity_id().find(target_entity_id) {
+                                    None => {}
+                                    // A blocked path refuses passage even if the
+                                    // move was somehow queued before validation.
+                                    Some(_) if !ecs.find(target_entity_id).path_is_open() => {}
+                                    Some(path_component) => {
+                                        match ecs
+                                            .db
+                                            .location_components()
+                                            .entity_id()
+                                            .find(self.owner_entity_id)
+                                        {
+                                            None => {}
+                                            Some(mut location_component) => {
+                                                // Arrival copies the path's
+                                                // destination pair verbatim.
+                                                location_component.location_entity_id =
+                                                    path_component.destination_entity_id;
+                                                location_component.kind =
+                                                    path_component.destination_kind;
+                                                ecs.db
+                                                    .location_components()
+                                                    .entity_id()
+                                                    .update(location_component);
+                                            }
                                         }
                                     }
                                 }
+                                true
                             }
-                            true
                         }
                         ActionEffect::Attack(damage) => {
                             let target_hp =

@@ -31,9 +31,10 @@ export const NEW_PLAYER_BLOB = blob({
   // reachable and grants slash. One hand stays free, so bop survives.
   stanceName: "standing",
   armamentNames: ["sword"],
-  // A REASONABLE DEFAULT HUMAN: no admin trait (its grant-everything set
-  // distorts testing); admin is a role on the account, not a body plan.
-  traitNames: ["mobile", "bopper"],
+  // A REASONABLE DEFAULT HUMAN: no authored traits. The human baseline already
+  // moves (gait 2) and keeps a free hand for bop while wielding the sword, so
+  // the old mobile/bopper grants were unnecessary; admin is a role on the
+  // account, not a body plan.
   // NO authored default hotkeys: the bar derives from stats and focus,
   // and slots are the player's to configure (see the home-row scheme).
   allegiance: {

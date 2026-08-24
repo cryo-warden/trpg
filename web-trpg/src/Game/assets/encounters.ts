@@ -8,7 +8,11 @@ export const ENCOUNTER_BLOBS = {
   // controller marks it a threat. Its HP/EP/etc. derive from its baseline like
   // any body's — no opt-in flag. Not a creature (no body of its own); it stays
   // a bare fragment.
-  encounter_enemy: blob({ enemyController: {} }),
+  // ABSOLUTELY immobile: the player alone moves between rooms; every
+  // controlled enemy holds its ground. The flag cancels any Move effect and
+  // keeps the enemy AI from ever selecting a movement action. Riding the
+  // categoric blob stamps it on every encounter member in one place.
+  encounter_enemy: blob({ enemyController: {}, immobile: {} }),
   slime: creature({ baseline: "slime", stance: "amorphous" }),
   slimeSmall: creature({
     baseline: "slime",

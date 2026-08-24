@@ -213,6 +213,9 @@ pub struct EntityBlobAsset {
     pub differentiable: Option<DifferentiableAsset>,
     /// Marks the entity as attunable fortune-telling scenery.
     pub checkpoint_object: Option<FlagComponentBlob>,
+    /// Marks the entity as ABSOLUTELY immobile: every movement effect on it
+    /// is cancelled while this stands, whatever its gait (see ImmobileComponent).
+    pub immobile: Option<FlagComponentBlob>,
     /// The abstract destination attuning to this object binds: a map by
     /// NAME plus which of its generated checkpoints. Never a room entity —
     /// the room may not exist until the binding is cashed in.

@@ -347,6 +347,7 @@ fn resolve_entity_blob(
         equipment_blobbed,
         stance_customizations: None,
         checkpoint_object: author.checkpoint_object,
+        immobile: author.immobile,
         checkpoint_binding: author
             .checkpoint_binding
             .map(|binding| {

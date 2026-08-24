@@ -779,6 +779,9 @@ export const EntityBlob = __t.object("EntityBlob", {
   get destroyed() {
     return __t.option(FlagComponentBlob);
   },
+  get immobile() {
+    return __t.option(FlagComponentBlob);
+  },
   get checkpoint() {
     return __t.option(CheckpointComponentBlob);
   },
@@ -933,6 +936,9 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
     return __t.option(DifferentiableAsset);
   },
   get checkpointObject() {
+    return __t.option(FlagComponentBlob);
+  },
+  get immobile() {
     return __t.option(FlagComponentBlob);
   },
   get checkpointBinding() {

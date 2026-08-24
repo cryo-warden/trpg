@@ -3,9 +3,7 @@ import { statBlock } from "./stat_block";
 
 export const TRAITS = {
   // Capability traits now grant READINESS, not action lists — actions derive
-  // from readiness. admin carries every tag high (it can do anything); mobile
-  // grants the gait that movement requires; bopper grants a free hand and the
-  // nerve for the heavy bop.
+  // from readiness. admin carries every tag high (it can do anything).
   admin: statBlock({
     morale: 9,
     bladed: 9,
@@ -30,8 +28,6 @@ export const TRAITS = {
     amorphous: 9,
     ethereal: 9,
   }),
-  mobile: statBlock({ gait: 1 }),
-  bopper: statBlock({ hand: 1, morale: 3 }),
   tiny: statBlock({ attack: -1, mhp: -2, size: -4 }),
   small: statBlock({ mhp: -1, size: -1 }),
   big: statBlock({ mhp: 2, size: 1 }),
