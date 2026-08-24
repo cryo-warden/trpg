@@ -1,5 +1,6 @@
 import { DbConnection } from "../stdb";
 import { namedPairs } from "./assets";
+import { blobPairs, validatedBlob } from "./assets/assetShort";
 import { ACTIONS } from "./assets/actions";
 import { APPEARANCE_FEATURES } from "./assets/appearance_features";
 import { ARMAMENTS } from "./assets/armaments";
@@ -33,8 +34,9 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       traitPalettes: namedPairs(TRAIT_PALETTES),
       // Gear is now ordinary entity blobs — one flat registry keyed by name
       // (each name is unique across the three kinds). The equip SLOT lives on
-      // each blob's item component, not in a per-kind table.
-      gearBlobs: namedPairs({ ...ARMAMENTS, ...ARMORS, ...RELICS }),
+      // each blob's item component, not in a per-kind table. blobPairs runs the
+      // escape-hatch validator over every blob record (see assetShort.ts).
+      gearBlobs: blobPairs({ ...ARMAMENTS, ...ARMORS, ...RELICS }),
       stances: namedPairs(STANCES),
       quests: namedPairs(QUESTS),
       proneStanceName: "prone",
@@ -48,13 +50,13 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       eatActionName: "eat",
       rearmActionName: "re_arm",
       moveActionName: "move",
-      encounterBlobs: namedPairs(ENCOUNTER_BLOBS),
+      encounterBlobs: blobPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),
       locationMapThemes: namedPairs(LOCATION_MAP_THEMES),
       locationMaps: namedPairs(LOCATION_MAPS),
       connections: LOCATION_MAP_CONNECTIONS,
-      namedInstantiateEntityBlobs: namedPairs(NAMED_ENTITY_BLOBS),
+      namedInstantiateEntityBlobs: blobPairs(NAMED_ENTITY_BLOBS),
       instantiateEntityBlobs: [],
-      newPlayerBlob: NEW_PLAYER_BLOB,
+      newPlayerBlob: validatedBlob("new_player", NEW_PLAYER_BLOB),
     },
   });
