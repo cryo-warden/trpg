@@ -4,8 +4,8 @@ import { ARMAMENTS } from "./armaments";
 import { ARMORS } from "./armors";
 import { BASELINES } from "./baselines";
 import { RELICS } from "./relics";
-import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./encounters";
-import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./entity_blobs";
+import { ENCOUNTERS } from "./encounters";
+import { ENTITY_BLOBS } from "./bundle/entityBlobs";
 import {
   LOCATION_MAPS,
   LOCATION_MAP_CONNECTIONS,
@@ -42,11 +42,11 @@ export const assets = {
   armors: ARMORS,
   relics: RELICS,
   stances: STANCES,
-  encounterBlobs: ENCOUNTER_BLOBS,
   encounters: ENCOUNTERS,
   locationMapThemes: LOCATION_MAP_THEMES,
   locationMaps: LOCATION_MAPS,
   locationMapConnections: LOCATION_MAP_CONNECTIONS,
-  namedEntityBlobs: NAMED_ENTITY_BLOBS,
-  newPlayerBlob: NEW_PLAYER_BLOB,
+  // The ONE unified entity-blob table (creatures, gear, named world entities,
+  // the new-player template, and every location-map blob).
+  entityBlobs: ENTITY_BLOBS,
 };

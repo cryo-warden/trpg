@@ -7,25 +7,17 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     asset::{
+        entity_blob_asset::entity_blob_assets,
         location_map_theme::{pick_distinct_group, variety_group_of, weighted_index},
         trait_palette::trait_palettes,
     },
     ecs_extension::EcsExtension,
     entity::{
-        EntityBlob, EntityHandle, FindEntityHandle, InstantiateEntityBlob, LocationKind,
+        EntityHandle, FindEntityHandle, InstantiateEntityBlob, LocationKind,
         NewEntityHandle, WithEntityHandle, __differentiable__OptionGet, __location__Option,
         __traits__Option, __traits__OptionGet,
     },
 };
-
-#[table(accessor = encounter_blobs)]
-pub struct EncounterBlob {
-    #[primary_key]
-    pub id: u32,
-    #[unique]
-    pub name: String,
-    pub blob: EntityBlob,
-}
 
 #[table(accessor = encounters)]
 pub struct Encounter {
@@ -44,12 +36,16 @@ impl Encounter {
     pub fn populate(&self, room: &EntityHandle) -> Result<Vec<u64>, String> {
         let ecs: Ecs = room.ecs();
         // TODO Make it easier to grab a default empty EntityBlob.
-        let categoric_blob =
-            if let Some(c) = ecs.db.encounter_blobs().id().find(self.categoric_blob_id) {
-                c.blob
-            } else {
-                return Ok(Vec::new());
-            };
+        let categoric_blob = if let Some(c) = ecs
+            .db
+            .entity_blob_assets()
+            .id()
+            .find(self.categoric_blob_id)
+        {
+            c.blob
+        } else {
+            return Ok(Vec::new());
+        };
         log::debug!(
             "Grabbed categoric_blob {} {:?}",
             self.categoric_blob_id,
@@ -58,7 +54,7 @@ impl Encounter {
         let scope = ecs.instantiation_scope();
         let mut spawned_entity_ids: Vec<u64> = Vec::new();
         for id in &self.blob_ids {
-            if let Some(e) = ecs.db.encounter_blobs().id().find(id) {
+            if let Some(e) = ecs.db.entity_blob_assets().id().find(id) {
                 let spawn = ecs
                     .new()
                     .instantiate_blob(categoric_blob.clone(), &scope)?

@@ -1,6 +1,6 @@
 use crate::{
     account::{account_of, AccountId},
-    asset::{gear::gear_blobs, ReducerContextExtension},
+    asset::{entity_blob_asset::entity_blob_assets, ReducerContextExtension},
     entity::*,
 };
 use ecs::Ecs;
@@ -120,7 +120,7 @@ impl<'a> EcsExtension<'a> for Ecs<'a> {
             gear_blob_ids.extend(manifest.worn_relic_ids.iter().copied());
             let mut equipped_entity_ids: Vec<u64> = Vec::new();
             for id in gear_blob_ids {
-                if let Some(gear) = self.db.gear_blobs().id().find(id) {
+                if let Some(gear) = self.db.entity_blob_assets().id().find(id) {
                     let item = self
                         .new()
                         .instantiate_blob(gear.blob, &scope)?

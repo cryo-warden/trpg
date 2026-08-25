@@ -1,23 +1,20 @@
 import { EncounterAsset, EntityBlobAsset } from "../../stdb/types";
-import { CREATURE_BLOBS } from "./bundle/creature";
 import { blob } from "./entity_blobs";
 
-export const ENCOUNTER_BLOBS = {
-  /* TODO Add enemy allegiance component */
-  // The categoric blob merged into every encounter member: the enemy
-  // controller marks it a threat. Its HP/EP/etc. derive from its baseline like
-  // any body's — no opt-in flag. Not a creature (no body of its own); it stays
-  // a bare fragment.
-  // ABSOLUTELY immobile: the player alone moves between rooms; every
-  // controlled enemy holds its ground. The flag cancels any Move effect and
-  // keeps the enemy AI from ever selecting a movement action. Riding the
-  // categoric blob stamps it on every encounter member in one place.
-  encounter_enemy: blob({ enemyController: {}, immobile: {} }),
-  // The creature roster (hydrated from the pure creature/data.ts table).
-  ...CREATURE_BLOBS,
-} satisfies Record<string, EntityBlobAsset>;
-
-export type EncounterBlobName = keyof typeof ENCOUNTER_BLOBS;
+/* TODO Add enemy allegiance component */
+// The categoric blob merged into every encounter member: the enemy
+// controller marks it a threat. Its HP/EP/etc. derive from its baseline like
+// any body's — no opt-in flag. Not a creature (no body of its own); it stays
+// a bare fragment.
+// ABSOLUTELY immobile: the player alone moves between rooms; every
+// controlled enemy holds its ground. The flag cancels any Move effect and
+// keeps the enemy AI from ever selecting a movement action. Riding the
+// categoric blob stamps it on every encounter member in one place. It is one
+// named entry in the single unified entity-blob table (see bundle/entityBlobs).
+export const ENCOUNTER_ENEMY_BLOB: EntityBlobAsset = blob({
+  enemyController: {},
+  immobile: {},
+});
 
 export const ENCOUNTERS = {
   slime1: {

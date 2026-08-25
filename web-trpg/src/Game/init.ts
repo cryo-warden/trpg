@@ -1,14 +1,15 @@
 import { DbConnection } from "../stdb";
 import { namedPairs } from "./assets";
-import { blobPairs, validatedBlob } from "./assets/assetShort";
+import { blobPairs } from "./assets/assetShort";
 import { ACTIONS } from "./assets/actions";
 import { APPEARANCE_FEATURES } from "./assets/appearance_features";
-import { ARMAMENTS } from "./assets/armaments";
-import { ARMORS } from "./assets/armors";
 import { BASELINES } from "./assets/baselines";
-import { RELICS } from "./assets/relics";
-import { ENCOUNTERS, ENCOUNTER_BLOBS } from "./assets/encounters";
-import { NAMED_ENTITY_BLOBS, NEW_PLAYER_BLOB } from "./assets/entity_blobs";
+import { ENCOUNTERS } from "./assets/encounters";
+import {
+  ENTITY_BLOBS,
+  INSTANTIATE_ENTITY_BLOB_NAMES,
+  NEW_PLAYER_BLOB_NAME,
+} from "./assets/bundle/entityBlobs";
 import {
   LOCATION_MAPS,
   LOCATION_MAP_CONNECTIONS,
@@ -32,11 +33,6 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       baselines: namedPairs(BASELINES),
       traits: namedPairs(TRAITS),
       traitPalettes: namedPairs(TRAIT_PALETTES),
-      // Gear is now ordinary entity blobs — one flat registry keyed by name
-      // (each name is unique across the three kinds). The equip SLOT lives on
-      // each blob's item component, not in a per-kind table. blobPairs runs the
-      // escape-hatch validator over every blob record (see assetShort.ts).
-      gearBlobs: blobPairs({ ...ARMAMENTS, ...ARMORS, ...RELICS }),
       stances: namedPairs(STANCES),
       quests: namedPairs(QUESTS),
       proneStanceName: "prone",
@@ -50,13 +46,14 @@ export const pushProductionAssets = (connection: DbConnection): Promise<void> =>
       eatActionName: "eat",
       rearmActionName: "re_arm",
       moveActionName: "move",
-      encounterBlobs: blobPairs(ENCOUNTER_BLOBS),
       encounters: namedPairs(ENCOUNTERS),
       locationMapThemes: namedPairs(LOCATION_MAP_THEMES),
       locationMaps: namedPairs(LOCATION_MAPS),
       connections: LOCATION_MAP_CONNECTIONS,
-      namedInstantiateEntityBlobs: blobPairs(NAMED_ENTITY_BLOBS),
-      instantiateEntityBlobs: [],
-      newPlayerBlob: validatedBlob("new_player", NEW_PLAYER_BLOB),
+      // The ONE unified entity-blob table: every template, name-keyed. The
+      // instantiate set and new-player template are named refs into it.
+      entityBlobs: blobPairs(ENTITY_BLOBS),
+      instantiateEntityBlobNames: INSTANTIATE_ENTITY_BLOB_NAMES,
+      newPlayerBlobName: NEW_PLAYER_BLOB_NAME,
     },
   });

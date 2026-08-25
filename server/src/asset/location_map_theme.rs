@@ -18,13 +18,15 @@ use std::collections::HashSet;
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EntityBlobSample {
     pub weight: u8,
-    pub blob: EntityBlob,
+    /// Id into the unified entity_blob_assets table; the blob body is fetched at
+    /// generation time (see find_entity_blob), never stored inline here.
+    pub blob_id: u32,
 }
 
 impl WeightedSample for EntityBlobSample {
-    type Result = EntityBlob;
+    type Result = u32;
     fn value(&self) -> &Self::Result {
-        &self.blob
+        &self.blob_id
     }
     fn weight(&self) -> super::weighted_sampler::Weight {
         self.weight as u32
@@ -37,7 +39,7 @@ pub struct EntityBlobsSampler {
 }
 
 impl WeightedSampler for EntityBlobsSampler {
-    type Result = EntityBlob;
+    type Result = u32;
     type Sample = EntityBlobSample;
     fn selections(&self) -> &Vec<Self::Sample> {
         &self.selections
@@ -51,8 +53,10 @@ impl WeightedSampler for EntityBlobsSampler {
 /// direction); `backward` faces home.
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct PathBlobPair {
-    pub forward: EntityBlob,
-    pub backward: EntityBlob,
+    /// Both directions as ids into the unified entity_blob_assets table; the
+    /// blob bodies are fetched at generation time.
+    pub forward_id: u32,
+    pub backward_id: u32,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -129,11 +133,14 @@ impl LocationMapTheme {
 
         let mut decoration_ids: Vec<u64> = Vec::new();
         for _ in 0..decoration_count {
-            if let Some(d) = self.decorations_selector.sample(rng) {
+            // Draw the id first (rng determinism), then fetch the blob body.
+            if let Some(&blob_id) = self.decorations_selector.sample(rng) {
+                let blob =
+                    crate::asset::entity_blob_asset::find_entity_blob(room.ecs(), blob_id)?;
                 let decoration = room
                     .ecs()
                     .new()
-                    .instantiate_blob(d.to_owned(), &room.ecs().instantiation_scope())?;
+                    .instantiate_blob(blob, &room.ecs().instantiation_scope())?;
                 let decoration_id = decoration.entity_id();
                 decoration.insert_new_location(room.entity_id(), LocationKind::Interior);
                 decoration_ids.push(decoration_id);

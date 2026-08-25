@@ -318,9 +318,6 @@ export const AssetPack = __t.object("AssetPack", {
   get traitPalettes() {
     return __t.array(NamedTraitPaletteAsset);
   },
-  get gearBlobs() {
-    return __t.array(NamedEntityBlobAsset);
-  },
   get stances() {
     return __t.array(NamedStanceAsset);
   },
@@ -335,9 +332,6 @@ export const AssetPack = __t.object("AssetPack", {
   eatActionName: __t.option(__t.string()),
   rearmActionName: __t.option(__t.string()),
   moveActionName: __t.option(__t.string()),
-  get encounterBlobs() {
-    return __t.array(NamedEntityBlobAsset);
-  },
   get encounters() {
     return __t.array(NamedEncounterAsset);
   },
@@ -350,15 +344,11 @@ export const AssetPack = __t.object("AssetPack", {
   get connections() {
     return __t.array(LocationMapConnectionAsset);
   },
-  get namedInstantiateEntityBlobs() {
+  get entityBlobs() {
     return __t.array(NamedEntityBlobAsset);
   },
-  get instantiateEntityBlobs() {
-    return __t.array(EntityBlobAsset);
-  },
-  get newPlayerBlob() {
-    return EntityBlobAsset;
-  },
+  instantiateEntityBlobNames: __t.array(__t.string()),
+  newPlayerBlobName: __t.string(),
 });
 export type AssetPack = __Infer<typeof AssetPack>;
 
@@ -572,15 +562,6 @@ export const EncounterAsset = __t.object("EncounterAsset", {
   blobNames: __t.array(__t.string()),
 });
 export type EncounterAsset = __Infer<typeof EncounterAsset>;
-
-export const EncounterBlob = __t.object("EncounterBlob", {
-  id: __t.u32(),
-  name: __t.string(),
-  get blob() {
-    return EntityBlob;
-  },
-});
-export type EncounterBlob = __Infer<typeof EncounterBlob>;
 
 export const EncounterIdSample = __t.object("EncounterIdSample", {
   weight: __t.u8(),
@@ -950,19 +931,24 @@ export const EntityBlobAsset = __t.object("EntityBlobAsset", {
 });
 export type EntityBlobAsset = __Infer<typeof EntityBlobAsset>;
 
-export const EntityBlobSample = __t.object("EntityBlobSample", {
-  weight: __t.u8(),
+export const EntityBlobAssetRow = __t.object("EntityBlobAssetRow", {
+  id: __t.u32(),
+  name: __t.string(),
   get blob() {
     return EntityBlob;
   },
+});
+export type EntityBlobAssetRow = __Infer<typeof EntityBlobAssetRow>;
+
+export const EntityBlobSample = __t.object("EntityBlobSample", {
+  weight: __t.u8(),
+  blobId: __t.u32(),
 });
 export type EntityBlobSample = __Infer<typeof EntityBlobSample>;
 
 export const EntityBlobSampleAsset = __t.object("EntityBlobSampleAsset", {
   weight: __t.u8(),
-  get blob() {
-    return EntityBlobAsset;
-  },
+  blobName: __t.string(),
 });
 export type EntityBlobSampleAsset = __Infer<typeof EntityBlobSampleAsset>;
 
@@ -1154,15 +1140,6 @@ export type FlagComponent = __Infer<typeof FlagComponent>;
 
 export const FlagComponentBlob = __t.object("FlagComponentBlob", {});
 export type FlagComponentBlob = __Infer<typeof FlagComponentBlob>;
-
-export const GearBlob = __t.object("GearBlob", {
-  id: __t.u32(),
-  name: __t.string(),
-  get blob() {
-    return EntityBlob;
-  },
-});
-export type GearBlob = __Infer<typeof GearBlob>;
 
 export const GroupedBlockAsset = __t.object("GroupedBlockAsset", {
   get stats() {
@@ -1383,12 +1360,8 @@ export const LocationMapConnection = __t.object("LocationMapConnection", {
     return ConnectionAnchor;
   },
   bothWays: __t.bool(),
-  get forwardPathBlob() {
-    return __t.option(EntityBlob);
-  },
-  get backwardPathBlob() {
-    return __t.option(EntityBlob);
-  },
+  forwardPathBlobId: __t.option(__t.u32()),
+  backwardPathBlobId: __t.option(__t.u32()),
 });
 export type LocationMapConnection = __Infer<typeof LocationMapConnection>;
 
@@ -1679,22 +1652,14 @@ export const PartyComponentBlob = __t.object("PartyComponentBlob", {
 export type PartyComponentBlob = __Infer<typeof PartyComponentBlob>;
 
 export const PathBlobPair = __t.object("PathBlobPair", {
-  get forward() {
-    return EntityBlob;
-  },
-  get backward() {
-    return EntityBlob;
-  },
+  forwardId: __t.u32(),
+  backwardId: __t.u32(),
 });
 export type PathBlobPair = __Infer<typeof PathBlobPair>;
 
 export const PathBlobPairAsset = __t.object("PathBlobPairAsset", {
-  get forward() {
-    return EntityBlobAsset;
-  },
-  get backward() {
-    return EntityBlobAsset;
-  },
+  forwardName: __t.string(),
+  backwardName: __t.string(),
 });
 export type PathBlobPairAsset = __Infer<typeof PathBlobPairAsset>;
 
@@ -1823,18 +1788,14 @@ export type QuestAsset = __Infer<typeof QuestAsset>;
 export const QuestDefeatDrop = __t.object("QuestDefeatDrop", {
   questId: __t.u32(),
   index: __t.u32(),
-  get itemBlob() {
-    return EntityBlob;
-  },
+  itemBlobId: __t.u32(),
 });
 export type QuestDefeatDrop = __Infer<typeof QuestDefeatDrop>;
 
 export const QuestDefeatDropAsset = __t.object("QuestDefeatDropAsset", {
   questName: __t.string(),
   index: __t.u32(),
-  get itemBlob() {
-    return EntityBlobAsset;
-  },
+  itemBlobName: __t.string(),
 });
 export type QuestDefeatDropAsset = __Infer<typeof QuestDefeatDropAsset>;
 
@@ -1884,9 +1845,7 @@ export type QuestRoomRole = __Infer<typeof QuestRoomRole>;
 
 export const QuestSpawn = __t.object("QuestSpawn", {
   questId: __t.u32(),
-  get itemBlob() {
-    return EntityBlob;
-  },
+  itemBlobId: __t.u32(),
   get guaranteedIndexes() {
     return Bitset;
   },
@@ -1900,9 +1859,7 @@ export type QuestSpawn = __Infer<typeof QuestSpawn>;
 
 export const QuestSpawnAsset = __t.object("QuestSpawnAsset", {
   questName: __t.string(),
-  get itemBlob() {
-    return EntityBlobAsset;
-  },
+  itemBlobName: __t.string(),
   guaranteedIndexes: __t.array(__t.u32()),
   eligibleIndexes: __t.array(__t.u32()),
   minEligibleCount: __t.u8(),
@@ -2045,6 +2002,20 @@ export const RoomLocationAsset = __t.object("RoomLocationAsset", {
 });
 export type RoomLocationAsset = __Infer<typeof RoomLocationAsset>;
 
+// The tagged union or sum type for the algebraic type `SingletonBlobKey`.
+export const SingletonBlobKey = __t.enum("SingletonBlobKey", {
+  NewPlayer: __t.unit(),
+});
+export type SingletonBlobKey = __Infer<typeof SingletonBlobKey>;
+
+export const SingletonBlobRef = __t.object("SingletonBlobRef", {
+  get key() {
+    return SingletonBlobKey;
+  },
+  blobId: __t.u32(),
+});
+export type SingletonBlobRef = __Infer<typeof SingletonBlobRef>;
+
 export const SpecialAction = __t.object("SpecialAction", {
   get key() {
     return SpecialActionKey;
@@ -2064,22 +2035,6 @@ export const SpecialActionKey = __t.enum("SpecialActionKey", {
   Move: __t.unit(),
 });
 export type SpecialActionKey = __Infer<typeof SpecialActionKey>;
-
-export const SpecialEntityBlob = __t.object("SpecialEntityBlob", {
-  get key() {
-    return SpecialEntityBlobKey;
-  },
-  get blob() {
-    return EntityBlob;
-  },
-});
-export type SpecialEntityBlob = __Infer<typeof SpecialEntityBlob>;
-
-// The tagged union or sum type for the algebraic type `SpecialEntityBlobKey`.
-export const SpecialEntityBlobKey = __t.enum("SpecialEntityBlobKey", {
-  NewPlayer: __t.unit(),
-});
-export type SpecialEntityBlobKey = __Infer<typeof SpecialEntityBlobKey>;
 
 export const SpecialStance = __t.object("SpecialStance", {
   get key() {

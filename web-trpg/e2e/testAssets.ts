@@ -74,13 +74,40 @@ const lookFeature = (name: string) => ({
   },
 });
 
+/** Turn a name-keyed blob record into the wire's name+value pairs. */
+const namedBlobs = (
+  record: Record<string, EntityBlobAsset>,
+): { name: string; value: EntityBlobAsset }[] =>
+  Object.entries(record).map(([name, value]) => ({ name, value }));
+
+/** Assemble the unified entity-blob fields from named template groups: the
+ * new-player template (always "new_player"), the blobs INSTANTIATED at push as
+ * world entities (referenceable by "Named" refs, listed in
+ * instantiateEntityBlobNames), and pure templates referenced by name from
+ * themes/quests. All merge into the ONE entityBlobs table. */
+const entityBlobFields = ({
+  newPlayer,
+  instantiate = {},
+  templates = {},
+}: {
+  newPlayer: EntityBlobAsset;
+  instantiate?: Record<string, EntityBlobAsset>;
+  templates?: Record<string, EntityBlobAsset>;
+}): Pick<
+  AssetPack,
+  "entityBlobs" | "instantiateEntityBlobNames" | "newPlayerBlobName"
+> => ({
+  entityBlobs: namedBlobs({ new_player: newPlayer, ...instantiate, ...templates }),
+  instantiateEntityBlobNames: Object.keys(instantiate),
+  newPlayerBlobName: "new_player",
+});
+
 const emptyPack = (): AssetPack => ({
   actions: [],
   appearanceFeatures: [],
   baselines: [],
   traits: [],
   traitPalettes: [],
-  gearBlobs: [],
   stances: [],
   quests: [],
   proneStanceName: undefined,
@@ -91,17 +118,14 @@ const emptyPack = (): AssetPack => ({
   eatActionName: undefined,
   rearmActionName: undefined,
   moveActionName: undefined,
-  encounterBlobs: [],
   encounters: [],
   locationMapThemes: [],
   locationMaps: [],
   connections: [],
-  namedInstantiateEntityBlobs: [],
-  instantiateEntityBlobs: [],
-  // An empty blob: accounts created against this pack get a bare player
-  // entity. Deliberately nameless — names are unique, and any number of
-  // accounts may be created.
-  newPlayerBlob: blob({}),
+  // An empty new-player template: accounts created against this pack get a bare
+  // player entity. Deliberately carries no NameComponent — the entities are
+  // unique, and any number of accounts may be created.
+  ...entityBlobFields({ newPlayer: blob({}) }),
 });
 
 /** The smallest valid bundle: a single action and no world entities. */
@@ -127,18 +151,20 @@ export const minimalPack = (): AssetPack => ({
  */
 export const playerPack = (): AssetPack => ({
   ...emptyPack(),
-  newPlayerBlob: blob({
-    location: {
-      locationEntityId: { tag: "Literal", value: 999n },
-      kind: { tag: "Interior" },
-    },
-    hp: {
-      hp: 5,
-      mhp: 5,
-      defense: 0,
-      accumulatedDamage: 0,
-      accumulatedHealing: 0,
-    },
+  ...entityBlobFields({
+    newPlayer: blob({
+      location: {
+        locationEntityId: { tag: "Literal", value: 999n },
+        kind: { tag: "Interior" },
+      },
+      hp: {
+        hp: 5,
+        mhp: 5,
+        defense: 0,
+        accumulatedDamage: 0,
+        accumulatedHealing: 0,
+      },
+    }),
   }),
 });
 
@@ -149,32 +175,35 @@ export const playerPack = (): AssetPack => ({
  */
 export const graphPack = (): AssetPack => ({
   ...emptyPack(),
-  instantiateEntityBlobs: [
-    blob({
-      name: { name: "occupant_a" },
-      location: {
-        locationEntityId: { tag: "Literal", value: 1n },
-        kind: { tag: "Interior" },
-      },
-    }),
-    blob({
-      name: { name: "occupant_b" },
-      location: {
-        locationEntityId: { tag: "Literal", value: 1n },
-        kind: { tag: "Interior" },
-      },
-    }),
-    blob({
-      path: {
-        destinationEntityId: { tag: "Literal", value: 2n },
-        destinationKind: { tag: "Interior" },
-      },
-      location: {
-        locationEntityId: { tag: "Literal", value: 1n },
-        kind: { tag: "Interior" },
-      },
-    }),
-  ],
+  ...entityBlobFields({
+    newPlayer: blob({}),
+    instantiate: {
+      occupant_a: blob({
+        name: { name: "occupant_a" },
+        location: {
+          locationEntityId: { tag: "Literal", value: 1n },
+          kind: { tag: "Interior" },
+        },
+      }),
+      occupant_b: blob({
+        name: { name: "occupant_b" },
+        location: {
+          locationEntityId: { tag: "Literal", value: 1n },
+          kind: { tag: "Interior" },
+        },
+      }),
+      graph_path: blob({
+        path: {
+          destinationEntityId: { tag: "Literal", value: 2n },
+          destinationKind: { tag: "Interior" },
+        },
+        location: {
+          locationEntityId: { tag: "Literal", value: 1n },
+          kind: { tag: "Interior" },
+        },
+      }),
+    },
+  }),
 });
 
 /**
@@ -256,15 +285,6 @@ export const mapGenPack = (): AssetPack => ({
       },
     },
   ],
-  encounterBlobs: [
-    {
-      name: "test_pack_categoric",
-      value: blob({
-        enemyController: {},        differentiable: { traitPaletteName: "test_variety" },
-      }),
-    },
-    { name: "test_creature", value: blob({ baselineName: "test_human" }) },
-  ],
   encounters: [
     {
       name: "test_pack",
@@ -278,21 +298,14 @@ export const mapGenPack = (): AssetPack => ({
     {
       name: "test_theme",
       value: {
-        // Nameless blobs: NameComponent.name is unique, so a generator that
-        // stamps out many rooms/paths must not give them a fixed name.
+        // Nameless generated entities: NameComponent.name is unique, so a
+        // generator that stamps out many rooms/paths must not give them a fixed
+        // name. The TEMPLATES they are stamped from are named (below).
         // A differentiable ITEM decoration: its base noun is the test_deco
         // baseline (max HP 0 → no HP), and the drawn variety trait's feature is
         // OVERWRITTEN onto its look from baseline + traits.
         decorationsSelector: {
-          selections: [
-            {
-              weight: 1,
-              blob: blob({
-                baselineName: "test_deco",
-                differentiable: { traitPaletteName: "test_variety" },
-              }),
-            },
-          ],
+          selections: [{ weight: 1, blobName: "mapgen_deco" }],
         },
         minDecorationCount: 1,
         maxDecorationCount: 2,
@@ -304,22 +317,13 @@ export const mapGenPack = (): AssetPack => ({
           selections: [
             {
               weight: 1,
-              pair: {
-                forward: blob({
-                  baselineName: "test_path",
-                  offeredActionNames: ["test_action"],
-                }),
-                backward: blob({
-                  baselineName: "test_path",
-                  offeredActionNames: ["test_action"],
-                }),
-              },
+              pair: { forwardName: "mapgen_path", backwardName: "mapgen_path" },
             },
           ],
         },
-        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blobName: "mapgen_room" }] },
         checkpointsSelector: {
-          selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
+          selections: [{ weight: 1, blobName: "mapgen_checkpoint" }],
         },
         containersSelector: { selections: [] },
         minContainerCount: 0,
@@ -354,17 +358,36 @@ export const mapGenPack = (): AssetPack => ({
       },
     },
   ],
-  // new_player's blob resolves its starting allegiance through the registry
-  // by the name "allegiance1", so the allegiance entities are named blobs.
-  namedInstantiateEntityBlobs: [
-    { name: "allegiance1", value: blob({}) },
-    { name: "allegiance2", value: blob({}) },
-  ],
-  newPlayerBlob: blob({
-    baselineName: "test_human",
-    allegiance: { allegianceEntityId: { tag: "Named", value: "allegiance1" } },
-    // Seats the fresh player in the generated map via the location invariant.
-    checkpoint: { locationMapName: "tiny", checkpointIndex: 0 },
+  // new_player's blob resolves its starting allegiance through the registry by
+  // the name "allegiance1", so the allegiance entities are instantiated blobs.
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_human",
+      allegiance: { allegianceEntityId: { tag: "Named", value: "allegiance1" } },
+      // Seats the fresh player in the generated map via the location invariant.
+      checkpoint: { locationMapName: "tiny", checkpointIndex: 0 },
+    }),
+    instantiate: {
+      allegiance1: blob({}),
+      allegiance2: blob({}),
+    },
+    templates: {
+      test_pack_categoric: blob({
+        enemyController: {},
+        differentiable: { traitPaletteName: "test_variety" },
+      }),
+      test_creature: blob({ baselineName: "test_human" }),
+      mapgen_deco: blob({
+        baselineName: "test_deco",
+        differentiable: { traitPaletteName: "test_variety" },
+      }),
+      mapgen_path: blob({
+        baselineName: "test_path",
+        offeredActionNames: ["test_action"],
+      }),
+      mapgen_room: blob({}),
+      mapgen_checkpoint: blob({ checkpointObject: {} }),
+    },
   }),
 });
 
@@ -432,12 +455,15 @@ export const stancePack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({    baselineName: "test_human",
-    stanceName: "test_brawler",
-    location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_human",
+      stanceName: "test_brawler",
+      location: {
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
+      },
+    }),
   }),
 });
 
@@ -553,27 +579,46 @@ export const customizationPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({    baselineName: "test_human",
-    stanceName: "test_standing",
-    location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_human",
+      stanceName: "test_standing",
+      location: {
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
+      },
+    }),
+    instantiate: {
+      cust_sword: gearItemBlob({
+        tag: "Armament",
+        grant: { bladed: 1, hand: -1 },
+        look: "test_sword_look",
+      }),
+      cust_club: gearItemBlob({
+        tag: "Armament",
+        grant: { blunt: 1, hand: -1 },
+        look: "test_club_look",
+      }),
+      // Two-handed: consumes BOTH hands, so it and a one-hander cannot both be
+      // applied on a two-hand body — the second wielded stays equipped but its
+      // stats drop out (the capacity-validation case).
+      cust_greatsword: gearItemBlob({
+        tag: "Armament",
+        grant: { bladed: 1, hand: -2 },
+        look: "test_greatsword_look",
+      }),
+      cust_jerkin: gearItemBlob({
+        tag: "Armor",
+        grant: { defense: 1, body: -1 },
+        look: "test_jerkin_look",
+      }),
+      cust_charm: gearItemBlob({
+        tag: "Relic",
+        grant: { attack: 1, relic: -1 },
+        look: "test_charm_look",
+      }),
     },
   }),
-  instantiateEntityBlobs: [
-    gearItemBlob({ tag: "Armament", grant: { bladed: 1, hand: -1 }, look: "test_sword_look" }),
-    gearItemBlob({ tag: "Armament", grant: { blunt: 1, hand: -1 }, look: "test_club_look" }),
-    // Two-handed: consumes BOTH hands, so it and a one-hander cannot both be
-    // applied on a two-hand body — the second wielded stays equipped but its
-    // stats drop out (the capacity-validation case).
-    gearItemBlob({
-      tag: "Armament",
-      grant: { bladed: 1, hand: -2 },
-      look: "test_greatsword_look",
-    }),
-    gearItemBlob({ tag: "Armor", grant: { defense: 1, body: -1 }, look: "test_jerkin_look" }),
-    gearItemBlob({ tag: "Relic", grant: { attack: 1, relic: -1 }, look: "test_charm_look" }),
-  ],
 });
 
 /**
@@ -652,35 +697,39 @@ export const moralePack = (): AssetPack => ({
       }),
     },
   ],
-  newPlayerBlob: blob({    baselineName: "test_mouse",
-    stanceName: "test_standing",
-    location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
-  }),
-  instantiateEntityBlobs: [
-    blob({
-      enemyController: {},      baselineName: "test_giant",
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_mouse",
+      stanceName: "test_standing",
       location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
-    }),
-    blob({
-      path: {
-        destinationEntityId: { tag: "Literal", value: 1000n },
-        destinationKind: { tag: "Interior" },
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
       },
-      offeredActionNames: ["test_move"],
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
     }),
-  ],
+    instantiate: {
+      morale_giant: blob({
+        enemyController: {},
+        baselineName: "test_giant",
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
+        },
+        allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+      }),
+      morale_path: blob({
+        path: {
+          destinationEntityId: { tag: "Literal", value: 1000n },
+          destinationKind: { tag: "Interior" },
+        },
+        offeredActionNames: ["test_move"],
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
+        },
+      }),
+    },
+  }),
 });
 
 /**
@@ -722,20 +771,11 @@ export const connectionsPack = (): AssetPack => ({
           selections: [
             {
               weight: 1,
-              pair: {
-                forward: blob({
-                  offeredActionNames: ["test_move"],
-                  baselineName: "test_path",
-                }),
-                backward: blob({
-                  offeredActionNames: ["test_move"],
-                  baselineName: "test_path",
-                }),
-              },
+              pair: { forwardName: "conn_path", backwardName: "conn_path" },
             },
           ],
         },
-        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blobName: "conn_room" }] },
         checkpointsSelector: { selections: [] },
         containersSelector: { selections: [] },
         minContainerCount: 0,
@@ -798,11 +838,20 @@ export const connectionsPack = (): AssetPack => ({
       pathPair: undefined,
     },
   ],
-  newPlayerBlob: blob({
-    baselineName: "test_walker",
-    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
-    // Seats the fresh player in a generated "near" instance via the invariant.
-    checkpoint: { locationMapName: "test_near", checkpointIndex: 0 },
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_walker",
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+      // Seats the fresh player in a generated "near" instance via the invariant.
+      checkpoint: { locationMapName: "test_near", checkpointIndex: 0 },
+    }),
+    templates: {
+      conn_path: blob({
+        offeredActionNames: ["test_move"],
+        baselineName: "test_path",
+      }),
+      conn_room: blob({}),
+    },
   }),
 });
 
@@ -825,9 +874,9 @@ export const deathPack = (): AssetPack => ({
         minDecorationCount: 0,
         maxDecorationCount: 0,
         pathsSelector: { selections: [] },
-        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blobName: "haven_room" }] },
         checkpointsSelector: {
-          selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
+          selections: [{ weight: 1, blobName: "haven_checkpoint" }],
         },
         containersSelector: { selections: [] },
         minContainerCount: 0,
@@ -916,58 +965,63 @@ export const deathPack = (): AssetPack => ({
   ],
   // Real room ENTITIES: the player-location invariant reseats a player whose
   // room doesn't exist, so a fake Literal room would void the player out the
-  // moment attuning gives them a checkpoint. Named blobs are real entities.
-  namedInstantiateEntityBlobs: [
-    { name: "death_room", value: blob({}) },
-    { name: "brute_room", value: blob({}) },
-  ],
-  newPlayerBlob: blob({
-    baselineName: "test_hero",
-    location: {
-      locationEntityId: { tag: "Named", value: "death_room" },
-      kind: { tag: "Interior" },
+  // moment attuning gives them a checkpoint. The rooms are instantiated first
+  // so the entities placed inside them resolve their "Named" refs.
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_hero",
+      location: {
+        locationEntityId: { tag: "Named", value: "death_room" },
+        kind: { tag: "Interior" },
+      },
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+    }),
+    instantiate: {
+      death_room: blob({}),
+      brute_room: blob({}),
+      death_checkpoint: blob({
+        checkpointObject: {},
+        checkpointBinding: { locationMapName: "test_haven", checkpointIndex: 0 },
+        location: {
+          locationEntityId: { tag: "Named", value: "death_room" },
+          kind: { tag: "Interior" },
+        },
+      }),
+      death_path: blob({
+        path: {
+          destinationEntityId: { tag: "Named", value: "brute_room" },
+          destinationKind: { tag: "Interior" },
+        },
+        offeredActionNames: ["test_move"],
+        location: {
+          locationEntityId: { tag: "Named", value: "death_room" },
+          kind: { tag: "Interior" },
+        },
+      }),
+      death_brute: blob({
+        enemyController: {},
+        baselineName: "test_brute",
+        location: {
+          locationEntityId: { tag: "Named", value: "brute_room" },
+          kind: { tag: "Interior" },
+        },
+        allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+      }),
+      death_vermin: blob({
+        enemyController: {},
+        baselineName: "test_vermin",
+        location: {
+          locationEntityId: { tag: "Named", value: "death_room" },
+          kind: { tag: "Interior" },
+        },
+        allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+      }),
     },
-    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
+    templates: {
+      haven_room: blob({}),
+      haven_checkpoint: blob({ checkpointObject: {} }),
+    },
   }),
-  instantiateEntityBlobs: [
-    blob({
-      checkpointObject: {},
-      checkpointBinding: { locationMapName: "test_haven", checkpointIndex: 0 },
-      location: {
-        locationEntityId: { tag: "Named", value: "death_room" },
-        kind: { tag: "Interior" },
-      },
-    }),
-    blob({
-      path: {
-        destinationEntityId: { tag: "Named", value: "brute_room" },
-        destinationKind: { tag: "Interior" },
-      },
-      offeredActionNames: ["test_move"],
-      location: {
-        locationEntityId: { tag: "Named", value: "death_room" },
-        kind: { tag: "Interior" },
-      },
-    }),
-    blob({
-      enemyController: {},
-      baselineName: "test_brute",
-      location: {
-        locationEntityId: { tag: "Named", value: "brute_room" },
-        kind: { tag: "Interior" },
-      },
-      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
-    }),
-    blob({
-      enemyController: {},
-      baselineName: "test_vermin",
-      location: {
-        locationEntityId: { tag: "Named", value: "death_room" },
-        kind: { tag: "Interior" },
-      },
-      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
-    }),
-  ],
 });
 
 /**
@@ -1016,16 +1070,22 @@ export const divePack = (): AssetPack => ({
       }),
     },
   ],
-  newPlayerBlob: blob({    baselineName: "test_human",
-    stanceName: "test_standing",
-    location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_human",
+      stanceName: "test_standing",
+      location: {
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
+      },
+    }),
+    instantiate: {
+      dive_sword: gearItemBlob({
+        tag: "Armament",
+        grant: { bladed: 1, hand: -1, morale: 3 },
+      }),
     },
   }),
-  instantiateEntityBlobs: [
-    gearItemBlob({ tag: "Armament", grant: { bladed: 1, hand: -1, morale: 3 } }),
-  ],
 });
 
 /**
@@ -1054,31 +1114,33 @@ export const combatPack = ({
       },
     },
   ],
-  newPlayerBlob: blob({
-    location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    actionNames: ["test_attack"],
-    allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
-  }),
-  instantiateEntityBlobs: [
-    blob({
-      enemyController: {},
+  ...entityBlobFields({
+    newPlayer: blob({
       location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-      hp: {
-        hp: enemyHp,
-        mhp: enemyHp,
-        defense: 0,
-        accumulatedDamage: 0,
-        accumulatedHealing: 0,
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
       },
-      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+      actionNames: ["test_attack"],
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
     }),
-  ],
+    instantiate: {
+      combat_enemy: blob({
+        enemyController: {},
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
+        },
+        hp: {
+          hp: enemyHp,
+          mhp: enemyHp,
+          defense: 0,
+          accumulatedDamage: 0,
+          accumulatedHealing: 0,
+        },
+        allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+      }),
+    },
+  }),
 });
 
 /**
@@ -1149,10 +1211,17 @@ export const questPack = (): AssetPack => ({
       }),
     },
   ],
-  namedInstantiateEntityBlobs: [
-    {
-      name: "test_cookie_jar",
-      value: blob({
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_human",
+      location: {
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
+      },
+    }),
+    instantiate: {
+      // Instantiated first so the payoff cookie inside it resolves its ref.
+      test_cookie_jar: blob({
         appearanceFeatureNames: ["test_jar"],
         remainsAppearanceFeatureNames: ["test_shards"],
         hp: {
@@ -1167,57 +1236,49 @@ export const questPack = (): AssetPack => ({
           kind: { tag: "Interior" },
         },
       }),
-    },
-  ],
-  newPlayerBlob: blob({    baselineName: "test_human",
-    location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
+      quest_item_0a: blob({
+        item: {
+          tag: "QuestItem",
+          value: { questName: "test_red_cookies", index: 0 },
+        },
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
+        },
+      }),
+      quest_item_0b: blob({
+        item: {
+          tag: "QuestItem",
+          value: { questName: "test_red_cookies", index: 0 },
+        },
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
+        },
+      }),
+      quest_item_1: blob({
+        item: {
+          tag: "QuestItem",
+          value: { questName: "test_red_cookies", index: 1 },
+        },
+        location: {
+          locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+          kind: { tag: "Interior" },
+        },
+      }),
+      // The payoff cookie hides INSIDE the jar: smashing it spills this out.
+      quest_item_2: blob({
+        item: {
+          tag: "QuestItem",
+          value: { questName: "test_red_cookies", index: 2 },
+        },
+        location: {
+          locationEntityId: { tag: "Named", value: "test_cookie_jar" },
+          kind: { tag: "Interior" },
+        },
+      }),
     },
   }),
-  instantiateEntityBlobs: [
-    blob({
-      item: {
-        tag: "QuestItem",
-        value: { questName: "test_red_cookies", index: 0 },
-      },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
-    blob({
-      item: {
-        tag: "QuestItem",
-        value: { questName: "test_red_cookies", index: 0 },
-      },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
-    blob({
-      item: {
-        tag: "QuestItem",
-        value: { questName: "test_red_cookies", index: 1 },
-      },
-      location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
-    },
-    }),
-    // The payoff cookie hides INSIDE the jar: smashing it spills this out.
-    blob({
-      item: {
-        tag: "QuestItem",
-        value: { questName: "test_red_cookies", index: 2 },
-      },
-      location: {
-        locationEntityId: { tag: "Named", value: "test_cookie_jar" },
-        kind: { tag: "Interior" },
-      },
-    }),
-  ],
 });
 
 /**
@@ -1281,10 +1342,18 @@ export const interactionsPack = (): AssetPack => ({
       value: statBlock({ mhp: 5, hand: 2 }),
     },
   ],
-  namedInstantiateEntityBlobs: [
-    {
-      name: "test_chest",
-      value: blob({
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_looter",
+      location: {
+        locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
+        kind: { tag: "Interior" },
+      },
+    }),
+    instantiate: {
+      // The containers instantiate first so the cookies hidden inside them
+      // resolve their "Named" refs.
+      test_chest: blob({
         offeredActionNames: ["test_open", "test_heave"],
         hp: {
           hp: 2,
@@ -1298,10 +1367,7 @@ export const interactionsPack = (): AssetPack => ({
           kind: { tag: "Interior" },
         },
       }),
-    },
-    {
-      name: "test_sack",
-      value: blob({
+      test_sack: blob({
         offeredActionNames: ["test_dump"],
         hp: {
           hp: 2,
@@ -1315,36 +1381,28 @@ export const interactionsPack = (): AssetPack => ({
           kind: { tag: "Interior" },
         },
       }),
-    },
-  ],
-  newPlayerBlob: blob({    baselineName: "test_looter",
-    location: {
-      locationEntityId: { tag: "Literal", value: SHARED_LOCATION_ID },
-      kind: { tag: "Interior" },
+      inter_cookie_chest: blob({
+        item: {
+          tag: "QuestItem",
+          value: { questName: "test_hidden_cookies", index: 0 },
+        },
+        location: {
+          locationEntityId: { tag: "Named", value: "test_chest" },
+          kind: { tag: "Interior" },
+        },
+      }),
+      inter_cookie_sack: blob({
+        item: {
+          tag: "QuestItem",
+          value: { questName: "test_hidden_cookies", index: 1 },
+        },
+        location: {
+          locationEntityId: { tag: "Named", value: "test_sack" },
+          kind: { tag: "Interior" },
+        },
+      }),
     },
   }),
-  instantiateEntityBlobs: [
-    blob({
-      item: {
-        tag: "QuestItem",
-        value: { questName: "test_hidden_cookies", index: 0 },
-      },
-      location: {
-        locationEntityId: { tag: "Named", value: "test_chest" },
-        kind: { tag: "Interior" },
-      },
-    }),
-    blob({
-      item: {
-        tag: "QuestItem",
-        value: { questName: "test_hidden_cookies", index: 1 },
-      },
-      location: {
-        locationEntityId: { tag: "Named", value: "test_sack" },
-        kind: { tag: "Interior" },
-      },
-    }),
-  ],
 });
 
 /**
@@ -1397,28 +1455,16 @@ export const spawnPack = (): AssetPack => ({
         maxDecorationCount: 0,
         pathsSelector: {
           selections: [
-            { weight: 1, pair: { forward: blob({}), backward: blob({}) } },
-          ],
-        },
-        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
-        checkpointsSelector: { selections: [] },
-        containersSelector: {
-          selections: [
             {
               weight: 1,
-              blob: blob({
-                appearanceFeatureNames: ["test_jar"],
-                remainsAppearanceFeatureNames: ["test_shards"],
-                hp: {
-                  hp: 1,
-                  mhp: 1,
-                  defense: 0,
-                  accumulatedDamage: 0,
-                  accumulatedHealing: 0,
-                },
-              }),
+              pair: { forwardName: "spawn_path", backwardName: "spawn_path" },
             },
           ],
+        },
+        roomsSelector: { selections: [{ weight: 1, blobName: "spawn_room" }] },
+        checkpointsSelector: { selections: [] },
+        containersSelector: {
+          selections: [{ weight: 1, blobName: "spawn_jar" }],
         },
         minContainerCount: 1,
         maxContainerCount: 1,
@@ -1447,7 +1493,7 @@ export const spawnPack = (): AssetPack => ({
         questSpawns: [
           {
             questName: "test_spawn_cookies",
-            itemBlob: blob({ appearanceFeatureNames: ["test_cookie"] }),
+            itemBlobName: "spawn_cookie",
             guaranteedIndexes: [0, 1],
             eligibleIndexes: [2, 3, 4],
             minEligibleCount: 1,
@@ -1459,8 +1505,26 @@ export const spawnPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({
-    checkpoint: { locationMapName: "test_spawn_map", checkpointIndex: 0 },
+  ...entityBlobFields({
+    newPlayer: blob({
+      checkpoint: { locationMapName: "test_spawn_map", checkpointIndex: 0 },
+    }),
+    templates: {
+      spawn_path: blob({}),
+      spawn_room: blob({}),
+      spawn_jar: blob({
+        appearanceFeatureNames: ["test_jar"],
+        remainsAppearanceFeatureNames: ["test_shards"],
+        hp: {
+          hp: 1,
+          mhp: 1,
+          defense: 0,
+          accumulatedDamage: 0,
+          accumulatedHealing: 0,
+        },
+      }),
+      spawn_cookie: blob({ appearanceFeatureNames: ["test_cookie"] }),
+    },
   }),
 });
 
@@ -1538,16 +1602,6 @@ export const bossPack = (): AssetPack => ({
       value: statBlock({ mhp: 10 }),
     },
   ],
-  encounterBlobs: [
-    { name: "test_warden_categoric", value: blob({}) },
-    {
-      name: "test_warden",
-      value: blob({
-        baselineName: "test_warden_base",
-        enemyController: {},
-      }),
-    },
-  ],
   encounters: [
     {
       name: "test_warden_lair",
@@ -1568,16 +1622,13 @@ export const bossPack = (): AssetPack => ({
           selections: [
             {
               weight: 1,
-              pair: {
-                forward: blob({ offeredActionNames: ["test_move"] }),
-                backward: blob({ offeredActionNames: ["test_move"] }),
-              },
+              pair: { forwardName: "boss_path", backwardName: "boss_path" },
             },
           ],
         },
-        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blobName: "boss_room" }] },
         checkpointsSelector: {
-          selections: [{ weight: 1, blob: blob({ checkpointObject: {} }) }],
+          selections: [{ weight: 1, blobName: "boss_checkpoint" }],
         },
         containersSelector: { selections: [] },
         minContainerCount: 0,
@@ -1614,7 +1665,7 @@ export const bossPack = (): AssetPack => ({
             defeatDrop: {
               questName: "test_conquest",
               index: 0,
-              itemBlob: blob({}),
+              itemBlobName: "boss_drop",
             },
           },
         ],
@@ -1622,9 +1673,22 @@ export const bossPack = (): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({
-    baselineName: "test_challenger",
-    checkpoint: { locationMapName: "test_boss_map", checkpointIndex: 0 },
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_challenger",
+      checkpoint: { locationMapName: "test_boss_map", checkpointIndex: 0 },
+    }),
+    templates: {
+      test_warden_categoric: blob({}),
+      test_warden: blob({
+        baselineName: "test_warden_base",
+        enemyController: {},
+      }),
+      boss_path: blob({ offeredActionNames: ["test_move"] }),
+      boss_room: blob({}),
+      boss_checkpoint: blob({ checkpointObject: {} }),
+      boss_drop: blob({}),
+    },
   }),
 });
 
@@ -1668,16 +1732,6 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
       value: statBlock({ mhp: 10, attack: 1 }),
     },
   ],
-  encounterBlobs: [
-    { name: "test_lurker_categoric", value: blob({}) },
-    {
-      name: "test_lurker",
-      value: blob({
-        baselineName: "test_lurker_base",
-        enemyController: {},
-      }),
-    },
-  ],
   encounters: [
     {
       name: "test_ambush",
@@ -1698,14 +1752,11 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
           selections: [
             {
               weight: 1,
-              pair: {
-                forward: blob({ offeredActionNames: ["test_move"] }),
-                backward: blob({ offeredActionNames: ["test_move"] }),
-              },
+              pair: { forwardName: "arena_path", backwardName: "arena_path" },
             },
           ],
         },
-        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blobName: "arena_room" }] },
         checkpointsSelector: { selections: [] },
         containersSelector: { selections: [] },
         minContainerCount: 0,
@@ -1738,9 +1789,20 @@ export const arenaPack = (zoneKind: "Private" | "Common"): AssetPack => ({
       },
     },
   ],
-  newPlayerBlob: blob({
-    baselineName: "test_hero",
-    checkpoint: { locationMapName: "test_arena", checkpointIndex: 0 },
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_hero",
+      checkpoint: { locationMapName: "test_arena", checkpointIndex: 0 },
+    }),
+    templates: {
+      test_lurker_categoric: blob({}),
+      test_lurker: blob({
+        baselineName: "test_lurker_base",
+        enemyController: {},
+      }),
+      arena_path: blob({ offeredActionNames: ["test_move"] }),
+      arena_room: blob({}),
+    },
   }),
 });
 
@@ -1816,35 +1878,17 @@ export const guardedMapPack = ({
           selections: [
             {
               weight: 1,
-              pair: {
-                forward: blob({ offeredActionNames: ["test_move"] }),
-                backward: blob({ offeredActionNames: ["test_move"] }),
-              },
+              pair: { forwardName: "guard_path", backwardName: "guard_path" },
             },
           ],
         },
-        roomsSelector: { selections: [{ weight: 1, blob: blob({}) }] },
+        roomsSelector: { selections: [{ weight: 1, blobName: "guard_room" }] },
         checkpointsSelector: { selections: [] },
         containersSelector: { selections: [] },
         minContainerCount: 0,
         maxContainerCount: 0,
         blockersSelector: {
-          selections: [
-            {
-              weight: 1,
-              blob: blob({
-                appearanceFeatureNames: ["test_boulder"],
-                remainsAppearanceFeatureNames: ["test_rubble"],
-                hp: {
-                  hp: 1,
-                  mhp: 1,
-                  defense: 0,
-                  accumulatedDamage: 0,
-                  accumulatedHealing: 0,
-                },
-              }),
-            },
-          ],
+          selections: [{ weight: 1, blobName: "guard_boulder" }],
         },
         pathVariationTraitNames: [],
         pathVariationCountWeights: new Uint8Array(),
@@ -1873,8 +1917,25 @@ export const guardedMapPack = ({
       },
     },
   ],
-  newPlayerBlob: blob({
-    baselineName: "test_scout",
-    checkpoint: { locationMapName: "test_guarded", checkpointIndex: 0 },
+  ...entityBlobFields({
+    newPlayer: blob({
+      baselineName: "test_scout",
+      checkpoint: { locationMapName: "test_guarded", checkpointIndex: 0 },
+    }),
+    templates: {
+      guard_path: blob({ offeredActionNames: ["test_move"] }),
+      guard_room: blob({}),
+      guard_boulder: blob({
+        appearanceFeatureNames: ["test_boulder"],
+        remainsAppearanceFeatureNames: ["test_rubble"],
+        hp: {
+          hp: 1,
+          mhp: 1,
+          defense: 0,
+          accumulatedDamage: 0,
+          accumulatedHealing: 0,
+        },
+      }),
+    },
   }),
 });

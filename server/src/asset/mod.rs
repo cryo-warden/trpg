@@ -15,7 +15,8 @@ use crate::{
         },
         quest::{quests, Quest},
         baseline::{baselines, Baseline},
-        encounter::{encounter_blobs, encounters, Encounter, EncounterBlob},
+        encounter::{encounters, Encounter},
+        entity_blob_asset::{entity_blob_assets, EntityBlobAssetRow},
         location_map::{
             location_map_connections, location_maps, EncounterIdSample, EncounterIdsSampler,
             LocationMap, LocationMapConnection,
@@ -24,7 +25,6 @@ use crate::{
             location_map_themes, EntityBlobSample, EntityBlobsSampler, LocationMapTheme,
             PathBlobPair, PathBlobPairSample, PathBlobPairsSampler,
         },
-        gear::{gear_blobs, GearBlob},
         r#trait::{traits, Trait},
         trait_palette::{trait_palettes, TraitPalette},
         stance::{special_stances, stances, SpecialStance, SpecialStanceKey, Stance},
@@ -48,10 +48,10 @@ use crate::{
 };
 
 pub mod types;
-pub mod gear;
 pub mod quest;
 pub mod baseline;
 pub mod encounter;
+pub mod entity_blob_asset;
 pub mod location_map;
 pub mod location_map_theme;
 pub mod rng_range;
@@ -60,16 +60,23 @@ pub mod r#trait;
 pub mod trait_palette;
 pub mod weighted_sampler;
 
+/// Key for the process-wide singleton refs stored below. An explicit
+/// single-variant key (not a magic sentinel row) so the new-player selection is
+/// a typed row, and so more singletons can join it without reshaping the table.
 #[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
-pub enum SpecialEntityBlobKey {
+pub enum SingletonBlobKey {
     NewPlayer,
 }
 
-#[table(accessor = special_entity_blobs)]
-struct SpecialEntityBlob {
+/// Which unified-table blob is the new-player template. Storing the ID (not the
+/// blob) keeps the blob body in ONE place — the unified table — so a re-push
+/// that rewrites that blob is reflected here with no extra work. Its PRESENCE is
+/// also the "instance already bootstrapped" signal (see push_assets is_update).
+#[table(accessor = singleton_blob_refs)]
+struct SingletonBlobRef {
     #[primary_key]
-    key: SpecialEntityBlobKey,
-    blob: EntityBlob,
+    key: SingletonBlobKey,
+    blob_id: u32,
 }
 
 /// Every Record-authored kind arrives as a Vec of name+value pairs — the
@@ -82,10 +89,6 @@ pub struct AssetPack {
     baselines: Vec<NamedGroupedBlockAsset>,
     traits: Vec<NamedGroupedBlockAsset>,
     trait_palettes: Vec<NamedTraitPaletteAsset>,
-    /// Gear TEMPLATES: ordinary entity blobs, each carrying its item kind, its
-    /// Equippable grant, and its own appearance. Stored name-keyed so players
-    /// spawn owned copies and creatures reference them for summed NPC equipment.
-    gear_blobs: Vec<NamedEntityBlobAsset>,
     stances: Vec<NamedStanceAsset>,
     quests: Vec<NamedQuestAsset>,
     /// Which stance a dive lands in; a pack without morale-relevant content
@@ -107,7 +110,6 @@ pub struct AssetPack {
     /// The COMMON move verb, registered so the bar menus can give it a
     /// stable configured slot (paths still decide what they offer).
     move_action_name: Option<String>,
-    encounter_blobs: Vec<NamedEntityBlobAsset>,
     encounters: Vec<NamedEncounterAsset>,
     location_map_themes: Vec<NamedLocationMapThemeAsset>,
     location_maps: Vec<NamedLocationMapAsset>,
@@ -115,11 +117,19 @@ pub struct AssetPack {
     /// Cross-map connections: a join list, not per-map fields.
     connections: Vec<types::LocationMapConnectionAsset>,
 
-    named_instantiate_entity_blobs: Vec<NamedEntityBlobAsset>,
+    /// The ONE unified store of entity-blob TEMPLATES, name-keyed. Every kind of
+    /// blob (gear, encounter members, decorations/rooms/paths/etc., quest items,
+    /// the new-player template, and the world entities instantiated at push)
+    /// arrives here; every cross-reference resolves by NAME against it.
+    entity_blobs: Vec<NamedEntityBlobAsset>,
 
-    instantiate_entity_blobs: Vec<EntityBlobAsset>,
+    /// Names (into `entity_blobs`) of blobs to INSTANTIATE as world entities at
+    /// push. Each is registered under its name so a re-push imprints onto the
+    /// existing entity rather than duplicating it.
+    instantiate_entity_blob_names: Vec<String>,
 
-    new_player_blob: EntityBlobAsset,
+    /// Name (into `entity_blobs`) of the new-player template.
+    new_player_blob_name: String,
 }
 
 /// Match a kind's authored names against its existing rows: a matched name
@@ -169,16 +179,19 @@ struct AssetNameMaps {
     baselines: HashMap<String, u32>,
     traits: HashMap<String, u32>,
     trait_palettes: HashMap<String, u32>,
-    // Gear blobs (name -> id). All three creature reference fields
-    // (armament_names / armor_name / relic_names) resolve against this one map;
-    // the equip SLOT is decided by which field, not by a per-kind table.
-    gear: HashMap<String, u32>,
+    // The ONE unified entity-blob map (name -> id). ALL blob references resolve
+    // against it: a creature's armament_names / armor_name / relic_names (the
+    // equip SLOT is decided by which field, not by a per-kind table), an
+    // encounter's members, a theme sampler's blob, a quest's item, the
+    // new-player template, and the instantiate-at-push names.
+    entity_blobs: HashMap<String, u32>,
     stances: HashMap<String, u32>,
     quests: HashMap<String, u32>,
     location_maps: HashMap<String, u32>,
-    // Each gear blob's resolved Equippable GRANT, keyed by gear-blob id — filled
-    // as the gear blobs are resolved (see the loop below). Lets a creature blob
-    // sum its NPC EquipmentBlobbed without re-resolving each referenced gear.
+    // Each blob's resolved Equippable GRANT, keyed by its unified-table id —
+    // filled in a PRE-SCAN pass over every entity blob's authored equippable,
+    // BEFORE any creature blob resolves, so a creature can sum its NPC
+    // EquipmentBlobbed from referenced gear regardless of authoring order.
     gear_equippables: HashMap<u32, EquippableComponentBlob>,
 }
 
@@ -240,7 +253,7 @@ fn resolve_entity_blob(
             gear_names.extend(names);
         }
         for n in gear_names {
-            let id = resolve_name(&maps.gear, "gear", n)?;
+            let id = resolve_name(&maps.entity_blobs, "gear", n)?;
             if let Some(eq) = maps.gear_equippables.get(&id) {
                 summed.stats += &eq.stats;
                 summed.appearance += &eq.appearance;
@@ -304,7 +317,7 @@ fn resolve_entity_blob(
                 .map(|names| {
                     names
                         .iter()
-                        .map(|n| resolve_name(&maps.gear, "gear", n))
+                        .map(|n| resolve_name(&maps.entity_blobs, "gear", n))
                         .collect::<Result<_, _>>()
                 })
                 .transpose()?
@@ -312,7 +325,7 @@ fn resolve_entity_blob(
             let worn_armor_id: Option<u32> = author
                 .armor_name
                 .as_ref()
-                .map(|n| resolve_name(&maps.gear, "gear", n))
+                .map(|n| resolve_name(&maps.entity_blobs, "gear", n))
                 .transpose()?;
             let worn_relic_ids: Vec<u32> = author
                 .relic_names
@@ -320,7 +333,7 @@ fn resolve_entity_blob(
                 .map(|names| {
                     names
                         .iter()
-                        .map(|n| resolve_name(&maps.gear, "gear", n))
+                        .map(|n| resolve_name(&maps.entity_blobs, "gear", n))
                         .collect::<Result<_, _>>()
                 })
                 .transpose()?
@@ -531,7 +544,7 @@ fn resolve_entity_blobs_sampler(
             .map(|s| {
                 Ok::<_, String>(EntityBlobSample {
                     weight: s.weight,
-                    blob: resolve_entity_blob(s.blob, maps)?,
+                    blob_id: resolve_name(&maps.entity_blobs, "entity blob", &s.blob_name)?,
                 })
             })
             .collect::<Result<_, _>>()?,
@@ -669,10 +682,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ctx.db.trait_palettes().iter().map(|p| (p.name, p.id)),
             asset_pack.trait_palettes.iter().map(|p| &p.name),
         )?,
-        gear: match_names(
-            "gear",
-            ctx.db.gear_blobs().iter().map(|b| (b.name, b.id)),
-            asset_pack.gear_blobs.iter().map(|b| &b.name),
+        entity_blobs: match_names(
+            "entity blob",
+            ctx.db.entity_blob_assets().iter().map(|b| (b.name, b.id)),
+            asset_pack.entity_blobs.iter().map(|b| &b.name),
         )?,
         gear_equippables: HashMap::new(),
         stances: match_names(
@@ -804,26 +817,45 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    // Gear is authored as ordinary entity blobs; resolve each and store it
-    // name-keyed so players spawn owned copies at provisioning and creatures can
-    // sum their NPC equipment from it. Index each resolved Equippable grant by
-    // id for that sum. Ordering matters: gear blobs resolve before any blob that
-    // may REFERENCE them (encounters, named/anonymous blobs, the new-player blob).
-    for b in asset_pack.gear_blobs {
-        let id = maps.gear[&b.name];
-        let blob = resolve_entity_blob(b.value, &maps)?;
-        if let Some(equippable) = blob.equippable.clone() {
-            maps.gear_equippables.insert(id, equippable);
+    // PASS 1 (pre-scan): resolve EVERY entity blob's authored Equippable grant
+    // and index it by id BEFORE any blob resolves its creature EquipmentBlobbed
+    // sum. A creature may reference a gear blob that appears anywhere in the
+    // unified list (or nowhere in particular order), so the summed NPC equipment
+    // (see resolve_entity_blob) must be able to look up any referenced blob's
+    // grant regardless of authoring order.
+    for b in &asset_pack.entity_blobs {
+        if let Some(block) = b.value.equippable.as_ref() {
+            let id = maps.entity_blobs[&b.name];
+            let g = resolve_grouped_block(block.clone(), &maps)?;
+            maps.gear_equippables.insert(
+                id,
+                EquippableComponentBlob {
+                    stats: g.stats,
+                    appearance: g.appearance,
+                    body_capacity: g.body_capacity,
+                    readiness: g.readiness,
+                },
+            );
         }
-        let row = GearBlob {
+    }
+
+    // PASS 2: resolve each blob fully and store it name-keyed in the ONE unified
+    // table. Players spawn owned copies (gear), creatures sum their NPC
+    // equipment (via the pre-scanned grants above), map generation and quest
+    // layers fetch by id, and the instantiate/new-player steps below reference
+    // these same rows by name.
+    for b in asset_pack.entity_blobs {
+        let id = maps.entity_blobs[&b.name];
+        let blob = resolve_entity_blob(b.value, &maps)?;
+        let row = EntityBlobAssetRow {
             id,
             name: b.name,
             blob,
         };
-        if ctx.db.gear_blobs().id().find(id).is_some() {
-            ctx.db.gear_blobs().id().update(row);
+        if ctx.db.entity_blob_assets().id().find(id).is_some() {
+            ctx.db.entity_blob_assets().id().update(row);
         } else {
-            ctx.db.gear_blobs().insert(row);
+            ctx.db.entity_blob_assets().insert(row);
         }
     }
 
@@ -927,25 +959,6 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    let encounter_blob_ids = match_names(
-        "encounter blob",
-        ctx.db.encounter_blobs().iter().map(|b| (b.name, b.id)),
-        asset_pack.encounter_blobs.iter().map(|b| &b.name),
-    )?;
-    for b in asset_pack.encounter_blobs {
-        let id = encounter_blob_ids[&b.name];
-        let row = EncounterBlob {
-            id,
-            name: b.name,
-            blob: resolve_entity_blob(b.value, &maps)?,
-        };
-        if ctx.db.encounter_blobs().id().find(id).is_some() {
-            ctx.db.encounter_blobs().id().update(row);
-        } else {
-            ctx.db.encounter_blobs().insert(row);
-        }
-    }
-
     let encounter_ids = match_names(
         "encounter",
         ctx.db.encounters().iter().map(|e| (e.name, e.id)),
@@ -957,15 +970,15 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             id,
             name: e.name,
             categoric_blob_id: resolve_name(
-                &encounter_blob_ids,
-                "encounter blob",
+                &maps.entity_blobs,
+                "entity blob",
                 &e.value.categoric_blob_name,
             )?,
             blob_ids: e
                 .value
                 .blob_names
                 .iter()
-                .map(|n| resolve_name(&encounter_blob_ids, "encounter blob", n))
+                .map(|n| resolve_name(&maps.entity_blobs, "entity blob", n))
                 .collect::<Result<_, _>>()?,
         };
         if ctx.db.encounters().id().find(id).is_some() {
@@ -1001,8 +1014,16 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                         Ok::<_, String>(PathBlobPairSample {
                             weight: s.weight,
                             pair: PathBlobPair {
-                                forward: resolve_entity_blob(s.pair.forward, &maps)?,
-                                backward: resolve_entity_blob(s.pair.backward, &maps)?,
+                                forward_id: resolve_name(
+                                    &maps.entity_blobs,
+                                    "entity blob",
+                                    &s.pair.forward_name,
+                                )?,
+                                backward_id: resolve_name(
+                                    &maps.entity_blobs,
+                                    "entity blob",
+                                    &s.pair.backward_name,
+                                )?,
                             },
                         })
                     })
@@ -1069,10 +1090,10 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         // ONE row per crossing now (materialize_connection builds both
         // directions at once): the authored pair rides along whole — forward is
         // the exit->destination look, backward the destination->exit one.
-        let (forward_blob, backward_blob) = match connection.path_pair {
+        let (forward_path_blob_id, backward_path_blob_id) = match connection.path_pair {
             Some(pair) => (
-                Some(resolve_entity_blob(pair.forward, &maps)?),
-                Some(resolve_entity_blob(pair.backward, &maps)?),
+                Some(resolve_name(&maps.entity_blobs, "entity blob", &pair.forward_name)?),
+                Some(resolve_name(&maps.entity_blobs, "entity blob", &pair.backward_name)?),
             ),
             None => (None, None),
         };
@@ -1085,8 +1106,8 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 exit_anchor: connection.exit_anchor,
                 destination_anchor: connection.destination_anchor,
                 both_ways: connection.both_ways,
-                forward_path_blob: forward_blob,
-                backward_path_blob: backward_blob,
+                forward_path_blob_id,
+                backward_path_blob_id,
             });
         next_connection_id += 1;
     }
@@ -1128,7 +1149,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             spawnable.union_with(&eligible_indexes);
             quest_spawns.push(crate::quest::QuestSpawn {
                 quest_id,
-                item_blob: resolve_entity_blob(spawn.item_blob, &maps)?,
+                item_blob_id: resolve_name(
+                    &maps.entity_blobs,
+                    "entity blob",
+                    &spawn.item_blob_name,
+                )?,
                 guaranteed_indexes,
                 eligible_indexes,
                 min_eligible_count: spawn.min_eligible_count,
@@ -1158,7 +1183,11 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                     Ok::<_, String>(crate::quest::QuestDefeatDrop {
                         quest_id: drop_quest_id,
                         index: drop.index,
-                        item_blob: resolve_entity_blob(drop.item_blob, &maps)?,
+                        item_blob_id: resolve_name(
+                            &maps.entity_blobs,
+                            "entity blob",
+                            &drop.item_blob_name,
+                        )?,
                     })
                 })
                 .transpose()?;
@@ -1224,16 +1253,14 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
         }
     }
 
-    // Named blobs first: anonymous blobs may reference them by name. A name
-    // already in the registry means the entity exists: the blob is imprinted
-    // onto it (components upserted) rather than instantiated again. And like
-    // every other named kind, an existing registration missing from the push
-    // is an error.
-    let pushed_names: std::collections::HashSet<&String> = asset_pack
-        .named_instantiate_entity_blobs
-        .iter()
-        .map(|nb| &nb.name)
-        .collect();
+    // World entities to instantiate at push, each named by an entity-blob-asset
+    // name. Every instantiation is NAMED: the world entity is registered under
+    // its blob-asset name, so a re-push imprints the (possibly rewritten) blob
+    // onto the existing entity rather than duplicating it — no anonymous path,
+    // and thus no need for an update-time duplication guard. Like every other
+    // named kind, a registration missing from the push is an error.
+    let pushed_names: std::collections::HashSet<&String> =
+        asset_pack.instantiate_entity_blob_names.iter().collect();
     for row in ctx.db.named_entities().iter() {
         if !pushed_names.contains(&row.name) {
             return Err(format!(
@@ -1242,9 +1269,16 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
             ));
         }
     }
-    for nb in asset_pack.named_instantiate_entity_blobs {
-        let blob = resolve_entity_blob(nb.value, &maps)?;
-        match ctx.db.named_entities().name().find(nb.name.to_owned()) {
+    for name in &asset_pack.instantiate_entity_blob_names {
+        let id = resolve_name(&maps.entity_blobs, "entity blob", name)?;
+        let blob = ctx
+            .db
+            .entity_blob_assets()
+            .id()
+            .find(id)
+            .ok_or_else(|| format!("Entity blob \"{}\" vanished during push.", name))?
+            .blob;
+        match ctx.db.named_entities().name().find(name.to_owned()) {
             Some(registered) => {
                 ctx.ecs()
                     .find(registered.entity_id)
@@ -1254,36 +1288,26 @@ fn push_assets(ctx: &ReducerContext, asset_pack: AssetPack) -> Result<(), String
                 ctx.ecs()
                     .new()
                     .instantiate_blob(blob, &ctx.ecs().instantiation_scope())?
-                    .register_name(nb.name)?;
+                    .register_name(name.to_owned())?;
             }
         }
     }
 
-    // Anonymous blobs have no name to match, so on an update push there is no
-    // way to tell "already instantiated" from "new" — instantiating would
-    // silently duplicate world entities. Fail instead: recurring content must
-    // be named.
-    if is_update && !asset_pack.instantiate_entity_blobs.is_empty() {
-        return Err(
-            "Anonymous instantiate blobs cannot be re-pushed; name them to make updates addressable."
-                .to_string(),
-        );
-    }
-    for b in asset_pack.instantiate_entity_blobs {
-        ctx.ecs().new().instantiate_blob(
-            resolve_entity_blob(b, &maps)?,
-            &ctx.ecs().instantiation_scope(),
-        )?;
-    }
-
-    let new_player_blob = SpecialEntityBlob {
-        key: SpecialEntityBlobKey::NewPlayer,
-        blob: resolve_entity_blob(asset_pack.new_player_blob, &maps)?,
+    // Record WHICH unified-table blob is the new-player template (by id, not by
+    // value — the body lives once, in the unified table). Its presence is the
+    // is_update signal on the next push.
+    let new_player_ref = SingletonBlobRef {
+        key: SingletonBlobKey::NewPlayer,
+        blob_id: resolve_name(
+            &maps.entity_blobs,
+            "entity blob",
+            &asset_pack.new_player_blob_name,
+        )?,
     };
     if is_update {
-        ctx.db.special_entity_blobs().key().update(new_player_blob);
+        ctx.db.singleton_blob_refs().key().update(new_player_ref);
     } else {
-        ctx.db.special_entity_blobs().insert(new_player_blob);
+        ctx.db.singleton_blob_refs().insert(new_player_ref);
     }
 
     // The push changed the truth every per-entity derivation was computed
@@ -1357,9 +1381,10 @@ pub trait ReducerContextExtension {
 impl ReducerContextExtension for ReducerContext {
     fn get_new_player_blob(&self) -> Option<EntityBlob> {
         self.db
-            .special_entity_blobs()
+            .singleton_blob_refs()
             .key()
-            .find(SpecialEntityBlobKey::NewPlayer)
-            .map(|b| b.blob)
+            .find(SingletonBlobKey::NewPlayer)
+            .and_then(|r| self.db.entity_blob_assets().id().find(r.blob_id))
+            .map(|row| row.blob)
     }
 }

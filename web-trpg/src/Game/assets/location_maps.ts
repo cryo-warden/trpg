@@ -4,6 +4,7 @@ import {
   LocationMapAsset,
   LocationMapConnectionAsset,
   LocationMapThemeAsset,
+  PathBlobPairAsset,
   QuestRoomRole,
   QuestSpawnAsset,
   ZoneKind,
@@ -18,24 +19,6 @@ import { RELICS } from "./relics";
 import { TraitName } from "./traits";
 import { gearLoot } from "./gear";
 import { QuestName } from "./quests";
-
-// The visible checkpoints: fortune-telling scenery placed in every map's
-// guaranteed-safe entrance room. Attuning to one binds where you wake from
-// the death-trance.
-const CHECKPOINT_BLOBS = {
-  boneDice: blob({
-    checkpointObject: {},
-    appearanceFeatureNames: ["bone", "dice"],
-  }),
-  scryingBowl: blob({
-    checkpointObject: {},
-    appearanceFeatureNames: ["scrying", "bowl"],
-  }),
-  fateDeck: blob({
-    checkpointObject: {},
-    appearanceFeatureNames: ["fate", "deck"],
-  }),
-};
 
 /** A physical object's toughness, as an hp component. Anything physical can
  * break if you hit it hard enough — but a non-actor's HP bar stays hidden
@@ -69,19 +52,6 @@ const container = (
     hp: durability(2, 1),
   });
 
-const jar = container(["jar"], ["ceramic_shards"]);
-const urn = container(["urn"], ["ceramic_shards"], ["dump"]);
-const crate = container(["crate"], ["scrap_wood"]);
-const chest = container(["chest"], ["scrap_wood"], ["open"]);
-const barrel = container(["barrel"], ["scrap_wood"], ["open", "dump"]);
-const rack = container(["rack"], ["scrap_wood"]);
-const cabinet = container(["cabinet"], ["scrap_wood"], ["open"]);
-const strongbox = container(["strongbox"], ["scrap_wood"], ["open"]);
-const basket = container(["basket"], ["scrap_wood"], ["dump"]);
-const sack = container(["sack"], ["torn_cloth"], ["dump"]);
-const hollowStump = container(["hollow", "stump"], ["scrap_wood"]);
-const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
-
 /** A path presentation, OFFERING its crossing verbs: movement belongs to
  * the path, not the walker — a crack offers squeeze, a chasm climb_down,
  * everything else the plain move. No body knows "move" innately.
@@ -103,15 +73,6 @@ const pathBlob = (
     traitNames,
   });
 
-/** A MATCHED pair of path presentations: the two directions between two
- * rooms are one authored fact — an opening pairs with an opening, a
- * chasm with the rock wall climbed back up. Omit `backward` for the
- * symmetric case. */
-const pathPair = (
-  forward: EntityBlobAsset,
-  backward: EntityBlobAsset = forward,
-) => ({ forward, backward });
-
 /** Every map's rooms nest into the world's open air via its
  * roomLocation field: EXTERIOR maps see the sky through the edge chain;
  * INTERIOR maps nest without the view. */
@@ -123,13 +84,6 @@ const INDOOR: LocationMapAsset["roomLocation"] = {
   locationName: "world_surface",
   kind: { tag: "Interior" },
 };
-
-// Path guards: the same breakable shape, standing in for a blocked way.
-const boulderGuard = container(["boulder"], ["rubble"]);
-const barricadeGuard = container(["barricade"], ["scrap_wood"]);
-const thicketGuard = container(["thicket"], ["scrap_wood"]);
-const crumblingWallGuard = container(["crumbling", "wall"], ["rubble"]);
-const crumblingPillarGuard = container(["crumbling", "pillar"], ["rubble"]);
 
 /** The shared palette of optional path-variation TRAITS rolled onto paths at
  * generation, with a weighted count: mostly one, rarely two, almost never
@@ -150,6 +104,197 @@ const PATH_VARIATION_TRAIT_NAMES: TraitName[] = [
 ];
 const PATH_VARIATION_COUNT_WEIGHTS = new Uint8Array([10, 75, 12, 3]);
 
+/** A loot decoration: a takeable item entity placed among the scenery, built
+ * from a gear template plus a fresh look (see {@link gearLoot}). */
+const loot = gearLoot;
+
+/** EVERY location-map blob TEMPLATE, formerly inline in the theme selectors,
+ * map quest spawns, and connections — now named so it can live in the single
+ * unified entity-blob table (see bundle/entityBlobs). A blob reused across
+ * themes (jar, a trail path, a checkpoint) is ONE entry referenced by name from
+ * every use. Behavior is unchanged: the same blobs, wired the same way. */
+export const LOCATION_MAP_BLOBS = {
+  // The visible checkpoints: fortune-telling scenery placed in every map's
+  // guaranteed-safe entrance room. Attuning to one binds where you wake from
+  // the death-trance.
+  bone_dice: blob({
+    checkpointObject: {},
+    appearanceFeatureNames: ["bone", "dice"],
+  }),
+  scrying_bowl: blob({
+    checkpointObject: {},
+    appearanceFeatureNames: ["scrying", "bowl"],
+  }),
+  fate_deck: blob({
+    checkpointObject: {},
+    appearanceFeatureNames: ["fate", "deck"],
+  }),
+
+  // Breakable loot containers, reused across themes.
+  jar: container(["jar"], ["ceramic_shards"]),
+  urn: container(["urn"], ["ceramic_shards"], ["dump"]),
+  crate: container(["crate"], ["scrap_wood"]),
+  chest: container(["chest"], ["scrap_wood"], ["open"]),
+  barrel: container(["barrel"], ["scrap_wood"], ["open", "dump"]),
+  rack: container(["rack"], ["scrap_wood"]),
+  cabinet: container(["cabinet"], ["scrap_wood"], ["open"]),
+  strongbox: container(["strongbox"], ["scrap_wood"], ["open"]),
+  basket: container(["basket"], ["scrap_wood"], ["dump"]),
+  sack: container(["sack"], ["torn_cloth"], ["dump"]),
+  hollow_stump: container(["hollow", "stump"], ["scrap_wood"]),
+  hollow_log: container(["hollow", "log"], ["scrap_wood"]),
+
+  // Path guards: the same breakable shape, standing in for a blocked way.
+  boulder_guard: container(["boulder"], ["rubble"]),
+  barricade_guard: container(["barricade"], ["scrap_wood"]),
+  thicket_guard: container(["thicket"], ["scrap_wood"]),
+  crumbling_wall_guard: container(["crumbling", "wall"], ["rubble"]),
+  crumbling_pillar_guard: container(["crumbling", "pillar"], ["rubble"]),
+
+  // Path presentations, reused across themes where identical.
+  path_trail: pathBlob("trail"),
+  path_path: pathBlob("path"),
+  path_opening: pathBlob("opening"),
+  path_hole: pathBlob("hole"),
+  path_chasm: pathBlob("chasm", ["climb_down"]),
+  path_rock_wall: pathBlob("rock_wall", ["climb_up"]),
+  path_crack: pathBlob("crack", ["squeeze"]),
+  path_archway: pathBlob("archway"),
+  path_gate: pathBlob("gate"),
+  path_corridor: pathBlob("corridor"),
+  path_stair_down: pathBlob("stair", ["climb_down"], ["crumbling"]),
+  path_stair_up: pathBlob("stair", ["climb_up"], ["crumbling"]),
+  path_stair: pathBlob("stair"),
+  path_cave_mouth_dark: pathBlob("cave_mouth", ["move"], ["dark"]),
+  path_cave_mouth_bright: pathBlob("cave_mouth", ["move"], ["bright"]),
+
+  // Rooms, reused across themes where identical (grove/clearing).
+  room_enclosure: blob({ appearanceFeatureNames: ["enclosure"] }),
+  room_tent: blob({ appearanceFeatureNames: ["tent"] }),
+  room_chamber: blob({ appearanceFeatureNames: ["chamber"] }),
+  room_dome: blob({ appearanceFeatureNames: ["dome"] }),
+  room_cavern: blob({ appearanceFeatureNames: ["cavern"] }),
+  room_clearing: blob({ appearanceFeatureNames: ["clearing"] }),
+  room_grove: blob({ appearanceFeatureNames: ["grove"] }),
+  room_thicket: blob({ appearanceFeatureNames: ["thicket"] }),
+  room_hall: blob({ appearanceFeatureNames: ["hall"] }),
+  room_courtyard: blob({ appearanceFeatureNames: ["courtyard"] }),
+  room_crypt: blob({ appearanceFeatureNames: ["crypt"] }),
+  room_shrine: blob({ appearanceFeatureNames: ["shrine"] }),
+  room_sanctum: blob({ appearanceFeatureNames: ["sanctum"] }),
+  room_vault: blob({ appearanceFeatureNames: ["vault"] }),
+
+  // Scenery decorations (baseline noun, optional variation trait).
+  campfire: blob({ baselineName: "campfire" }),
+  bedroll: blob({ baselineName: "bedroll" }),
+  banner: blob({ baselineName: "banner" }),
+  training_dummy: blob({ baselineName: "dummy", traitNames: ["training"] }),
+  rock: blob({ baselineName: "rock" }),
+  stone: blob({ baselineName: "stone" }),
+  boulder: blob({ baselineName: "boulder" }),
+  grass: blob({ baselineName: "grass" }),
+  stump: blob({ baselineName: "stump" }),
+  log: blob({ baselineName: "log" }),
+  mossy_rock: blob({ baselineName: "rock", traitNames: ["mossy"] }),
+  tree: blob({ baselineName: "tree" }),
+  huge_tree: blob({ baselineName: "tree", traitNames: ["huge"] }),
+  rubble: blob({ baselineName: "rubble" }),
+  bones: blob({ baselineName: "bones" }),
+  brazier: blob({ baselineName: "brazier" }),
+  pillar: blob({ baselineName: "pillar" }),
+  smoldering_brazier: blob({ baselineName: "brazier", traitNames: ["smoldering"] }),
+  frozen_altar: blob({ baselineName: "altar", traitNames: ["frozen"] }),
+  crackling_pillar: blob({ baselineName: "pillar", traitNames: ["crackling"] }),
+
+  // Loot decorations: REAL takeable gear item entities. A look reused across
+  // themes (a plain club, a smoldering charm) is ONE entry.
+  loot_club: loot(ARMAMENTS.club, { appearanceFeatureNames: ["club"] }),
+  loot_sword: loot(ARMAMENTS.sword, {
+    // A differentiable item takes its whole look through the pipeline: the noun
+    // is a baseline (max HP 0 → no HP), the rolled condition a trait.
+    baselineName: "sword",
+    differentiable: { traitPaletteName: "weapon_variety" },
+  }),
+  loot_dagger: loot(ARMAMENTS.dagger, { appearanceFeatureNames: ["dagger"] }),
+  loot_shield: loot(ARMAMENTS.shield, {
+    baselineName: "shield",
+    differentiable: { traitPaletteName: "weapon_variety" },
+  }),
+  loot_spear: loot(ARMAMENTS.spear, { appearanceFeatureNames: ["spear"] }),
+  loot_axe: loot(ARMAMENTS.axe, { appearanceFeatureNames: ["axe"] }),
+  loot_staff: loot(ARMAMENTS.staff, {
+    baselineName: "staff",
+    differentiable: { traitPaletteName: "weapon_variety" },
+  }),
+  loot_leather_jerkin: loot(ARMORS.leather_jerkin, {
+    appearanceFeatureNames: ["leather", "jerkin"],
+  }),
+  loot_ember_charm: loot(RELICS.ember_charm, {
+    appearanceFeatureNames: ["smoldering", "charm"],
+  }),
+  loot_storm_bead: loot(RELICS.storm_bead, {
+    appearanceFeatureNames: ["crackling", "bead"],
+  }),
+  loot_rusty_sword: loot(ARMAMENTS.sword, {
+    appearanceFeatureNames: ["rusty", "sword"],
+  }),
+  loot_rusty_axe: loot(ARMAMENTS.axe, {
+    appearanceFeatureNames: ["rusty", "axe"],
+  }),
+  loot_ancient_shield: loot(ARMAMENTS.shield, {
+    appearanceFeatureNames: ["ancient", "shield"],
+  }),
+  loot_rusty_hauberk: loot(ARMORS.chain_hauberk, {
+    appearanceFeatureNames: ["rusty", "hauberk"],
+  }),
+  loot_bone_idol: loot(RELICS.bone_idol, {
+    appearanceFeatureNames: ["bone", "idol"],
+  }),
+  loot_gleaming_staff: loot(ARMAMENTS.staff, {
+    appearanceFeatureNames: ["gleaming", "staff"],
+  }),
+  loot_frost_talisman: loot(RELICS.frost_talisman, {
+    appearanceFeatureNames: ["frozen", "talisman"],
+  }),
+  loot_sun_medallion: loot(RELICS.sun_medallion, {
+    appearanceFeatureNames: ["gleaming", "medallion"],
+  }),
+  loot_traveler_robe: loot(ARMORS.traveler_robe, {
+    appearanceFeatureNames: ["ancient", "robe"],
+  }),
+
+  // Quest cookies: the window-spawned pair, plus the boss's sparkling drop.
+  cookie_red: blob({ appearanceFeatureNames: ["red_cookie"] }),
+  cookie_blue: blob({ appearanceFeatureNames: ["blue_cookie"] }),
+  sparkling_red_cookie: blob({
+    appearanceFeatureNames: ["sparkling", "red_cookie"],
+  }),
+} satisfies Record<string, EntityBlobAsset>;
+
+export type LocationMapBlobName = keyof typeof LOCATION_MAP_BLOBS;
+
+/** A weighted blob selection, referencing a named location-map blob. Used by
+ * the decoration/room/checkpoint/container/blocker selectors. */
+const sel = (weight: number, blobName: LocationMapBlobName) => ({
+  weight,
+  blobName,
+});
+
+/** A MATCHED pair of path presentations by name: the two directions between two
+ * rooms are one authored fact — an opening pairs with an opening, a chasm with
+ * the rock wall climbed back up. Omit `backwardName` for the symmetric case. */
+const pathPairNames = (
+  forwardName: LocationMapBlobName,
+  backwardName: LocationMapBlobName = forwardName,
+): PathBlobPairAsset => ({ forwardName, backwardName });
+
+/** A weighted path-pair selection for a theme's pathsSelector. */
+const pathSel = (
+  weight: number,
+  forwardName: LocationMapBlobName,
+  backwardName?: LocationMapBlobName,
+) => ({ weight, pair: pathPairNames(forwardName, backwardName) });
+
 export const LOCATION_MAP_THEMES = {
   encampment: {
     // The training ground: dummies to hit (hp makes scenery attackable) and
@@ -159,233 +304,148 @@ export const LOCATION_MAP_THEMES = {
       selections: [
         // Camp scenery, not cave rubble: the exterior training ground reads
         // as a camp.
-        { weight: 5, blob: blob({ baselineName: "campfire" }) },
-        { weight: 3, blob: blob({ baselineName: "bedroll" }) },
-        { weight: 2, blob: blob({ baselineName: "banner" }) },
-        {
-          weight: 4,
-          blob: blob({ baselineName: "dummy", traitNames: ["training"] }),
-        },
-        {
-          weight: 2,
-          blob: gearLoot(ARMAMENTS.club, { appearanceFeatureNames: ["club"] }),
-        },
-        {
-          weight: 2,
-          blob: gearLoot(ARMAMENTS.sword, {
-            // A differentiable item takes its whole look through the pipeline:
-            // the noun is a baseline (max HP 0 → no HP), the rolled condition a
-            // trait. Overwritten from baseline + traits; you take it, not fight
-            // it.
-            baselineName: "sword",
-            differentiable: { traitPaletteName: "weapon_variety" },
-          }),
-        },
-        {
-          weight: 2,
-          blob: gearLoot(ARMAMENTS.dagger, { appearanceFeatureNames: ["dagger"] }),
-        },
-        {
-          weight: 2,
-          blob: gearLoot(ARMAMENTS.shield, {
-            baselineName: "shield",
-            differentiable: { traitPaletteName: "weapon_variety" },
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.spear, { appearanceFeatureNames: ["spear"] }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.axe, { appearanceFeatureNames: ["axe"] }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.staff, {
-            baselineName: "staff",
-            differentiable: { traitPaletteName: "weapon_variety" },
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMORS.leather_jerkin, {
-            appearanceFeatureNames: ["leather", "jerkin"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(RELICS.ember_charm, {
-            appearanceFeatureNames: ["smoldering", "charm"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(RELICS.storm_bead, {
-            appearanceFeatureNames: ["crackling", "bead"],
-          }),
-        },
+        sel(5, "campfire"),
+        sel(3, "bedroll"),
+        sel(2, "banner"),
+        sel(4, "training_dummy"),
+        sel(2, "loot_club"),
+        sel(2, "loot_sword"),
+        sel(2, "loot_dagger"),
+        sel(2, "loot_shield"),
+        sel(1, "loot_spear"),
+        sel(1, "loot_axe"),
+        sel(1, "loot_staff"),
+        sel(1, "loot_leather_jerkin"),
+        sel(1, "loot_ember_charm"),
+        sel(1, "loot_storm_bead"),
       ],
     },
     minDecorationCount: 4,
     maxDecorationCount: 7,
     pathsSelector: {
-      selections: [
-        { weight: 5, pair: pathPair(pathBlob("trail")) },
-        { weight: 4, pair: pathPair(pathBlob("path")) },
-      ],
+      selections: [pathSel(5, "path_trail"), pathSel(4, "path_path")],
     },
     roomsSelector: {
-      selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["enclosure"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["tent"] }) },
-      ],
+      selections: [sel(5, "room_enclosure"), sel(4, "room_tent")],
     },
     checkpointsSelector: {
-      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.boneDice }],
+      selections: [sel(1, "bone_dice")],
     },
     containersSelector: {
       selections: [
-        { weight: 3, blob: crate },
-        { weight: 3, blob: barrel },
-        { weight: 2, blob: rack },
-        { weight: 2, blob: sack },
-        { weight: 1, blob: jar },
+        sel(3, "crate"),
+        sel(3, "barrel"),
+        sel(2, "rack"),
+        sel(2, "sack"),
+        sel(1, "jar"),
       ],
     },
     minContainerCount: 1,
     maxContainerCount: 3,
-    blockersSelector: { selections: [{ weight: 1, blob: barricadeGuard }] },
+    blockersSelector: { selections: [sel(1, "barricade_guard")] },
     pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   cave: {
     decorationsSelector: {
-      selections: [
-        { weight: 5, blob: blob({ baselineName: "rock" }) },
-        { weight: 4, blob: blob({ baselineName: "stone" }) },
-        { weight: 2, blob: blob({ baselineName: "boulder" }) },
-      ],
+      selections: [sel(5, "rock"), sel(4, "stone"), sel(2, "boulder")],
     },
     minDecorationCount: 2,
     maxDecorationCount: 4,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob("opening")) },
-        { weight: 4, pair: pathPair(pathBlob("hole")) },
+        pathSel(5, "path_opening"),
+        pathSel(4, "path_hole"),
         // The verbs the player squeezes and climbs by: different paths,
         // different crossings, different messages — and the chasm's far
         // side is the ROCK WALL you climb back up, one authored fact.
-        {
-          weight: 2,
-          pair: pathPair(
-            pathBlob("chasm", ["climb_down"]),
-            pathBlob("rock_wall", ["climb_up"]),
-          ),
-        },
-        { weight: 2, pair: pathPair(pathBlob("crack", ["squeeze"])) },
+        pathSel(2, "path_chasm", "path_rock_wall"),
+        pathSel(2, "path_crack"),
       ],
     },
     roomsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["chamber"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["dome"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["cavern"] }) },
+        sel(5, "room_chamber"),
+        sel(4, "room_dome"),
+        sel(2, "room_cavern"),
       ],
     },
     checkpointsSelector: {
-      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.boneDice }],
+      selections: [sel(1, "bone_dice")],
     },
     containersSelector: {
-      selections: [
-        { weight: 3, blob: jar },
-        { weight: 2, blob: urn },
-        { weight: 1, blob: crate },
-      ],
+      selections: [sel(3, "jar"), sel(2, "urn"), sel(1, "crate")],
     },
     minContainerCount: 1,
     maxContainerCount: 3,
-    blockersSelector: { selections: [{ weight: 1, blob: boulderGuard }] },
+    blockersSelector: { selections: [sel(1, "boulder_guard")] },
     pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   meadow: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ baselineName: "grass" }) },
-        { weight: 3, blob: blob({ baselineName: "stump" }) },
-        { weight: 2, blob: blob({ baselineName: "log" }) },
-        { weight: 2, blob: blob({ baselineName: "rock", traitNames: ["mossy"] }) },
+        sel(5, "grass"),
+        sel(3, "stump"),
+        sel(2, "log"),
+        sel(2, "mossy_rock"),
       ],
     },
     minDecorationCount: 2,
     maxDecorationCount: 5,
     pathsSelector: {
-      selections: [
-        { weight: 5, pair: pathPair(pathBlob("trail")) },
-        { weight: 3, pair: pathPair(pathBlob("opening")) },
-      ],
+      selections: [pathSel(5, "path_trail"), pathSel(3, "path_opening")],
     },
     roomsSelector: {
-      selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["clearing"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["grove"] }) },
-      ],
+      selections: [sel(5, "room_clearing"), sel(3, "room_grove")],
     },
     checkpointsSelector: {
-      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.scryingBowl }],
+      selections: [sel(1, "scrying_bowl")],
     },
     containersSelector: {
-      selections: [
-        { weight: 3, blob: hollowStump },
-        { weight: 2, blob: basket },
-        { weight: 1, blob: jar },
-      ],
+      selections: [sel(3, "hollow_stump"), sel(2, "basket"), sel(1, "jar")],
     },
     minContainerCount: 1,
     maxContainerCount: 3,
-    blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
+    blockersSelector: { selections: [sel(1, "thicket_guard")] },
     pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
   forest: {
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ baselineName: "tree" }) },
-        { weight: 3, blob: blob({ baselineName: "stump" }) },
-        { weight: 3, blob: blob({ baselineName: "log" }) },
-        { weight: 1, blob: blob({ baselineName: "tree", traitNames: ["huge"] }) },
+        sel(5, "tree"),
+        sel(3, "stump"),
+        sel(3, "log"),
+        sel(1, "huge_tree"),
       ],
     },
     minDecorationCount: 3,
     maxDecorationCount: 6,
     pathsSelector: {
-      selections: [
-        { weight: 5, pair: pathPair(pathBlob("trail")) },
-        { weight: 3, pair: pathPair(pathBlob("opening")) },
-      ],
+      selections: [pathSel(5, "path_trail"), pathSel(3, "path_opening")],
     },
     roomsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["grove"] }) },
-        { weight: 4, blob: blob({ appearanceFeatureNames: ["thicket"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["clearing"] }) },
+        sel(5, "room_grove"),
+        sel(4, "room_thicket"),
+        sel(2, "room_clearing"),
       ],
     },
     checkpointsSelector: {
-      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.fateDeck }],
+      selections: [sel(1, "fate_deck")],
     },
     containersSelector: {
       selections: [
-        { weight: 3, blob: hollowLog },
-        { weight: 2, blob: hollowStump },
-        { weight: 1, blob: basket },
-        { weight: 1, blob: crate },
+        sel(3, "hollow_log"),
+        sel(2, "hollow_stump"),
+        sel(1, "basket"),
+        sel(1, "crate"),
       ],
     },
     minContainerCount: 1,
     maxContainerCount: 3,
-    blockersSelector: { selections: [{ weight: 1, blob: thicketGuard }] },
+    blockersSelector: { selections: [sel(1, "thicket_guard")] },
     pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
   },
@@ -394,101 +454,56 @@ export const LOCATION_MAP_THEMES = {
     // armament-shaped decoration is a takeable item entity.
     decorationsSelector: {
       selections: [
-        { weight: 5, blob: blob({ baselineName: "rubble" }) },
-        { weight: 3, blob: blob({ baselineName: "bones" }) },
-        { weight: 2, blob: blob({ baselineName: "brazier" }) },
-        {
-          weight: 2,
-          blob: gearLoot(ARMAMENTS.sword, {
-            appearanceFeatureNames: ["rusty", "sword"],
-          }),
-        },
-        {
-          weight: 2,
-          blob: gearLoot(ARMAMENTS.axe, {
-            appearanceFeatureNames: ["rusty", "axe"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.shield, {
-            appearanceFeatureNames: ["ancient", "shield"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.club, { appearanceFeatureNames: ["club"] }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.spear, { appearanceFeatureNames: ["spear"] }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.dagger, { appearanceFeatureNames: ["dagger"] }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMORS.leather_jerkin, {
-            appearanceFeatureNames: ["leather", "jerkin"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMORS.chain_hauberk, {
-            appearanceFeatureNames: ["rusty", "hauberk"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(RELICS.bone_idol, {
-            appearanceFeatureNames: ["bone", "idol"],
-          }),
-        },
+        sel(5, "rubble"),
+        sel(3, "bones"),
+        sel(2, "brazier"),
+        sel(2, "loot_rusty_sword"),
+        sel(2, "loot_rusty_axe"),
+        sel(1, "loot_ancient_shield"),
+        sel(1, "loot_club"),
+        sel(1, "loot_spear"),
+        sel(1, "loot_dagger"),
+        sel(1, "loot_leather_jerkin"),
+        sel(1, "loot_rusty_hauberk"),
+        sel(1, "loot_bone_idol"),
       ],
     },
     minDecorationCount: 3,
     maxDecorationCount: 6,
     pathsSelector: {
       selections: [
-        { weight: 5, pair: pathPair(pathBlob("archway")) },
-        { weight: 3, pair: pathPair(pathBlob("gate")) },
-        { weight: 3, pair: pathPair(pathBlob("corridor")) },
+        pathSel(5, "path_archway"),
+        pathSel(3, "path_gate"),
+        pathSel(3, "path_corridor"),
         // Stairs go two ways: descend forward, climb the same crumbling
         // stair back up — one authored fact, opposite verbs (like the
         // chasm/rock-wall pair).
-        {
-          weight: 2,
-          pair: pathPair(
-            pathBlob("stair", ["climb_down"], ["crumbling"]),
-            pathBlob("stair", ["climb_up"], ["crumbling"]),
-          ),
-        },
+        pathSel(2, "path_stair_down", "path_stair_up"),
       ],
     },
     roomsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["hall"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["courtyard"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["crypt"] }) },
+        sel(5, "room_hall"),
+        sel(3, "room_courtyard"),
+        sel(2, "room_crypt"),
       ],
     },
     checkpointsSelector: {
-      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.fateDeck }],
+      selections: [sel(1, "fate_deck")],
     },
     containersSelector: {
       selections: [
-        { weight: 3, blob: chest },
-        { weight: 2, blob: cabinet },
-        { weight: 2, blob: barrel },
-        { weight: 1, blob: strongbox },
-        { weight: 1, blob: crate },
+        sel(3, "chest"),
+        sel(2, "cabinet"),
+        sel(2, "barrel"),
+        sel(1, "strongbox"),
+        sel(1, "crate"),
       ],
     },
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: {
-      selections: [{ weight: 1, blob: crumblingWallGuard }],
+      selections: [sel(1, "crumbling_wall_guard")],
     },
     pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
@@ -496,77 +511,40 @@ export const LOCATION_MAP_THEMES = {
   sanctum: {
     decorationsSelector: {
       selections: [
-        { weight: 4, blob: blob({ baselineName: "pillar" }) },
-        { weight: 3, blob: blob({ baselineName: "brazier", traitNames: ["smoldering"] }) },
-        { weight: 3, blob: blob({ baselineName: "altar", traitNames: ["frozen"] }) },
-        { weight: 2, blob: blob({ baselineName: "pillar", traitNames: ["crackling"] }) },
-        {
-          weight: 1,
-          blob: gearLoot(ARMAMENTS.staff, {
-            appearanceFeatureNames: ["gleaming", "staff"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(RELICS.ember_charm, {
-            appearanceFeatureNames: ["smoldering", "charm"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(RELICS.frost_talisman, {
-            appearanceFeatureNames: ["frozen", "talisman"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(RELICS.storm_bead, {
-            appearanceFeatureNames: ["crackling", "bead"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(RELICS.sun_medallion, {
-            appearanceFeatureNames: ["gleaming", "medallion"],
-          }),
-        },
-        {
-          weight: 1,
-          blob: gearLoot(ARMORS.traveler_robe, {
-            appearanceFeatureNames: ["ancient", "robe"],
-          }),
-        },
+        sel(4, "pillar"),
+        sel(3, "smoldering_brazier"),
+        sel(3, "frozen_altar"),
+        sel(2, "crackling_pillar"),
+        sel(1, "loot_gleaming_staff"),
+        sel(1, "loot_ember_charm"),
+        sel(1, "loot_frost_talisman"),
+        sel(1, "loot_storm_bead"),
+        sel(1, "loot_sun_medallion"),
+        sel(1, "loot_traveler_robe"),
       ],
     },
     minDecorationCount: 2,
     maxDecorationCount: 5,
     pathsSelector: {
-      selections: [
-        { weight: 5, pair: pathPair(pathBlob("archway")) },
-        { weight: 3, pair: pathPair(pathBlob("stair")) },
-      ],
+      selections: [pathSel(5, "path_archway"), pathSel(3, "path_stair")],
     },
     roomsSelector: {
       selections: [
-        { weight: 5, blob: blob({ appearanceFeatureNames: ["shrine"] }) },
-        { weight: 3, blob: blob({ appearanceFeatureNames: ["sanctum"] }) },
-        { weight: 2, blob: blob({ appearanceFeatureNames: ["vault"] }) },
+        sel(5, "room_shrine"),
+        sel(3, "room_sanctum"),
+        sel(2, "room_vault"),
       ],
     },
     checkpointsSelector: {
-      selections: [{ weight: 1, blob: CHECKPOINT_BLOBS.scryingBowl }],
+      selections: [sel(1, "scrying_bowl")],
     },
     containersSelector: {
-      selections: [
-        { weight: 3, blob: urn },
-        { weight: 2, blob: jar },
-        { weight: 1, blob: chest },
-      ],
+      selections: [sel(3, "urn"), sel(2, "jar"), sel(1, "chest")],
     },
     minContainerCount: 1,
     maxContainerCount: 3,
     blockersSelector: {
-      selections: [{ weight: 1, blob: crumblingPillarGuard }],
+      selections: [sel(1, "crumbling_pillar_guard")],
     },
     pathVariationTraitNames: PATH_VARIATION_TRAIT_NAMES,
     pathVariationCountWeights: PATH_VARIATION_COUNT_WEIGHTS,
@@ -591,20 +569,18 @@ interface CookieWindow {
  * rooms instead. */
 type CookieQuestName = Extract<QuestName, "red_cookies" | "blue_cookies">;
 
-const COOKIE_APPEARANCES: Record<CookieQuestName, AppearanceFeatureName[]> = {
-  red_cookies: ["red_cookie"],
-  blue_cookies: ["blue_cookie"],
+/** The named cookie blob each window quest spawns (see LOCATION_MAP_BLOBS). */
+const COOKIE_BLOB_NAMES: Record<CookieQuestName, LocationMapBlobName> = {
+  red_cookies: "cookie_red",
+  blue_cookies: "cookie_blue",
 };
-
-const cookieBlob = (questName: CookieQuestName): EntityBlobAsset =>
-  blob({ appearanceFeatureNames: COOKIE_APPEARANCES[questName] });
 
 /** Both cookie quests ride the same window in every map: red for mhp,
  * blue for mep, discovered the same way. */
 const cookieSpawns = (window: CookieWindow): QuestSpawnAsset[] =>
   (["red_cookies", "blue_cookies"] as const).map((questName) => ({
     questName,
-    itemBlob: cookieBlob(questName),
+    itemBlobName: COOKIE_BLOB_NAMES[questName],
     ...window,
   }));
 
@@ -763,9 +739,7 @@ export const LOCATION_MAPS = {
         defeatDrop: {
           questName: "warden_of_the_keep",
           index: 0,
-          itemBlob: blob({
-            appearanceFeatureNames: ["sparkling", "red_cookie"],
-          }),
+          itemBlobName: "sparkling_red_cookie",
         },
       },
     ],
@@ -838,10 +812,7 @@ export const LOCATION_MAP_CONNECTIONS: LocationMapConnectionAsset[] = [
     destinationAnchor: "Entrance",
     // Themed by both endpoints: going in, a dark cave mouth; coming
     // back out, a bright one.
-    pathPair: pathPair(
-      pathBlob("cave_mouth", ["move"], ["dark"]),
-      pathBlob("cave_mouth", ["move"], ["bright"]),
-    ),
+    pathPair: pathPairNames("path_cave_mouth_dark", "path_cave_mouth_bright"),
   }),
   connect({
     exit: "start_zone",

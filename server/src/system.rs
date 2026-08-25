@@ -1436,12 +1436,21 @@ fn materialize_connection(ecs: Ecs, m: ConnectionMaterialization) -> Result<u64,
         .ok_or("unknown exit map")?;
     let theme = ecs.db.location_map_themes().id().find(exit_map.theme_id);
     let (exit_to_dest, dest_to_exit) = match (
-        connection.forward_path_blob.clone(),
-        connection.backward_path_blob.clone(),
+        connection.forward_path_blob_id,
+        connection.backward_path_blob_id,
     ) {
-        (Some(forward), Some(backward)) => (forward, backward),
-        _ => match theme.as_ref().and_then(|t| t.paths_selector.sample(rng).cloned()) {
-            Some(pair) => (pair.forward, pair.backward),
+        (Some(forward), Some(backward)) => (
+            crate::asset::entity_blob_asset::find_entity_blob(ecs, forward)?,
+            crate::asset::entity_blob_asset::find_entity_blob(ecs, backward)?,
+        ),
+        _ => match theme
+            .as_ref()
+            .and_then(|t| t.paths_selector.sample(rng).map(|p| (p.forward_id, p.backward_id)))
+        {
+            Some((forward, backward)) => (
+                crate::asset::entity_blob_asset::find_entity_blob(ecs, forward)?,
+                crate::asset::entity_blob_asset::find_entity_blob(ecs, backward)?,
+            ),
             None => return Ok(far_instance),
         },
     };

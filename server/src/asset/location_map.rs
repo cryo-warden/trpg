@@ -127,8 +127,10 @@ pub struct LocationMapConnection {
     /// The authored pair: forward is the exit->destination presentation,
     /// backward the destination->exit one ("dark cave mouth" going in, "bright"
     /// coming out). None samples the exit map's theme for a pair instead.
-    pub forward_path_blob: Option<crate::entity::EntityBlob>,
-    pub backward_path_blob: Option<crate::entity::EntityBlob>,
+    /// Ids into the unified entity_blob_assets table; blob bodies fetched when
+    /// the crossing materializes.
+    pub forward_path_blob_id: Option<u32>,
+    pub backward_path_blob_id: Option<u32>,
 }
 
 /// Add rolled variation TRAITS to a freshly created path, on top of any the
@@ -319,8 +321,10 @@ impl LocationMap {
         // offering no room blob simply yields no rooms rather than panicking.
         let mut room_handles: Vec<EntityHandle> = Vec::new();
         for _ in 0..total_room_count {
-            if let Some(r) = theme.rooms_selector.sample(&mut rng) {
-                room_handles.push(ecs.new_room(r.to_owned(), location_map_entity_id)?);
+            // Draw the id first (rng determinism), then fetch the blob body.
+            if let Some(&blob_id) = theme.rooms_selector.sample(&mut rng) {
+                let blob = crate::asset::entity_blob_asset::find_entity_blob(ecs, blob_id)?;
+                room_handles.push(ecs.new_room(blob, location_map_entity_id)?);
             }
         }
         let room_count = room_handles.len();
@@ -332,7 +336,11 @@ impl LocationMap {
         // chain, backward faces home — an opening pairs with an opening,
         // a chasm with the rock wall climbed back up.
         for i in 0..main_room_count.saturating_sub(1) {
-            if let Some(pair) = theme.paths_selector.sample(&mut rng) {
+            if let Some((forward_id, backward_id)) = theme
+                .paths_selector
+                .sample(&mut rng)
+                .map(|pair| (pair.forward_id, pair.backward_id))
+            {
                 let (a, b) = (room_handles[i].entity_id(), room_handles[i + 1].entity_id());
                 // One roll per pair, applied to both directions: a crossing
                 // reads the same coming and going.
@@ -340,8 +348,11 @@ impl LocationMap {
                 create_linked_path_pair(
                     ecs,
                     PathPairSpec {
-                        forward: pair.forward.clone(),
-                        backward: pair.backward.clone(),
+                        forward: crate::asset::entity_blob_asset::find_entity_blob(ecs, forward_id)?,
+                        backward: crate::asset::entity_blob_asset::find_entity_blob(
+                            ecs,
+                            backward_id,
+                        )?,
                         a,
                         b,
                         variations,
@@ -360,7 +371,11 @@ impl LocationMap {
         }
         let mut side_attachments: Vec<SideAttachment> = Vec::new();
         for i in main_room_count..room_count {
-            if let Some(pair) = theme.paths_selector.sample(&mut rng) {
+            if let Some((forward_id, backward_id)) = theme
+                .paths_selector
+                .sample(&mut rng)
+                .map(|pair| (pair.forward_id, pair.backward_id))
+            {
                 let side_room = room_handles[i].entity_id();
                 let attach_room =
                     room_handles[rng.get_range::<u32, usize>(0, i as u32)].entity_id();
@@ -371,8 +386,11 @@ impl LocationMap {
                 let (outbound, _inbound) = create_linked_path_pair(
                     ecs,
                     PathPairSpec {
-                        forward: pair.forward.clone(),
-                        backward: pair.backward.clone(),
+                        forward: crate::asset::entity_blob_asset::find_entity_blob(ecs, forward_id)?,
+                        backward: crate::asset::entity_blob_asset::find_entity_blob(
+                            ecs,
+                            backward_id,
+                        )?,
                         a: attach_room,
                         b: side_room,
                         variations,
@@ -398,25 +416,35 @@ impl LocationMap {
             for _ in 0..self.loop_count {
                 let a_index: usize =
                     rng.get_range::<u32, usize>(0, (main_room_count - 2) as u32);
-                if let Some(pair) = theme.paths_selector.sample(&mut rng) {
+                if let Some((forward_id, backward_id)) = theme
+                    .paths_selector
+                    .sample(&mut rng)
+                    .map(|pair| (pair.forward_id, pair.backward_id))
+                {
                     let a = room_handles[a_index].entity_id();
                     let b = room_handles[a_index + 2].entity_id();
                     let variations = theme.roll_path_variations(ecs, &mut rng);
                     let (forward, backward) = create_linked_path_pair(
                         ecs,
                         PathPairSpec {
-                            forward: pair.forward.clone(),
-                            backward: pair.backward.clone(),
+                            forward: crate::asset::entity_blob_asset::find_entity_blob(
+                                ecs, forward_id,
+                            )?,
+                            backward: crate::asset::entity_blob_asset::find_entity_blob(
+                                ecs,
+                                backward_id,
+                            )?,
                             a,
                             b,
                             variations,
                         },
                     )?;
-                    if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
-                        let wall = ecs.new().instantiate_blob(
-                            wall_blob.to_owned(),
-                            &ecs.instantiation_scope(),
-                        )?;
+                    if let Some(&wall_blob_id) = theme.blockers_selector.sample(&mut rng) {
+                        let wall_blob =
+                            crate::asset::entity_blob_asset::find_entity_blob(ecs, wall_blob_id)?;
+                        let wall = ecs
+                            .new()
+                            .instantiate_blob(wall_blob, &ecs.instantiation_scope())?;
                         let wall_entity_id = wall.entity_id();
                         wall.insert_new_location(b, LocationKind::Interior);
                         forward.upsert_new_path_blocker(wall_entity_id);
@@ -445,12 +473,11 @@ impl LocationMap {
         let mut checkpoint_room_entity_ids: Vec<u64> = Vec::new();
         if let Some(entrance) = room_handles.first() {
             checkpoint_room_entity_ids.push(entrance.entity_id());
-            if let Some(checkpoint_blob) = theme.checkpoints_selector.sample(&mut rng) {
+            if let Some(&checkpoint_blob_id) = theme.checkpoints_selector.sample(&mut rng) {
+                let checkpoint_blob =
+                    crate::asset::entity_blob_asset::find_entity_blob(ecs, checkpoint_blob_id)?;
                 ecs.new()
-                    .instantiate_blob(
-                        checkpoint_blob.to_owned(),
-                        &ecs.instantiation_scope(),
-                    )?
+                    .instantiate_blob(checkpoint_blob, &ecs.instantiation_scope())?
                     .upsert_new_location(entrance.entity_id(), LocationKind::Interior)
                     .into_handle()
                     .upsert_new_checkpoint_binding(self.id, 0);
@@ -513,11 +540,12 @@ impl LocationMap {
             for _ in 0..container_count {
                 let room = container_rooms
                     [rng.get_range::<u32, usize>(0, container_rooms.len() as u32)];
-                if let Some(container_blob) = theme.containers_selector.sample(&mut rng) {
-                    let container = ecs.new().instantiate_blob(
-                        container_blob.to_owned(),
-                        &ecs.instantiation_scope(),
-                    )?;
+                if let Some(&container_blob_id) = theme.containers_selector.sample(&mut rng) {
+                    let container_blob =
+                        crate::asset::entity_blob_asset::find_entity_blob(ecs, container_blob_id)?;
+                    let container = ecs
+                        .new()
+                        .instantiate_blob(container_blob, &ecs.instantiation_scope())?;
                     let container_entity_id = container.entity_id();
                     container.insert_new_location(room.entity_id, LocationKind::Interior);
                     containers.push(GeneratedContainer {
@@ -536,10 +564,12 @@ impl LocationMap {
             rng.get_range(self.min_hidden_room_count, self.max_hidden_room_count);
         side_attachments.shuffle(&mut rng);
         for attachment in side_attachments.iter().take(hidden_count) {
-            if let Some(wall_blob) = theme.blockers_selector.sample(&mut rng) {
+            if let Some(&wall_blob_id) = theme.blockers_selector.sample(&mut rng) {
+                let wall_blob =
+                    crate::asset::entity_blob_asset::find_entity_blob(ecs, wall_blob_id)?;
                 let wall = ecs
                     .new()
-                    .instantiate_blob(wall_blob.to_owned(), &ecs.instantiation_scope())?;
+                    .instantiate_blob(wall_blob, &ecs.instantiation_scope())?;
                 let wall_entity_id = wall.entity_id();
                 wall.insert_new_location(
                     attachment.attach_room_entity_id,

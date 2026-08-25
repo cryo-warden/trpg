@@ -244,7 +244,9 @@ pub struct CheckpointAsset {
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct EntityBlobSampleAsset {
     pub weight: u8,
-    pub blob: EntityBlobAsset,
+    /// The sampled blob by NAME, into the unified entity_blobs table; resolved
+    /// to an id at push and fetched at generation time.
+    pub blob_name: String,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -270,8 +272,10 @@ pub struct WeightedNameAsset {
 /// wall climbed back up).
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct PathBlobPairAsset {
-    pub forward: EntityBlobAsset,
-    pub backward: EntityBlobAsset,
+    /// Both directions by NAME, into the unified entity_blobs table; resolved to
+    /// ids at push and fetched at generation time.
+    pub forward_name: String,
+    pub backward_name: String,
 }
 
 #[derive(Debug, Clone, SpacetimeType)]
@@ -337,7 +341,9 @@ pub struct QuestRoomClaimAsset {
 pub struct QuestDefeatDropAsset {
     pub quest_name: String,
     pub index: u32,
-    pub item_blob: EntityBlobAsset,
+    /// The dropped item's presentation blob by NAME, into the unified
+    /// entity_blobs table; resolved to an id at push.
+    pub item_blob_name: String,
 }
 
 /// One quest's spawn window in one map, as authored: the quest by NAME
@@ -347,7 +353,9 @@ pub struct QuestDefeatDropAsset {
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct QuestSpawnAsset {
     pub quest_name: String,
-    pub item_blob: EntityBlobAsset,
+    /// The item's presentation blob by NAME, into the unified entity_blobs
+    /// table; resolved to an id at push.
+    pub item_blob_name: String,
     pub guaranteed_indexes: Vec<u32>,
     pub eligible_indexes: Vec<u32>,
     /// Half-open count range for the eligible draw, like encounter counts.

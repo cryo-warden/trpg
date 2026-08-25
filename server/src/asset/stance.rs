@@ -6,7 +6,7 @@ use crate::stat_group::{
 
 /// Stances the SERVER itself must find (never by name-sniffing): the push
 /// resolves the authored name and stores the id here, mirroring
-/// SpecialEntityBlobKey.
+/// SingletonBlobKey.
 #[derive(Debug, Clone, SpacetimeType, PartialEq, Eq, Hash)]
 pub enum SpecialStanceKey {
     /// The stance a dive lands in.

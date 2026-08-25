@@ -149,9 +149,10 @@ pub struct QuestRoomClaim {
 pub struct QuestDefeatDrop {
     pub quest_id: u32,
     pub index: u32,
-    /// The dropped item's presentation; the payout stamps the QuestItem
-    /// ref onto a copy, exactly like the spawn windows do.
-    pub item_blob: EntityBlob,
+    /// The dropped item's presentation, by id into the unified
+    /// entity_blob_assets table; the payout fetches the blob and stamps the
+    /// QuestItem ref onto a copy, exactly like the spawn windows do.
+    pub item_blob_id: u32,
 }
 
 /// One quest's spawn window in one map (a column on LocationMap): the bit
@@ -164,9 +165,10 @@ pub struct QuestDefeatDrop {
 #[derive(Debug, Clone, SpacetimeType)]
 pub struct QuestSpawn {
     pub quest_id: u32,
-    /// The spawned item's presentation (appearance and the like); the
-    /// application stamps each spawned index's QuestItem ref onto a copy.
-    pub item_blob: EntityBlob,
+    /// The spawned item's presentation, by id into the unified
+    /// entity_blob_assets table; the application fetches the blob and stamps
+    /// each spawned index's QuestItem ref onto a copy.
+    pub item_blob_id: u32,
     pub guaranteed_indexes: Bitset,
     pub eligible_indexes: Bitset,
     /// How many indexes to draw from eligible_indexes per instance,
@@ -294,7 +296,8 @@ pub fn apply_quest_spawns(
             else {
                 continue;
             };
-            let mut blob = spawn.item_blob.clone();
+            let mut blob =
+                crate::asset::entity_blob_asset::find_entity_blob(ecs, spawn.item_blob_id)?;
             blob.item = Some(ItemComponentBlob {
                 item_ref: ItemRef::QuestItem(QuestItemRef {
                     quest_id: spawn.quest_id,
@@ -388,19 +391,24 @@ pub fn apply_quest_room_claims(
         });
         if claim.spawn_checkpoint_before {
             if let Some(before_room_entity_id) = rooms.before_room_entity_id {
-                let checkpoint_blob = ecs
+                // Draw the id first (rng determinism), then fetch the blob body.
+                let checkpoint_blob_id = ecs
                     .db
                     .location_map_themes()
                     .id()
                     .find(map.theme_id)
-                    .and_then(|theme| theme.checkpoints_selector.sample(&mut rng).cloned());
+                    .and_then(|theme| theme.checkpoints_selector.sample(&mut rng).copied());
                 let instance_entity_id = ecs
                     .find(before_room_entity_id)
                     .location_map()
                     .map(|room_map| room_map.location_map_entity_id);
-                if let (Some(checkpoint_blob), Some(instance_entity_id)) =
-                    (checkpoint_blob, instance_entity_id)
+                if let (Some(checkpoint_blob_id), Some(instance_entity_id)) =
+                    (checkpoint_blob_id, instance_entity_id)
                 {
+                    let checkpoint_blob = crate::asset::entity_blob_asset::find_entity_blob(
+                        ecs,
+                        checkpoint_blob_id,
+                    )?;
                     // Register the room on the instance first: the object's
                     // binding index points into this list.
                     let mut checkpoint_room_entity_ids = ecs
@@ -478,8 +486,8 @@ pub fn drop_defeat_reward(ecs: Ecs, entity_id: u64) {
                 })
             })
         })
-        .map(|drop| drop.item_blob);
-    let Some(item_blob) = item_blob else {
+        .map(|drop| drop.item_blob_id);
+    let Some(item_blob_id) = item_blob else {
         log::error!(
             "Defeat-drop carrier {} fell but no claim on its map declares the (quest {}, bit {}) drop.",
             entity_id,
@@ -487,6 +495,13 @@ pub fn drop_defeat_reward(ecs: Ecs, entity_id: u64) {
             defeat.index
         );
         return;
+    };
+    let item_blob = match crate::asset::entity_blob_asset::find_entity_blob(ecs, item_blob_id) {
+        Ok(blob) => blob,
+        Err(error) => {
+            log::error!("Defeat-drop blob {} could not be fetched: {}", item_blob_id, error);
+            return;
+        }
     };
     // One per player present — party-friendly — and never fewer than one:
     // an empty room must not erase the instance's reward supply.

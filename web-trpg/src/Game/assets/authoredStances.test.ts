@@ -6,8 +6,7 @@ import { BASELINES } from "./baselines";
 import { TRAITS } from "./traits";
 import { ARMAMENTS } from "./armaments";
 import { STANCES, StanceName } from "./stances";
-import { ENCOUNTER_BLOBS } from "./encounters";
-import { NEW_PLAYER_BLOB } from "./entity_blobs";
+import { ENTITY_BLOBS } from "./bundle/entityBlobs";
 
 // Body composition gates posture: a stance is adoptable only when the BODY's
 // stance-free readiness (baseline + traits + wielded armaments) meets the
@@ -44,13 +43,11 @@ const bodyReadiness = (blob: EntityBlobAsset): ReadinessBlock => {
   return total;
 };
 
-const allBlobs: [string, EntityBlobAsset][] = [
-  ["new_player", NEW_PLAYER_BLOB],
-  ...Object.entries(ENCOUNTER_BLOBS),
-];
-const authoredBodies = allBlobs.filter(
-  ([, blob]) => blob.baselineName != null && blob.stanceName != null,
-);
+// Every authored body in the unified entity-blob table (creatures + the
+// new-player template): those carrying both a baseline and a stance.
+const authoredBodies: [string, EntityBlobAsset][] = Object.entries(
+  ENTITY_BLOBS,
+).filter(([, blob]) => blob.baselineName != null && blob.stanceName != null);
 
 for (const [name, blob] of authoredBodies) {
   test(`${name}'s body can hold its authored stance (${blob.stanceName})`, () => {
