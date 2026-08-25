@@ -72,7 +72,10 @@ export const applyComponentMap = (
  * asset; we map it over the table. `name` stays a literal, so the result's keys
  * feed `keyof`-derived name unions downstream. (A future data-file source would
  * feed the same rows through zod validation before reaching here.) */
-export const namedBlobTable = <A extends unknown[], const N extends string>(
+export const namedBlobTable = <
+  const N extends string,
+  A extends readonly unknown[],
+>(
   build: (...args: A) => EntityBlobAsset,
   rows: readonly (readonly [name: N, ...args: A])[],
 ): Record<N, EntityBlobAsset> =>
