@@ -9,9 +9,13 @@ import {
   ZoneKind,
 } from "../../stdb/types";
 import { blob } from "./entity_blobs";
+import { ActionName } from "./actions";
+import { AppearanceFeatureName } from "./appearance_features";
 import { ARMAMENTS } from "./armaments";
 import { ARMORS } from "./armors";
+import { BaselineName } from "./baselines";
 import { RELICS } from "./relics";
+import { TraitName } from "./traits";
 import { gearLoot } from "./gear";
 import { QuestName } from "./quests";
 
@@ -53,9 +57,9 @@ const durability = (mhp: number, defense: number): EntityBlobAsset["hp"] => ({
  * explicit per container, never inferred from its look. Smashing always
  * remains an option. */
 const container = (
-  appearanceFeatureNames: string[],
-  remainsAppearanceFeatureNames: string[],
-  offeredActionNames?: string[],
+  appearanceFeatureNames: AppearanceFeatureName[],
+  remainsAppearanceFeatureNames: AppearanceFeatureName[],
+  offeredActionNames?: ActionName[],
 ): EntityBlobAsset =>
   blob({
     appearanceFeatureNames,
@@ -89,9 +93,9 @@ const hollowLog = container(["hollow", "log"], ["scrap_wood"]);
  * it high HP and defense — a physical crossing you can collapse only with real
  * force — and generation links paired directions so they share that fate. */
 const pathBlob = (
-  baselineName: string,
-  offeredActionNames: string[] = ["move"],
-  traitNames?: string[],
+  baselineName: BaselineName,
+  offeredActionNames: ActionName[] = ["move"],
+  traitNames?: TraitName[],
 ): EntityBlobAsset =>
   blob({
     baselineName,
@@ -134,7 +138,7 @@ const crumblingPillarGuard = container(["crumbling", "pillar"], ["rubble"]);
  * features keep a roll from pairing opposites/redundants (wide+narrow,
  * dim+dark). Each name is a TRAIT (see traits.ts), surfaced through the
  * path's baseline+traits pipeline. */
-const PATH_VARIATION_TRAIT_NAMES = [
+const PATH_VARIATION_TRAIT_NAMES: TraitName[] = [
   "winding",
   "wide",
   "narrow",
@@ -587,7 +591,7 @@ interface CookieWindow {
  * rooms instead. */
 type CookieQuestName = Extract<QuestName, "red_cookies" | "blue_cookies">;
 
-const COOKIE_APPEARANCES: Record<CookieQuestName, string[]> = {
+const COOKIE_APPEARANCES: Record<CookieQuestName, AppearanceFeatureName[]> = {
   red_cookies: ["red_cookie"],
   blue_cookies: ["blue_cookie"],
 };
