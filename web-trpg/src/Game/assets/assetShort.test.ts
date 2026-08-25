@@ -1,7 +1,7 @@
 import { test, expect } from "bun:test";
 import type { EntityBlobAsset } from "../../stdb/types";
 import {
-  applyEntity,
+  applyComponentMap,
   blobPairs,
   deepMerge,
   validateBlob,
@@ -76,8 +76,8 @@ test("blobPairs turns a record into name+value pairs and validates each", () => 
   expect(() => blobPairs(broken)).toThrow(/bad.*item.*tag/);
 });
 
-test("applyEntity overlays the escape hatch over the built base", () => {
-  const withHatch = applyEntity(blob({ baselineName: "human" }), {
+test("applyComponentMap overlays the escape hatch over the built base", () => {
+  const withHatch = applyComponentMap(blob({ baselineName: "human" }), {
     allegiance: { allegianceEntityId: { tag: "Literal", value: 100n } },
   });
   // blob() types the expected as the full wire asset (its optional fields are
@@ -116,7 +116,9 @@ test("creature omits optional components it was not given", () => {
 
 test("creature's escape hatch overrides the built base", () => {
   const boss = creature("ogre", "ready", {
-    entity: { allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } } },
+    componentMap: {
+      allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } },
+    },
   });
   expect(boss.allegiance).toEqual({
     allegianceEntityId: { tag: "Literal", value: 200n },

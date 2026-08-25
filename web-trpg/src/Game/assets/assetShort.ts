@@ -18,11 +18,25 @@ export type DeepPartial<T> = T extends readonly unknown[]
     ? { [K in keyof T]?: DeepPartial<T[K]> }
     : T;
 
-/** The trailing options object every shorthand tuple ends with carries this
- * escape hatch: a deep-partial overlay applied over the generated blob, for the
- * one-off field no shorthand covers. DI, not a flag — the shorthand builder
- * decides the base; `entity` only overrides it. */
-export type EntityOptions = { entity?: DeepPartial<EntityBlobAsset> };
+/** One field of an entity blob made shallowly optional: author a SUBSET of a
+ * component's inner fields without restating the whole component. A name-list
+ * field (string / string[]) keeps its own type — there is nothing to make
+ * partial; only object components become {@link Partial}. */
+type ComponentShort<T> = T extends readonly unknown[]
+  ? T
+  : T extends object
+    ? Partial<T>
+    : T;
+
+/** The escape hatch's shape: the generated EntityBlob with every component made
+ * Partial. A shorthand's trailing options object carries one under
+ * `componentMap`; it is deep-merged over the blob the shorthand built, for the
+ * one-off field no shorthand covers (a fixed allegiance, a placed location). DI,
+ * not a flag — the shorthand decides the base; the componentMap only overrides
+ * it. */
+export type EntityBlobShort = {
+  [K in keyof EntityBlobAsset]?: ComponentShort<NonNullable<EntityBlobAsset[K]>>;
+};
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -44,13 +58,27 @@ export const deepMerge = <T>(base: T, override: DeepPartial<T> | undefined): T =
   return merged as T;
 };
 
-/** Apply a short's escape hatch over the base blob it built. */
-export const applyEntity = (
+/** Apply a short's `componentMap` escape hatch over the base blob it built. */
+export const applyComponentMap = (
   base: EntityBlobAsset,
-  entity: DeepPartial<EntityBlobAsset> | undefined,
+  componentMap: EntityBlobShort | undefined,
   // Pin the generic to the base type: otherwise TS infers it from the
   // all-optional override and the result widens to DeepPartial.
-): EntityBlobAsset => deepMerge<EntityBlobAsset>(base, entity);
+): EntityBlobAsset => deepMerge<EntityBlobAsset>(base, componentMap);
+
+/** Hydrate a NAMED table of shorthands in ONE pass. Each row is a tuple
+ * `[name, ...shorthandArgs]` — a tuple-matrix pseudo-table — and every row runs
+ * through the same `build` conversion. We never call a shorthand builder per
+ * asset; we map it over the table. `name` stays a literal, so the result's keys
+ * feed `keyof`-derived name unions downstream. (A future data-file source would
+ * feed the same rows through zod validation before reaching here.) */
+export const namedBlobTable = <A extends unknown[], const N extends string>(
+  build: (...args: A) => EntityBlobAsset,
+  rows: readonly (readonly [name: N, ...args: A])[],
+): Record<N, EntityBlobAsset> =>
+  Object.fromEntries(
+    rows.map(([name, ...args]) => [name, build(...(args as unknown as A))]),
+  ) as Record<N, EntityBlobAsset>;
 
 /** For each component that carries required inner fields, the fields that MUST
  * be present when the component is authored at all. A component absent entirely

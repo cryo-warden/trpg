@@ -1,6 +1,6 @@
 import { EntityBlobAsset } from "../../stdb/types";
 import { ArmamentName } from "./armaments";
-import { applyEntity, EntityOptions } from "./assetShort";
+import { applyComponentMap, EntityBlobShort } from "./assetShort";
 import { BaselineName } from "./baselines";
 import { blob } from "./entity_blobs";
 import { StanceName } from "./stances";
@@ -18,12 +18,15 @@ import { TraitPaletteName } from "./trait_palettes";
 export type CreatureAssetShort = [
   baseline: BaselineName,
   stance: StanceName,
-  options?: EntityOptions & {
+  options?: {
     traits?: TraitName[];
     armaments?: ArmamentName[];
     /** A trait palette to roll per instance, so a group reads as individuals
      * ("brawny/rangy wolf") instead of "wolf 1-4". */
     traitPalette?: TraitPaletteName;
+    /** Escape hatch: a component-level overlay for the one-off field no
+     * shorthand covers (a fixed allegiance, a placed location). */
+    componentMap?: EntityBlobShort;
   },
 ];
 
@@ -31,7 +34,7 @@ export type CreatureAssetShort = [
 export const creature = (
   ...[baseline, stance, options = {}]: CreatureAssetShort
 ): EntityBlobAsset =>
-  applyEntity(
+  applyComponentMap(
     blob({
       baselineName: baseline,
       stanceName: stance,
@@ -41,5 +44,5 @@ export const creature = (
         differentiable: { traitPaletteName: options.traitPalette },
       }),
     }),
-    options.entity,
+    options.componentMap,
   );
