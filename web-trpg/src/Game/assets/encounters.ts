@@ -1,5 +1,5 @@
 import { EncounterAsset, EntityBlobAsset } from "../../stdb/types";
-import { CREATURE_BLOBS } from "./creature";
+import { CREATURE_BLOBS } from "./bundle/creature";
 import { blob } from "./entity_blobs";
 
 export const ENCOUNTER_BLOBS = {

@@ -6,7 +6,7 @@ import {
   deepMerge,
   validateBlob,
 } from "./assetShort";
-import { creature } from "./creature";
+import { creature } from "./processing/creature";
 import { blob } from "./entity_blobs";
 
 test("deepMerge recurses into plain objects, overriding one inner field", () => {

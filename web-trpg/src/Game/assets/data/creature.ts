@@ -1,10 +1,10 @@
-import { CreatureAssetShort } from "./types";
+import { CreatureAssetShort } from "../types/creature";
 
 /** The creature roster as a tuple-matrix pseudo-table: each row is
  * [name, ...creatureShort]. PURE DATA — no builder calls, and every
  * cross-reference is a name only, so this module could later be a data file fed
- * through zod. Hydrated once by the glue (index.ts); the builder is never
- * called per asset. */
+ * through zod. Hydrated once by the glue (bundle/creature.ts); the builder is
+ * never called per asset. */
 export const CREATURE_ROWS = [
   ["slime", "slime", "amorphous"],
   ["slimeSmall", "slime", "amorphous", { traits: ["small"] }],
