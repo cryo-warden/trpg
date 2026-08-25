@@ -92,12 +92,10 @@ test("applyEntity overlays the escape hatch over the built base", () => {
 
 test("creature maps name-typed fields onto the blob's component names", () => {
   expect(
-    creature({
-      baseline: "wolf",
-      stance: "striding",
+    creature("wolf", "striding", {
       traits: ["big"],
       armaments: ["club"],
-      variety: "wolf_variety",
+      traitPalette: "wolf_variety",
     }),
   ).toEqual(
     blob({
@@ -111,15 +109,13 @@ test("creature maps name-typed fields onto the blob's component names", () => {
 });
 
 test("creature omits optional components it was not given", () => {
-  expect(creature({ baseline: "slime", stance: "amorphous" })).toEqual(
+  expect(creature("slime", "amorphous")).toEqual(
     blob({ baselineName: "slime", stanceName: "amorphous" }),
   );
 });
 
 test("creature's escape hatch overrides the built base", () => {
-  const boss = creature({
-    baseline: "ogre",
-    stance: "ready",
+  const boss = creature("ogre", "ready", {
     entity: { allegiance: { allegianceEntityId: { tag: "Literal", value: 200n } } },
   });
   expect(boss.allegiance).toEqual({

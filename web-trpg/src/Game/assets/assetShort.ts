@@ -18,11 +18,11 @@ export type DeepPartial<T> = T extends readonly unknown[]
     ? { [K in keyof T]?: DeepPartial<T[K]> }
     : T;
 
-/** Every short carries this escape hatch: a deep-partial overlay
- * applied over the generated blob, for the one-off field no shorthand covers.
- * DI, not a flag — the shorthand builder decides the base; `entity` only
- * overrides it. */
-export type EntityShort = { entity?: DeepPartial<EntityBlobAsset> };
+/** The trailing options object every shorthand tuple ends with carries this
+ * escape hatch: a deep-partial overlay applied over the generated blob, for the
+ * one-off field no shorthand covers. DI, not a flag — the shorthand builder
+ * decides the base; `entity` only overrides it. */
+export type EntityOptions = { entity?: DeepPartial<EntityBlobAsset> };
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);

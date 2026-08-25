@@ -13,102 +13,56 @@ export const ENCOUNTER_BLOBS = {
   // keeps the enemy AI from ever selecting a movement action. Riding the
   // categoric blob stamps it on every encounter member in one place.
   encounter_enemy: blob({ enemyController: {}, immobile: {} }),
-  slime: creature({ baseline: "slime", stance: "amorphous" }),
-  slimeSmall: creature({
-    baseline: "slime",
-    stance: "amorphous",
-    traits: ["small"],
-  }),
-  slimeBig: creature({ baseline: "slime", stance: "amorphous", traits: ["big"] }),
-  bat: creature({ baseline: "bat", stance: "flapping" }),
-  batBig: creature({ baseline: "bat", stance: "flapping", traits: ["big"] }),
-  batPerched: creature({ baseline: "bat", stance: "perched" }),
-  ogreWanderer: creature({
-    baseline: "ogre",
-    armaments: ["club"],
-    stance: "striding",
-  }),
-  rat: creature({ baseline: "rat", stance: "standing" }),
-  // Wolves draw distinct variety traits per pack (brawny/rangy/scrawny/
+  slime: creature("slime", "amorphous"),
+  slimeSmall: creature("slime", "amorphous", { traits: ["small"] }),
+  slimeBig: creature("slime", "amorphous", { traits: ["big"] }),
+  bat: creature("bat", "flapping"),
+  batBig: creature("bat", "flapping", { traits: ["big"] }),
+  batPerched: creature("bat", "perched"),
+  ogreWanderer: creature("ogre", "striding", { armaments: ["club"] }),
+  rat: creature("rat", "standing"),
+  // Wolves draw a distinct trait palette per pack (brawny/rangy/scrawny/
   // scarred), so a pack reads as individuals instead of "wolf 1-4".
-  wolf: creature({ baseline: "wolf", stance: "striding", variety: "wolf_variety" }),
-  wolfBig: creature({
-    baseline: "wolf",
-    stance: "striding",
+  wolf: creature("wolf", "striding", { traitPalette: "wolf_variety" }),
+  wolfBig: creature("wolf", "striding", {
     traits: ["big"],
-    variety: "wolf_variety",
+    traitPalette: "wolf_variety",
   }),
   // Bandits and skeletons fight with what they carry: the armament grants
   // the attack, the stance shapes the fight.
-  banditClubber: creature({
-    baseline: "bandit",
-    armaments: ["club"],
-    stance: "standing",
-  }),
-  banditDuelist: creature({
-    baseline: "bandit",
-    armaments: ["dagger"],
-    stance: "dueling",
-  }),
-  banditWarden: creature({
-    baseline: "bandit",
-    armaments: ["club", "shield"],
-    stance: "ready",
-  }),
+  banditClubber: creature("bandit", "standing", { armaments: ["club"] }),
+  banditDuelist: creature("bandit", "dueling", { armaments: ["dagger"] }),
+  banditWarden: creature("bandit", "ready", { armaments: ["club", "shield"] }),
   // Natures ride bodies: a skeleton is a human body with the skeletal
   // nature, and any element can ride any body. The natures are
   // appearance-only until the damage attribute system lands.
-  skeletonGuard: creature({
-    baseline: "human",
+  skeletonGuard: creature("human", "ready", {
     traits: ["skeletal"],
     armaments: ["spear"],
-    stance: "ready",
   }),
-  skeletonDuelist: creature({
-    baseline: "human",
+  skeletonDuelist: creature("human", "dueling", {
     traits: ["skeletal"],
     armaments: ["sword"],
-    stance: "dueling",
   }),
-  zombieShambler: creature({
-    baseline: "human",
+  zombieShambler: creature("human", "standing", {
     traits: ["zombie"],
     armaments: ["club"],
-    stance: "standing",
   }),
-  vampireStalker: creature({
-    baseline: "human",
+  vampireStalker: creature("human", "dueling", {
     traits: ["vampire"],
     armaments: ["dagger"],
-    stance: "dueling",
   }),
-  fireImp: creature({
-    baseline: "imp",
-    traits: ["fire_nature"],
-    stance: "fire_casting",
-  }),
-  iceSprite: creature({
-    baseline: "sprite",
-    traits: ["ice_nature"],
-    stance: "ice_casting",
-  }),
-  stormWisp: creature({
-    baseline: "wisp",
+  fireImp: creature("imp", "fire_casting", { traits: ["fire_nature"] }),
+  iceSprite: creature("sprite", "ice_casting", { traits: ["ice_nature"] }),
+  stormWisp: creature("wisp", "lightning_casting", {
     traits: ["lightning_nature"],
-    stance: "lightning_casting",
   }),
-  ghostWisp: creature({
-    baseline: "wisp",
-    traits: ["ghost"],
-    stance: "lightning_casting",
-  }),
+  ghostWisp: creature("wisp", "lightning_casting", { traits: ["ghost"] }),
   // The warden of the old keep: a boss, spawned only by its quest's room
   // claim — never through the wandering-encounter sampler.
-  ogreKeepWarden: creature({
-    baseline: "ogre",
+  ogreKeepWarden: creature("ogre", "ready", {
     traits: ["big"],
     armaments: ["club", "shield"],
-    stance: "ready",
   }),
 } satisfies Record<string, EntityBlobAsset>;
 
